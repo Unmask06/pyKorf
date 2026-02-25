@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "pykorf"
+version = "0.1.0"
+description = "Python toolkit for reading, editing and writing KORF hydraulic model files (.kdf)"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+dependencies = []   # no mandatory runtime deps; pywinauto is optional
+
+[project.optional-dependencies]
+automation = ["pywinauto>=0.6.9", "pywin32>=311"]
+dataframe  = ["pandas>=1.5"]
+dev        = [
+    "pytest>=7",
+    "pytest-cov",
+    "pywinauto>=0.6.9",
+    "pywin32>=311",
+    "pandas>=1.5",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pykorf*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts   = "-v --tb=short"
+
+[tool.coverage.run]
+source = ["pykorf"]
+omit   = ["tests/*", "pykorf/automation.py"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
