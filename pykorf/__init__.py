@@ -34,4 +34,16 @@ __all__ = [
     "KorfError",
     "ParseError",
     "ElementNotFound",
+    "open_ui",
 ]
+
+
+def open_ui(*args, **kwargs):
+    """Open a file in the running KORF instance.
+
+    Lazy import to avoid requiring pywinauto at import time.
+    See :func:`pykorf.automation.open_ui` for full documentation.
+    """
+    from pykorf.automation import open_ui as _open_ui
+
+    return _open_ui(*args, **kwargs)
