@@ -10,16 +10,16 @@ pyKorf is a Python toolkit for programmatically reading, editing, and writing KO
 
 ## Architecture
 
-| Module | Purpose |
-|---|---|
-| `pykorf.model` | `KorfModel` – load / edit / save a `.kdf` file |
-| `pykorf.parser` | `KdfParser` – low-level tokeniser for `.kdf` files |
-| `pykorf.cases` | `CaseSet` – multi-case helpers |
-| `pykorf.results` | `Results` – extract calculated output values |
+| Module              | Purpose                                                                                 |
+| ------------------- | --------------------------------------------------------------------------------------- |
+| `pykorf.model`      | `KorfModel` – load / edit / save a `.kdf` file                                          |
+| `pykorf.parser`     | `KdfParser` – low-level tokeniser for `.kdf` files                                      |
+| `pykorf.cases`      | `CaseSet` – multi-case helpers                                                          |
+| `pykorf.results`    | `Results` – extract calculated output values                                            |
 | `pykorf.automation` | `KorfApp` – connect to a running KORF and drive the GUI (never launches a new instance) |
-| `pykorf.elements` | One class per KORF element type |
-| `pykorf.utils` | CSV / value helpers |
-| `pykorf.exceptions` | Package-wide exception types |
+| `pykorf.elements`   | One class per KORF element type                                                         |
+| `pykorf.utils`      | CSV / value helpers                                                                     |
+| `pykorf.exceptions` | Package-wide exception types                                                            |
 
 ## Key Conventions
 
@@ -40,6 +40,7 @@ Refer to `library/korf_manual.md` for the full KORF user guide (converted from P
 - Follow PEP 8; line length limit is 100 characters (configured via Ruff).
 - Use type hints (`from __future__ import annotations`).
 - Docstrings follow NumPy style.
+- **Always use `uv` as the package manager** for dependency management and virtual environments.
 - `pywinauto` and `pywin32` are optional dependencies (`[automation]` extra).
 - No mandatory runtime dependencies for the core library.
 - Tests use `pytest` and operate on sample `.kdf` files in `library/`.
