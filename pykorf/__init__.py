@@ -23,6 +23,7 @@ __version__ = "0.1.0"
 __author__ = "pyKorf contributors"
 
 from pykorf.cases import CaseSet
+from pykorf.definitions import Element
 from pykorf.exceptions import ElementNotFound, KorfError, ParseError
 from pykorf.model import KorfModel
 from pykorf.results import Results
@@ -34,6 +35,7 @@ __all__ = [
     "KorfError",
     "ParseError",
     "ElementNotFound",
+    "Element",
     "open_ui",
 ]
 
