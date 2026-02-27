@@ -41,6 +41,16 @@ pip install -e ".[dev]"
 
 ## Quick Start
 
+### Persistence model (important)
+
+- `Model(...)` / `KorfModel.load(...)` reads the `.kdf` into memory.
+- Any manipulation through the Model API (`update_element`, `add_element`,
+  `delete_element`, `copy_element`, `move_element`, `connect_elements`, etc.)
+  modifies only the in-memory model state.
+- The source file is not edited directly during these operations.
+- Disk writes happen only when you call `model.save(...)` or `model.save_as(...)`.
+- If you do not save, changes are discarded when the Python process ends.
+
 ### Create a basic model from defaults
 
 ```python

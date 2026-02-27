@@ -4,6 +4,10 @@ The parser preserves the exact line order found in the file so that a
 round-trip ``load → save`` produces an identical file (modulo any values
 that were explicitly changed).
 
+The parser holds records in memory after :meth:`load`. Record edits
+(``set_value``, clone/delete/reindex helpers) affect only this in-memory
+list; the file on disk is written only by :meth:`save`.
+
 Internal representation
 -----------------------
 Each file line is stored as a ``KdfRecord``::
@@ -63,7 +67,7 @@ class KdfRecord:
 
 # Matches the opening backslash element type token: \PIPE, \PUMP etc.
 # Note: quotes are already stripped by the csv.reader.
-_ETYPE_RE = re.compile(r'^\\([A-Z]+)$', re.IGNORECASE)
+_ETYPE_RE = re.compile(r"^\\([A-Z]+)$", re.IGNORECASE)
 
 
 # ---------------------------------------------------------------------------
@@ -231,7 +235,8 @@ class KdfParser:
 
     def _find_insert_position(self, element_type: str) -> int:
         """Return the list index where new records for *element_type* should
-        be inserted (after the last existing record for that type)."""
+        be inserted (after the last existing record for that type).
+        """
         et = element_type.upper()
         last_pos = -1
         for i, rec in enumerate(self._records):

@@ -911,15 +911,18 @@ A value of 0 means that schedule is not available for that size.
 3. **Multi-case inputs** must be updated as semicolon-delimited strings.
 4. **Calculated result fields** will be overwritten by KORF on the next run — you
    may leave them unchanged or set to 0.
-5. Always call `model.save()` before asking KORF to reload.
-6. **Version awareness:** Parameter names differ across versions. Check the version
+5. **In-memory editing contract:** all manipulations done through pyKorf's
+   `Model` API are applied in memory; the `.kdf` file is written only when
+   `model.save()` / `model.save_as()` is called.
+6. Always call `model.save()` before asking KORF to reload.
+7. **Version awareness:** Parameter names differ across versions. Check the version
    header before accessing parameters:
    - v2.0/v3.0: `LEVEL`, `NOZ`, `FITA/FITB/FITO`, `U`, `C` (for FO)
    - v3.6: `LEVELH`, `NOZL`, `FIT1–FIT11`, `UI`, `CD` (for FO)
-7. **Fitting format:** When editing fittings, ensure you use the correct format for
+8. **Fitting format:** When editing fittings, ensure you use the correct format for
    the file version. The v3.6 `FIT1–FIT11` format has 7 tokens per fitting
    (Name, Count, L/D, K, Cv, Kv, flag) while v2.0/v3.0 `FITA/FITB` packs
    5 fittings per record with 4 tokens each.
-8. **Encoding:** Always read/write KDF files with `latin-1` encoding and `\r\n`
+9. **Encoding:** Always read/write KDF files with `latin-1` encoding and `\r\n`
    line endings.
-9. **Element order** must be preserved — see §3.
+10. **Element order** must be preserved — see §3.

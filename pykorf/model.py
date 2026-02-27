@@ -4,6 +4,10 @@ All element collections (pipes, pumps, feeds …) are lazily constructed
 from the :class:`KdfParser` record list and exposed as integer-indexed
 dicts.  Index 0 is the default template; real instances start at 1.
 
+Persistence boundary:
+all Model manipulations are in-memory only. The loaded source file is not
+modified until :meth:`save` or :meth:`save_as` is called.
+
 Basic workflow::
 
     from pykorf import Model

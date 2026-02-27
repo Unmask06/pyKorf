@@ -4,6 +4,7 @@ Run with:  pytest tests/
 """
 
 import os
+import shutil
 import tempfile
 from pathlib import Path
 
@@ -139,6 +140,51 @@ class TestKorfModel:
             assert m2.pipes[1].get_flow()[0] == "99"
         finally:
             os.unlink(tmp)
+
+    def test_edits_are_in_memory_until_save(self):
+        with tempfile.NamedTemporaryFile(suffix=".kdf", delete=False) as f:
+            tmp = f.name
+        try:
+            shutil.copyfile(PUMP_KDF, tmp)
+            original = Path(tmp).read_bytes()
+
+            m = KorfModel.load(tmp)
+            m.pipes[1].set_flow("88;88;88")
+            m.add_element("PIPE", "L_MEM", {"LEN": "10"})
+
+            # No direct file edits before save()
+            assert Path(tmp).read_bytes() == original
+
+            m.save()
+
+            # After save() changes must be persisted
+            assert Path(tmp).read_bytes() != original
+            m2 = KorfModel.load(tmp)
+            assert m2.pipes[1].get_flow()[0] == "88"
+            assert "L_MEM" in m2
+        finally:
+            os.unlink(tmp)
+
+    def test_save_as_keeps_source_file_unchanged(self):
+        with tempfile.NamedTemporaryFile(suffix=".kdf", delete=False) as src_f:
+            src_tmp = src_f.name
+        with tempfile.NamedTemporaryFile(suffix=".kdf", delete=False) as dst_f:
+            dst_tmp = dst_f.name
+        try:
+            shutil.copyfile(PUMP_KDF, src_tmp)
+            source_before = Path(src_tmp).read_bytes()
+
+            m = KorfModel.load(src_tmp)
+            m.pipes[1].set_flow("77;77;77")
+            m.save_as(dst_tmp)
+
+            # save_as() writes to destination, not source
+            assert Path(src_tmp).read_bytes() == source_before
+            reloaded = KorfModel.load(dst_tmp)
+            assert reloaded.pipes[1].get_flow()[0] == "77"
+        finally:
+            os.unlink(src_tmp)
+            os.unlink(dst_tmp)
 
     def test_summary(self):
         m = KorfModel.load(PUMP_KDF)
