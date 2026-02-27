@@ -20,4 +20,5 @@ def test_property_map_has_pipe_and_orifice():
 
 def test_common_properties():
     assert Common.NAME == "NAME"
+    assert Common.NUM == "NUM"
     assert Common.XY == "XY"

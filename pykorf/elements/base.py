@@ -22,7 +22,7 @@ class BaseElement:
 
     Args:
         parser: The :class:`KdfParser` that owns this file's records.
-        etype: KDF element-type keyword (e.g. ``Element.PIPE``, ``Element.PUMP``).
+        etype: KDF element-type keyword string (e.g. ``Element.PIPE`` which is ``"PIPE"``).
         index: Instance index (>= 1 for real instances; 0 = default template).
     """
 
