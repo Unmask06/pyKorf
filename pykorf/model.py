@@ -175,6 +175,9 @@ class Model:
         str
             The original *name* if unique, or a modified version with suffix if a duplicate.
         """
+        if len(name) > 9:
+            raise ValueError(f"Element name {name!r} exceeds 9 character limit")
+
         existing = self._name_map.get(name)
         if existing is None:
             return name
@@ -185,6 +188,11 @@ class Model:
         suffix_num = 1
         while True:
             unique_name = f"{name}_{suffix_num}"
+            if len(unique_name) > 9:
+                raise ValueError(
+                    f"Generated unique name {unique_name!r} for {name!r} "
+                    "exceeds 9 character limit"
+                )
             if unique_name not in self._name_map:
                 _logger.info(
                     f"Element name '{name}' already exists. Using '{unique_name}' instead."
@@ -489,20 +497,20 @@ class Model:
     def delete_element(self, name: str) -> None:
         """Delete the named element from the model.
 
-        Removes all records and decrements the NUM counter.
+        Removes all records and reindexes remaining elements to be continuous.
         """
         elem = self.get_element(name)
         et = elem.etype
         idx = elem.index
 
+        # If deleting a PIPE, first null out all references to it in equipment
+        if et == "PIPE":
+            from pykorf.connectivity import update_pipe_references
+
+            update_pipe_references(self, idx, 0)
+
         self._parser.delete_records(et, idx)
-
-        # Decrement NUM count
-        current_count = self._parser.num_instances(et)
-        if current_count > 0:
-            self._parser.set_num_instances(et, current_count - 1)
-
-        self._build_collections()
+        self.compact_indices(et)
 
     def delete_elements(self, names: list[str]) -> None:
         """Delete multiple elements by name."""
@@ -601,11 +609,61 @@ class Model:
         if target_recs:
             # Swap: move target to a temp index, move source to target, move temp to source
             temp_idx = self._parser.next_index(et) + 1000
-            self._parser.reindex(et, target_index, temp_idx)
-            self._parser.reindex(et, src_idx, target_index)
-            self._parser.reindex(et, temp_idx, src_idx)
+            self.reindex_element(et, target_index, temp_idx)
+            self.reindex_element(et, src_idx, target_index)
+            self.reindex_element(et, temp_idx, src_idx)
         else:
-            self._parser.reindex(et, src_idx, target_index)
+            self.reindex_element(et, src_idx, target_index)
+
+        self._build_collections()
+
+    def reindex_element(self, etype: str, old_index: int, new_index: int) -> None:
+        """Update the index of an element and all its external references.
+
+        This is a low-level operation. Use with caution.
+        """
+        et = etype.upper()
+        if old_index == new_index:
+            return
+
+        # 1. Update the records for the element itself
+        self._parser.reindex(et, old_index, new_index)
+
+        # 2. If it's a PIPE, update all elements that reference this pipe index
+        if et == "PIPE":
+            from pykorf.connectivity import update_pipe_references
+
+            update_pipe_references(self, old_index, new_index)
+
+    def compact_indices(self, etype: str | None = None) -> None:
+        """Reorder element indices to be continuous (1..N) and update NUM.
+
+        If *etype* is None, compacts all element types.
+        """
+        etypes = [etype.upper()] if etype else Element.ALL
+        for et in etypes:
+            if et in (Element.GEN, Element.SYMBOL, Element.TOOLS, Element.PSEUDO):
+                continue
+
+            # Get current indices (sorted)
+            indices = sorted(
+                {
+                    r.index
+                    for r in self._parser.records
+                    if r.element_type == et and r.index and r.index >= 1
+                }
+            )
+            if not indices:
+                self._parser.set_num_instances(et, 0)
+                continue
+
+            # Map old -> new
+            for i, old_idx in enumerate(indices, 1):
+                if old_idx != i:
+                    self.reindex_element(et, old_idx, i)
+
+            # Update NUM count
+            self._parser.set_num_instances(et, len(indices))
 
         self._build_collections()
 

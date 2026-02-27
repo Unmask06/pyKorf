@@ -166,6 +166,60 @@ def _is_element_connected_to_pipe(elem, pipe_idx: int) -> bool:
     return pipe_idx in indices
 
 
+def update_pipe_references(model: Model, old_idx: int, new_idx: int) -> None:
+    """Find all elements referencing old_idx and update them to new_idx."""
+    old_s = str(old_idx)
+    new_s = str(new_idx)
+
+    for elem in model.elements:
+        if elem.etype == "PIPE":
+            continue
+
+        et = elem.etype
+        if et in _CON_ELEMENTS:
+            rec = elem._get("CON")
+            if rec:
+                vals = list(rec.values)
+                changed = False
+                for i in range(min(2, len(vals))):
+                    if vals[i] == old_s:
+                        vals[i] = new_s
+                        changed = True
+                if changed:
+                    rec.values = vals
+                    rec.raw_line = ""
+        elif et in _NOZ_ELEMENTS:
+            noz_param = _get_nozzle_param(elem)
+            rec = elem._get(noz_param)
+            if rec and rec.values and rec.values[0] == old_s:
+                rec.values = [new_s] + rec.values[1:]
+                rec.raw_line = ""
+        elif et == "TEE":
+            rec = elem._get("CON")
+            if rec:
+                vals = list(rec.values)
+                changed = False
+                for i in [0, 1, 2, 3, 4, 5]:  # Check all 6 slots in TEE CON
+                    if i < len(vals) and vals[i] == old_s:
+                        vals[i] = new_s
+                        changed = True
+                if changed:
+                    rec.values = vals
+                    rec.raw_line = ""
+        elif et == "JUNC":
+            for rec in elem.records():
+                if rec.param in ("NOZI", "NOZO") and len(rec.values) >= 2:
+                    if rec.values[1] == old_s:
+                        rec.values[1] = new_s
+                        rec.raw_line = ""
+        elif et == "VESSEL":
+            for rec in elem.records():
+                if rec.param in ("NOZLI", "NOZLO") and len(rec.values) >= 2:
+                    if rec.values[1] == old_s:
+                        rec.values[1] = new_s
+                        rec.raw_line = ""
+
+
 def connect(model: Model, name1: str, name2: str) -> None:
     """Connect two elements in the model.
 
