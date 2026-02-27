@@ -12,3 +12,4 @@ wheels/
 # Generated visualization files
 network.html
 network_data.json
+lib/
