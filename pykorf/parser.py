@@ -210,6 +210,95 @@ class KdfParser:
         return "KORF_2.0"
 
     # ------------------------------------------------------------------
+    # CRUD helpers
+    # ------------------------------------------------------------------
+
+    def next_index(self, element_type: str) -> int:
+        """Return the next available index for *element_type* (max + 1)."""
+        et = element_type.upper()
+        max_idx = 0
+        for rec in self._records:
+            if rec.element_type == et and rec.index is not None and rec.index > max_idx:
+                max_idx = rec.index
+        return max_idx + 1
+
+    def set_num_instances(self, element_type: str, count: int) -> None:
+        """Update the NUM record at index 0 for *element_type*."""
+        rec = self.get(element_type, 0, "NUM")
+        if rec is not None:
+            rec.values = [str(count)]
+            rec.raw_line = ""
+
+    def _find_insert_position(self, element_type: str) -> int:
+        """Return the list index where new records for *element_type* should
+        be inserted (after the last existing record for that type)."""
+        et = element_type.upper()
+        last_pos = -1
+        for i, rec in enumerate(self._records):
+            if rec.element_type == et:
+                last_pos = i
+        if last_pos >= 0:
+            return last_pos + 1
+        # Element type not in file yet — insert before the first element type
+        # that comes later in canonical order, or at the end.
+        return len(self._records)
+
+    def insert_records(self, records: list[KdfRecord]) -> None:
+        """Insert *records* at the correct position for their element type.
+
+        All records must share the same ``element_type``.
+        """
+        if not records:
+            return
+        etype = records[0].element_type
+        pos = self._find_insert_position(etype)
+        for i, rec in enumerate(records):
+            self._records.insert(pos + i, rec)
+
+    def delete_records(self, element_type: str, index: int) -> list[KdfRecord]:
+        """Remove all records for ``(element_type, index)`` and return them."""
+        et = element_type.upper()
+        removed = []
+        kept = []
+        for rec in self._records:
+            if rec.element_type == et and rec.index == index:
+                removed.append(rec)
+            else:
+                kept.append(rec)
+        self._records = kept
+        return removed
+
+    def clone_records(
+        self, element_type: str, src_index: int, dst_index: int
+    ) -> list[KdfRecord]:
+        """Deep-copy all records from *src_index* to *dst_index*.
+
+        Returns the new records (already inserted into the record list).
+        """
+        et = element_type.upper()
+        originals = self.get_all(et, src_index)
+        clones = []
+        for rec in originals:
+            clone = KdfRecord(
+                element_type=rec.element_type,
+                index=dst_index,
+                param=rec.param,
+                values=list(rec.values),
+                raw_line="",
+            )
+            clones.append(clone)
+        self.insert_records(clones)
+        return clones
+
+    def reindex(self, element_type: str, old_index: int, new_index: int) -> None:
+        """Change the index on all records of ``(element_type, old_index)``."""
+        et = element_type.upper()
+        for rec in self._records:
+            if rec.element_type == et and rec.index == old_index:
+                rec.index = new_index
+                rec.raw_line = ""
+
+    # ------------------------------------------------------------------
     # Dunder
     # ------------------------------------------------------------------
 

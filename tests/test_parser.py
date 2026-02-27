@@ -15,7 +15,7 @@ from pykorf.model import KorfModel
 # ------------------------------------------------------------------
 # Resolve path to the sample .kdf files in the library folder
 # ------------------------------------------------------------------
-SAMPLES_DIR = Path(__file__).parent.parent / "library"
+SAMPLES_DIR = Path(__file__).parent.parent / "pykorf" / "library"
 PUMP_KDF = SAMPLES_DIR / "Pumpcases.kdf"
 CRANE_KDF = SAMPLES_DIR / "crane10.kdf"
 

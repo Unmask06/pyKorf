@@ -6,7 +6,7 @@
 to create a basic model programmatically and save it to a KDF file.
 
 - A user can create a new model with `pykorf.Model()`. This creates a new model with
-  default values from [text](../../library/New.kdf). A user can also load an existing KDF
+  default values from [text](../../pykorf/library/New.kdf). A user can also load an existing KDF
   file with `pykorf.Model('path/to/file.kdf')`, which reads the KDF file and creates a
   model with values from that file.
 - A user can save the model to a KDF file with `model.save()`. This writes the model to a
@@ -40,7 +40,7 @@ Once a model is loaded or created, users can manipulate it by changing field val
   with
   `model.add_elements([('PIPE', 'PIPE2', {'L': 5, 'D': 0.3}), ('PUMP', 'PUMP2', {'PZPRES': 100})])`.
   Even without parameters, new elements should be created with default values from
-  [text](../../library/New.kdf), and users can update them later.
+  [text](../../pykorf/library/New.kdf), and users can update them later.
 - Users should be able to delete elements with `model.delete_element('PIPE1')`, which
   deletes PIPE1 from the model. Users can also delete multiple elements at once with
   `model.delete_elements(['PIPE1', 'PUMP1'])`.
@@ -80,7 +80,7 @@ Users should be able to connect and disconnect elements in the model.
 ### Layout and Positioning
 
 - By default, elements in the model should have a default position and layout based on
-  values from [text](../../library/New.kdf).
+  values from [text](../../pykorf/library/New.kdf).
 - The model should check for clashes and offset positions when X and Y are not provided by
   the user.
 - When new elements are added, they should be placed in a default position that does not

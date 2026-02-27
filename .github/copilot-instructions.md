@@ -54,3 +54,5 @@ Refer to `library/korf_manual.md` for the full KORF user guide (converted from P
 ## Future Direction
 
 A Vue-based GUI will be built on top of this package so users can edit `.kdf` files through a web interface. Keep the Python API clean and JSON-serialisable for easy integration with a frontend.
+
+Use command prompt, not PowerShell, for all commands to avoid cross-platform issues.
