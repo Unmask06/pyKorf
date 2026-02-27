@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Optional
 
+from pykorf.definitions import Common
+
 if TYPE_CHECKING:
     from pykorf.parser import KdfParser, KdfRecord
 
@@ -18,14 +20,10 @@ class BaseElement:
     """
     Base class wrapping a single KORF element instance.
 
-    Parameters
-    ----------
-    parser:
-        The :class:`KdfParser` that owns this file's records.
-    etype:
-        KDF element-type keyword (e.g. ``"PIPE"``, ``"PUMP"``).
-    index:
-        Instance index (>= 1 for real instances; 0 = default template).
+    Args:
+        parser: The :class:`KdfParser` that owns this file's records.
+        etype: KDF element-type keyword (e.g. ``Element.PIPE``, ``Element.PUMP``).
+        index: Instance index (>= 1 for real instances; 0 = default template).
     """
 
     #: KDF element-type keyword (override in subclasses)
@@ -51,18 +49,18 @@ class BaseElement:
     @property
     def name(self) -> str:
         """Element name tag (e.g. ``'L1'``, ``'P1'``)."""
-        rec = self._get("NAME")
+        rec = self._get(Common.NAME)
         return rec.values[0] if rec and rec.values else ""
 
     @property
     def description(self) -> str:
         """Optional description (second value of the NAME record)."""
-        rec = self._get("NAME")
+        rec = self._get(Common.NAME)
         return rec.values[1] if rec and len(rec.values) > 1 else ""
 
     @description.setter
     def description(self, value: str) -> None:
-        rec = self._get("NAME")
+        rec = self._get(Common.NAME)
         if rec:
             if len(rec.values) > 1:
                 rec.values[1] = value
@@ -72,12 +70,12 @@ class BaseElement:
 
     @property
     def notes(self) -> str:
-        rec = self._get("NOTES")
+        rec = self._get(Common.NOTES)
         return rec.values[0] if rec and rec.values else ""
 
     @notes.setter
     def notes(self, value: str) -> None:
-        self._set("NOTES", [value])
+        self._set(Common.NOTES, [value])
 
     # ------------------------------------------------------------------
     # Internal record access
@@ -89,16 +87,10 @@ class BaseElement:
     def get_param(self, param: str) -> Optional["KdfRecord"]:
         """Return the record for a given parameter, or *None* if missing.
 
-        Notes
-        -----
-        Prefer constants from ``pykorf.definitions`` for parameter names,
-        e.g. ``Feed.NAME`` instead of raw strings.
-
-        Example
-        -------
-        >>> from pykorf.definitions.feed import Feed
-        >>> rec = model.feeds[1].get_param(Feed.NAME)
-        >>> rec.update(["EXP DRUM", "FEED"])
+        Example:
+            >>> from pykorf.definitions import Feed
+            >>> rec = model.feeds[1].get_param(Feed.NAME)
+            >>> rec.update(["EXP DRUM", "FEED"])
         """
         return self._get(param)
 
@@ -113,15 +105,8 @@ class BaseElement:
     def set_param(self, param: str, values: list) -> bool:
         """Set values for a given parameter.
 
-        Notes
-        -----
-        Prefer constants from ``pykorf.definitions`` for parameter names,
-        e.g. ``Feed.NAME`` / ``Pipe.LEN``.
-
-        Returns
-        -------
-        bool
-            *True* if parameter exists and was updated, *False* otherwise.
+        Returns:
+            ``True`` if parameter exists and was updated, otherwise ``False``.
         """
         return self._parser.set_value(self._etype, self._index, param, values)
 

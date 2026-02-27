@@ -47,13 +47,15 @@ pyKorf should remain version-aware (e.g., `NOZ` vs `NOZL`, fitting format differ
 
 ## Coding & Tooling Rules
 
-- Python >= 3.9, PEP 8, type hints, NumPy-style docstrings.
+- Python >= 3.9, PEP 8, type hints, Google-style docstrings.
 - Keep changes minimal and backward compatible.
 - Prefer existing helpers over duplicating parsing or mapping logic.
 - Always use constants from `pykorf/definitions/` for element types and parameter names
   (e.g., `Element.PIPE`, `Feed.NAME`, `Pipe.LEN`) instead of raw string literals.
 - Apply the same rule in docstrings/examples: prefer definitions constants in examples
   so element/parameter references stay consistent and typo-safe.
+- Never hardcode element type tokens or element parameter keys anywhere in the codebase,
+  including examples and docstrings; add missing constants under `pykorf/definitions/` first.
 - Use `uv` for dependency/test commands.
 - Use `cmd.exe` command style for shell examples in this repo.
 

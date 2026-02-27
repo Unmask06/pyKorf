@@ -15,6 +15,7 @@ Examples:
 from __future__ import annotations
 
 from .check import Check
+from .common import Common
 from .comp import Comp
 from .element import Element
 from .expand import Expand
@@ -59,6 +60,7 @@ PROPERTIES_BY_ELEMENT = {
 
 __all__ = [
     "Element",
+    "Common",
     "Gen",
     "Pipe",
     "Feed",
