@@ -11,15 +11,17 @@ license = { text = "MIT" }
 requires-python = ">=3.12"
 dependencies = []   # no mandatory runtime deps; pywinauto is optional
 
-[project.optional-dependencies]
-automation = ["pywinauto>=0.6.9", "pywin32>=311"]
-dataframe  = ["pandas>=1.5"]
-dev        = [
+[dependency-groups]
+dev = [
     "pytest>=7",
     "pytest-cov",
     "pywinauto>=0.6.9",
     "pywin32>=311",
     "pandas>=2.0",
+    "jupyter>=1.0",
+    "notebook>=7.0",
+    "ipython>=8.0",
+    "jupyterlab>=4.0",
 ]
 
 [tool.setuptools.packages.find]

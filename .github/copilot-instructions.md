@@ -50,6 +50,10 @@ pyKorf should remain version-aware (e.g., `NOZ` vs `NOZL`, fitting format differ
 - Python >= 3.9, PEP 8, type hints, NumPy-style docstrings.
 - Keep changes minimal and backward compatible.
 - Prefer existing helpers over duplicating parsing or mapping logic.
+- Always use constants from `pykorf/definitions/` for element types and parameter names
+  (e.g., `Element.PIPE`, `Feed.NAME`, `Pipe.LEN`) instead of raw string literals.
+- Apply the same rule in docstrings/examples: prefer definitions constants in examples
+  so element/parameter references stay consistent and typo-safe.
 - Use `uv` for dependency/test commands.
 - Use `cmd.exe` command style for shell examples in this repo.
 
@@ -58,3 +62,7 @@ pyKorf should remain version-aware (e.g., `NOZ` vs `NOZL`, fitting format differ
 - Use `pytest` with fixtures from `pykorf/library/`.
 - Include tests for persistence boundary (unchanged file before save).
 - Include tests when behavior/API contracts are updated.
+
+## Refer library files for examples of API usage and test patterns.
+
+For any doubts about API design, file handling, or KDF structure, refer to the existing code in /library to see how it is currently handled, and maintain consistency with existing patterns.

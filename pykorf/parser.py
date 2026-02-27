@@ -57,12 +57,44 @@ class KdfRecord:
         return (self.element_type, self.index, self.param)
 
     def to_line(self) -> str:
-        """Serialise back to a KDF text line."""
-        if self.element_type is None:
+        """Serialise back to a KDF text line.
+
+        Uses the preserved ``raw_line`` when available (unmodified record)
+        to maintain original quoting and formatting.  Falls back to
+        rebuilding from parsed parts when the record has been dirtied
+        (``raw_line`` cleared to ``""``).
+        """
+        if self.raw_line:
             return self.raw_line
+        if self.element_type is None:
+            return ""
         # Re-build: "\TYPE",idx,"PARAM",...
         parts: list = [f"\\{self.element_type}", self.index, self.param] + self.values
         return format_line(parts)
+
+    def update(self, values: list) -> KdfRecord:
+        """Replace the record value list and mark it dirty.
+
+        Parameters
+        ----------
+        values:
+            New value tokens for this parameter.
+
+        Returns:
+        -------
+        KdfRecord
+            The same record instance (for chaining).
+
+        Example:
+        -------
+        >>> from pykorf.definitions.feed import Feed
+        >>> model.get_element("Exp Drum").get_param(Feed.NAME).update(
+        ...     ["EXP DRUM", "FEED"]
+        ... )
+        """
+        self.values = values
+        self.raw_line = ""
+        return self
 
 
 # Matches the opening backslash element type token: \PIPE, \PUMP etc.
@@ -147,8 +179,14 @@ class KdfParser:
         """
         dest = Path(path) if path else self.path
         dest.parent.mkdir(parents=True, exist_ok=True)
-        with dest.open("w", encoding=self.encoding, newline="\r\n") as fh:
+        with dest.open("w", encoding=self.encoding, newline="") as fh:
             for rec in self._records:
+                if (
+                    rec.element_type is not None
+                    and rec.param == "NUM"
+                    and rec.index != 0
+                ):
+                    continue
                 fh.write(rec.to_line() + "\r\n")
 
     # ------------------------------------------------------------------
@@ -273,23 +311,39 @@ class KdfParser:
         self._records = kept
         return removed
 
+    @staticmethod
+    def _reindex_raw_line(raw_line: str, new_index: int) -> str:
+        """Replace the index (second CSV field) in a raw KDF line.
+
+        This preserves original quoting and formatting of all other fields.
+        """
+        if not raw_line:
+            return ""
+        # Find the first comma (after etype) and second comma (after index)
+        first_comma = raw_line.index(",")
+        second_comma = raw_line.index(",", first_comma + 1)
+        return raw_line[: first_comma + 1] + str(new_index) + raw_line[second_comma:]
+
     def clone_records(
         self, element_type: str, src_index: int, dst_index: int
     ) -> list[KdfRecord]:
         """Deep-copy all records from *src_index* to *dst_index*.
 
         Returns the new records (already inserted into the record list).
+        Preserves original quoting/formatting by reindexing the source raw_line.
         """
         et = element_type.upper()
         originals = self.get_all(et, src_index)
         clones = []
         for rec in originals:
+            if rec.param == "NUM":
+                continue
             clone = KdfRecord(
                 element_type=rec.element_type,
                 index=dst_index,
                 param=rec.param,
                 values=list(rec.values),
-                raw_line="",
+                raw_line=self._reindex_raw_line(rec.raw_line, dst_index),
             )
             clones.append(clone)
         self.insert_records(clones)

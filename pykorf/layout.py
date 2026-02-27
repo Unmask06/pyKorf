@@ -49,11 +49,8 @@ def get_position(elem: BaseElement) -> tuple[float, float] | None:
         return None
 
 
-def set_position(elem: BaseElement, x: float, y: float) -> None:
-    """Set the primary (x, y) position of an element.
-
-    Updates the first two values of the XY record.
-    """
+def _set_position_on_element(elem: BaseElement, x: float, y: float) -> None:
+    """Set the primary (x, y) position on a concrete element object."""
     rec = elem._get("XY")
     if rec is None:
         return
@@ -63,6 +60,31 @@ def set_position(elem: BaseElement, x: float, y: float) -> None:
         vals[1] = str(y)
         rec.values = vals
         rec.raw_line = ""
+
+
+def set_position(
+    target: Model | BaseElement,
+    name_or_x: str | float,
+    x_or_y: float,
+    y: float | None = None,
+) -> None:
+    """Set the primary (x, y) position.
+
+    Supports two call styles:
+
+    - ``set_position(model, element_name, x, y)``
+    - ``set_position(element, x, y)`` (backward-compatible)
+    """
+    if hasattr(target, "get_element"):
+        if not isinstance(name_or_x, str) or y is None:
+            raise ValueError("Use set_position(model, element_name, x, y)")
+        elem = target.get_element(name_or_x)
+        _set_position_on_element(elem, float(x_or_y), float(y))
+        return
+
+    if y is not None:
+        raise ValueError("Use set_position(element, x, y) for element objects")
+    _set_position_on_element(target, float(name_or_x), float(x_or_y))
 
 
 def _all_positions(model: Model) -> dict[str, tuple[float, float]]:
@@ -158,7 +180,7 @@ def auto_place(model: Model, elem: BaseElement) -> None:
                 _Y_MIN + row * _COMFORT_SPACING_Y,
             )
             if _fits(candidate):
-                set_position(elem, candidate[0], candidate[1])
+                _set_position_on_element(elem, candidate[0], candidate[1])
                 return
 
     raise LayoutError(

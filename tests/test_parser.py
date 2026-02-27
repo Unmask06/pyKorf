@@ -1,5 +1,4 @@
-"""
-Tests for KdfParser and KorfModel loading/saving.
+"""Tests for KdfParser and KorfModel loading/saving.
 Run with:  pytest tests/
 """
 
@@ -10,8 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from pykorf.parser import KdfParser
 from pykorf.model import KorfModel
+from pykorf.parser import KdfParser, KdfRecord
 
 # ------------------------------------------------------------------
 # Resolve path to the sample .kdf files in the library folder
@@ -19,11 +18,13 @@ from pykorf.model import KorfModel
 SAMPLES_DIR = Path(__file__).parent.parent / "pykorf" / "library"
 PUMP_KDF = SAMPLES_DIR / "Pumpcases.kdf"
 CRANE_KDF = SAMPLES_DIR / "crane10.kdf"
+CWC_KDF = SAMPLES_DIR / "Cooling Water Circuit.kdf"
 
 
 # ------------------------------------------------------------------
 # Parser tests
 # ------------------------------------------------------------------
+
 
 class TestKdfParser:
     def test_load_pumpcases(self):
@@ -46,7 +47,7 @@ class TestKdfParser:
         p.load()
         rec = p.get("PIPE", 1, "TFLOW")
         assert rec is not None
-        assert "50" in rec.values[0]   # "50;55;20"
+        assert "50" in rec.values[0]  # "50;55;20"
 
     def test_set_value(self):
         p = KdfParser(PUMP_KDF)
@@ -72,6 +73,86 @@ class TestKdfParser:
         finally:
             os.unlink(tmp)
 
+    def test_save_does_not_write_double_crlf(self):
+        p = KdfParser(PUMP_KDF)
+        p.load()
+
+        with tempfile.NamedTemporaryFile(suffix=".kdf", delete=False) as f:
+            tmp = f.name
+        try:
+            p.save(tmp)
+            data = Path(tmp).read_bytes()
+            assert b"\r\r\n" not in data
+        finally:
+            os.unlink(tmp)
+
+    def test_save_skips_invalid_nonzero_num_records(self):
+        p = KdfParser(PUMP_KDF)
+        p.load()
+        p.records.append(KdfRecord("PIPE", 10, "NUM", ["9"], raw_line=""))
+
+        with tempfile.NamedTemporaryFile(suffix=".kdf", delete=False) as f:
+            tmp = f.name
+        try:
+            p.save(tmp)
+            text = Path(tmp).read_text(encoding=p.encoding)
+            assert '"\\PIPE",10,"NUM",9' not in text
+        finally:
+            os.unlink(tmp)
+
+    def test_save_is_idempotent(self):
+        p = KdfParser(PUMP_KDF)
+        p.load()
+
+        with tempfile.NamedTemporaryFile(suffix=".kdf", delete=False) as f:
+            tmp = f.name
+        try:
+            p.save(tmp)
+            first = Path(tmp).read_bytes()
+
+            p2 = KdfParser(tmp)
+            p2.load()
+            p2.save(tmp)
+            second = Path(tmp).read_bytes()
+
+            assert first == second
+        finally:
+            os.unlink(tmp)
+
+    def test_round_trip_byte_identical(self):
+        """Load → save without modifications must produce byte-identical output."""
+        p = KdfParser(CWC_KDF)
+        p.load()
+
+        with tempfile.NamedTemporaryFile(suffix=".kdf", delete=False) as f:
+            tmp = f.name
+        try:
+            p.save(tmp)
+            original = CWC_KDF.read_bytes()
+            saved = Path(tmp).read_bytes()
+            assert original == saved, "Round-trip save must be byte-identical"
+        finally:
+            os.unlink(tmp)
+
+    def test_clone_preserves_quoting(self):
+        """Cloned records must preserve original quoting via raw_line reindex."""
+        p = KdfParser(CWC_KDF)
+        p.load()
+
+        # CWC has VALVE template with quoted "50" in CV param
+        template_cv = p.get("VALVE", 0, "CV")
+        assert template_cv is not None
+        assert '"50"' in template_cv.raw_line
+
+        # Clone template to index 1
+        clones = p.clone_records("VALVE", 0, 1)
+
+        # Find the cloned CV record
+        cloned_cv = p.get("VALVE", 1, "CV")
+        assert cloned_cv is not None
+        assert '"50"' in cloned_cv.raw_line, "Cloned record must preserve quoting"
+        assert cloned_cv.to_line() == cloned_cv.raw_line
+
     def test_load_crane(self):
         p = KdfParser(CRANE_KDF)
         records = p.load()
@@ -86,6 +167,7 @@ class TestKdfParser:
 # ------------------------------------------------------------------
 # Model tests
 # ------------------------------------------------------------------
+
 
 class TestKorfModel:
     def test_load(self):
@@ -103,7 +185,7 @@ class TestKorfModel:
 
     def test_pipes_loaded(self):
         m = KorfModel.load(PUMP_KDF)
-        assert len(m.pipes) > 1    # 0 (template) + 5 real pipes
+        assert len(m.pipes) > 1  # 0 (template) + 5 real pipes
 
     def test_pipe_1_flow(self):
         m = KorfModel.load(PUMP_KDF)
@@ -150,7 +232,7 @@ class TestKorfModel:
 
             m = KorfModel.load(tmp)
             m.pipes[1].set_flow("88;88;88")
-            m.add_element("PIPE", "L_MEM", {"LEN": "10"})
+            m.add_element("PUMP", "P_MEM")
 
             # No direct file edits before save()
             assert Path(tmp).read_bytes() == original
@@ -161,7 +243,7 @@ class TestKorfModel:
             assert Path(tmp).read_bytes() != original
             m2 = KorfModel.load(tmp)
             assert m2.pipes[1].get_flow()[0] == "88"
-            assert "L_MEM" in m2
+            assert "P_MEM" in m2
         finally:
             os.unlink(tmp)
 
@@ -194,6 +276,7 @@ class TestKorfModel:
 
     def test_element_not_found(self):
         from pykorf.exceptions import ElementNotFound
+
         m = KorfModel.load(PUMP_KDF)
         with pytest.raises(ElementNotFound):
             m.pipe(999)

@@ -45,6 +45,127 @@ def _get_nozzle_param(elem) -> str:
     return "NOZL"
 
 
+def _is_valid_idx(v: Any) -> bool:
+    """Return True if v is a non-zero integer string/int."""
+    try:
+        return int(v) > 0
+    except (ValueError, TypeError):
+        return False
+
+
+def get_connections(model: Model, name: str) -> list[str]:
+    """Return a list of element names connected to the given element."""
+    elem = model.get_element(name)
+    connected_names = []
+
+    if elem.etype == "PIPE":
+        pipe_idx = elem.index
+        # Iterate all other elements to find ones referencing this pipe index
+        for other in model.elements:
+            if other.etype == "PIPE":
+                continue
+            if _is_element_connected_to_pipe(other, pipe_idx):
+                connected_names.append(other.name)
+    else:
+        # Get pipe indices connected to this element
+        pipe_indices = _get_element_pipe_indices(elem)
+        for p_idx in pipe_indices:
+            if p_idx in model.pipes:
+                connected_names.append(model.pipes[p_idx].name)
+
+    return sorted(list(set(connected_names)))
+
+
+def get_unconnected_elements(model: Model) -> list[str]:
+    """Return names of elements that have at least one open connection.
+
+    - For pipes: connected to < 2 nodes.
+    - For equipment/TEEs/Junctions: have at least one '0' in their connection slots.
+    """
+    unconnected = []
+    
+    # Pipes need two connections
+    for pipe in model.get_elements_by_type("PIPE"):
+        conns = get_connections(model, pipe.name)
+        if len(conns) < 2:
+            unconnected.append(pipe.name)
+            
+    # Nodes with open slots
+    for elem in model.elements:
+        if elem.etype == "PIPE":
+            continue
+        
+        et = elem.etype
+        if et in _CON_ELEMENTS:
+            rec = elem._get("CON")
+            if rec and (str(rec.values[0]) == "0" or str(rec.values[1]) == "0"):
+                unconnected.append(elem.name)
+        elif et in _NOZ_ELEMENTS:
+            noz_param = _get_nozzle_param(elem)
+            rec = elem._get(noz_param)
+            if rec and str(rec.values[0]) == "0":
+                unconnected.append(elem.name)
+        elif et == "TEE":
+            rec = elem._get("CON")
+            if rec:
+                # TEE slots 0, 3, 5
+                for i in [0, 3, 5]:
+                    if i < len(rec.values) and str(rec.values[i]) == "0":
+                        unconnected.append(elem.name)
+                        break
+        # JUNC and VESSEL can have arbitrary number of nozzles, so they are
+        # "unconnected" if they have 0 connections? Or if they have defined nozzles
+        # that are 0.
+        elif et in ("JUNC", "VESSEL"):
+            pipe_indices = _get_element_pipe_indices(elem)
+            if not pipe_indices:
+                unconnected.append(elem.name)
+                
+    return sorted(list(set(unconnected)))
+
+
+def _get_element_pipe_indices(elem) -> list[int]:
+    """Extract all non-zero pipe indices referenced by an element."""
+    indices = []
+    et = elem.etype
+    if et in _CON_ELEMENTS:
+        rec = elem._get("CON")
+        if rec and len(rec.values) >= 2:
+            for v in rec.values[:2]:
+                if _is_valid_idx(v):
+                    indices.append(int(v))
+    elif et in _NOZ_ELEMENTS:
+        noz_param = _get_nozzle_param(elem)
+        rec = elem._get(noz_param)
+        if rec and rec.values:
+            if _is_valid_idx(rec.values[0]):
+                indices.append(int(rec.values[0]))
+    elif et == "TEE":
+        rec = elem._get("CON")
+        if rec:
+            # Check slots 0, 3, 5 based on KDF analysis
+            for i in [0, 3, 5]:
+                if i < len(rec.values) and _is_valid_idx(rec.values[i]):
+                    indices.append(int(rec.values[i]))
+    elif et == "JUNC":
+        for rec in elem.records():
+            if rec.param in ("NOZI", "NOZO") and len(rec.values) >= 2:
+                if _is_valid_idx(rec.values[1]):
+                    indices.append(int(rec.values[1]))
+    elif et == "VESSEL":
+        for rec in elem.records():
+            if rec.param in ("NOZLI", "NOZLO") and len(rec.values) >= 2:
+                if _is_valid_idx(rec.values[1]):
+                    indices.append(int(rec.values[1]))
+    return indices
+
+
+def _is_element_connected_to_pipe(elem, pipe_idx: int) -> bool:
+    """Return True if the element references the given pipe index."""
+    indices = _get_element_pipe_indices(elem)
+    return pipe_idx in indices
+
+
 def connect(model: Model, name1: str, name2: str) -> None:
     """Connect two elements in the model.
 
@@ -125,10 +246,10 @@ def connect(model: Model, name1: str, name2: str) -> None:
         if rec is None:
             raise ConnectivityError(f"{other_elem.name} (TEE) has no CON record")
         vals = list(rec.values)
-        # TEE has 3 slots: combined, main, branch
+        # TEE has 3 slots for pipe indices: Combined(0), Main(3), Branch(5)
         placed = False
-        for i in range(min(3, len(vals))):
-            if str(vals[i]) == "0":
+        for i in [0, 3, 5]:
+            if i < len(vals) and str(vals[i]) == "0":
                 vals[i] = str(pipe_idx)
                 placed = True
                 break
@@ -206,8 +327,8 @@ def disconnect(model: Model, name1: str, name2: str) -> None:
             raise ConnectivityError(f"{other_elem.name} (TEE) has no CON record")
         vals = list(rec.values)
         found = False
-        for i in range(min(3, len(vals))):
-            if str(vals[i]) == pipe_idx:
+        for i in [0, 3, 5]:
+            if i < len(vals) and str(vals[i]) == pipe_idx:
                 vals[i] = "0"
                 found = True
                 break

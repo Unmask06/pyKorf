@@ -5,10 +5,8 @@ Run with:  PYTHONPATH=. python -m pytest tests/test_layout.py -v
 
 from pathlib import Path
 
-import pytest
-
-from pykorf.model import Model
 from pykorf.layout import auto_place, check_layout, get_position, set_position
+from pykorf.model import Model
 
 SAMPLES_DIR = Path(__file__).parent.parent / "pykorf" / "library"
 PUMP_KDF = SAMPLES_DIR / "Pumpcases.kdf"
@@ -32,6 +30,13 @@ class TestGetSetPosition:
         if pos is not None:
             assert pos == (500.0, 300.0)
 
+    def test_set_position_by_name(self):
+        m = Model(PUMP_KDF)
+        set_position(m, "L1", 700.0, 450.0)
+        pos = get_position(m["L1"])
+        if pos is not None:
+            assert pos == (700.0, 450.0)
+
 
 class TestCheckLayout:
     def test_check_layout_returns_list(self):
@@ -53,9 +58,9 @@ class TestCheckLayout:
 class TestAutoPlace:
     def test_auto_place_new_element(self):
         m = Model(PUMP_KDF)
-        new_pipe = m.add_element("PIPE", "L_AP")
-        auto_place(m, new_pipe)
-        pos = get_position(new_pipe)
+        new_pump = m.add_element("PUMP", "P_AP")
+        auto_place(m, new_pump)
+        pos = get_position(new_pump)
         # Should have been placed somewhere
         if pos is not None:
             assert pos != (0.0, 0.0)

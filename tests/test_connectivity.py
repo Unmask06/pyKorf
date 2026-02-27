@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from pykorf.model import Model
 from pykorf.exceptions import ConnectivityError
+from pykorf.model import Model
 
 SAMPLES_DIR = Path(__file__).parent.parent / "pykorf" / "library"
 PUMP_KDF = SAMPLES_DIR / "Pumpcases.kdf"
@@ -18,51 +18,51 @@ CWC_KDF = SAMPLES_DIR / "Cooling Water Circuit.kdf"
 class TestConnectDisconnect:
     def test_connect_pipe_to_pump(self):
         m = Model(PUMP_KDF)
-        # First add a new pipe and pump, both unconnected
-        m.add_element("PIPE", "L_CON")
         m.add_element("PUMP", "P_CON")
-        m.connect_elements("L_CON", "P_CON")
+        m.connect_elements("L1", "P_CON")
         pump = m["P_CON"]
         con_rec = pump._get("CON")
-        pipe_idx = m["L_CON"].index
+        pipe_idx = m["L1"].index
         assert str(con_rec.values[0]) == str(pipe_idx)
 
     def test_disconnect_pipe_from_pump(self):
         m = Model(PUMP_KDF)
-        m.add_element("PIPE", "L_DC")
         m.add_element("PUMP", "P_DC")
-        m.connect_elements("L_DC", "P_DC")
-        m.disconnect_elements("L_DC", "P_DC")
+        m.connect_elements("L1", "P_DC")
+        m.disconnect_elements("L1", "P_DC")
         con_rec = m["P_DC"]._get("CON")
         assert str(con_rec.values[0]) == "0"
 
     def test_connect_two_pipes_raises(self):
         m = Model(PUMP_KDF)
-        m.add_element("PIPE", "L_A")
-        m.add_element("PIPE", "L_B")
-        with pytest.raises(ConnectivityError, match="Cannot directly connect two pipes"):
-            m.connect_elements("L_A", "L_B")
+        m.add_element("PUMP", "P_A")
+        m.add_element("PUMP", "P_B")
+        m.connect_elements("P_A", "P_B", pipe_name="L_A")
+        with pytest.raises(
+            ConnectivityError, match="Cannot directly connect two pipes"
+        ):
+            m.connect_elements("L_A", "L1")
 
-    def test_connect_no_pipe_raises(self):
+    def test_connect_no_pipe_auto_creates_pipe(self):
         m = Model(PUMP_KDF)
         m.add_element("PUMP", "P_A")
         m.add_element("VALVE", "V_A")
-        with pytest.raises(ConnectivityError, match="must be a PIPE"):
-            m.connect_elements("P_A", "V_A")
+        m.connect_elements("P_A", "V_A", pipe_name="L_AUTO_CON")
+        assert "L_AUTO_CON" in m
+        assert m["L_AUTO_CON"].etype == "PIPE"
 
     def test_disconnect_not_connected_raises(self):
         m = Model(PUMP_KDF)
-        m.add_element("PIPE", "L_NC")
         m.add_element("PUMP", "P_NC")
         with pytest.raises(ConnectivityError, match="not connected"):
-            m.disconnect_elements("L_NC", "P_NC")
+            m.disconnect_elements("L1", "P_NC")
 
     def test_connect_multiple_pairs(self):
         m = Model(PUMP_KDF)
-        m.add_element("PIPE", "L_M1")
-        m.add_element("PIPE", "L_M2")
         m.add_element("PUMP", "P_M1")
-        m.connect_elements([("L_M1", "P_M1"), ("L_M2", "P_M1")])
+        m.add_element("VALVE", "V_M1")
+        m.add_element("VALVE", "V_M2")
+        m.connect_elements([("P_M1", "V_M1", "L_M1"), ("P_M1", "V_M2", "L_M2")])
         con_rec = m["P_M1"]._get("CON")
         assert str(con_rec.values[0]) == str(m["L_M1"].index)
         assert str(con_rec.values[1]) == str(m["L_M2"].index)

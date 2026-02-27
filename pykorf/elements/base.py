@@ -60,6 +60,16 @@ class BaseElement:
         rec = self._get("NAME")
         return rec.values[1] if rec and len(rec.values) > 1 else ""
 
+    @description.setter
+    def description(self, value: str) -> None:
+        rec = self._get("NAME")
+        if rec:
+            if len(rec.values) > 1:
+                rec.values[1] = value
+            else:
+                rec.values.append(value)
+            rec.raw_line = ""
+
     @property
     def notes(self) -> str:
         rec = self._get("NOTES")
@@ -76,6 +86,22 @@ class BaseElement:
     def _get(self, param: str) -> Optional["KdfRecord"]:
         return self._parser.get(self._etype, self._index, param)
 
+    def get_param(self, param: str) -> Optional["KdfRecord"]:
+        """Return the record for a given parameter, or *None* if missing.
+
+        Notes
+        -----
+        Prefer constants from ``pykorf.definitions`` for parameter names,
+        e.g. ``Feed.NAME`` instead of raw strings.
+
+        Example
+        -------
+        >>> from pykorf.definitions.feed import Feed
+        >>> rec = model.feeds[1].get_param(Feed.NAME)
+        >>> rec.update(["EXP DRUM", "FEED"])
+        """
+        return self._get(param)
+
     def _values(self, param: str) -> list:
         rec = self._get(param)
         return rec.values if rec else []
@@ -83,6 +109,21 @@ class BaseElement:
     def _set(self, param: str, values: list) -> None:
         """Update an existing record's values list in-place."""
         self._parser.set_value(self._etype, self._index, param, values)
+
+    def set_param(self, param: str, values: list) -> bool:
+        """Set values for a given parameter.
+
+        Notes
+        -----
+        Prefer constants from ``pykorf.definitions`` for parameter names,
+        e.g. ``Feed.NAME`` / ``Pipe.LEN``.
+
+        Returns
+        -------
+        bool
+            *True* if parameter exists and was updated, *False* otherwise.
+        """
+        return self._parser.set_value(self._etype, self._index, param, values)
 
     def _scalar(self, param: str, pos: int = 0, default: Any = None) -> Any:
         """Return a single value from a record's value list."""

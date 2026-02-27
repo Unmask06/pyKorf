@@ -9,11 +9,14 @@ from pathlib import Path
 
 import pytest
 
-from pykorf.model import KorfModel, Model
+from pykorf.definitions.element import Element
+from pykorf.definitions.feed import Feed
 from pykorf.exceptions import ElementNotFound
+from pykorf.model import KorfModel, Model
 
 SAMPLES_DIR = Path(__file__).parent.parent / "pykorf" / "library"
 PUMP_KDF = SAMPLES_DIR / "Pumpcases.kdf"
+CWC_KDF = SAMPLES_DIR / "Cooling Water Circuit.kdf"
 CRANE_KDF = SAMPLES_DIR / "crane10.kdf"
 CWC_KDF = SAMPLES_DIR / "Cooling Water Circuit.kdf"
 
@@ -94,6 +97,15 @@ class TestNameAccess:
         pump = m["P1"]
         assert pump.etype == "PUMP"
 
+    def test_get_param_and_update_values(self):
+        m = Model(PUMP_KDF)
+        feed = m.feeds[1]
+        rec = feed.get_param(Feed.NAME)
+        assert rec is not None
+        rec.update(["EXP DRUM", "FEED"])
+        assert feed.name == "EXP DRUM"
+        assert feed.description == "FEED"
+
 
 # ------------------------------------------------------------------
 # Elements listing
@@ -153,10 +165,12 @@ class TestUpdateElement:
 
     def test_update_elements_batch(self):
         m = Model(PUMP_KDF)
-        m.update_elements({
-            "L1": {"LEN": 200},
-            "P1": {"EFFP": "0.75"},
-        })
+        m.update_elements(
+            {
+                "L1": {"LEN": 200},
+                "P1": {"EFFP": "0.75"},
+            }
+        )
         assert m["L1"]._get("LEN").values[0] == "200"
         assert m["P1"]._get("EFFP").values[0] == "0.75"
 
@@ -165,6 +179,13 @@ class TestUpdateElement:
         with pytest.raises(ElementNotFound):
             m.update_element("FAKE", {"LEN": 100})
 
+    def test_update_rename_to_duplicate_name_auto_resolved(self):
+        m = Model(PUMP_KDF)
+        # Renaming L1 to "P1" (which already exists) should auto-resolve to "P1_1"
+        m.update_element("L1", {"NAME": "P1"})
+        assert m["P1_1"].name == "P1_1"
+        assert "P1_1" in m._name_map
+
 
 # ------------------------------------------------------------------
 # Add element
@@ -172,30 +193,34 @@ class TestUpdateElement:
 
 
 class TestAddElement:
-    def test_add_pipe(self):
+    def test_add_pipe_raises(self):
         m = Model(PUMP_KDF)
-        original_count = m.num_pipes
-        new_pipe = m.add_element("PIPE", "L_NEW")
-        assert new_pipe.name == "L_NEW"
-        assert new_pipe.etype == "PIPE"
-        assert m.num_pipes == original_count + 1
-        assert "L_NEW" in m
+        with pytest.raises(ValueError, match="PIPE cannot be created"):
+            m.add_element("PIPE", "L_NEW")
 
-    def test_add_pipe_with_params(self):
+    def test_add_pipe_with_params_raises(self):
         m = Model(PUMP_KDF)
-        new_pipe = m.add_element("PIPE", "L_P", {"LEN": "50"})
-        assert new_pipe._get("LEN").values[0] == "50"
+        with pytest.raises(ValueError, match="PIPE cannot be created"):
+            m.add_element("PIPE", "L_P", {"LEN": "50"})
+
+    def test_connect_auto_created_pipe_does_not_clone_num_record(self):
+        m = Model(PUMP_KDF)
+        m.add_element("PUMP", "P_NUM_CHECK")
+        m.add_element("VALVE", "V_NUM_CHECK")
+        m.connect_elements("P_NUM_CHECK", "V_NUM_CHECK", pipe_name="L_NUM_CHECK")
+        new_pipe = m["L_NUM_CHECK"]
+        assert m._parser.get("PIPE", new_pipe.index, "NUM") is None
 
     def test_add_elements_batch(self):
         m = Model(PUMP_KDF)
-        orig_pipes = m.num_pipes
         orig_pumps = m.num_pumps
-        results = m.add_elements([
-            ("PIPE", "L_B1", {"LEN": "10"}),
-            ("PUMP", "P_B1", None),
-        ])
+        results = m.add_elements(
+            [
+                ("PUMP", "P_B1", None),
+                ("VALVE", "V_B1", None),
+            ]
+        )
         assert len(results) == 2
-        assert m.num_pipes == orig_pipes + 1
         assert m.num_pumps == orig_pumps + 1
 
     def test_add_unknown_type_raises(self):
@@ -203,16 +228,54 @@ class TestAddElement:
         with pytest.raises(ValueError, match="Unknown element type"):
             m.add_element("FOOBAR", "X1")
 
+    def test_add_duplicate_name_auto_resolved(self):
+        m = Model(PUMP_KDF)
+        # Adding pump with duplicate name "P1" should auto-resolve to "P1_1"
+        pump = m.add_element(Element.PUMP, "P1")
+        assert pump.name == "P1_1"
+        assert "P1_1" in m._name_map
+
+        # Adding again should get "P1_2"
+        pump2 = m.add_element(Element.PUMP, "P1")
+        assert pump2.name == "P1_2"
+
     def test_add_then_save_reload(self):
         m = Model(PUMP_KDF)
-        m.add_element("PIPE", "L_SAVE")
+        m.add_element("PUMP", "P_SAVE")
         with tempfile.NamedTemporaryFile(suffix=".kdf", delete=False) as f:
             tmp = f.name
         try:
             m.save(tmp)
             m2 = Model(tmp)
-            assert "L_SAVE" in m2
-            assert m2.num_pipes == 6  # was 5
+            assert "P_SAVE" in m2
+            assert m2.num_pumps == 2  # was 1
+        finally:
+            os.unlink(tmp)
+
+    def test_add_element_preserves_name_descriptor(self):
+        """Adding an element must preserve the NAME descriptor from the template."""
+        m = Model(CWC_KDF)
+        valve = m.add_element(Element.VALVE, "CV4")
+        name_rec = valve._get("NAME")
+        assert name_rec is not None
+        assert name_rec.values[0] == "CV4"
+        # Template VALVE NAME is "CV","Valve" — descriptor must be kept
+        assert len(name_rec.values) >= 2
+        assert name_rec.values[1] == "Valve"
+
+    def test_add_element_preserves_quoting_on_save(self):
+        """Cloned records must preserve original quoting through save cycle."""
+        m = Model(CWC_KDF)
+        m.add_element(Element.VALVE, "CV4")
+        with tempfile.NamedTemporaryFile(suffix=".kdf", delete=False) as f:
+            tmp = f.name
+        try:
+            m.save(tmp)
+            text = Path(tmp).read_text(encoding="latin-1")
+            # The VALVE CV param must have "50" quoted (case-data string)
+            assert '"\\VALVE",1,"CV","50",0' in text
+            # NAME must include descriptor
+            assert '"\\VALVE",1,"NAME","CV4","Valve"' in text
         finally:
             os.unlink(tmp)
 
@@ -274,6 +337,13 @@ class TestCopyElement:
             # All values should be "0"
             for v in con_rec.values[:2]:
                 assert str(v) == "0"
+
+    def test_copy_duplicate_name_auto_resolved(self):
+        m = Model(PUMP_KDF)
+        # Copying to a duplicate name should auto-resolve
+        new_elem = m.copy_element("L1", "P1")
+        assert new_elem.name == "P1_1"
+        assert "P1_1" in m._name_map
 
 
 # ------------------------------------------------------------------

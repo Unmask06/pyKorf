@@ -36,9 +36,11 @@ Basic workflow::
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Any
 
+from pykorf.definitions.element import Element
 from pykorf.elements import (
     ELEMENT_REGISTRY,
     BaseElement,
@@ -64,6 +66,9 @@ from pykorf.parser import KdfParser
 
 # Path to the bundled default template
 _DEFAULT_TEMPLATE = Path(__file__).resolve().parent / "library" / "New.kdf"
+
+# Logger for model operations
+_logger = logging.getLogger(__name__)
 
 
 class Model:
@@ -154,6 +159,38 @@ class Model:
                 name = elem.name
                 if name:
                     self._name_map[name] = elem
+
+    def _ensure_unique_name(self, name: str, current_name: str | None = None) -> str:
+        """Return a unique name; if *name* already exists, append \"_1\", \"_2\", etc.
+
+        Parameters
+        ----------
+        name:
+            Desired element name.
+        current_name:
+            Current name of element being renamed (for update scenarios).
+
+        Returns:
+        -------
+        str
+            The original *name* if unique, or a modified version with suffix if a duplicate.
+        """
+        existing = self._name_map.get(name)
+        if existing is None:
+            return name
+        if current_name is not None and name == current_name:
+            return name
+
+        # Generate unique name by appending suffix
+        suffix_num = 1
+        while True:
+            unique_name = f"{name}_{suffix_num}"
+            if unique_name not in self._name_map:
+                _logger.info(
+                    f"Element name '{name}' already exists. Using '{unique_name}' instead."
+                )
+                return unique_name
+            suffix_num += 1
 
     def _all_collections(self) -> list[dict]:
         """Return all element collection dicts."""
@@ -275,6 +312,13 @@ class Model:
         >>> model.update_element("L1", {"LEN": 200, "TFLOW": "80;90;60"})
         """
         elem = self.get_element(name)
+        rebuild_collections = False
+        if "NAME" in {key.upper() for key in params}:
+            name_key = next(k for k in params if k.upper() == "NAME")
+            new_name = str(params[name_key])
+            new_name = self._ensure_unique_name(new_name, current_name=elem.name)
+            params[name_key] = new_name  # Update params with unique name
+            rebuild_collections = True
         xy_update: dict[str, float] = {}
         for param, value in params.items():
             key = param.upper()
@@ -291,6 +335,10 @@ class Model:
 
         if xy_update:
             self._update_xy(elem, xy_update)
+
+        # Rebuild collections to update _name_map if NAME was changed
+        if rebuild_collections:
+            self._build_collections()
 
     def update_elements(self, updates: dict[str, dict[str, Any]]) -> None:
         """Batch-update multiple elements.
@@ -351,8 +399,25 @@ class Model:
         The newly created element.
         """
         et = etype.upper()
+        if et == Element.PIPE:
+            raise ValueError(
+                "PIPE cannot be created with add_element(); use "
+                "connect_elements(..., pipe_name=...) so the pipe is created "
+                "with connectivity."
+            )
+        return self._add_element_internal(et, name, params)
+
+    def _add_element_internal(
+        self,
+        etype: str,
+        name: str,
+        params: dict[str, Any] | None = None,
+    ) -> BaseElement:
+        """Internal element creation path used by model operations."""
+        et = etype.upper()
         if et not in ELEMENT_REGISTRY:
             raise ValueError(f"Unknown element type: {etype!r}")
+        name = self._ensure_unique_name(name)
 
         new_idx = self._parser.next_index(et)
         self._parser.clone_records(et, 0, new_idx)
@@ -361,8 +426,11 @@ class Model:
         current_count = self._parser.num_instances(et)
         self._parser.set_num_instances(et, current_count + 1)
 
-        # Set the NAME
-        self._parser.set_value(et, new_idx, "NAME", [name])
+        # Set the NAME (preserve descriptor in values[1:])
+        name_rec = self._parser.get(et, new_idx, "NAME")
+        if name_rec:
+            name_rec.values[0] = name
+            name_rec.raw_line = ""  # mark dirty for re-serialisation
 
         # Rebuild to pick up the new element
         self._build_collections()
@@ -381,6 +449,15 @@ class Model:
             auto_place(self, self.get_element(name))
 
         return self.get_element(name)
+
+    def _next_auto_pipe_name(self) -> str:
+        """Return the next available auto-generated pipe name."""
+        i = 1
+        while True:
+            candidate = f"L_AUTO_{i}"
+            if candidate not in self._name_map:
+                return candidate
+            i += 1
 
     def add_elements(
         self,
@@ -452,6 +529,7 @@ class Model:
         -------
         The newly created copy.
         """
+        dst_name = self._ensure_unique_name(dst_name)
         src = self.get_element(src_name)
         et = src.etype
         new_idx = self._parser.next_index(et)
@@ -462,8 +540,11 @@ class Model:
         current_count = self._parser.num_instances(et)
         self._parser.set_num_instances(et, current_count + 1)
 
-        # Set new NAME
-        self._parser.set_value(et, new_idx, "NAME", [dst_name])
+        # Set new NAME (preserve descriptor in values[1:])
+        name_rec = self._parser.get(et, new_idx, "NAME")
+        if name_rec:
+            name_rec.values[0] = dst_name
+            name_rec.raw_line = ""  # mark dirty for re-serialisation
 
         # Clear connectivity on the copy
         for con_param in ("CON", "NOZI", "NOZO", "NOZL", "NOZ"):
@@ -545,8 +626,9 @@ class Model:
 
     def connect_elements(
         self,
-        name1_or_pairs: str | list[tuple[str, str]],
+        name1_or_pairs: str | list[tuple[str, str] | tuple[str, str, str]],
         name2: str | None = None,
+        pipe_name: str | None = None,
     ) -> None:
         """Connect elements.
 
@@ -557,16 +639,44 @@ class Model:
         Or with a list of pairs::
 
             model.connect_elements([("L1", "P1"), ("L2", "P1")])
+
+        If neither element is a pipe, a new pipe is auto-created and
+        connected to both elements. You may provide ``pipe_name`` (or a
+        third item in each tuple for list mode) to name the auto-created pipe.
         """
         from pykorf.connectivity import connect
 
         if isinstance(name1_or_pairs, list):
-            for n1, n2 in name1_or_pairs:
-                connect(self, n1, n2)
+            for pair in name1_or_pairs:
+                if len(pair) == 2:
+                    n1, n2 = pair
+                    p_name = None
+                elif len(pair) == 3:
+                    n1, n2, p_name = pair
+                else:
+                    raise ValueError(
+                        "Each connection pair must be (name1, name2) or "
+                        "(name1, name2, pipe_name)."
+                    )
+                self.connect_elements(n1, n2, pipe_name=p_name)
         else:
             if name2 is None:
                 raise ValueError("name2 is required when name1 is a string")
-            connect(self, name1_or_pairs, name2)
+            elem1 = self.get_element(name1_or_pairs)
+            elem2 = self.get_element(name2)
+            if elem1.etype == Element.PIPE or elem2.etype == Element.PIPE:
+                if pipe_name is not None:
+                    raise ValueError(
+                        "pipe_name can only be provided when connecting two "
+                        "non-PIPE elements."
+                    )
+                connect(self, name1_or_pairs, name2)
+                return
+
+            new_pipe_name = pipe_name or self._next_auto_pipe_name()
+            self._add_element_internal(Element.PIPE, new_pipe_name)
+            connect(self, new_pipe_name, name1_or_pairs)
+            connect(self, new_pipe_name, name2)
 
     def disconnect_elements(
         self,
@@ -595,6 +705,18 @@ class Model:
         from pykorf.connectivity import check_connectivity
 
         return check_connectivity(self)
+
+    def get_connection(self, name: str) -> list[str]:
+        """Return a list of element names connected to the named element."""
+        from pykorf.connectivity import get_connections
+
+        return get_connections(self, name)
+
+    def get_unconnected_elements(self) -> list[str]:
+        """Return a list of element names that have open connections."""
+        from pykorf.connectivity import get_unconnected_elements
+
+        return get_unconnected_elements(self)
 
     # ------------------------------------------------------------------
     # Layout and positioning
@@ -720,11 +842,22 @@ class Model:
         }
 
     def __repr__(self) -> str:
-        return (
-            f"KorfModel(version={self.version!r}, "
-            f"pipes={self.num_pipes}, pumps={self.num_pumps}, "
-            f"cases={self.num_cases})"
-        )
+        token_to_name = {
+            token: attr.lower()
+            for attr, token in vars(Element).items()
+            if attr.isupper() and isinstance(token, str)
+        }
+
+        parts = [f"version={self.version!r}"]
+        for etype in Element.ALL:
+            if etype in (Element.GEN, Element.SYMBOL, Element.TOOLS, Element.PSEUDO):
+                continue
+            display_name = token_to_name.get(etype, etype.lower())
+            count = self._parser.num_instances(etype)
+            parts.append(f"{display_name}={count}")
+        parts.append(f"cases={self.num_cases}")
+
+        return f"KorfModel({', '.join(parts)})"
 
 
 # Backward compatibility alias
