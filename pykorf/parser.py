@@ -61,8 +61,9 @@ class KdfRecord:
         return format_line(parts)
 
 
-# Matches the opening backslash element type token: "\PIPE", "\PUMP" etc.
-_ETYPE_RE = re.compile(r'^"\\([A-Z]+)"$', re.IGNORECASE)
+# Matches the opening backslash element type token: \PIPE, \PUMP etc.
+# Note: quotes are already stripped by the csv.reader.
+_ETYPE_RE = re.compile(r'^\\([A-Z]+)$', re.IGNORECASE)
 
 
 # ---------------------------------------------------------------------------

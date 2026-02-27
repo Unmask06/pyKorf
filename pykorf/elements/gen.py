@@ -1,19 +1,19 @@
 """General / project-wide settings element (``\\GEN``)."""
 
 from __future__ import annotations
+
 from pykorf.elements.base import BaseElement
 
 
 class General(BaseElement):
-    """
-    Wraps the ``\\GEN,0,...`` records (always index 0, only one instance).
+    """Wraps the ``\\GEN,0,...`` records (always index 0, only one instance).
 
     Typical usage::
 
         gen = model.general
-        print(gen.units)      # 'Metric'
-        print(gen.cases)      # ['1', '2', '3']
-        gen.set_cases(['1','2','3'], ['NORMAL','RATED','MINIMUM'])
+        print(gen.units)  # 'Metric'
+        print(gen.cases)  # ['1', '2', '3']
+        gen.set_cases(["1", "2", "3"], ["NORMAL", "RATED", "MINIMUM"])
     """
 
     ETYPE = "GEN"
@@ -35,8 +35,16 @@ class General(BaseElement):
 
     @property
     def units(self) -> str:
-        """Unit system, e.g. ``'Metric'``."""
+        """Unit system, e.g. ``'Metric'``, ``'Imperial'`` or ``'Custom'``."""
         return self._scalar("UNITS", 0, "Metric")
+
+    @property
+    def units_definitions(self) -> list[str]:
+        """Detailed unit strings from UNITS1-6 records."""
+        results = []
+        for i in range(1, 7):
+            results.extend(self._values(f"UNITS{i}"))
+        return results
 
     @property
     def patm(self) -> float:
@@ -52,8 +60,7 @@ class General(BaseElement):
 
     @property
     def case_numbers(self) -> list[str]:
-        """
-        List of active case numbers, e.g. ``['1', '2', '3']``.
+        """List of active case numbers, e.g. ``['1', '2', '3']``.
         Parsed from the ``CASENO`` semicolon string.
         """
         raw = self._scalar("CASENO", 0, "")
@@ -74,8 +81,7 @@ class General(BaseElement):
         numbers: list[str | int],
         descriptions: list[str] | None = None,
     ) -> None:
-        """
-        Update the active case set.
+        """Update the active case set.
 
         Parameters
         ----------

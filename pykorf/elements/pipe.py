@@ -190,6 +190,25 @@ class Pipe(BaseElement):
         except (TypeError, ValueError):
             return 0.0
 
+    @property
+    def fittings(self) -> list[dict]:
+        """List of fittings defined for this pipe.
+        Each fitting is a dict with: name, count, k, ld, etc.
+        """
+        results = []
+        for i in range(1, 12):
+            vals = self._values(f"FIT{i}")
+            if vals and vals[0] and vals[0] != "None":
+                results.append(
+                    {
+                        "name": str(vals[0]),
+                        "count": vals[1],
+                        "k": vals[2],
+                        "ld": vals[3],
+                    }
+                )
+        return results
+
     # ------------------------------------------------------------------
     # Convenience
     # ------------------------------------------------------------------

@@ -38,6 +38,7 @@ from pykorf.elements import (
     Junction,
     MiscEquipment,
     Pipe,
+    PipeData,
     Product,
     Pump,
     Tee,
@@ -104,6 +105,7 @@ class KorfModel:
         self.junctions: dict[int, Junction] = self._build("JUNC", Junction)
         self.tees: dict[int, Tee] = self._build("TEE", Tee)
         self.vessels: dict[int, Vessel] = self._build("VESSEL", Vessel)
+        self.pipedata: dict[int, PipeData] = self._build("PIPEDATA", PipeData)
 
     def _build(self, etype: str, cls) -> dict:
         """Collect all distinct indices for *etype* from the record list and
