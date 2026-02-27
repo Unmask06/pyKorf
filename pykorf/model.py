@@ -20,15 +20,15 @@ Basic workflow::
 
     # Inspect
     print(model.general.case_descriptions)
-    print(model['L1'].get_flow())
+    print(model["L1"].get_flow())
 
     # Edit by name
-    model.update_element('L1', {'LEN': 200, 'TFLOW': '80;90;60'})
+    model.update_element("L1", {"LEN": 200, "TFLOW": "80;90;60"})
 
     # Add / delete / copy
-    model.add_element('PIPE', 'L10', {'LEN': 50})
-    model.delete_element('L10')
-    model.copy_element('L1', 'L11')
+    model.add_element("PIPE", "L10", {"LEN": 50})
+    model.delete_element("L10")
+    model.copy_element("L1", "L11")
 
     # Save
     model.save("Pumpcases_new.kdf")
@@ -75,10 +75,10 @@ class Model:
         Path to a ``.kdf`` file.  If *None*, a blank model is created
         from the default ``New.kdf`` template.
 
-    Examples
+    Examples:
     --------
-    >>> model = Model()                  # blank from defaults
-    >>> model = Model("Pumpcases.kdf")   # load existing file
+    >>> model = Model()  # blank from defaults
+    >>> model = Model("Pumpcases.kdf")  # load existing file
     """
 
     def __init__(self, path: str | Path | None = None):
@@ -158,10 +158,21 @@ class Model:
     def _all_collections(self) -> list[dict]:
         """Return all element collection dicts."""
         return [
-            self.pipes, self.feeds, self.products, self.pumps,
-            self.valves, self.check_valves, self.orifices, self.exchangers,
-            self.compressors, self.misc_equipment, self.expanders,
-            self.junctions, self.tees, self.vessels, self.pipedata,
+            self.pipes,
+            self.feeds,
+            self.products,
+            self.pumps,
+            self.valves,
+            self.check_valves,
+            self.orifices,
+            self.exchangers,
+            self.compressors,
+            self.misc_equipment,
+            self.expanders,
+            self.junctions,
+            self.tees,
+            self.vessels,
+            self.pipedata,
         ]
 
     def _collection_for_etype(self, etype: str) -> Any:
@@ -259,9 +270,9 @@ class Model:
             token of the record's value list.  Special key ``'X'`` and
             ``'Y'`` update the XY record.
 
-        Example
+        Example:
         -------
-        >>> model.update_element('L1', {'LEN': 200, 'TFLOW': '80;90;60'})
+        >>> model.update_element("L1", {"LEN": 200, "TFLOW": "80;90;60"})
         """
         elem = self.get_element(name)
         xy_update: dict[str, float] = {}
@@ -289,12 +300,14 @@ class Model:
         updates:
             ``{element_name: {param: value, ...}, ...}``
 
-        Example
+        Example:
         -------
-        >>> model.update_elements({
-        ...     'L1': {'LEN': 200},
-        ...     'P1': {'EFFP': 0.75},
-        ... })
+        >>> model.update_elements(
+        ...     {
+        ...         "L1": {"LEN": 200},
+        ...         "P1": {"EFFP": 0.75},
+        ...     }
+        ... )
         """
         for name, params in updates.items():
             self.update_element(name, params)
@@ -333,7 +346,7 @@ class Model:
         params:
             Optional parameter overrides applied after creation.
 
-        Returns
+        Returns:
         -------
         The newly created element.
         """
@@ -358,6 +371,15 @@ class Model:
         if params:
             self.update_element(name, params)
 
+        # Auto-place if user did not explicitly provide X/Y
+        x_or_y_provided = bool(params) and any(
+            key.upper() in {"X", "Y"} for key in params
+        )
+        if not x_or_y_provided:
+            from pykorf.layout import auto_place
+
+            auto_place(self, self.get_element(name))
+
         return self.get_element(name)
 
     def add_elements(
@@ -372,7 +394,7 @@ class Model:
             List of ``(etype, name, params)`` tuples.  ``params`` may be
             *None* for default values.
 
-        Returns
+        Returns:
         -------
         List of newly created elements.
         """
@@ -426,7 +448,7 @@ class Model:
         dst_name:
             Name for the new copy.
 
-        Returns
+        Returns:
         -------
         The newly created copy.
         """
@@ -530,11 +552,11 @@ class Model:
 
         Can be called with two names::
 
-            model.connect_elements('L1', 'P1')
+            model.connect_elements("L1", "P1")
 
         Or with a list of pairs::
 
-            model.connect_elements([('L1', 'P1'), ('L2', 'P1')])
+            model.connect_elements([("L1", "P1"), ("L2", "P1")])
         """
         from pykorf.connectivity import connect
 
@@ -590,7 +612,7 @@ class Model:
     def visualize(self, **kwargs) -> str:
         """Create a text visualization of elements and connections.
 
-        Returns
+        Returns:
         -------
         A multi-line string with element positions.
         """

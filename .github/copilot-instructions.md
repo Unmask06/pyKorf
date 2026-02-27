@@ -1,58 +1,60 @@
 # Copilot Instructions for pyKorf
 
-## Project Overview
+## Project Intent
 
-pyKorf is a Python toolkit for programmatically reading, editing, and writing KORF hydraulic model files (`.kdf`) and other text files in the `library/` folder. The package is designed so that users never need to manually edit `.kdf` files; all modifications happen through the Python API.
+pyKorf is a Python API for reading, editing, validating, and writing KORF `.kdf` files.
+Users should modify models through the API, not by manual line editing.
 
-## Critical Safety Rule
+## Critical Safety Rule (Automation)
 
-**NEVER create a new KORF instance (`korf.exe`).** KORF is a trial-licensed application with a limited number of opens (5 total). The executable must always be kept running, and all automation must connect to the **already-running** instance using `Application().connect()`. Never use `Application().start()` or `subprocess.Popen` to launch KORF.
+**Never launch a new KORF process.**
+Always connect to the already-running instance using `Application().connect()`.
+Do not use `Application().start()` or `subprocess.Popen` for `korf.exe`.
 
-## Architecture
+## Current Architecture
 
-| Module              | Purpose                                                                                 |
-| ------------------- | --------------------------------------------------------------------------------------- |
-| `pykorf.model`      | `KorfModel` – load / edit / save a `.kdf` file                                          |
-| `pykorf.parser`     | `KdfParser` – low-level tokeniser for `.kdf` files                                      |
-| `pykorf.cases`      | `CaseSet` – multi-case helpers                                                          |
-| `pykorf.results`    | `Results` – extract calculated output values                                            |
-| `pykorf.automation` | `KorfApp` – connect to a running KORF and drive the GUI (never launches a new instance) |
-| `pykorf.elements`   | One class per KORF element type                                                         |
-| `pykorf.utils`      | CSV / value helpers                                                                     |
-| `pykorf.exceptions` | Package-wide exception types                                                            |
+- `pykorf.model`: primary `Model` API (`KorfModel` alias kept for compatibility)
+- `pykorf.parser`: `KdfParser` and record-level load/save/token handling
+- `pykorf.elements`: typed element wrappers (`Pipe`, `Pump`, etc.)
+- `pykorf.connectivity`: connect/disconnect/check connection logic
+- `pykorf.layout`: positioning, clash checks, visualization
+- `pykorf.validation`: KDF validation rules
+- `pykorf.cases`: multi-case utilities
+- `pykorf.results`: calculated-results extraction
+- `pykorf.automation`: GUI automation wrapper (`KorfApp`)
 
-## Key Conventions
+## Persistence Contract (Important)
 
-- **Element index 0** is the KORF default template; real instances start at **index 1**.
-- Multi-case values are semicolon-delimited strings, e.g. `"50;55;20"`.
-- The marker `";C"` means a value was calculated by KORF.
-- All record access goes through `KdfParser.get()` / `KdfParser.set_value()`.
-- The parser preserves exact line order for round-trip fidelity.
-- File encoding is `latin-1`.
+- `Model(...)` / `KorfModel.load(...)` reads the file into memory.
+- All model operations (update/add/delete/copy/move/connect/disconnect) are in-memory.
+- File writes happen only through `model.save()` / `model.save_as()`.
+- Unsaved changes are lost when the Python process ends.
 
-## KORF Reference
+## Data & Format Conventions
 
-Refer to `library/korf_manual.md` for the full KORF user guide (converted from PDF). This contains all available elements, features, and specifications for the KORF hydraulic simulation software.
+- Sample assets are in `pykorf/library/` (not repo-root `library/`).
+- Default template for `Model()` is `pykorf/library/New.kdf`.
+- Element index `0` is the template; real instances start at `1`.
+- Multi-case values use semicolon-delimited strings, e.g. `"50;55;20"`.
+- Calculated marker `";C"` means KORF-generated value.
+- KDF encoding is `latin-1`; line endings are `\r\n`.
+- Preserve record order for round-trip fidelity.
 
-## Coding Standards
+## Version Awareness
 
-- Python ≥ 3.9 compatibility.
-- Follow PEP 8; line length limit is 100 characters (configured via Ruff).
-- Use type hints (`from __future__ import annotations`).
-- Docstrings follow NumPy style.
-- **Always use `uv` as the package manager** for dependency management and virtual environments.
-- `pywinauto` and `pywin32` are optional dependencies (`[automation]` extra).
-- No mandatory runtime dependencies for the core library.
-- Tests use `pytest` and operate on sample `.kdf` files in `library/`.
+KDF files encountered here include `KORF_2.0`, `KORF_3.0`, and `KORF_3.6`.
+pyKorf should remain version-aware (e.g., `NOZ` vs `NOZL`, fitting format differences).
 
-## Automation (`open_ui` / `KorfApp`)
+## Coding & Tooling Rules
 
-- `open_ui(file_path)` finds the running KORF process and opens the given file inside it.
-- `KorfApp.connect()` attaches to KORF — it does **not** start a new process.
-- Always re-acquire the window handle before each GUI action for robustness.
+- Python >= 3.9, PEP 8, type hints, NumPy-style docstrings.
+- Keep changes minimal and backward compatible.
+- Prefer existing helpers over duplicating parsing or mapping logic.
+- Use `uv` for dependency/test commands.
+- Use `cmd.exe` command style for shell examples in this repo.
 
-## Future Direction
+## Testing Guidance
 
-A Vue-based GUI will be built on top of this package so users can edit `.kdf` files through a web interface. Keep the Python API clean and JSON-serialisable for easy integration with a frontend.
-
-Use command prompt, not PowerShell, for all commands to avoid cross-platform issues.
+- Use `pytest` with fixtures from `pykorf/library/`.
+- Include tests for persistence boundary (unchanged file before save).
+- Include tests when behavior/API contracts are updated.

@@ -23,8 +23,16 @@ if TYPE_CHECKING:
     from pykorf.elements.base import BaseElement
     from pykorf.model import Model
 
-# Default spacing between elements for auto-placement
-_GRID_SPACING = 200
+# KORF drawing coordinate bounds
+_X_MIN = 1000.0
+_Y_MIN = 1000.0
+_X_MAX = 15500.0
+_Y_MAX = 8500.0
+
+# Spacing rules
+_MIN_SPACING = 1000.0
+_COMFORT_SPACING_X = 1500.0
+_COMFORT_SPACING_Y = 1500.0
 
 
 def get_position(elem: BaseElement) -> tuple[float, float] | None:
@@ -76,20 +84,43 @@ def check_layout(model: Model) -> list[str]:
     issues: list[str] = []
     positions = _all_positions(model)
 
-    # Group by position
+    placed: list[tuple[str, float, float]] = []
+
+    # Bounds + exact overlap checks
     pos_map: dict[tuple[float, float], list[str]] = {}
     for name, pos in positions.items():
         if pos == (0.0, 0.0):
             continue
-        key = (round(pos[0], 1), round(pos[1], 1))
+        x, y = float(pos[0]), float(pos[1])
+        placed.append((name, x, y))
+
+        if not (_X_MIN <= x <= _X_MAX and _Y_MIN <= y <= _Y_MAX):
+            issues.append(
+                f"Element {name} at ({x:.1f}, {y:.1f}) is outside layout bounds "
+                f"[{_X_MIN:.0f},{_Y_MIN:.0f}]–[{_X_MAX:.0f},{_Y_MAX:.0f}]"
+            )
+
+        key = (round(x, 1), round(y, 1))
         pos_map.setdefault(key, []).append(name)
 
     for pos, names in pos_map.items():
         if len(names) > 1:
             issues.append(
-                f"Overlapping elements at ({pos[0]}, {pos[1]}): "
-                + ", ".join(names)
+                f"Overlapping elements at ({pos[0]}, {pos[1]}): " + ", ".join(names)
             )
+
+    # Minimum spacing checks (Euclidean)
+    for i in range(len(placed)):
+        n1, x1, y1 = placed[i]
+        for j in range(i + 1, len(placed)):
+            n2, x2, y2 = placed[j]
+            dx = x2 - x1
+            dy = y2 - y1
+            dist = (dx * dx + dy * dy) ** 0.5
+            if dist < _MIN_SPACING:
+                issues.append(
+                    f"Elements {n1} and {n2} are too close ({dist:.1f} < {_MIN_SPACING:.0f})"
+                )
 
     return issues
 
@@ -99,24 +130,42 @@ def auto_place(model: Model, elem: BaseElement) -> None:
 
     Finds an empty grid position and sets the element's XY accordingly.
     """
-    existing = set(_all_positions(model).values())
-    # Remove (0,0) from consideration
-    existing.discard((0.0, 0.0))
+    existing = []
+    for name, pos in _all_positions(model).items():
+        if name == elem.name or pos == (0.0, 0.0):
+            continue
+        existing.append((float(pos[0]), float(pos[1])))
 
-    # Try grid positions in a spiral pattern
-    x, y = _GRID_SPACING, _GRID_SPACING
-    for col in range(100):
-        for row in range(100):
+    def _fits(candidate: tuple[float, float]) -> bool:
+        cx, cy = candidate
+        if not (_X_MIN <= cx <= _X_MAX and _Y_MIN <= cy <= _Y_MAX):
+            return False
+        for ex, ey in existing:
+            dx = cx - ex
+            dy = cy - ey
+            dist = (dx * dx + dy * dy) ** 0.5
+            if dist < _MIN_SPACING:
+                return False
+        return True
+
+    cols = int((_X_MAX - _X_MIN) // _COMFORT_SPACING_X) + 1
+    rows = int((_Y_MAX - _Y_MIN) // _COMFORT_SPACING_Y) + 1
+
+    for row in range(rows):
+        for col in range(cols):
             candidate = (
-                float(_GRID_SPACING + col * _GRID_SPACING),
-                float(_GRID_SPACING + row * _GRID_SPACING),
+                _X_MIN + col * _COMFORT_SPACING_X,
+                _Y_MIN + row * _COMFORT_SPACING_Y,
             )
-            if candidate not in existing:
+            if _fits(candidate):
                 set_position(elem, candidate[0], candidate[1])
                 return
 
-    # Fallback: place far away
-    set_position(elem, 10000.0, 10000.0)
+    raise LayoutError(
+        "No available layout position within bounds "
+        f"[{_X_MIN:.0f},{_Y_MIN:.0f}]–[{_X_MAX:.0f},{_Y_MAX:.0f}] "
+        f"with minimum spacing {_MIN_SPACING:.0f}."
+    )
 
 
 def visualize(model: Model, **kwargs) -> str:
@@ -162,8 +211,16 @@ def _format_connections(model: Model) -> list[str]:
     pipe_names = {idx: elem.name for idx, elem in model.pipes.items() if idx >= 1}
 
     # Equipment connections (CON records)
-    for attr in ("pumps", "valves", "check_valves", "orifices", "exchangers",
-                 "compressors", "misc_equipment", "expanders"):
+    for attr in (
+        "pumps",
+        "valves",
+        "check_valves",
+        "orifices",
+        "exchangers",
+        "compressors",
+        "misc_equipment",
+        "expanders",
+    ):
         collection = getattr(model, attr, {})
         for idx, elem in collection.items():
             if idx == 0:
@@ -195,9 +252,7 @@ def _format_connections(model: Model) -> list[str]:
                         if pipe_ref != 0:
                             p_name = pipe_names.get(pipe_ref, f"?{pipe_ref}")
                             arrow = "-->" if elem.etype == "FEED" else "<--"
-                            conn_lines.append(
-                                f"  [{elem.name}] {arrow} {p_name}"
-                            )
+                            conn_lines.append(f"  [{elem.name}] {arrow} {p_name}")
                     except (ValueError, TypeError):
                         pass
                     break
