@@ -41,12 +41,46 @@ pip install -e ".[dev]"
 
 ## Quick Start
 
-### 1. Load and inspect a model
+### Persistence model (important)
+
+- `Model(...)` / `KorfModel.load(...)` reads the `.kdf` into memory.
+- Any manipulation through the Model API (`update_element`, `add_element`,
+  `delete_element`, `copy_element`, `move_element`, `connect_elements`, etc.)
+  modifies only the in-memory model state.
+- The source file is not edited directly during these operations.
+- Disk writes happen only when you call `model.save(...)` or `model.save_as(...)`.
+- If you do not save, changes are discarded when the Python process ends.
+
+### Create a basic model from defaults
+
+```python
+from pykorf import Model
+
+# Start from the bundled New.kdf defaults
+model = Model()
+
+# Add a minimal Feed -> Pipe -> Product network
+model.add_element("FEED", "S1", {"PRES": "50"})
+model.add_element("PIPE", "L1", {"LEN": "100", "DIA": "6", "TFLOW": "50"})
+model.add_element("PROD", "D1", {"PRES": "1000"})
+
+model.connect_elements("L1", "S1")
+model.connect_elements("L1", "D1")
+
+# Optional safety check before save
+issues = model.validate()
+if issues:
+    raise ValueError(issues)
+
+model.save("basic_model.kdf")
+```
+
+### 1. Load and inspect an existing model
 
 ```python
 from pykorf import KorfModel
 
-model = KorfModel.load("library/Pumpcases.kdf")
+model = KorfModel.load("pykorf/library/Pumpcases.kdf")
 print(model)
 # KorfModel(version='KORF_2.0', pipes=5, pumps=1, cases=3)
 
@@ -122,7 +156,7 @@ from pykorf.automation import KorfApp
 
 # Connect to the running KORF instance (no new window opened)
 with KorfApp.connect() as app:
-    app.reload_model("library/Pumpcases.kdf")
+    app.reload_model("pykorf/library/Pumpcases.kdf")
     app.run_hydraulics()
     app.wait_for_run(timeout=30)
     app.save_model()
@@ -160,7 +194,7 @@ with KorfApp.connect() as app:
 pytest
 ```
 
-All tests use the sample `.kdf` files in `library/` and require no KORF licence.
+All tests use the sample `.kdf` files in `pykorf/library/` and require no KORF licence.
 
 ---
 
@@ -200,7 +234,7 @@ pyKorf/
 │   ├── test_elements.py
 │   ├── test_cases.py
 │   └── test_utils.py
-├── library/                  # Sample .kdf files
+├── pykorf/library/           # Sample .kdf files
 │   ├── Pumpcases.kdf
 │   └── crane10.kdf
 ├── korf_automation.ipynb     # Step-by-step automation notebook

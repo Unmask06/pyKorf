@@ -15,6 +15,12 @@ Usage (typical notebook workflow)::
     app.save_model()
     app.disconnect()
 
+Convenience function::
+
+    from pykorf.automation import open_ui
+
+    open_ui("library/Pumpcases.kdf")  # opens in the running KORF instance
+
 All methods are safe to call in succession; the window handle is
 re-acquired before each action to stay robust against dialog changes.
 """
@@ -250,3 +256,50 @@ class KorfApp:
 
     def __exit__(self, *_) -> None:
         self.disconnect()
+
+
+# ----------------------------------------------------------------------
+# Module-level convenience function
+# ----------------------------------------------------------------------
+
+
+def open_ui(
+    file_path: str | Path,
+    korf_path: str = KORF_PATH_DEFAULT,
+) -> KorfApp:
+    """Open a file in the **already-running** KORF instance.
+
+    This is the recommended one-liner for interactive use.  It connects to
+    the existing KORF process and loads *file_path* via ``Ctrl+O``.
+
+    **This function never creates a new KORF instance.**
+
+    Parameters
+    ----------
+    file_path:
+        Path to the ``.kdf`` file to open.
+    korf_path:
+        Path to the KORF executable (used only to identify the running
+        process, not to launch it).
+
+    Returns
+    -------
+    KorfApp
+        A connected :class:`KorfApp` handle that can be used for further
+        automation (e.g. running hydraulics, saving).
+
+    Raises
+    ------
+    AutomationError
+        If no running KORF instance is found.
+
+    Examples
+    --------
+    >>> from pykorf.automation import open_ui
+    >>> app = open_ui("library/Pumpcases.kdf")   # doctest: +SKIP
+    >>> app.run_hydraulics()                      # doctest: +SKIP
+    >>> app.disconnect()                          # doctest: +SKIP
+    """
+    app = KorfApp.connect(korf_path=korf_path)
+    app.reload_model(file_path)
+    return app

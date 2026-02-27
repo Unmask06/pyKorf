@@ -6,7 +6,7 @@ Run with:  pytest tests/
 from pathlib import Path
 from pykorf.model import KorfModel
 
-SAMPLES_DIR = Path(__file__).parent.parent / "library"
+SAMPLES_DIR = Path(__file__).parent.parent / "pykorf" / "library"
 PUMP_KDF = SAMPLES_DIR / "Pumpcases.kdf"
 CRANE_KDF = SAMPLES_DIR / "crane10.kdf"
 

@@ -11,7 +11,7 @@ from pykorf.model import KorfModel
 from pykorf.cases import CaseSet
 from pykorf.results import Results
 
-SAMPLES_DIR = Path(__file__).parent.parent / "library"
+SAMPLES_DIR = Path(__file__).parent.parent / "pykorf" / "library"
 PUMP_KDF = SAMPLES_DIR / "Pumpcases.kdf"
 
 

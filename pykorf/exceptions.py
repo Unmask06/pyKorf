@@ -21,3 +21,15 @@ class CaseError(KorfError):
 
 class AutomationError(KorfError):
     """Raised when KORF UI automation fails."""
+
+
+class ValidationError(KorfError):
+    """Raised when KDF model validation fails."""
+
+
+class ConnectivityError(KorfError):
+    """Raised when an element connection operation is invalid."""
+
+
+class LayoutError(KorfError):
+    """Raised when an element layout or positioning issue is detected."""
