@@ -20,6 +20,7 @@ elements/    – one module per KORF element type
 connectivity – connection management
 layout       – element positioning
 validation   – KDF format compliance
+visualization/ – PyVis network visualization (requires pyvis, pydantic)
 """
 
 __version__ = "0.2.0"
@@ -39,12 +40,14 @@ from pykorf.exceptions import (
 )
 from pykorf.model import KorfModel, Model
 from pykorf.results import Results
+from pykorf.visualization import Visualizer
 
 __all__ = [
     "Model",
     "KorfModel",
     "CaseSet",
     "Results",
+    "Visualizer",
     "KorfError",
     "ParseError",
     "ElementNotFound",

@@ -806,6 +806,19 @@ class Model:
 
         return visualize(self, **kwargs)
 
+    def visualize_network(self, path: str | Path = "network.html") -> None:
+        """Generate an interactive PyVis HTML visualization.
+
+        Requires ``pyvis`` and ``pydantic`` to be installed.
+
+        Args:
+            path: Output HTML file path.
+        """
+        from pykorf.visualization import Visualizer
+
+        viz = Visualizer(self)
+        viz.to_html(path)
+
     # ------------------------------------------------------------------
     # Validation
     # ------------------------------------------------------------------
