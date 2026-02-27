@@ -1,6 +1,6 @@
 """Tests for the visualization module.
 
-Run with:  PYTHONPATH=. python -m pytest tests/test_visualization.py -v
+Run with:  set PYTHONPATH=. && python -m pytest tests/test_visualization.py -v
 """
 
 import json

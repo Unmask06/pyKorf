@@ -119,13 +119,10 @@ class Visualizer:
         from pykorf.connectivity import _is_element_connected_to_pipe
 
         edges: list[EdgeData] = []
-        node_ids = {n.id for n in self._network_data.nodes} if hasattr(self, "_network_data") else set()
-        if not node_ids:
-            # First call during __init__; build set from model
-            positions = _all_positions(self._model)
-            node_ids = {
-                name for name, pos in positions.items() if pos != (0.0, 0.0)
-            }
+        positions = _all_positions(self._model)
+        node_ids = {
+            name for name, pos in positions.items() if pos != (0.0, 0.0)
+        }
 
         for idx, pipe_elem in self._model.pipes.items():
             if idx == 0:
