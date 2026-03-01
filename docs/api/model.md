@@ -13,6 +13,10 @@ The `Model` class is the main entry point for working with KDF files.
         - load
         - save
         - save_as
+        - to_dataframes
+        - from_dataframes
+        - to_excel
+        - from_excel
         - summary
         - validate
         - get_element

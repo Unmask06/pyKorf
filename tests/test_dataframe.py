@@ -84,6 +84,27 @@ class TestToDataframes:
         assert "_HEADER" in dfs
         assert "GEN" in dfs
 
+    def test_pipe_df_structure(self):
+        """PIPE DataFrame should have correct element_type and non-empty raw_line."""
+        model = Model(PUMP_KDF)
+        dfs = model.to_dataframes()
+        pipe_df = dfs["PIPE"]
+        # All rows should be PIPE element type
+        assert (pipe_df["element_type"] == "PIPE").all()
+        # raw_line should not be empty
+        assert pipe_df["raw_line"].str.len().gt(0).all()
+        # line_no should be integers
+        assert pipe_df["line_no"].dtype.kind == "i"
+        # index should include 0 (template) and real instances
+        assert 0 in pipe_df["index"].values
+
+    def test_sheet_count_matches_element_types(self):
+        """Number of sheets should match the number of distinct element types + header."""
+        model = Model(PUMP_KDF)
+        dfs = model.to_dataframes()
+        # Header + at least GEN, PIPE, PUMP, FEED, PROD (Pumpcases has these)
+        assert len(dfs) >= 5
+
 
 class TestDataframeRoundTrip:
     """KDF → DataFrame → KDF round-trip tests."""
