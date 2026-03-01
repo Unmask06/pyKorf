@@ -80,10 +80,11 @@ class Model:
         path: Path to a ``.kdf`` file. If ``None``, a blank model is created
             from the default ``New.kdf`` template.
 
-    Examples:
-    --------
-    >>> model = Model()  # blank from defaults
-    >>> model = Model("Pumpcases.kdf")  # load existing file
+    Example:
+        ```python
+        model = Model()  # blank from defaults
+        model = Model("Pumpcases.kdf")  # load existing file
+        ```
     """
 
     def __init__(self, path: str | Path | None = None):
@@ -306,18 +307,16 @@ class Model:
     def update_element(self, name: str, params: dict[str, Any]) -> None:
         """Update parameters of the named element.
 
-        Parameters
-        ----------
-        name:
-            Element NAME tag (e.g. ``'L1'``, ``'P1'``).
-        params:
-            Dict of ``{KDF_PARAM: value}``.  Values are set as the first
-            token of the record's value list.  Special key ``'X'`` and
-            ``'Y'`` update the XY record.
+        Args:
+            name: Element NAME tag (e.g. ``'L1'``, ``'P1'``).
+            params: Dict of ``{KDF_PARAM: value}``. Values are set as the first
+                token of the record's value list. Special key ``'X'`` and
+                ``'Y'`` update the XY record.
 
         Example:
-        -------
-        >>> model.update_element("L1", {"LEN": 200, "TFLOW": "80;90;60"})
+            ```python
+            model.update_element("L1", {"LEN": 200, "TFLOW": "80;90;60"})
+            ```
         """
         elem = self.get_element(name)
         rebuild_collections = False
@@ -351,19 +350,18 @@ class Model:
     def update_elements(self, updates: dict[str, dict[str, Any]]) -> None:
         """Batch-update multiple elements.
 
-        Parameters
-        ----------
-        updates:
-            ``{element_name: {param: value, ...}, ...}``
+        Args:
+            updates: ``{element_name: {param: value, ...}, ...}``
 
         Example:
-        -------
-        >>> model.update_elements(
-        ...     {
-        ...         "L1": {"LEN": 200},
-        ...         "P1": {"EFFP": 0.75},
-        ...     }
-        ... )
+            ```python
+            model.update_elements(
+                {
+                    "L1": {"LEN": 200},
+                    "P1": {"EFFP": 0.75},
+                }
+            )
+            ```
         """
         for name, params in updates.items():
             self.update_element(name, params)

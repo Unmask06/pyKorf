@@ -11,7 +11,7 @@ KDF format notes
 * A value of ``";C"`` indicates *calculated* – KORF filled it in during a run.
 * Index 0 of every element type is the *default template*; actual instances
   start at index 1.
-* ``"\ELEMENT",0,"NUM",n`` stores the count of actual instances.
+* ``"\\ELEMENT",0,"NUM",n`` stores the count of actual instances.
 """
 
 from __future__ import annotations

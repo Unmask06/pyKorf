@@ -68,6 +68,17 @@ cli = [
     "click>=8.0",
     "rich>=13.0",
 ]
+docs = [
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.5,<9.7",
+    "mkdocstrings[python]>=0.25",
+    "mkdocs-minify-plugin>=0.8",
+    "mkdocs-git-revision-date-localized-plugin>=1.2",
+    "mkdocs-git-committers-plugin-2>=2.3",
+    "mkdocs-redirects>=1.2",
+    "pymdown-extensions>=10.8",
+    "mkdocs-awesome-pages-plugin>=2.9",
+]
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
@@ -76,12 +87,9 @@ dev = [
     "mypy>=1.5",
     "ruff>=0.1.0",
     "pre-commit>=3.0",
-    "mkdocs>=1.5",
-    "mkdocs-material>=9.0",
-    "mkdocstrings[python]>=0.23",
 ]
 all = [
-    "pykorf[automation,visualization,dataframe,export,cli]",
+    "pykorf[automation,visualization,dataframe,export,cli,docs]",
 ]
 
 [project.scripts]
@@ -93,6 +101,38 @@ Documentation = "https://pykorf.readthedocs.io"
 Repository = "https://github.com/pykorf/pykorf"
 Issues = "https://github.com/pykorf/pykorf/issues"
 Changelog = "https://github.com/pykorf/pykorf/blob/main/CHANGELOG.md"
+
+[tool.uv]
+default-groups = ["dev"]
+
+[dependency-groups]
+dev = [
+    {include-group = "test"},
+    {include-group = "lint"},
+    {include-group = "docs"},
+]
+test = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "pytest-asyncio>=0.21",
+    "pytest-xdist>=3.0",
+]
+lint = [
+    "mypy>=1.5",
+    "ruff>=0.1.0",
+    "pre-commit>=3.0",
+]
+docs = [
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.25",
+    "mkdocs-minify-plugin>=0.8",
+    "mkdocs-git-revision-date-localized-plugin>=1.2",
+    "mkdocs-git-committers-plugin-2>=2.3",
+    "mkdocs-redirects>=1.2",
+    "pymdown-extensions>=10.8",
+    "mkdocs-awesome-pages-plugin>=2.9",
+]
 
 [tool.setuptools]
 packages = ["pykorf"]
