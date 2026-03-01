@@ -178,7 +178,7 @@ def update_pipe_schedule(
     }
 
     # Get current values for reporting
-    old_values = {param: pipe.get_param(param, "N/A") for param in updates.keys()}
+    old_values = {param: pipe.get_param(param, "N/A") for param in updates}
 
     if not dry_run:
         for param, value in updates.items():

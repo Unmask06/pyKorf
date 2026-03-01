@@ -1,13 +1,19 @@
 """Basic pyKorf Usage Examples.
-===========================
 This example demonstrates the core functionality of pyKorf for working
 with KORF hydraulic model files.
+
+For comprehensive use case examples, see:
+- 01_create_pump_circuit.py - Create hydraulic circuits
+- 02_add_pms_from_excel.py - PMS management
+- 03_add_fluid_properties.py - Fluid properties
+- 04_multi_case_analysis.py - Multi-case workflows
+- 05_export_and_visualize.py - Export and visualization
 """
 
 from pykorf import CaseSet, Model, Query
 
 
-def example_load_and_inspect():
+def example_load_and_inspect(): -> None:
     """Load a model and inspect its contents."""
     print("=" * 60)
     print("Example: Load and Inspect")

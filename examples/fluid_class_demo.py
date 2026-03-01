@@ -25,7 +25,7 @@ Can now be replaced with direct Python code:
 
 from __future__ import annotations
 
-from pykorf import Model, Fluid
+from pykorf import Fluid, Model
 
 
 def demo_basic_usage():
@@ -222,9 +222,9 @@ pipe.set_fluid(fluid)
     print()
     print("KORF GUI will display (depending on your settings):")
     print("-" * 40)
-    print(f"  Temperature: 52.25°C  (or 126.1°F)")
-    print(f"  Pressure: 3.987 barg  (or 57.9 psig)")
-    print(f"  Density: 570.24 kg/m³ (or 35.6 lb/ft³)")
+    print("  Temperature: 52.25°C  (or 126.1°F)")
+    print("  Pressure: 3.987 barg  (or 57.9 psig)")
+    print("  Density: 570.24 kg/m³ (or 35.6 lb/ft³)")
     print()
 
 
@@ -276,7 +276,7 @@ def demo_comparison_with_text_import():
     # Show equivalent code
     print("Equivalent Python code:")
     print("-" * 40)
-    code = '''
+    code = """
 from pykorf import Model, Fluid
 
 # Load model
@@ -297,7 +297,7 @@ pipe.set_fluid(fluid)
 
 # Save
 model.save()
-'''
+"""
     print(code)
 
 
@@ -327,14 +327,14 @@ def demo_batch_update():
 
     print("\nCode to apply:")
     print("-" * 40)
-    code = '''
+    code = """
 for line_name, data in lines_data.items():
     pipe = model.get_element(line_name)
     fluid = Fluid.single_phase_liquid(**data)
     pipe.set_fluid(fluid)
     
 model.save()
-'''
+"""
     print(code)
 
 

@@ -96,21 +96,21 @@ def create_pms_master_data() -> pd.DataFrame:
             6.02, 8.56,          # 4-inch SS wall thicknesses
         ],
         "Description": [
-            "2\" Sch 40 CS",
-            "2\" Sch 80 CS",
-            "2\" Sch 160 CS",
-            "4\" Sch 40 CS",
-            "4\" Sch 80 CS",
-            "6\" Sch 40 CS",
-            "6\" Sch 80 CS",
-            "8\" Sch 40 CS",
-            "2\" Sch 40S SS",
-            "2\" Sch 80S SS",
-            "4\" Sch 40S SS",
-            "4\" Sch 80S SS",
+            '2" Sch 40 CS',
+            '2" Sch 80 CS',
+            '2" Sch 160 CS',
+            '4" Sch 40 CS',
+            '4" Sch 80 CS',
+            '6" Sch 40 CS',
+            '6" Sch 80 CS',
+            '8" Sch 40 CS',
+            '2" Sch 40S SS',
+            '2" Sch 80S SS',
+            '4" Sch 40S SS',
+            '4" Sch 80S SS',
         ],
     }
-    
+
     return pd.DataFrame(data)
 
 
@@ -258,7 +258,7 @@ def create_fluid_properties_data() -> pd.DataFrame:
             "Cooling Water - MINIMUM",
         ],
     }
-    
+
     return pd.DataFrame(data)
 
 
@@ -294,7 +294,7 @@ def create_line_to_pms_mapping() -> pd.DataFrame:
             "Vent Line",
         ],
     }
-    
+
     return pd.DataFrame(data)
 
 
@@ -309,27 +309,27 @@ def generate_templates(output_dir: Path) -> dict[str, Path]:
     """
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    
+
     generated_files = {}
-    
+
     # Template 1: Combined PMS and Fluid Properties
     combined_file = output_dir / "pms_and_fluid_template.xlsx"
     with pd.ExcelWriter(combined_file, engine="openpyxl") as writer:
         # Sheet 1: PMS Master
         pms_df = create_pms_master_data()
         pms_df.to_excel(writer, sheet_name="PMS_Master", index=False)
-        
+
         # Sheet 2: Fluid Properties
         fluid_df = create_fluid_properties_data()
         fluid_df.to_excel(writer, sheet_name="Fluid_Properties", index=False)
-        
+
         # Sheet 3: Line to PMS Mapping (optional)
         mapping_df = create_line_to_pms_mapping()
         mapping_df.to_excel(writer, sheet_name="Line_to_PMS_Mapping", index=False)
-    
+
     generated_files["combined"] = combined_file
     print(f"✓ Created: {combined_file}")
-    
+
     # Template 2: PMS Only
     pms_file = output_dir / "pms_template.xlsx"
     with pd.ExcelWriter(pms_file, engine="openpyxl") as writer:
@@ -337,19 +337,19 @@ def generate_templates(output_dir: Path) -> dict[str, Path]:
         pms_df.to_excel(writer, sheet_name="PMS_Master", index=False)
         mapping_df = create_line_to_pms_mapping()
         mapping_df.to_excel(writer, sheet_name="Line_to_PMS_Mapping", index=False)
-    
+
     generated_files["pms_only"] = pms_file
     print(f"✓ Created: {pms_file}")
-    
+
     # Template 3: Fluid Properties Only
     fluid_file = output_dir / "fluid_properties_template.xlsx"
     with pd.ExcelWriter(fluid_file, engine="openpyxl") as writer:
         fluid_df = create_fluid_properties_data()
         fluid_df.to_excel(writer, sheet_name="Fluid_Properties", index=False)
-    
+
     generated_files["fluid_only"] = fluid_file
     print(f"✓ Created: {fluid_file}")
-    
+
     return generated_files
 
 
@@ -362,15 +362,15 @@ def print_usage_instructions(generated_files: dict[str, Path]):
     print("\n" + "="*70)
     print("EXCEL TEMPLATES GENERATED SUCCESSFULLY")
     print("="*70)
-    
+
     print("\n📁 Generated Files:")
     for name, path in generated_files.items():
         print(f"   • {name}: {path}")
-    
+
     print("\n" + "-"*70)
     print("USAGE INSTRUCTIONS")
     print("-"*70)
-    
+
     print("""
 1. PMS Master Sheet (for Pipe Schedule Updates):
    ─────────────────────────────────────────────
@@ -401,7 +401,7 @@ def print_usage_instructions(generated_files: dict[str, Path]):
    Maps line names to PMS codes for bulk updates.
 
 """)
-    
+
     print("-"*70)
     print("NEXT STEPS")
     print("-"*70)
@@ -424,7 +424,7 @@ For dry run (preview changes without saving):
        --pms-excel "pms_template.xlsx" \\
        --dry-run
 """)
-    
+
     print("="*70)
 
 
@@ -438,20 +438,20 @@ def main():
         default="./templates",
         help="Output directory for templates (default: ./templates)"
     )
-    
+
     args = parser.parse_args()
-    
+
     output_dir = Path(args.output_dir)
-    
+
     print("Generating Excel templates for pyKorf enterprise workflows...")
     print()
-    
+
     try:
         generated_files = generate_templates(output_dir)
         print_usage_instructions(generated_files)
-        
+
         print(f"\n✅ Templates saved to: {output_dir.absolute()}")
-        
+
     except Exception as e:
         print(f"\n❌ Error: {e}")
         raise
