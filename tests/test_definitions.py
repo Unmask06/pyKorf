@@ -1,4 +1,4 @@
-from pykorf.definitions import PROPERTIES_BY_ELEMENT, Element, Orifice, Pipe
+from pykorf.definitions import Common, PROPERTIES_BY_ELEMENT, Element, Orifice, Pipe
 
 
 def test_element_tokens():
@@ -16,3 +16,9 @@ def test_property_map_has_pipe_and_orifice():
     assert "PRES" in PROPERTIES_BY_ELEMENT[Element.PIPE]
     assert "DP" in PROPERTIES_BY_ELEMENT[Element.ORIFICE]
     assert Orifice.DP == "DP"
+
+
+def test_common_properties():
+    assert Common.NAME == "NAME"
+    assert Common.NUM == "NUM"
+    assert Common.XY == "XY"

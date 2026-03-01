@@ -23,10 +23,12 @@ Basic workflow::
     print(model["L1"].get_flow())
 
     # Edit by name
-    model.update_element("L1", {"LEN": 200, "TFLOW": "80;90;60"})
+    from pykorf.definitions import Pipe
+    model.update_element("L1", {Pipe.LEN: 200, Pipe.TFLOW: "80;90;60"})
 
     # Add / delete / copy
-    model.add_element("PIPE", "L10", {"LEN": 50})
+    from pykorf.definitions import Element
+    model.add_element(Element.PIPE, "L10", {Pipe.LEN: 50})
     model.delete_element("L10")
     model.copy_element("L1", "L11")
 
@@ -40,7 +42,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from pykorf.definitions.element import Element
+from pykorf.definitions import Common, Element
 from pykorf.elements import (
     ELEMENT_REGISTRY,
     BaseElement,
@@ -74,11 +76,9 @@ _logger = logging.getLogger(__name__)
 class Model:
     """In-memory representation of a KORF .kdf hydraulic model file.
 
-    Parameters
-    ----------
-    path:
-        Path to a ``.kdf`` file.  If *None*, a blank model is created
-        from the default ``New.kdf`` template.
+    Args:
+        path: Path to a ``.kdf`` file. If ``None``, a blank model is created
+            from the default ``New.kdf`` template.
 
     Examples:
     --------
@@ -112,23 +112,23 @@ class Model:
         self.general = General(self._parser)
 
         # Build typed collections for element types that have instances
-        self.pipes: dict[int, Pipe] = self._build("PIPE", Pipe)
-        self.feeds: dict[int, Feed] = self._build("FEED", Feed)
-        self.products: dict[int, Product] = self._build("PROD", Product)
-        self.pumps: dict[int, Pump] = self._build("PUMP", Pump)
-        self.valves: dict[int, Valve] = self._build("VALVE", Valve)
-        self.check_valves: dict[int, CheckValve] = self._build("CHECK", CheckValve)
-        self.orifices: dict[int, FlowOrifice] = self._build("FO", FlowOrifice)
-        self.exchangers: dict[int, HeatExchanger] = self._build("HX", HeatExchanger)
-        self.compressors: dict[int, Compressor] = self._build("COMP", Compressor)
+        self.pipes: dict[int, Pipe] = self._build(Element.PIPE, Pipe)
+        self.feeds: dict[int, Feed] = self._build(Element.FEED, Feed)
+        self.products: dict[int, Product] = self._build(Element.PROD, Product)
+        self.pumps: dict[int, Pump] = self._build(Element.PUMP, Pump)
+        self.valves: dict[int, Valve] = self._build(Element.VALVE, Valve)
+        self.check_valves: dict[int, CheckValve] = self._build(Element.CHECK, CheckValve)
+        self.orifices: dict[int, FlowOrifice] = self._build(Element.ORIFICE, FlowOrifice)
+        self.exchangers: dict[int, HeatExchanger] = self._build(Element.HX, HeatExchanger)
+        self.compressors: dict[int, Compressor] = self._build(Element.COMP, Compressor)
         self.misc_equipment: dict[int, MiscEquipment] = self._build(
-            "MISC", MiscEquipment
+            Element.MISC, MiscEquipment
         )
-        self.expanders: dict[int, Expander] = self._build("EXPAND", Expander)
-        self.junctions: dict[int, Junction] = self._build("JUNC", Junction)
-        self.tees: dict[int, Tee] = self._build("TEE", Tee)
-        self.vessels: dict[int, Vessel] = self._build("VESSEL", Vessel)
-        self.pipedata: dict[int, PipeData] = self._build("PIPEDATA", PipeData)
+        self.expanders: dict[int, Expander] = self._build(Element.EXPAND, Expander)
+        self.junctions: dict[int, Junction] = self._build(Element.JUNC, Junction)
+        self.tees: dict[int, Tee] = self._build(Element.TEE, Tee)
+        self.vessels: dict[int, Vessel] = self._build(Element.VESSEL, Vessel)
+        self.pipedata: dict[int, PipeData] = self._build(Element.PIPEDATA, PipeData)
 
         # Name → element lookup
         self._rebuild_name_map()
@@ -223,35 +223,35 @@ class Model:
     def _collection_for_etype(self, etype: str) -> Any:
         """Return the collection dict for a given element type keyword."""
         et = etype.upper()
-        if et == "PIPE":
+        if et == Element.PIPE:
             return self.pipes
-        if et == "FEED":
+        if et == Element.FEED:
             return self.feeds
-        if et == "PROD":
+        if et == Element.PROD:
             return self.products
-        if et == "PUMP":
+        if et == Element.PUMP:
             return self.pumps
-        if et == "VALVE":
+        if et == Element.VALVE:
             return self.valves
-        if et == "CHECK":
+        if et == Element.CHECK:
             return self.check_valves
-        if et == "FO":
+        if et == Element.ORIFICE:
             return self.orifices
-        if et == "HX":
+        if et == Element.HX:
             return self.exchangers
-        if et == "COMP":
+        if et == Element.COMP:
             return self.compressors
-        if et == "MISC":
+        if et == Element.MISC:
             return self.misc_equipment
-        if et == "EXPAND":
+        if et == Element.EXPAND:
             return self.expanders
-        if et == "JUNC":
+        if et == Element.JUNC:
             return self.junctions
-        if et == "TEE":
+        if et == Element.TEE:
             return self.tees
-        if et == "VESSEL":
+        if et == Element.VESSEL:
             return self.vessels
-        if et == "PIPEDATA":
+        if et == Element.PIPEDATA:
             return self.pipedata
         return None
 
@@ -321,8 +321,8 @@ class Model:
         """
         elem = self.get_element(name)
         rebuild_collections = False
-        if "NAME" in {key.upper() for key in params}:
-            name_key = next(k for k in params if k.upper() == "NAME")
+        if Common.NAME in {key.upper() for key in params}:
+            name_key = next(k for k in params if k.upper() == Common.NAME)
             new_name = str(params[name_key])
             new_name = self._ensure_unique_name(new_name, current_name=elem.name)
             params[name_key] = new_name  # Update params with unique name
@@ -330,7 +330,7 @@ class Model:
         xy_update: dict[str, float] = {}
         for param, value in params.items():
             key = param.upper()
-            if key in ("X", "Y"):
+            if key in (Common.X, Common.Y):
                 xy_update[key] = float(value)
                 continue
             rec = elem._get(key)
@@ -370,14 +370,14 @@ class Model:
 
     def _update_xy(self, elem: BaseElement, xy: dict[str, float]) -> None:
         """Update the XY record of an element with X and/or Y values."""
-        rec = elem._get("XY")
+        rec = elem._get(Common.XY)
         if rec is None:
             return
         vals = list(rec.values)
-        if "X" in xy and len(vals) > 0:
-            vals[0] = str(xy["X"])
-        if "Y" in xy and len(vals) > 1:
-            vals[1] = str(xy["Y"])
+        if Common.X in xy and len(vals) > 0:
+            vals[0] = str(xy[Common.X])
+        if Common.Y in xy and len(vals) > 1:
+            vals[1] = str(xy[Common.Y])
         rec.values = vals
         rec.raw_line = ""
 
@@ -435,7 +435,7 @@ class Model:
         self._parser.set_num_instances(et, current_count + 1)
 
         # Set the NAME (preserve descriptor in values[1:])
-        name_rec = self._parser.get(et, new_idx, "NAME")
+        name_rec = self._parser.get(et, new_idx, Common.NAME)
         if name_rec:
             name_rec.values[0] = name
             name_rec.raw_line = ""  # mark dirty for re-serialisation
@@ -449,7 +449,7 @@ class Model:
 
         # Auto-place if user did not explicitly provide X/Y
         x_or_y_provided = bool(params) and any(
-            key.upper() in {"X", "Y"} for key in params
+            key.upper() in {Common.X, Common.Y} for key in params
         )
         if not x_or_y_provided:
             from pykorf.layout import auto_place
@@ -504,7 +504,7 @@ class Model:
         idx = elem.index
 
         # If deleting a PIPE, first null out all references to it in equipment
-        if et == "PIPE":
+        if et == Element.PIPE:
             from pykorf.connectivity import update_pipe_references
 
             update_pipe_references(self, idx, 0)
@@ -549,13 +549,19 @@ class Model:
         self._parser.set_num_instances(et, current_count + 1)
 
         # Set new NAME (preserve descriptor in values[1:])
-        name_rec = self._parser.get(et, new_idx, "NAME")
+        name_rec = self._parser.get(et, new_idx, Common.NAME)
         if name_rec:
             name_rec.values[0] = dst_name
             name_rec.raw_line = ""  # mark dirty for re-serialisation
 
         # Clear connectivity on the copy
-        for con_param in ("CON", "NOZI", "NOZO", "NOZL", "NOZ"):
+        for con_param in (
+            Common.CON,
+            Common.NOZI,
+            Common.NOZO,
+            Common.NOZL,
+            Common.NOZ,
+        ):
             rec = self._parser.get(et, new_idx, con_param)
             if rec is not None:
                 rec.values = ["0"] * len(rec.values)
@@ -630,7 +636,7 @@ class Model:
         self._parser.reindex(et, old_index, new_index)
 
         # 2. If it's a PIPE, update all elements that reference this pipe index
-        if et == "PIPE":
+        if et == Element.PIPE:
             from pykorf.connectivity import update_pipe_references
 
             update_pipe_references(self, old_index, new_index)
@@ -799,6 +805,19 @@ class Model:
         from pykorf.layout import visualize
 
         return visualize(self, **kwargs)
+
+    def visualize_network(self, path: str | Path = "network.html") -> None:
+        """Generate an interactive PyVis HTML visualization.
+
+        Requires ``pyvis`` and ``pydantic`` to be installed.
+
+        Args:
+            path: Output HTML file path.
+        """
+        from pykorf.visualization import Visualizer
+
+        viz = Visualizer(self)
+        viz.to_html(path)
 
     # ------------------------------------------------------------------
     # Validation

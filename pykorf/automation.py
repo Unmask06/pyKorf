@@ -282,23 +282,23 @@ def open_ui(
         Path to the KORF executable (used only to identify the running
         process, not to launch it).
 
-    Returns
+    Returns:
     -------
     KorfApp
         A connected :class:`KorfApp` handle that can be used for further
         automation (e.g. running hydraulics, saving).
 
-    Raises
+    Raises:
     ------
     AutomationError
         If no running KORF instance is found.
 
-    Examples
+    Examples:
     --------
     >>> from pykorf.automation import open_ui
-    >>> app = open_ui("library/Pumpcases.kdf")   # doctest: +SKIP
-    >>> app.run_hydraulics()                      # doctest: +SKIP
-    >>> app.disconnect()                          # doctest: +SKIP
+    >>> app = open_ui("library/Pumpcases.kdf")  # doctest: +SKIP
+    >>> app.run_hydraulics()  # doctest: +SKIP
+    >>> app.disconnect()  # doctest: +SKIP
     """
     app = KorfApp.connect(korf_path=korf_path)
     app.reload_model(file_path)

@@ -75,22 +75,17 @@ class KdfRecord:
     def update(self, values: list) -> KdfRecord:
         """Replace the record value list and mark it dirty.
 
-        Parameters
-        ----------
-        values:
-            New value tokens for this parameter.
+        Args:
+            values: New value tokens for this parameter.
 
         Returns:
-        -------
-        KdfRecord
             The same record instance (for chaining).
 
         Example:
-        -------
-        >>> from pykorf.definitions.feed import Feed
-        >>> model.get_element("Exp Drum").get_param(Feed.NAME).update(
-        ...     ["EXP DRUM", "FEED"]
-        ... )
+            >>> from pykorf.definitions import Feed
+            >>> model.get_element("Exp Drum").get_param(Feed.NAME).update(
+            ...     ["EXP DRUM", "FEED"]
+            ... )
         """
         self.values = values
         self.raw_line = ""
