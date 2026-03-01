@@ -102,6 +102,7 @@ from pykorf.log import configure_logging
 from pykorf.model import KorfModel, Model
 from pykorf.query import Query, attr, find
 from pykorf.results import Results
+from pykorf.fluid import Fluid
 from pykorf.types import (
     CaseInfo,
     CompressorData,
@@ -173,6 +174,8 @@ __all__ = [
     "ExportError",
     "ImportError",
     "ErrorContext",
+    # Fluid
+    "Fluid",
     # Types
     "KdfVersion",
     "UnitSystem",

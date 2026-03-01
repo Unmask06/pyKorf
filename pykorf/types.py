@@ -21,6 +21,20 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Literal
 
+# Import constants from definitions
+from pykorf.definitions import (
+    Common,
+    Element,
+    Pipe,
+    Pump,
+    Valve,
+    Feed,
+    Prod,
+    Hx,
+    Comp,
+    Vessel,
+)
+
 # Try to import pydantic, fall back to dataclasses
 try:
     from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -323,7 +337,7 @@ else:
 if HAS_PYDANTIC:
     class PipeData(ElementBase):
         """Pipe element data."""
-        element_type: Literal["PIPE"] = "PIPE"
+        element_type: Literal["PIPE"] = Element.PIPE
         
         # Geometry
         diameter_inch: str = Field(default="4", description="Nominal diameter in inches")
@@ -339,8 +353,8 @@ if HAS_PYDANTIC:
         fluid: FluidProperties | None = None
         
         # Heat transfer
-        heat_transfer_coeff: float | None = Field(None, alias="UI", description="Overall heat transfer coefficient")
-        ambient_temp_c: float | None = Field(None, alias="TAMB", description="Ambient temperature in Celsius")
+        heat_transfer_coeff: float | None = Field(None, alias=Pipe.UI, description="Overall heat transfer coefficient")
+        ambient_temp_c: float | None = Field(None, alias=Pipe.TAMB, description="Ambient temperature in Celsius")
         
         # Fittings
         fittings: list[FittingData] | None = None
@@ -353,7 +367,7 @@ else:
     @dataclass
     class PipeData(ElementBase):  # type: ignore
         """Pipe element data."""
-        element_type: str = "PIPE"
+        element_type: str = Element.PIPE
         diameter_inch: str = "4"
         schedule: str = "40"
         length_m: float = 100.0
@@ -372,7 +386,7 @@ else:
 if HAS_PYDANTIC:
     class PumpData(ElementBase):
         """Pump element data."""
-        element_type: Literal["PUMP"] = "PUMP"
+        element_type: Literal["PUMP"] = Element.PUMP
         
         pump_type: PumpType = Field(default=PumpType.CENTRIFUGAL)
         efficiency: float | None = Field(None, ge=0, le=1, description="Pump efficiency (0-1)")
@@ -393,7 +407,7 @@ else:
     @dataclass
     class PumpData(ElementBase):  # type: ignore
         """Pump element data."""
-        element_type: str = "PUMP"
+        element_type: str = Element.PUMP
         pump_type: PumpType = PumpType.CENTRIFUGAL
         efficiency: float | None = None
         system_efficiency: float | None = None
@@ -410,7 +424,7 @@ else:
 if HAS_PYDANTIC:
     class ValveData(ElementBase):
         """Valve element data."""
-        element_type: Literal["VALVE"] = "VALVE"
+        element_type: Literal["VALVE"] = Element.VALVE
         
         valve_type: ValveType = Field(default=ValveType.LINEAR)
         valve_subtype: ValveSubType = Field(default=ValveSubType.CONTROL)
@@ -423,7 +437,7 @@ else:
     @dataclass
     class ValveData(ElementBase):  # type: ignore
         """Valve element data."""
-        element_type: str = "VALVE"
+        element_type: str = Element.VALVE
         valve_type: ValveType = ValveType.LINEAR
         valve_subtype: ValveSubType = ValveSubType.CONTROL
         cv: float | None = None
@@ -436,7 +450,7 @@ else:
 if HAS_PYDANTIC:
     class FeedData(ElementBase):
         """Feed (source) boundary condition data."""
-        element_type: Literal["FEED"] = "FEED"
+        element_type: Literal["FEED"] = Element.FEED
         
         feed_type: Literal["Pipe", "Vessel"] = "Pipe"
         pressure_kpag: list[float] | float | None = None
@@ -446,7 +460,7 @@ else:
     @dataclass
     class FeedData(ElementBase):  # type: ignore
         """Feed (source) boundary condition data."""
-        element_type: str = "FEED"
+        element_type: str = Element.FEED
         feed_type: str = "Pipe"
         pressure_kpag: list[float] | float | None = None
         elevation_m: float = 0.0
@@ -456,7 +470,7 @@ else:
 if HAS_PYDANTIC:
     class ProductData(ElementBase):
         """Product (sink) boundary condition data."""
-        element_type: Literal["PROD"] = "PROD"
+        element_type: Literal["PROD"] = Element.PROD
         
         product_type: Literal["Pipe", "Vessel"] = "Pipe"
         pressure_kpag: list[float] | float | None = None
@@ -465,7 +479,7 @@ else:
     @dataclass
     class ProductData(ElementBase):  # type: ignore
         """Product (sink) boundary condition data."""
-        element_type: str = "PROD"
+        element_type: str = Element.PROD
         product_type: str = "Pipe"
         pressure_kpag: list[float] | float | None = None
         elevation_m: float = 0.0
@@ -474,7 +488,7 @@ else:
 if HAS_PYDANTIC:
     class CompressorData(ElementBase):
         """Compressor element data."""
-        element_type: Literal["COMP"] = "COMP"
+        element_type: Literal["COMP"] = Element.COMP
         
         compressor_type: Literal["Centrifugal", "Reciprocating"] = "Centrifugal"
         efficiency: float | None = Field(None, ge=0, le=1)
@@ -484,7 +498,7 @@ else:
     @dataclass
     class CompressorData(ElementBase):  # type: ignore
         """Compressor element data."""
-        element_type: str = "COMP"
+        element_type: str = Element.COMP
         compressor_type: str = "Centrifugal"
         efficiency: float | None = None
         pressure_ratio: float | None = None
@@ -494,7 +508,7 @@ else:
 if HAS_PYDANTIC:
     class HeatExchangerData(ElementBase):
         """Heat exchanger element data."""
-        element_type: Literal["HX"] = "HX"
+        element_type: Literal["HX"] = Element.HX
         
         hx_type: str = Field(default="S-T", description="HX type (S-T, Plate, etc.)")
         side: Literal["Tube", "Shell"] = "Tube"
@@ -504,7 +518,7 @@ else:
     @dataclass
     class HeatExchangerData(ElementBase):  # type: ignore
         """Heat exchanger element data."""
-        element_type: str = "HX"
+        element_type: str = Element.HX
         hx_type: str = "S-T"
         side: str = "Tube"
         pressure_drop_kpag: float | None = None
@@ -514,7 +528,7 @@ else:
 if HAS_PYDANTIC:
     class VesselData(ElementBase):
         """Vessel element data."""
-        element_type: Literal["VESSEL"] = "VESSEL"
+        element_type: Literal["VESSEL"] = Element.VESSEL
         
         orientation: VesselOrientation = VesselOrientation.VERTICAL
         pressure_kpag: list[float] | float | None = None
@@ -524,7 +538,7 @@ else:
     @dataclass
     class VesselData(ElementBase):  # type: ignore
         """Vessel element data."""
-        element_type: str = "VESSEL"
+        element_type: str = Element.VESSEL
         orientation: VesselOrientation = VesselOrientation.VERTICAL
         pressure_kpag: list[float] | float | None = None
         diameter_m: float | None = None

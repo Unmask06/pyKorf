@@ -197,19 +197,38 @@ def load_model(path: str | Path) -> Model:
     """
 ```
 
-### Constants and Definitions
+### Rule 1: Always Use Constants from definitions.py
 
-**CRITICAL:** Never use hardcoded string literals for element types or parameter names. Always use constants from `pykorf.definitions`:
+**STRICT RULE - NO EXCEPTIONS:** Never use hardcoded string literals for element types or parameter names. Always use constants from `pykorf.definitions`:
 
 ```python
-# CORRECT
-from pykorf.definitions import Element, Pipe, Feed
+# CORRECT - Use constants
+from pykorf.definitions import Element, Pipe, Feed, Common
 
 model.add_element(Element.PIPE, "L1", {Pipe.LEN: 100, Pipe.TFLOW: "50"})
 
-# INCORRECT
+# INCORRECT - Hardcoded strings (NEVER DO THIS)
 model.add_element("PIPE", "L1", {"LEN": 100, "TFLOW": "50"})
 ```
+
+**Why this matters:**
+- The definitions.py file contains 400+ constants for all KDF element types and parameters
+- Using constants prevents typos (e.g., "VAPCP" vs "VAPCP " with trailing space)
+- Refactoring is easier when constants are used
+- IDE autocomplete works better with constants
+- The codebase is already using these constants extensively
+
+**Common constants to use:**
+- Element types: `Element.PIPE`, `Element.PUMP`, `Element.VALVE`, etc.
+- Pipe params: `Pipe.LEN`, `Pipe.DIA`, `Pipe.TFLOW`, `Pipe.MAT`, etc.
+- Common params: `Common.NAME`, `Common.NUM`, `Common.XY`, `Common.NOTES`
+- Connection: `Common.CON`, `Common.NOZI`, `Common.NOZO`, `Common.NOZL`
+
+**Checklist:**
+- [ ] No hardcoded element types like `"PIPE"`, `"PUMP"`
+- [ ] No hardcoded parameter names like `"LEN"`, `"TFLOW"`, `"PRES"`
+- [ ] All KDF field aliases use constants (e.g., in Pydantic Field alias=Pipe.UI)
+- [ ] All record lookups use constants (e.g., `elem._get(Pipe.TFLOW)`)}}  # type: ignore[pydantic]
 
 ## Architecture Patterns
 
