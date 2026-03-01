@@ -21,8 +21,8 @@ import json
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from pykorf.definitions import Element
-from pykorf.layout import _all_positions, _X_MAX, _X_MIN, _Y_MAX, _Y_MIN
+from pykorf.definitions import Common, Element
+from pykorf.layout import _X_MAX, _X_MIN, _Y_MAX, _Y_MIN, _all_positions
 from pykorf.visualization.models import EdgeData, NetworkData, NodeData
 
 if TYPE_CHECKING:
@@ -63,6 +63,31 @@ def _scale_x(x: float) -> float:
 def _scale_y(y: float) -> float:
     """Scale a KDF Y coordinate to PyVis canvas pixels."""
     return (y - _Y_MIN) / (_Y_MAX - _Y_MIN) * _CANVAS_H
+
+
+def _legend_html() -> str:
+    """Return a simple fixed-position HTML legend for element styles."""
+    sorted_styles = sorted(_STYLE.items(), key=lambda kv: kv[0])
+    items = []
+    for etype, style in sorted_styles:
+        items.append(
+            "<div style='display:flex;align-items:center;gap:8px;margin:3px 0;'>"
+            f"<span style='display:inline-block;width:10px;height:10px;"
+            f"background:{style['color']};border-radius:2px;'></span>"
+            f"<span style='font-size:12px;font-family:Arial,sans-serif;'>{etype}</span>"
+            "</div>"
+        )
+
+    return (
+        "<div id='pykorf-legend' style='position:fixed;right:16px;top:16px;"
+        "background:#ffffff;border:1px solid #d0d0d0;border-radius:8px;"
+        "padding:10px 12px;z-index:9999;box-shadow:0 1px 6px rgba(0,0,0,0.15);"
+        "max-height:80vh;overflow:auto;'>"
+        "<div style='font-weight:600;font-family:Arial,sans-serif;font-size:13px;"
+        "margin-bottom:6px;'>Legend</div>"
+        + "".join(items)
+        + "</div>"
+    )
 
 
 class Visualizer:
@@ -110,40 +135,182 @@ class Visualizer:
         return nodes
 
     def _extract_edges(self) -> list[EdgeData]:
-        """Build the edge list from pipe connections.
+        """Build the edge list from pipe connections with flow direction.
 
-        For each pipe, find the two endpoint elements and create an edge
-        between them.  If a pipe has fewer than two endpoints it is
-        skipped.
+        For each pipe, determine the flow direction based on element types
+        and their connection parameters (NOZI/NOZO for equipment, CON for
+        TEE, NOZL for FEED/PROD). Create directed edges accordingly.
         """
         from pykorf.connectivity import _is_element_connected_to_pipe
 
         edges: list[EdgeData] = []
         positions = _all_positions(self._model)
-        node_ids = {
-            name for name, pos in positions.items() if pos != (0.0, 0.0)
-        }
+        node_ids = {name for name, pos in positions.items() if pos != (0.0, 0.0)}
 
-        for idx, pipe_elem in self._model.pipes.items():
+        # Build a mapping of pipe index -> connected elements with direction info
+        for idx, _pipe_elem in self._model.pipes.items():
             if idx == 0:
                 continue
-            endpoints: list[str] = []
+
+            # Find all elements connected to this pipe
+            connected_elements: list[tuple[str, str, str]] = []  # (name, etype, role)
             for elem in self._model.elements:
                 if elem.etype == Element.PIPE:
                     continue
-                if _is_element_connected_to_pipe(elem, idx):
-                    if elem.name in node_ids:
-                        endpoints.append(elem.name)
-            if len(endpoints) >= 2:
-                edges.append(
-                    EdgeData(source=endpoints[0], target=endpoints[1])
-                )
-            elif len(endpoints) == 1:
-                # Pipe connected on only one end — still show it
-                edges.append(
-                    EdgeData(source=endpoints[0], target=endpoints[0])
-                )
+                if not _is_element_connected_to_pipe(elem, idx):
+                    continue
+                if elem.name not in node_ids:
+                    continue
+
+                role = self._get_connection_role(elem, idx)
+                connected_elements.append((elem.name, elem.etype, role))
+
+            if len(connected_elements) >= 2:
+                edges.extend(self._create_directed_edges(connected_elements))
+            elif len(connected_elements) == 1:
+                # Single connection - create a self-loop or skip
+                name, _, _ = connected_elements[0]
+                edges.append(EdgeData(source=name, target=name))
+
         return edges
+
+    def _get_connection_role(self, elem, pipe_idx: int) -> str:
+        """Determine the role of a pipe connection to an element.
+
+        Returns 'inlet', 'outlet', 'combined', 'main', 'branch', or 'unknown'.
+        """
+        et = elem.etype
+        pipe_idx_str = str(pipe_idx)
+
+        # Equipment with NOZI/NOZO (HX, MISC, some elements)
+        if et in {Element.HX, Element.MISC}:
+            nozi_rec = elem._get(Common.NOZI)
+            nozo_rec = elem._get(Common.NOZO)
+            if nozi_rec and len(nozi_rec.values) > 0 and str(nozi_rec.values[0]) == pipe_idx_str:
+                return "inlet"
+            if nozo_rec and len(nozo_rec.values) > 0 and str(nozo_rec.values[0]) == pipe_idx_str:
+                return "outlet"
+            return "unknown"
+
+        # Equipment with CON = [inlet_pipe, outlet_pipe]
+        if et in {Element.PUMP, Element.VALVE, Element.CHECK, Element.COMP, Element.EXPAND, Element.ORIFICE}:
+            con_rec = elem._get(Common.CON)
+            if con_rec and len(con_rec.values) >= 2:
+                if str(con_rec.values[0]) == pipe_idx_str:
+                    return "inlet"
+                if str(con_rec.values[1]) == pipe_idx_str:
+                    return "outlet"
+            return "unknown"
+
+        # TEE with CON = [C_pipe, _, _, M_pipe, _, B_pipe]
+        if et == Element.TEE:
+            con_rec = elem._get(Common.CON)
+            if con_rec and len(con_rec.values) >= 6:
+                # CON format: [C, 0, 0, M, 0, B] based on connectivity.py analysis
+                if str(con_rec.values[0]) == pipe_idx_str:
+                    return "combined"
+                if len(con_rec.values) > 3 and str(con_rec.values[3]) == pipe_idx_str:
+                    return "main"
+                if len(con_rec.values) > 5 and str(con_rec.values[5]) == pipe_idx_str:
+                    return "branch"
+            return "unknown"
+
+        # FEED - pipe connects to outlet (flow FROM feed)
+        if et == Element.FEED:
+            return "outlet"
+
+        # PROD - pipe connects to inlet (flow TO product)
+        if et == Element.PROD:
+            return "inlet"
+
+        # JUNC - no inherent direction
+        if et == Element.JUNC:
+            return "junction"
+
+        # VESSEL - check NOZLI/NOZLO
+        if et == Element.VESSEL:
+            for rec in elem.records():
+                if rec.param == Common.NOZLI and len(rec.values) >= 2:
+                    if str(rec.values[1]) == pipe_idx_str:
+                        return "inlet"
+                if rec.param == Common.NOZLO and len(rec.values) >= 2:
+                    if str(rec.values[1]) == pipe_idx_str:
+                        return "outlet"
+            return "unknown"
+
+        return "unknown"
+
+    def _create_directed_edges(self, connected: list[tuple[str, str, str]]) -> list[EdgeData]:
+        """Create directed edges based on connection roles.
+
+        Args:
+            connected: List of (name, etype, role) tuples for elements on a pipe
+
+        Returns:
+            List of EdgeData with proper source/target based on flow direction
+        """
+        edges: list[EdgeData] = []
+
+        if len(connected) == 2:
+            name1, etype1, role1 = connected[0]
+            name2, etype2, role2 = connected[1]
+
+            # Determine flow direction based on roles
+            source, target = self._determine_flow_direction(
+                name1, role1, name2, role2
+            )
+
+            if source and target:
+                edges.append(EdgeData(source=source, target=target))
+            else:
+                # Can't determine direction - add undirected
+                edges.append(EdgeData(source=name1, target=name2))
+
+        elif len(connected) > 2:
+            # Multiple connections on one pipe (T-junction or complex)
+            # For each pair, try to determine direction
+            for i in range(len(connected)):
+                for j in range(i + 1, len(connected)):
+                    name1, _, role1 = connected[i]
+                    name2, _, role2 = connected[j]
+                    source, target = self._determine_flow_direction(
+                        name1, role1, name2, role2
+                    )
+                    if source and target:
+                        edges.append(EdgeData(source=source, target=target))
+
+        return edges
+
+    def _determine_flow_direction(
+        self, name1: str, role1: str, name2: str, role2: str
+    ) -> tuple[str | None, str | None]:
+        """Determine flow direction between two connected elements.
+
+        Returns:
+            Tuple of (source, target) element names, or (None, None) if
+            direction cannot be determined.
+        """
+        # Define role hierarchy: lower index = upstream
+        role_order = {
+            "outlet": 0,      # Flows FROM equipment outlet
+            "combined": 1,    # Flows FROM tee combined (splitting)
+            "main": 2,        # TEE main outlet
+            "branch": 3,      # TEE branch outlet
+            "junction": 4,    # Neutral
+            "unknown": 5,
+            "inlet": 6,       # Flows TO equipment inlet
+        }
+
+        order1 = role_order.get(role1, 5)
+        order2 = role_order.get(role2, 5)
+
+        if order1 < order2:
+            return name1, name2
+        elif order2 < order1:
+            return name2, name1
+        else:
+            # Same role - can't determine direction
+            return None, None
 
     # ------------------------------------------------------------------
     # Public properties
@@ -219,4 +386,58 @@ class Visualizer:
             if edge.source != edge.target:
                 net.add_edge(edge.source, edge.target)
 
+        # Add layout boundary using scaled coordinates from layout bounds
+        self._add_layout_boundary(net)
+
         net.write_html(str(path))
+
+        # Inject a static legend overlay into the generated HTML
+        html_path = Path(path)
+        html = html_path.read_text(encoding="utf-8")
+        html = html.replace("</body>", f"{_legend_html()}\n</body>")
+        html_path.write_text(html, encoding="utf-8")
+
+    def _add_layout_boundary(self, net) -> None:
+        """Draw the model coordinate bounds as a dashed rectangle."""
+        left = _scale_x(_X_MIN)
+        right = _scale_x(_X_MAX)
+        top = _scale_y(_Y_MIN)
+        bottom = _scale_y(_Y_MAX)
+
+        corners = {
+            "__layout_tl": (left, top),
+            "__layout_tr": (right, top),
+            "__layout_br": (right, bottom),
+            "__layout_bl": (left, bottom),
+        }
+
+        for node_id, (x, y) in corners.items():
+            net.add_node(
+                node_id,
+                label="",
+                x=x,
+                y=y,
+                shape="dot",
+                size=1,
+                color="#95A5A6",
+                fixed=True,
+                physics=False,
+                hidden=True,
+            )
+
+        boundary_edges = [
+            ("__layout_tl", "__layout_tr"),
+            ("__layout_tr", "__layout_br"),
+            ("__layout_br", "__layout_bl"),
+            ("__layout_bl", "__layout_tl"),
+        ]
+        for source, target in boundary_edges:
+            net.add_edge(
+                source,
+                target,
+                color="#95A5A6",
+                width=1,
+                dashes=True,
+                physics=False,
+                arrows="",
+            )

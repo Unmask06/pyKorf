@@ -21,7 +21,7 @@ In KORF, pipes are the "edges" and equipment/boundaries are "nodes":
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from pykorf.exceptions import ConnectivityError
 
@@ -83,18 +83,18 @@ def get_unconnected_elements(model: Model) -> list[str]:
     - For equipment/TEEs/Junctions: have at least one '0' in their connection slots.
     """
     unconnected = []
-    
+
     # Pipes need two connections
     for pipe in model.get_elements_by_type("PIPE"):
         conns = get_connections(model, pipe.name)
         if len(conns) < 2:
             unconnected.append(pipe.name)
-            
+
     # Nodes with open slots
     for elem in model.elements:
         if elem.etype == "PIPE":
             continue
-        
+
         et = elem.etype
         if et in _CON_ELEMENTS:
             rec = elem._get("CON")
@@ -120,7 +120,7 @@ def get_unconnected_elements(model: Model) -> list[str]:
             pipe_indices = _get_element_pipe_indices(elem)
             if not pipe_indices:
                 unconnected.append(elem.name)
-                
+
     return sorted(list(set(unconnected)))
 
 
@@ -134,6 +134,13 @@ def _get_element_pipe_indices(elem) -> list[int]:
             for v in rec.values[:2]:
                 if _is_valid_idx(v):
                     indices.append(int(v))
+        else:
+            # Some KDF files store HX/MISC nozzle links as NOZI/NOZO
+            # instead of CON. Keep extraction tolerant to both formats.
+            for nozzle_param in ("NOZI", "NOZO"):
+                nozzle_rec = elem._get(nozzle_param)
+                if nozzle_rec and nozzle_rec.values and _is_valid_idx(nozzle_rec.values[0]):
+                    indices.append(int(nozzle_rec.values[0]))
     elif et in _NOZ_ELEMENTS:
         noz_param = _get_nozzle_param(elem)
         rec = elem._get(noz_param)
@@ -233,7 +240,7 @@ def connect(model: Model, name1: str, name2: str) -> None:
     name1, name2:
         Element names.  At least one must be a PIPE.
 
-    Raises
+    Raises:
     ------
     ConnectivityError
         If neither element is a PIPE, or the connection is invalid.
@@ -264,9 +271,7 @@ def connect(model: Model, name1: str, name2: str) -> None:
     if et in _CON_ELEMENTS:
         rec = other_elem._get("CON")
         if rec is None:
-            raise ConnectivityError(
-                f"{other_elem.name} ({et}) has no CON record"
-            )
+            raise ConnectivityError(f"{other_elem.name} ({et}) has no CON record")
         vals = list(rec.values)
         # Find first empty slot (0 means unconnected)
         if len(vals) >= 2:
@@ -315,9 +320,7 @@ def connect(model: Model, name1: str, name2: str) -> None:
         rec.raw_line = ""
 
     else:
-        raise ConnectivityError(
-            f"Don't know how to connect a PIPE to {et}"
-        )
+        raise ConnectivityError(f"Don't know how to connect a PIPE to {et}")
 
 
 def disconnect(model: Model, name1: str, name2: str) -> None:
@@ -326,7 +329,7 @@ def disconnect(model: Model, name1: str, name2: str) -> None:
     Clears the pipe reference in the equipment/boundary element's
     CON or NOZ/NOZL field.
 
-    Raises
+    Raises:
     ------
     ConnectivityError
         If the elements are not currently connected.
@@ -407,8 +410,16 @@ def check_connectivity(model: Model) -> list[str]:
     pipe_indices = {idx for idx in model.pipes if idx >= 1}
 
     # Check equipment CON references
-    for collection_attr in ("valves", "check_valves", "orifices", "exchangers",
-                            "pumps", "compressors", "misc_equipment", "expanders"):
+    for collection_attr in (
+        "valves",
+        "check_valves",
+        "orifices",
+        "exchangers",
+        "pumps",
+        "compressors",
+        "misc_equipment",
+        "expanders",
+    ):
         collection = getattr(model, collection_attr, {})
         for idx, elem in collection.items():
             if idx == 0:

@@ -1,0 +1,156 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script src="lib/bindings/utils.js"></script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 1200px;
+                 height: 700px;
+                 background-color: #ffffff;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#2ECC71", "fixed": true, "id": "EXP DRUM", "label": "EXP DRUM", "shape": "triangle", "size": 20, "title": "FEED: EXP DRUM", "x": 16.551724137931036, "y": 308.0}, {"color": "#E74C3C", "fixed": true, "id": "CWS Header", "label": "CWS Header", "shape": "triangleDown", "size": 20, "title": "PROD: CWS Header", "x": 877.2413793103449, "y": 140.0}, {"color": "#E74C3C", "fixed": true, "id": "P2", "label": "P2", "shape": "triangleDown", "size": 20, "title": "PROD: P2", "x": 430.3448275862069, "y": 625.3333333333334}, {"color": "#E74C3C", "fixed": true, "id": "P3", "label": "P3", "shape": "triangleDown", "size": 20, "title": "PROD: P3", "x": 148.9655172413793, "y": 625.3333333333334}, {"color": "#E74C3C", "fixed": true, "id": "P4", "label": "P4", "shape": "triangleDown", "size": 20, "title": "PROD: P4", "x": 1092.4137931034484, "y": 578.6666666666666}, {"color": "#3498DB", "fixed": true, "id": "PC-001-A", "label": "PC-001-A", "shape": "box", "size": 20, "title": "PUMP: PC-001-A", "x": 273.1034482758621, "y": 345.3333333333333}, {"color": "#E67E22", "fixed": true, "id": "HP-001", "label": "HP-001", "shape": "box", "size": 20, "title": "HX: HP-001", "x": 554.4827586206897, "y": 336.0}, {"color": "#9B59B6", "fixed": true, "id": "T1", "label": "T1", "shape": "diamond", "size": 20, "title": "TEE: T1", "x": 413.7931034482759, "y": 336.0}, {"color": "#9B59B6", "fixed": true, "id": "T2", "label": "T2", "shape": "diamond", "size": 20, "title": "TEE: T2", "x": 132.41379310344828, "y": 345.3333333333333}, {"color": "#9B59B6", "fixed": true, "id": "T3", "label": "T3", "shape": "diamond", "size": 20, "title": "TEE: T3", "x": 695.1724137931035, "y": 336.0}, {"color": "#95A5A6", "fixed": true, "hidden": true, "id": "__layout_tl", "label": "__layout_tl", "physics": false, "shape": "dot", "size": 1, "x": 0.0, "y": 0.0}, {"color": "#95A5A6", "fixed": true, "hidden": true, "id": "__layout_tr", "label": "__layout_tr", "physics": false, "shape": "dot", "size": 1, "x": 1200.0, "y": 0.0}, {"color": "#95A5A6", "fixed": true, "hidden": true, "id": "__layout_br", "label": "__layout_br", "physics": false, "shape": "dot", "size": 1, "x": 1200.0, "y": 700.0}, {"color": "#95A5A6", "fixed": true, "hidden": true, "id": "__layout_bl", "label": "__layout_bl", "physics": false, "shape": "dot", "size": 1, "x": 0.0, "y": 700.0}]);
+                  edges = new vis.DataSet([{"arrows": "to", "from": "EXP DRUM", "to": "T2"}, {"arrows": "to", "from": "PC-001-A", "to": "T1"}, {"arrows": "to", "from": "T1", "to": "HP-001"}, {"arrows": "to", "from": "T2", "to": "PC-001-A"}, {"arrows": "to", "from": "HP-001", "to": "T3"}, {"arrows": "to", "from": "T3", "to": "CWS Header"}, {"arrows": "to", "from": "T1", "to": "P2"}, {"arrows": "to", "from": "T2", "to": "P3"}, {"arrows": "", "color": "#95A5A6", "dashes": true, "from": "__layout_tl", "physics": false, "to": "__layout_tr", "width": 1}, {"arrows": "", "color": "#95A5A6", "dashes": true, "from": "__layout_tr", "physics": false, "to": "__layout_br", "width": 1}, {"arrows": "", "color": "#95A5A6", "dashes": true, "from": "__layout_br", "physics": false, "to": "__layout_bl", "width": 1}, {"arrows": "", "color": "#95A5A6", "dashes": true, "from": "__layout_bl", "physics": false, "to": "__layout_tl", "width": 1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": false,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    <div id='pykorf-legend' style='position:fixed;right:16px;top:16px;background:#ffffff;border:1px solid #d0d0d0;border-radius:8px;padding:10px 12px;z-index:9999;box-shadow:0 1px 6px rgba(0,0,0,0.15);max-height:80vh;overflow:auto;'><div style='font-weight:600;font-family:Arial,sans-serif;font-size:13px;margin-bottom:6px;'>Legend</div><div style='display:flex;align-items:center;gap:8px;margin:3px 0;'><span style='display:inline-block;width:10px;height:10px;background:#1ABC9C;border-radius:2px;'></span><span style='font-size:12px;font-family:Arial,sans-serif;'>CHECK</span></div><div style='display:flex;align-items:center;gap:8px;margin:3px 0;'><span style='display:inline-block;width:10px;height:10px;background:#F39C12;border-radius:2px;'></span><span style='font-size:12px;font-family:Arial,sans-serif;'>COMP</span></div><div style='display:flex;align-items:center;gap:8px;margin:3px 0;'><span style='display:inline-block;width:10px;height:10px;background:#D35400;border-radius:2px;'></span><span style='font-size:12px;font-family:Arial,sans-serif;'>EXPAND</span></div><div style='display:flex;align-items:center;gap:8px;margin:3px 0;'><span style='display:inline-block;width:10px;height:10px;background:#2ECC71;border-radius:2px;'></span><span style='font-size:12px;font-family:Arial,sans-serif;'>FEED</span></div><div style='display:flex;align-items:center;gap:8px;margin:3px 0;'><span style='display:inline-block;width:10px;height:10px;background:#7F8C8D;border-radius:2px;'></span><span style='font-size:12px;font-family:Arial,sans-serif;'>FO</span></div><div style='display:flex;align-items:center;gap:8px;margin:3px 0;'><span style='display:inline-block;width:10px;height:10px;background:#E67E22;border-radius:2px;'></span><span style='font-size:12px;font-family:Arial,sans-serif;'>HX</span></div><div style='display:flex;align-items:center;gap:8px;margin:3px 0;'><span style='display:inline-block;width:10px;height:10px;background:#8E44AD;border-radius:2px;'></span><span style='font-size:12px;font-family:Arial,sans-serif;'>JUNC</span></div><div style='display:flex;align-items:center;gap:8px;margin:3px 0;'><span style='display:inline-block;width:10px;height:10px;background:#95A5A6;border-radius:2px;'></span><span style='font-size:12px;font-family:Arial,sans-serif;'>MISC</span></div><div style='display:flex;align-items:center;gap:8px;margin:3px 0;'><span style='display:inline-block;width:10px;height:10px;background:#BDC3C7;border-radius:2px;'></span><span style='font-size:12px;font-family:Arial,sans-serif;'>PIPE</span></div><div style='display:flex;align-items:center;gap:8px;margin:3px 0;'><span style='display:inline-block;width:10px;height:10px;background:#E74C3C;border-radius:2px;'></span><span style='font-size:12px;font-family:Arial,sans-serif;'>PROD</span></div><div style='display:flex;align-items:center;gap:8px;margin:3px 0;'><span style='display:inline-block;width:10px;height:10px;background:#3498DB;border-radius:2px;'></span><span style='font-size:12px;font-family:Arial,sans-serif;'>PUMP</span></div><div style='display:flex;align-items:center;gap:8px;margin:3px 0;'><span style='display:inline-block;width:10px;height:10px;background:#9B59B6;border-radius:2px;'></span><span style='font-size:12px;font-family:Arial,sans-serif;'>TEE</span></div><div style='display:flex;align-items:center;gap:8px;margin:3px 0;'><span style='display:inline-block;width:10px;height:10px;background:#2980B9;border-radius:2px;'></span><span style='font-size:12px;font-family:Arial,sans-serif;'>VALVE</span></div><div style='display:flex;align-items:center;gap:8px;margin:3px 0;'><span style='display:inline-block;width:10px;height:10px;background:#16A085;border-radius:2px;'></span><span style='font-size:12px;font-family:Arial,sans-serif;'>VESSEL</span></div></div>
+</body>
+</html>

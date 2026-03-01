@@ -1,63 +1,207 @@
-"""pyKorf – Python toolkit for reading, editing and writing KORF hydraulic model files (.kdf).
+"""pyKorf – Enterprise Python toolkit for reading, editing and writing KORF hydraulic model files (.kdf).
+
+This package provides comprehensive support for working with KORF hydraulic simulation
+models, including loading, editing, validation, visualization, and export capabilities.
 
 Quickstart
 ----------
 >>> from pykorf import Model
 >>> model = Model("Pumpcases.kdf")
->>> model.update_element('L1', {'LEN': 200})
+>>> model.update_element("L1", {"LEN": 200})
 >>> model.save("Pumpcases_new.kdf")
 
 Modules
 -------
-model        – Model       : top-level container for a .kdf file
-parser       – KdfParser   : low-level tokeniser / serialiser
-cases        – CaseSet     : multi-case helpers
-results      – Results     : extract calculated output values
-automation   – KorfApp     : pywinauto wrapper (requires KORF to be open)
-exceptions   – package-wide exception types
-utils        – shared CSV / value helpers
-elements/    – one module per KORF element type
-connectivity – connection management
-layout       – element positioning
-validation   – KDF format compliance
-visualization/ – PyVis network visualization (requires pyvis, pydantic)
+model          – Model : top-level container for a .kdf file
+parser         – KdfParser : low-level tokeniser / serialiser
+cases          – CaseSet : multi-case helpers
+results        – Results : extract calculated output values
+automation     – KorfApp : pywinauto wrapper (requires KORF to be open)
+exceptions     – Package-wide exception types
+utils          – Shared CSV / value helpers
+elements/      – One module per KORF element type
+connectivity   – Connection management
+layout         – Element positioning
+validation     – KDF format compliance
+visualization/ – PyVis network visualization
+export         – Export to JSON, YAML, Excel, CSV
+query          – Advanced querying and filtering
+types          – Pydantic models for type safety
+config         – Configuration management
+log            – Structured logging
+
+Example Usage
+-------------
+### Loading and Inspecting
+
+    >>> from pykorf import Model
+    >>> model = Model("model.kdf")
+    >>> print(model.summary())
+    {
+        'file': 'model.kdf',
+        'version': 'KORF_3.6',
+        'cases': ['NORMAL', 'RATED', 'MINIMUM'],
+        'num_pipes': 10,
+        'num_pumps': 2,
+        ...
+    }
+
+### Using Type-Safe Models
+
+    >>> from pykorf.types import PipeData, FlowParameters
+    >>> pipe = PipeData(
+    ...     name="L1",
+    ...     diameter_inch="6",
+    ...     length_m=100.0,
+    ...     flow=FlowParameters(mass_flow_t_h=[50, 55, 20]),
+    ... )
+
+### Exporting
+
+    >>> from pykorf.export import export_to_json, export_to_excel
+    >>> export_to_json(model, "model.json")
+    >>> export_to_excel(model, "model.xlsx")
+
+### Querying
+
+    >>> from pykorf.query import Query, attr
+    >>> q = Query(model)
+    >>> large_pipes = q.pipes.where(attr("diameter_inch").in_(["8", "10"])).all()
+
+### Logging
+
+    >>> from pykorf.log import get_logger, log_operation
+    >>> logger = get_logger()
+    >>> with log_operation("process_model", model="test.kdf"):
+    ...     model = Model("test.kdf")
+    ...     model.validate()
 """
 
-__version__ = "0.2.0"
-__author__ = "pyKorf contributors"
-
 from pykorf.cases import CaseSet
+from pykorf.config import Config, get_config, reset_config, set_config
 from pykorf.definitions import Element
 from pykorf.exceptions import (
     AutomationError,
     CaseError,
     ConnectivityError,
+    ElementAlreadyExists,
     ElementNotFound,
+    ErrorContext,
+    ExportError,
+    ImportError,
     KorfError,
     LayoutError,
+    ParameterError,
     ParseError,
     ValidationError,
+    VersionError,
 )
-from pykorf.model import KorfModel, Model
-from pykorf.results import Results
-from pykorf.visualization import Visualizer
 
+# Configure logging on import
+from pykorf.log import configure_logging
+from pykorf.model import KorfModel, Model
+from pykorf.query import Query, attr, find
+from pykorf.results import Results
+from pykorf.types import (
+    CaseInfo,
+    CompressorData,
+    ElementBase,
+    ElementType,
+    ExportOptions,
+    FeedData,
+    FlowParameters,
+    FluidProperties,
+    HeatExchangerData,
+    KdfBaseModel,
+    KdfVersion,
+    ModelMetadata,
+    PipeData,
+    Position,
+    ProductData,
+    PumpData,
+    PumpType,
+    UnitConfiguration,
+    UnitSystem,
+    ValidationIssue,
+    ValveData,
+    VesselData,
+    VesselOrientation,
+)
+
+configure_logging()
+
+# Version information
+__version__ = "0.2.0-dev"
+try:
+    from pykorf._version import __version__
+except Exception:
+    try:
+        from importlib.metadata import version
+
+        __version__ = version("pykorf")
+    except Exception:
+        pass
+
+__author__ = "pyKorf Contributors"
 __all__ = [
+    # Core classes
     "Model",
     "KorfModel",
     "CaseSet",
     "Results",
-    "Visualizer",
+    # Configuration
+    "Config",
+    "get_config",
+    "set_config",
+    "reset_config",
+    # Query
+    "Query",
+    "attr",
+    "find",
+    # Exceptions
     "KorfError",
     "ParseError",
     "ElementNotFound",
+    "ElementAlreadyExists",
     "CaseError",
     "AutomationError",
     "ValidationError",
     "ConnectivityError",
     "LayoutError",
+    "VersionError",
+    "ParameterError",
+    "ExportError",
+    "ImportError",
+    "ErrorContext",
+    # Types
+    "KdfVersion",
+    "UnitSystem",
+    "ElementType",
+    "PumpType",
+    "VesselOrientation",
+    "KdfBaseModel",
+    "Position",
+    "FlowParameters",
+    "FluidProperties",
+    "ElementBase",
+    "PipeData",
+    "PumpData",
+    "ValveData",
+    "FeedData",
+    "ProductData",
+    "CompressorData",
+    "HeatExchangerData",
+    "VesselData",
+    "ModelMetadata",
+    "CaseInfo",
+    "UnitConfiguration",
+    "ExportOptions",
+    "ValidationIssue",
+    # Constants
     "Element",
-    "open_ui",
+    # Version
+    "__version__",
+    "__author__",
 ]
 
 
@@ -70,3 +214,7 @@ def open_ui(*args, **kwargs):
     from pykorf.automation import open_ui as _open_ui
 
     return _open_ui(*args, **kwargs)
+
+
+# Add open_ui to __all__
+__all__.append("open_ui")

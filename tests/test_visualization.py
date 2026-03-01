@@ -16,6 +16,12 @@ from pykorf.visualization.models import EdgeData, NetworkData, NodeData
 SAMPLES_DIR = Path(__file__).parent.parent / "pykorf" / "library"
 CWC_KDF = SAMPLES_DIR / "Cooling Water Circuit.kdf"
 PUMP_KDF = SAMPLES_DIR / "Pumpcases.kdf"
+TRAIL_KDF = (
+    Path(__file__).parent.parent
+    / "pykorf"
+    / "trail_files"
+    / "Cooling Water Circuit-EES-IT-LT-00141.kdf"
+)
 
 
 class TestNodeData:
@@ -147,6 +153,21 @@ class TestVisualizer:
         viz.to_html(out)
         assert out.exists()
         assert out.stat().st_size > 0
+
+    def test_trail_hx_edges_present(self):
+        m = Model(TRAIL_KDF)
+        viz = Visualizer(m)
+        edge_pairs = {(edge.source, edge.target) for edge in viz.network_data.edges}
+        assert any("HP-001" in pair for pair in edge_pairs)
+
+    def test_to_html_includes_layout_boundary_and_legend(self, tmp_path):
+        m = Model(CWC_KDF)
+        viz = Visualizer(m)
+        out = tmp_path / "network.html"
+        viz.to_html(out)
+        content = out.read_text(encoding="utf-8")
+        assert "__layout_tl" in content
+        assert "pykorf-legend" in content
 
 
 class TestModelConvenience:
