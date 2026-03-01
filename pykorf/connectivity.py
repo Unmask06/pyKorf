@@ -53,6 +53,45 @@ def _is_valid_idx(v: Any) -> bool:
         return False
 
 
+def _get_nozzle_records(elem) -> list[tuple[str, Any]]:
+    """Return existing nozzle records that store pipe indices."""
+    records: list[tuple[str, Any]] = []
+    for nozzle_param in ("NOZI", "NOZO"):
+        rec = elem._get(nozzle_param)
+        if rec is not None:
+            records.append((nozzle_param, rec))
+    return records
+
+
+def _set_nozzle_pipe_reference(elem, pipe_idx: int) -> bool:
+    """Set first free NOZI/NOZO slot to a pipe index."""
+    pipe_idx_s = str(pipe_idx)
+    for _, rec in _get_nozzle_records(elem):
+        if rec.values and str(rec.values[0]) == "0":
+            rec.values = [pipe_idx_s] + rec.values[1:]
+            rec.raw_line = ""
+            return True
+    return False
+
+
+def _clear_nozzle_pipe_reference(elem, pipe_idx: str) -> bool:
+    """Clear matching NOZI/NOZO slot for a pipe index."""
+    for _, rec in _get_nozzle_records(elem):
+        if rec.values and str(rec.values[0]) == pipe_idx:
+            rec.values = ["0"] + rec.values[1:]
+            rec.raw_line = ""
+            return True
+    return False
+
+
+def _update_nozzle_pipe_reference(elem, old_idx: str, new_idx: str) -> None:
+    """Update NOZI/NOZO references from old to new pipe index."""
+    for _, rec in _get_nozzle_records(elem):
+        if rec.values and rec.values[0] == old_idx:
+            rec.values = [new_idx] + rec.values[1:]
+            rec.raw_line = ""
+
+
 def get_connections(model: Model, name: str) -> list[str]:
     """Return a list of element names connected to the given element."""
     elem = model.get_element(name)
@@ -100,6 +139,13 @@ def get_unconnected_elements(model: Model) -> list[str]:
             rec = elem._get("CON")
             if rec and (str(rec.values[0]) == "0" or str(rec.values[1]) == "0"):
                 unconnected.append(elem.name)
+            elif rec is None:
+                nozzle_recs = _get_nozzle_records(elem)
+                if nozzle_recs and any(
+                    not nozzle_rec.values or str(nozzle_rec.values[0]) == "0"
+                    for _, nozzle_rec in nozzle_recs
+                ):
+                    unconnected.append(elem.name)
         elif et in _NOZ_ELEMENTS:
             noz_param = _get_nozzle_param(elem)
             rec = elem._get(noz_param)
@@ -137,9 +183,8 @@ def _get_element_pipe_indices(elem) -> list[int]:
         else:
             # Some KDF files store HX/MISC nozzle links as NOZI/NOZO
             # instead of CON. Keep extraction tolerant to both formats.
-            for nozzle_param in ("NOZI", "NOZO"):
-                nozzle_rec = elem._get(nozzle_param)
-                if nozzle_rec and nozzle_rec.values and _is_valid_idx(nozzle_rec.values[0]):
+            for _, nozzle_rec in _get_nozzle_records(elem):
+                if nozzle_rec.values and _is_valid_idx(nozzle_rec.values[0]):
                     indices.append(int(nozzle_rec.values[0]))
     elif et in _NOZ_ELEMENTS:
         noz_param = _get_nozzle_param(elem)
@@ -195,6 +240,8 @@ def update_pipe_references(model: Model, old_idx: int, new_idx: int) -> None:
                 if changed:
                     rec.values = vals
                     rec.raw_line = ""
+            else:
+                _update_nozzle_pipe_reference(elem, old_s, new_s)
         elif et in _NOZ_ELEMENTS:
             noz_param = _get_nozzle_param(elem)
             rec = elem._get(noz_param)
@@ -271,7 +318,11 @@ def connect(model: Model, name1: str, name2: str) -> None:
     if et in _CON_ELEMENTS:
         rec = other_elem._get("CON")
         if rec is None:
-            raise ConnectivityError(f"{other_elem.name} ({et}) has no CON record")
+            if _set_nozzle_pipe_reference(other_elem, pipe_idx):
+                return
+            raise ConnectivityError(
+                f"{other_elem.name} ({et}) has no CON/NOZI/NOZO record"
+            )
         vals = list(rec.values)
         # Find first empty slot (0 means unconnected)
         if len(vals) >= 2:
@@ -353,7 +404,11 @@ def disconnect(model: Model, name1: str, name2: str) -> None:
     if et in _CON_ELEMENTS:
         rec = other_elem._get("CON")
         if rec is None:
-            raise ConnectivityError(f"{other_elem.name} ({et}) has no CON record")
+            if _clear_nozzle_pipe_reference(other_elem, pipe_idx):
+                return
+            raise ConnectivityError(
+                f"{other_elem.name} is not connected to pipe {pipe_elem.name}"
+            )
         vals = list(rec.values)
         found = False
         for i in range(min(2, len(vals))):
@@ -425,23 +480,41 @@ def check_connectivity(model: Model) -> list[str]:
             if idx == 0:
                 continue
             rec = elem._get("CON")
-            if rec is None:
+            if rec is not None:
+                vals = rec.values
+                for i, label in enumerate(["inlet", "outlet"]):
+                    if i >= len(vals):
+                        break
+                    try:
+                        pipe_ref = int(vals[i])
+                    except (ValueError, TypeError):
+                        issues.append(
+                            f"{elem.name} ({elem.etype}): {label} CON value "
+                            f"{vals[i]!r} is not a valid integer"
+                        )
+                        continue
+                    if pipe_ref != 0 and pipe_ref not in pipe_indices:
+                        issues.append(
+                            f"{elem.name} ({elem.etype}): {label} references "
+                            f"pipe index {pipe_ref} which does not exist"
+                        )
                 continue
-            vals = rec.values
-            for i, label in enumerate(["inlet", "outlet"]):
-                if i >= len(vals):
-                    break
+
+            nozzle_recs = _get_nozzle_records(elem)
+            for nozzle_label, nozzle_rec in nozzle_recs:
+                if not nozzle_rec.values:
+                    continue
                 try:
-                    pipe_ref = int(vals[i])
+                    pipe_ref = int(nozzle_rec.values[0])
                 except (ValueError, TypeError):
                     issues.append(
-                        f"{elem.name} ({elem.etype}): {label} CON value "
-                        f"{vals[i]!r} is not a valid integer"
+                        f"{elem.name} ({elem.etype}): {nozzle_label} value "
+                        f"{nozzle_rec.values[0]!r} is not a valid integer"
                     )
                     continue
                 if pipe_ref != 0 and pipe_ref not in pipe_indices:
                     issues.append(
-                        f"{elem.name} ({elem.etype}): {label} references "
+                        f"{elem.name} ({elem.etype}): {nozzle_label} references "
                         f"pipe index {pipe_ref} which does not exist"
                     )
 

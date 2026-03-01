@@ -10,6 +10,7 @@ This example demonstrates:
 
 from __future__ import annotations
 
+import contextlib
 from pathlib import Path
 from typing import Any
 
@@ -22,14 +23,14 @@ def setup_multicase_scenarios(
     scenarios: list[dict[str, Any]] | None = None,
 ) -> CaseSet:
     """Set up multiple simulation scenarios.
-    
+
     Args:
         model: The KORF model.
         scenarios: List of scenario dictionaries. If None, uses defaults.
-        
+
     Returns:
         CaseSet configured with the scenarios.
-        
+
     Example:
         ```python
         scenarios = [
@@ -83,74 +84,75 @@ def setup_multicase_scenarios(
 
     # Set case names in the model
     case_names = [s["name"] for s in scenarios]
-    model.general.case_descriptions = case_names
+    case_numbers = list(range(1, len(case_names) + 1))
+    model.general.set_cases(case_numbers, case_names)
     print(f"  Created {len(case_names)} cases: {case_names}")
 
     # Get pipe names
     pipe_names = [p.name for p in model.pipes.values() if p.index > 0]
     print(f"  Found {len(pipe_names)} pipes to configure")
 
-    # Configure each case
+    # Build semicolon-delimited strings for multi-case values
+    # Format: case1;case2;case3;case4
+
+    # Feed pressure
+    feed_pressures = [str(s.get("feed_pressure", 100)) for s in scenarios]
+    feed_pressure_str = ";".join(feed_pressures)
+
+    # Product pressure
+    prod_pressures = [str(s.get("product_pressure", 50)) for s in scenarios]
+    prod_pressure_str = ";".join(prod_pressures)
+
+    # Configure each scenario
     for case_idx, scenario in enumerate(scenarios, 1):
         print(f"\n  [{case_idx}/{len(scenarios)}] Configuring: {scenario['name']}")
         print(f"    Description: {scenario.get('description', 'N/A')}")
 
-        # Build semicolon-delimited strings for multi-case values
-        # Format: case1;case2;case3;case4
+    # Apply to feeds
+    for feed in model.feeds.values():
+        if feed.index > 0:
+            model.update_element(feed.name, {Feed.PRES: feed_pressure_str})
+            print(f"    Feed '{feed.name}': {feed_pressure_str} bara")
 
-        # Feed pressure
-        feed_pressures = [str(s.get("feed_pressure", 100)) for s in scenarios]
-        feed_pressure_str = ";".join(feed_pressures)
+    # Apply to products
+    for prod in model.products.values():
+        if prod.index > 0:
+            model.update_element(prod.name, {Prod.PRES: prod_pressure_str})
+            print(f"    Product '{prod.name}': {prod_pressure_str} bara")
 
-        # Product pressure
-        prod_pressures = [str(s.get("product_pressure", 50)) for s in scenarios]
-        prod_pressure_str = ";".join(prod_pressures)
+    # Configure pipe flows
+    for pipe_idx, pipe_name in enumerate(pipe_names):
+        # Get flows for this pipe across all cases
+        pipe_flows = []
+        for s in scenarios:
+            flows = s.get("pipe_flows", [100] * len(scenarios))
+            # Use pipe-specific flow or default
+            flow_val = flows[pipe_idx] if pipe_idx < len(flows) else flows[0]
+            pipe_flows.append(str(flow_val))
 
-        # Apply to feed
-        for feed in model.feeds.values():
-            if feed.index > 0:
-                model.update_element(feed.name, {Feed.PRES: feed_pressure_str})
-                print(f"    Feed '{feed.name}': {feed_pressure_str} bara")
+        flow_str = ";".join(pipe_flows)
+        model.update_element(pipe_name, {Pipe.TFLOW: flow_str})
+        print(f"    Pipe '{pipe_name}': {flow_str} t/h")
 
-        # Apply to product
-        for prod in model.products.values():
-            if prod.index > 0:
-                model.update_element(prod.name, {Prod.PRES: prod_pressure_str})
-                print(f"    Product '{prod.name}': {prod_pressure_str} bara")
-
-        # Configure pipe flows
-        for pipe_idx, pipe_name in enumerate(pipe_names):
-            # Get flows for this pipe across all cases
-            pipe_flows = []
-            for s in scenarios:
-                flows = s.get("pipe_flows", [100] * len(scenarios))
-                # Use pipe-specific flow or default
-                flow_val = flows[pipe_idx] if pipe_idx < len(flows) else flows[0]
-                pipe_flows.append(str(flow_val))
-
-            flow_str = ";".join(pipe_flows)
-            model.update_element(pipe_name, {Pipe.TFLOW: flow_str})
-            print(f"    Pipe '{pipe_name}': {flow_str} t/h")
-
-        # Configure pump speed if available
-        pump_speeds = [str(s.get("pump_speed", 100)) for s in scenarios]
-        pump_speed_str = ";".join(pump_speeds)
-        for pump in model.pumps.values():
-            if pump.index > 0:
-                # Note: Pump speed parameter depends on pump model
-                try:
-                    model.update_element(pump.name, {"SPEED": pump_speed_str})
-                    print(f"    Pump '{pump.name}': {pump_speed_str}% speed")
-                except Exception:
-                    pass  # Speed parameter might not exist
+    # Configure pump speed if available
+    pump_speeds = [str(s.get("pump_speed", 100)) for s in scenarios]
+    pump_speed_str = ";".join(pump_speeds)
+    for pump in model.pumps.values():
+        if pump.index > 0:
+            # Note: Pump speed parameter depends on pump model
+            try:
+                model.update_element(pump.name, {"SPEED": pump_speed_str})
+                print(f"    Pump '{pump.name}': {pump_speed_str}% speed")
+            except Exception:
+                pass  # Speed parameter might not exist
 
     # Create and return CaseSet
     cases = CaseSet(model)
-    print(f"\n  ✓ CaseSet configured: {cases.count} cases")
+    print(f"\n  [OK] CaseSet configured: {cases.count} cases")
 
     # Activate all cases
     cases.activate_cases(list(range(1, cases.count + 1)))
-    print("  ✓ All cases activated")
+    print("  [OK] All cases activated")
 
     return cases
 
@@ -161,12 +163,12 @@ def generate_case_comparison_table(
     output_format: str = "markdown",
 ) -> str:
     """Generate a comparison table of all cases.
-    
+
     Args:
         model: The KORF model.
         cases: The CaseSet.
         output_format: "markdown", "csv", or "html".
-        
+
     Returns:
         Formatted comparison table.
     """
@@ -175,7 +177,7 @@ def generate_case_comparison_table(
     print("=" * 60)
 
     # Collect data for each case
-    headers = ["Parameter"] + cases.names
+    headers = ["Parameter", *cases.names]
     rows = []
 
     # Feed pressures
@@ -187,7 +189,7 @@ def generate_case_comparison_table(
                 # Pad if needed
                 while len(values) < cases.count:
                     values.append(values[-1] if values else "N/A")
-                rows.append([f"Feed '{feed.name}' Pressure (bara)"] + list(values[:cases.count]))
+                rows.append([f"Feed '{feed.name}' Pressure (bara)", *list(values[:cases.count])])
 
     # Product pressures
     for prod in model.products.values():
@@ -197,7 +199,7 @@ def generate_case_comparison_table(
                 values = pres_rec.values if pres_rec.values else ["N/A"] * cases.count
                 while len(values) < cases.count:
                     values.append(values[-1] if values else "N/A")
-                rows.append([f"Product '{prod.name}' Pressure (bara)"] + list(values[:cases.count]))
+                rows.append([f"Product '{prod.name}' Pressure (bara)", *list(values[:cases.count])])
 
     # Pipe flows
     for pipe in model.pipes.values():
@@ -207,7 +209,7 @@ def generate_case_comparison_table(
                 values = flow_rec.values if flow_rec.values else ["N/A"] * cases.count
                 while len(values) < cases.count:
                     values.append(values[-1] if values else "N/A")
-                rows.append([f"Pipe '{pipe.name}' Flow (t/h)"] + list(values[:cases.count]))
+                rows.append([f"Pipe '{pipe.name}' Flow (t/h)", *list(values[:cases.count])])
 
     # Generate output
     if output_format == "markdown":
@@ -239,7 +241,7 @@ def generate_case_comparison_table(
     else:
         result = "Unsupported format"
 
-    print(f"  ✓ Generated {output_format} table with {len(rows)} parameters")
+    print(f"  [OK] Generated {output_format} table with {len(rows)} parameters")
     return result
 
 
@@ -249,12 +251,12 @@ def export_case_data(
     output_dir: str = "examples/output/case_data",
 ) -> dict[str, Path]:
     """Export case data to various formats.
-    
+
     Args:
         model: The KORF model.
         cases: The CaseSet.
         output_dir: Directory for output files.
-        
+
     Returns:
         Dictionary of exported file paths.
     """
@@ -272,13 +274,13 @@ def export_case_data(
     md_path = output_path / "case_comparison.md"
     md_path.write_text(md_table)
     exported["markdown"] = md_path
-    print(f"  ✓ Markdown table: {md_path}")
+    print(f"  [OK] Markdown table: {md_path}")
 
     csv_table = generate_case_comparison_table(model, cases, "csv")
     csv_path = output_path / "case_comparison.csv"
     csv_path.write_text(csv_table)
     exported["csv"] = csv_path
-    print(f"  ✓ CSV table: {csv_path}")
+    print(f"  [OK] CSV table: {csv_path}")
 
     # Export per-case parameter files
     for case_idx, case_name in enumerate(cases.names, 1):
@@ -303,7 +305,7 @@ def export_case_data(
         json_path = output_path / f"case_{case_idx:02d}_{case_name}.json"
         json_path.write_text(json.dumps(case_data, indent=2))
 
-    print(f"  ✓ Individual case files: {output_path}/case_*.json")
+    print(f"  [OK] Individual case files: {output_path}/case_*.json")
 
     return exported
 
@@ -314,12 +316,12 @@ def analyze_case_sensitivity(
     parameter: str = "flow",
 ) -> dict[str, float]:
     """Analyze sensitivity of parameter across cases.
-    
+
     Args:
         model: The KORF model.
         cases: The CaseSet.
         parameter: Parameter to analyze ("flow", "pressure", etc.).
-        
+
     Returns:
         Dictionary with min, max, avg, and variation.
     """
@@ -338,10 +340,8 @@ def analyze_case_sensitivity(
                         val = cases.get_case_value(
                             ";".join(flow_rec.values), case_idx
                         )
-                        try:
+                        with contextlib.suppress(ValueError, TypeError):
                             values.append(float(val))
-                        except (ValueError, TypeError):
-                            pass
 
     if not values:
         print("  No data available for analysis")
@@ -374,9 +374,9 @@ if __name__ == "__main__":
 
     try:
         model = Model("examples/output/pump_circuit.kdf")
-        print("  ✓ Loaded pump circuit model")
+        print("  [OK] Loaded pump circuit model")
     except FileNotFoundError:
-        print("  ⚠ Pump circuit not found. Run 01_create_pump_circuit.py first")
+        print("  [WARN] Pump circuit not found. Run 01_create_pump_circuit.py first")
         exit(1)
 
     # Setup multi-case scenarios
@@ -394,7 +394,7 @@ if __name__ == "__main__":
     # Save the multi-case model
     output_path = "examples/output/pump_circuit_multicase.kdf"
     model.save_as(output_path)
-    print(f"\n  ✓ Multi-case model saved to: {output_path}")
+    print(f"\n  [OK] Multi-case model saved to: {output_path}")
 
     print("\n" + "=" * 60)
     print("Summary")

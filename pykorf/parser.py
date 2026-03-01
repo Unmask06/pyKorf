@@ -289,6 +289,8 @@ class KdfParser:
         if not records:
             return
         etype = records[0].element_type
+        if etype is None:
+            raise ValueError("Cannot insert records without element_type")
         pos = self._find_insert_position(etype)
         for i, rec in enumerate(records):
             self._records.insert(pos + i, rec)

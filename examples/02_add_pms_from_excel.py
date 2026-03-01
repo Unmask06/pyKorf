@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from pykorf import Model
-from pykorf.definitions import Element, Pipe
+from pykorf.definitions import Common, Element, Pipe
 
 
 def create_sample_pms_excel(output_path: str = "examples/output/pms_data.xlsx") -> None:
@@ -56,8 +56,8 @@ def create_sample_pms_excel(output_path: str = "examples/output/pms_data.xlsx") 
     # Ensure output directory exists
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     df.to_excel(output_path, index=False, sheet_name="PMS_Data")
-    print(f"  ✓ Created sample PMS Excel: {output_path}")
-    print(f"  ✓ Contains {len(df)} pipe specifications")
+    print(f"  [OK] Created sample PMS Excel: {output_path}")
+    print(f"  [OK] Contains {len(df)} pipe specifications")
 
 
 def create_sample_pms_json(output_path: str = "examples/output/pms_data.json") -> None:
@@ -118,8 +118,8 @@ def create_sample_pms_json(output_path: str = "examples/output/pms_data.json") -
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w") as f:
         json.dump(pms_data, f, indent=2)
-    print(f"  ✓ Created sample PMS JSON: {output_path}")
-    print(f"  ✓ Contains {len(pms_data['specifications'])} pipe specifications")
+    print(f"  [OK] Created sample PMS JSON: {output_path}")
+    print(f"  [OK] Contains {len(pms_data['specifications'])} pipe specifications")
 
 
 def read_pms_from_excel(file_path: str) -> list[dict[str, Any]]:
@@ -142,7 +142,7 @@ def read_pms_from_excel(file_path: str) -> list[dict[str, Any]]:
     # Convert to list of dictionaries
     specs = df.to_dict(orient="records")
 
-    print(f"  ✓ Read {len(specs)} PMS entries from Excel")
+    print(f"  [OK] Read {len(specs)} PMS entries from Excel")
     return specs
 
 
@@ -152,7 +152,7 @@ def read_pms_from_json(file_path: str) -> list[dict[str, Any]]:
         data = json.load(f)
 
     specs = data.get("specifications", [])
-    print(f"  ✓ Read {len(specs)} PMS entries from JSON")
+    print(f"  [OK] Read {len(specs)} PMS entries from JSON")
     return specs
 
 
@@ -186,44 +186,43 @@ def add_pms_to_model(
     skipped = 0
 
     for spec in pms_specs:
-        # Generate unique name from PMS code
+        # Generate unique name from PMS code (max 9 chars for KORF)
         pms_code = spec.get("pms_code", f"PMS_{len(created_names)}")
-        entry_name = f"PMS_{pms_code}"
+        entry_name = f"P{pms_code.replace('-', '').replace('_', '')[:8]}"
 
         # Check if already exists
         if entry_name in [p.name for p in model.pipedata.values()]:
             if not override_existing:
-                print(f"  ⏭ Skipping {entry_name} (already exists)")
+                print(f"  [SKIP] Skipping {entry_name} (already exists)")
                 skipped += 1
                 continue
             print(f"  📝 Overriding {entry_name}")
 
         # Create PipeData entry
+        from pykorf.definitions import PipeData
+
         params = {
-            Pipe.MAT: spec.get("material", "Carbon Steel"),
-            Pipe.SCH: str(spec.get("schedule", "40")),
-            Pipe.NBD: str(spec.get("nominal_diameter_inch", 4)),
-            Pipe.OD: str(spec.get("outer_diameter_mm", 114.3)),
-            Pipe.WT: str(spec.get("wall_thickness_mm", 6.0)),
-            Pipe.RR: str(spec.get("roughness_mm", 0.046)),
+            PipeData.MAT: spec.get("material", "Carbon Steel"),
+            PipeData.SCH: str(spec.get("schedule", "40")),
+            PipeData.DIA: str(spec.get("nominal_diameter_inch", 4)),
             # Additional metadata in NOTES
             Common.NOTES: (
                 f"PMS: {pms_code}, "
-                f"MaxP: {spec.get('max_pressure_bar', 'N/A')}bar, "
-                f"MaxT: {spec.get('max_temp_c', 'N/A')}�degC"
+                f"OD: {spec.get('outer_diameter_mm', 'N/A')}mm, "
+                f"WT: {spec.get('wall_thickness_mm', 'N/A')}mm"
             ),
         }
 
         try:
             model.add_element(Element.PIPEDATA, entry_name, params)
             created_names.append(entry_name)
-            print(f"  ✓ Created PipeData: {entry_name}")
+            print(f"  [OK] Created PipeData: {entry_name}")
             print(
-                f"    Material: {params[Pipe.MAT]}, Sch {params[Pipe.SCH]}, "
-                f'DN{params[Pipe.NBD]}"'
+                f"    Material: {params[PipeData.MAT]}, Sch {params[PipeData.SCH]}, "
+                f'DN{params[PipeData.DIA]}"'
             )
         except Exception as e:
-            print(f"  ✗ Failed to create {entry_name}: {e}")
+            print(f"  [FAIL] Failed to create {entry_name}: {e}")
 
     print(f"\n  Summary: {len(created_names)} created, {skipped} skipped")
     return created_names
@@ -257,17 +256,17 @@ def assign_pms_to_pipes(
 
         # Check if pipe exists
         if pipe_name not in [p.name for p in model.pipes.values()]:
-            print(f"  ⚠ Pipe '{pipe_name}' not found in model")
+            print(f"  [WARN] Pipe '{pipe_name}' not found in model")
             continue
 
         # Check if PipeData exists
         if pipedata_name not in [p.name for p in model.pipedata.values()]:
-            print(f"  ⚠ PMS '{pms_code}' not found in library")
+            print(f"  [WARN] PMS '{pms_code}' not found in library")
             continue
 
         # Get PipeData reference
         pipedata = model.pipedata[
-            [k for k, v in model.pipedata.items() if v.name == pipedata_name][0]
+            next(k for k, v in model.pipedata.items() if v.name == pipedata_name)
         ]
 
         # Update pipe to reference this PMS
@@ -280,9 +279,9 @@ def assign_pms_to_pipes(
                     Pipe.DIA: pipedata._get(Pipe.NBD).values[0],
                 },
             )
-            print(f"  ✓ {pipe_name} → {pms_code}")
+            print(f"  [OK] {pipe_name} → {pms_code}")
         except Exception as e:
-            print(f"  ✗ Failed to assign {pms_code} to {pipe_name}: {e}")
+            print(f"  [FAIL] Failed to assign {pms_code} to {pipe_name}: {e}")
 
 
 def validate_pms_assignments(model: Model) -> dict[str, list[str]]:
@@ -311,13 +310,13 @@ def validate_pms_assignments(model: Model) -> dict[str, list[str]]:
 
         if not mat_rec or not mat_rec.values[0]:
             results["missing_pms"].append(pipe.name)
-            print(f"  ⚠ {pipe.name}: No material assigned")
+            print(f"  [WARN] {pipe.name}: No material assigned")
         elif not sch_rec or not sch_rec.values[0]:
             results["incomplete"].append(pipe.name)
-            print(f"  ⚠ {pipe.name}: Material but no schedule")
+            print(f"  [WARN] {pipe.name}: Material but no schedule")
         else:
             results["valid"].append(pipe.name)
-            print(f"  ✓ {pipe.name}: {mat_rec.values[0]} Sch {sch_rec.values[0]}")
+            print(f"  [OK] {pipe.name}: {mat_rec.values[0]} Sch {sch_rec.values[0]}")
 
     print(
         f"\n  Summary: {len(results['valid'])} valid, "
@@ -341,7 +340,7 @@ if __name__ == "__main__":
     # Try to load existing pump circuit, or create new
     try:
         model = Model("examples/output/pump_circuit.kdf")
-        print("  ✓ Loaded existing pump circuit model")
+        print("  [OK] Loaded existing pump circuit model")
     except FileNotFoundError:
         print("  Creating new blank model...")
         model = Model()
@@ -365,8 +364,7 @@ if __name__ == "__main__":
         pipe_assignments = {
             "SUCT_L1": "CS-40-6",  # Suction: Carbon Steel, Sch 40, 6"
             "DISC_L2": "CS-80-4",  # Discharge: Carbon Steel, Sch 80, 4"
-            "COOL_L3": "SS-40-4",  # Cooler line: Stainless Steel
-            "RETURN_L4": "CS-40-6",  # Return: Carbon Steel
+            "RETURN_L3": "SS-40-4",  # Return line: Stainless Steel
         }
         assign_pms_to_pipes(model, pipe_assignments)
 
@@ -376,4 +374,4 @@ if __name__ == "__main__":
     # Step 7: Save
     output_path = "examples/output/pump_circuit_with_pms.kdf"
     model.save_as(output_path)
-    print(f"\n  ✓ Model with PMS saved to: {output_path}")
+    print(f"\n  [OK] Model with PMS saved to: {output_path}")

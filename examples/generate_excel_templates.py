@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate Excel Templates for pyKorf Enterprise Workflows
+Generate Excel Templates for pyKorf Enterprise Workflows.
 
 This script creates ready-to-use Excel templates for:
 1. PMS Master data (pipe specifications)
@@ -28,7 +28,7 @@ except ImportError:
 
 def create_pms_master_data() -> pd.DataFrame:
     """Create sample PMS master data.
-    
+
     Returns:
         DataFrame with sample PMS specifications
     """
@@ -116,7 +116,7 @@ def create_pms_master_data() -> pd.DataFrame:
 
 def create_fluid_properties_data() -> pd.DataFrame:
     """Create sample fluid properties data.
-    
+
     Returns:
         DataFrame with sample fluid properties for multiple lines and cases
     """
@@ -264,9 +264,9 @@ def create_fluid_properties_data() -> pd.DataFrame:
 
 def create_line_to_pms_mapping() -> pd.DataFrame:
     """Create sample line-to-PMS mapping.
-    
+
     This is optional - used when PMS codes are not already in Line Notes.
-    
+
     Returns:
         DataFrame with line to PMS mapping
     """
@@ -300,10 +300,10 @@ def create_line_to_pms_mapping() -> pd.DataFrame:
 
 def generate_templates(output_dir: Path) -> dict[str, Path]:
     """Generate all Excel templates.
-    
+
     Args:
         output_dir: Directory to save templates
-        
+
     Returns:
         Dictionary mapping template names to file paths
     """
@@ -328,7 +328,7 @@ def generate_templates(output_dir: Path) -> dict[str, Path]:
         mapping_df.to_excel(writer, sheet_name="Line_to_PMS_Mapping", index=False)
 
     generated_files["combined"] = combined_file
-    print(f"✓ Created: {combined_file}")
+    print(f"* Created: {combined_file}")
 
     # Template 2: PMS Only
     pms_file = output_dir / "pms_template.xlsx"
@@ -339,7 +339,7 @@ def generate_templates(output_dir: Path) -> dict[str, Path]:
         mapping_df.to_excel(writer, sheet_name="Line_to_PMS_Mapping", index=False)
 
     generated_files["pms_only"] = pms_file
-    print(f"✓ Created: {pms_file}")
+    print(f"* Created: {pms_file}")
 
     # Template 3: Fluid Properties Only
     fluid_file = output_dir / "fluid_properties_template.xlsx"
@@ -348,14 +348,14 @@ def generate_templates(output_dir: Path) -> dict[str, Path]:
         fluid_df.to_excel(writer, sheet_name="Fluid_Properties", index=False)
 
     generated_files["fluid_only"] = fluid_file
-    print(f"✓ Created: {fluid_file}")
+    print(f"* Created: {fluid_file}")
 
     return generated_files
 
 
 def print_usage_instructions(generated_files: dict[str, Path]):
     """Print usage instructions for the generated templates.
-    
+
     Args:
         generated_files: Dictionary of generated file paths
     """
@@ -380,7 +380,7 @@ def print_usage_instructions(generated_files: dict[str, Path]):
    • Schedule: Pipe schedule (40, 80, 160, STD, XS, XXS, 40S, 80S)
    • ID_inch: Inner diameter in inches
    • Material: Pipe material (Carbon Steel, Stainless Steel, etc.)
-   
+
    Add PMS codes to your KDF Line Notes in format:
        PMS:PMS-A11-CS2; LINE-001;
 
@@ -394,7 +394,7 @@ def print_usage_instructions(generated_files: dict[str, Path]):
    • LiqDen: Liquid density in kg/m³
    • LiqVisc: Liquid viscosity in cP
    • LiqSur: Surface tension in dyne/cm
-   
+
 3. Line to PMS Mapping Sheet (Optional):
    ──────────────────────────────────────
    Use this if PMS codes are NOT already in KDF Line Notes.
@@ -418,7 +418,7 @@ def print_usage_instructions(generated_files: dict[str, Path]):
        --output "updated_model.kdf"
 
 For dry run (preview changes without saving):
-   
+
    python enterprise_pms_and_fluid_workflow.py \\
        --kdf "your_model.kdf" \\
        --pms-excel "pms_template.xlsx" \\

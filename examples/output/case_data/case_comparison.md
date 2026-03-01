@@ -1,0 +1,7 @@
+| Parameter | MIN_LOAD | NORMAL | PEAK | EMERGENCY |
+| --- | --- | --- | --- | --- |
+| Feed 'FEED_01' Pressure (bara) | 90;100;110;120 | 0 | kPag | kPag |
+| Product 'PROD_01' Pressure (bara) | 45;50;55;40 | 0 | kPag | kPag |
+| Pipe 'SUCT_L1' Flow (t/h) | 40;80;120;150 | 0 | t/h | t/h |
+| Pipe 'DISC_L2' Flow (t/h) | 50;100;150;100 | 0 | t/h | t/h |
+| Pipe 'RETURN_L3' Flow (t/h) | 30;60;90;120 | 0 | t/h | t/h |

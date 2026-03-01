@@ -13,10 +13,13 @@ a heat exchanger and returned.
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from pykorf import Model
 from pykorf.definitions import Element, Feed, Pipe, Prod, Pump, Valve
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def create_pump_circuit(
@@ -25,15 +28,15 @@ def create_pump_circuit(
     feed_pressure: float = 100.0,
 ) -> Model:
     """Create a pump circuit with heat exchanger.
-    
+
     Args:
         output_path: Where to save the KDF file.
         flow_rate: Design flow rate in t/h.
         feed_pressure: Feed pressure in bara.
-        
+
     Returns:
         The created Model instance.
-        
+
     Example:
         ```python
         model = create_pump_circuit("my_circuit.kdf", flow_rate=150.0)
@@ -128,16 +131,20 @@ def create_pump_circuit(
     model.connect_elements("FEED_01", "PUMP_01", pipe_name="SUCT_L1")
     print("  [OK] Connected FEED_01 -> SUCT_L1 -> PUMP_01")
 
-    # Connect Pump -> Valve (simplified - skipping cooler for compatibility)
-    model.connect_elements("PUMP_01", "CV_01", pipe_name="DISC_L2")
-    print("  [OK] Connected PUMP_01 -> DISC_L2 -> CV_01")
+    # Connect Pump -> Cooler
+    model.connect_elements("PUMP_01", "COOLER_01", pipe_name="DISC_L2")
+    print("  [OK] Connected PUMP_01 -> DISC_L2 -> COOLER_01")
+
+    # Connect Cooler -> Valve
+    model.connect_elements("COOLER_01", "CV_01", pipe_name="COOL_L3")
+    print("  [OK] Connected COOLER_01 -> COOL_L3 -> CV_01")
 
     # Connect Valve -> Product
-    model.connect_elements("CV_01", "PROD_01", pipe_name="RETURN_L3")
-    print("  [OK] Connected CV_01 -> RETURN_L3 -> PROD_01")
+    model.connect_elements("CV_01", "PROD_01", pipe_name="RETURN_L4")
+    print("  [OK] Connected CV_01 -> RETURN_L4 -> PROD_01")
 
     # Set flow rates for all pipes
-    for pipe_name in ["SUCT_L1", "DISC_L2", "RETURN_L3"]:
+    for pipe_name in ["SUCT_L1", "DISC_L2", "COOL_L3", "RETURN_L4"]:
         model.update_element(
             pipe_name,
             {Pipe.TFLOW: str(flow_rate)}  # Total flow in t/h
@@ -149,14 +156,15 @@ def create_pump_circuit(
     # ===================================================================
     print("\n[7/7] Setting pipe properties...")
     pipe_specs = {
-        "SUCT_L1": {"LEN": "2", "DIA": "6", "SCH": "40"},      # Suction: short, large
-        "DISC_L2": {"LEN": "5", "DIA": "4", "SCH": "40"},      # Discharge: medium
-        "RETURN_L3": {"LEN": "15", "DIA": "6", "SCH": "40"},   # Return: longer
+        "SUCT_L1": {Pipe.LEN: "2", Pipe.DIA: "6", Pipe.SCH: "40"},      # Suction: short, large
+        "DISC_L2": {Pipe.LEN: "5", Pipe.DIA: "4", Pipe.SCH: "40"},      # Discharge: medium
+        "COOL_L3": {Pipe.LEN: "8", Pipe.DIA: "4", Pipe.SCH: "40"},      # Cooler transfer
+        "RETURN_L4": {Pipe.LEN: "15", Pipe.DIA: "6", Pipe.SCH: "40"},   # Return: longer
     }
 
     for pipe_name, specs in pipe_specs.items():
         model.update_element(pipe_name, specs)
-        print(f"  [OK] Set {pipe_name}: L={specs['LEN']}m, D={specs['DIA']}\"")
+        print(f"  [OK] Set {pipe_name}: L={specs[Pipe.LEN]}m, D={specs[Pipe.DIA]}\"")
 
     # ===================================================================
     # Validation & Save
@@ -197,7 +205,7 @@ def create_pump_circuit(
 
 def add_multicase_support(model: Model, case_names: list[str] | None = None) -> None:
     """Add multi-case support to the pump circuit.
-    
+
     Args:
         model: The pump circuit model.
         case_names: List of case names (default: ["MIN", "NORM", "MAX"]).
@@ -227,7 +235,7 @@ def add_multicase_support(model: Model, case_names: list[str] | None = None) -> 
     }
 
     # Update main pipe flow
-    for pipe_name in ["SUCT_L1", "DISC_L2", "RETURN_L3"]:
+    for pipe_name in ["SUCT_L1", "DISC_L2", "COOL_L3", "RETURN_L4"]:
         # Get current single value
         current = flow_scenarios.get(pipe_name[:3], "100;150;200")
         model.update_element(pipe_name, {Pipe.TFLOW: current})

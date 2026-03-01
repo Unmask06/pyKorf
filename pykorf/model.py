@@ -263,7 +263,7 @@ class Model:
         """
         elem = self._name_map.get(name)
         if elem is None:
-            raise ElementNotFound(f"No element named {name!r} in model")
+            raise ElementNotFound(name)
         return elem
 
     def __getitem__(self, name: str) -> BaseElement:
@@ -411,6 +411,9 @@ class Model:
                 "connect_elements(..., pipe_name=...) so the pipe is created "
                 "with connectivity."
             )
+        # PIPEDATA doesn't have NAME - apply params directly to parser
+        if et == Element.PIPEDATA:
+            return self._add_pipedata_internal(name, params)
         return self._add_element_internal(et, name, params)
 
     def _add_element_internal(
@@ -418,8 +421,24 @@ class Model:
         etype: str,
         name: str,
         params: dict[str, Any] | None = None,
+        *,
+        auto_position: bool = True,
     ) -> BaseElement:
-        """Internal element creation path used by model operations."""
+        """Internal element creation path used by model operations.
+
+        Parameters
+        ----------
+        etype:
+            Element type (e.g., 'PIPE', 'PUMP').
+        name:
+            Element name.
+        params:
+            Optional parameter overrides.
+        auto_position:
+            If True (default), automatically place the element at a
+            non-overlapping position. Set to False when positioning
+            will be handled separately (e.g., pipes in connect_elements).
+        """
         et = etype.upper()
         if et not in ELEMENT_REGISTRY:
             raise ValueError(f"Unknown element type: {etype!r}")
@@ -446,15 +465,53 @@ class Model:
             self.update_element(name, params)
 
         # Auto-place if user did not explicitly provide X/Y
-        x_or_y_provided = bool(params) and any(
-            key.upper() in {Common.X, Common.Y} for key in params
-        )
-        if not x_or_y_provided:
-            from pykorf.layout import auto_place
+        if auto_position:
+            x_or_y_provided = bool(params) and any(
+                key.upper() in {Common.X, Common.Y} for key in params
+            )
+            if not x_or_y_provided:
+                from pykorf.layout import auto_place
 
-            auto_place(self, self.get_element(name))
+                auto_place(self, self.get_element(name))
 
         return self.get_element(name)
+
+    def _add_pipedata_internal(
+        self,
+        name: str,
+        params: dict[str, Any] | None = None,
+    ) -> PipeData:
+        """Add a new PIPEDATA entry.
+        
+        PIPEDATA elements don't have a NAME parameter in KORF, so we need
+        to handle them specially - they can't be looked up by name.
+        """
+        et = Element.PIPEDATA
+        new_idx = self._parser.next_index(et)
+        
+        # Find a source index to clone from - try index 1 if exists, otherwise use max
+        src_idx = 1 if self._parser.num_instances(et) > 0 else 0
+        self._parser.clone_records(et, src_idx, new_idx)
+        
+        # Update NUM count
+        current_count = self._parser.num_instances(et)
+        self._parser.set_num_instances(et, current_count + 1)
+        
+        # Apply user params directly to parser records
+        if params:
+            for param, value in params.items():
+                key = param.upper()
+                if isinstance(value, (list, tuple)):
+                    val_list = [str(v) for v in value]
+                else:
+                    val_list = [str(value)]
+                self._parser.set_value(et, new_idx, key, val_list)
+        
+        # Rebuild to pick up the new element
+        self._build_collections()
+        
+        # Return the newly created PipeData element
+        return self.pipedata[new_idx]
 
     def _next_auto_pipe_name(self) -> str:
         """Return the next available auto-generated pipe name."""
@@ -464,6 +521,75 @@ class Model:
             if candidate not in self._name_map:
                 return candidate
             i += 1
+
+    def _position_pipe_between(
+        self, pipe_name: str, elem1_name: str, elem2_name: str
+    ) -> None:
+        """Position a pipe between two elements with proper spacing.
+
+        Places the pipe at a position that visually connects elem1 and elem2,
+        ensuring proper layout spacing and bounds. The pipe is aligned on the
+        same Y-level as the equipment for a clean flow layout.
+        """
+        from pykorf.layout import get_position, set_position, auto_place
+
+        elem1 = self.get_element(elem1_name)
+        elem2 = self.get_element(elem2_name)
+        pipe = self.get_element(pipe_name)
+
+        pos1 = get_position(elem1)
+        pos2 = get_position(elem2)
+
+        # If either element is unplaced, use auto_place for the pipe
+        if pos1 is None or pos2 is None or pos1 == (0.0, 0.0) or pos2 == (0.0, 0.0):
+            auto_place(self, pipe)
+            return
+
+        # Calculate midpoint X between elements
+        mid_x = (pos1[0] + pos2[0]) / 2
+
+        # Align pipe on the same Y-level as the elements (flow layout)
+        # Use the Y position of the first element for alignment
+        pipe_y = pos1[1]
+
+        # Apply bounds from layout module
+        from pykorf.layout import X_MIN, X_MAX, Y_MIN, Y_MAX, MIN_SPACING
+
+        # Ensure within valid drawing bounds
+        mid_x = max(X_MIN, min(X_MAX, mid_x))
+        pipe_y = max(Y_MIN, min(Y_MAX, pipe_y))
+
+        # Check for clash with other elements at this position and offset if needed
+        candidate = (mid_x, pipe_y)
+        offset = MIN_SPACING / 2  # Offset by half minimum spacing
+        max_attempts = 5
+        
+        for _ in range(max_attempts):
+            clash = False
+            for elem in self.elements:
+                if elem.name == pipe_name:
+                    continue
+                other_pos = get_position(elem)
+                if other_pos is None or other_pos == (0.0, 0.0):
+                    continue
+                # Check if too close (within half minimum spacing)
+                dx = candidate[0] - other_pos[0]
+                dy = candidate[1] - other_pos[1]
+                dist = (dx * dx + dy * dy) ** 0.5
+                if dist < offset:
+                    clash = True
+                    # Offset to the side (perpendicular to flow)
+                    candidate = (candidate[0], candidate[1] + offset)
+                    candidate = (max(X_MIN, min(X_MAX, candidate[0])),
+                                max(Y_MIN, min(Y_MAX, candidate[1])))
+                    break
+            if not clash:
+                break
+
+        mid_x, pipe_y = candidate
+
+        # Set the pipe position
+        set_position(self, pipe_name, mid_x, pipe_y)
 
     def add_elements(
         self,
@@ -736,7 +862,12 @@ class Model:
                 return
 
             new_pipe_name = pipe_name or self._next_auto_pipe_name()
-            self._add_element_internal(Element.PIPE, new_pipe_name)
+            # Create pipe without auto-positioning - we'll position it manually
+            self._add_element_internal(Element.PIPE, new_pipe_name, auto_position=False)
+            
+            # Position the pipe intelligently between the two elements
+            self._position_pipe_between(new_pipe_name, name1_or_pairs, name2)
+            
             connect(self, new_pipe_name, name1_or_pairs)
             connect(self, new_pipe_name, name2)
 
@@ -804,6 +935,66 @@ class Model:
 
         return visualize(self, **kwargs)
 
+    def auto_layout(self, spacing: float | None = None) -> None:
+        """Automatically arrange all unplaced elements in a logical flow.
+
+        Places elements that are at position (0, 0) in a grid pattern,
+        preserving the positions of already-placed elements.
+
+        Parameters
+        ----------
+        spacing:
+            Grid spacing in drawing units. Default is 1500.
+
+        Example:
+        -------
+        ```python
+        model.auto_layout()  # Arrange all unplaced elements
+        ```
+        """
+        from pykorf.layout import auto_place, get_position, X_MIN, Y_MIN, COMFORT_SPACING_X, COMFORT_SPACING_Y
+
+        spacing = spacing or COMFORT_SPACING_X
+
+        # Find all unplaced elements (at 0, 0 or no position)
+        unplaced = []
+        for elem in self.elements:
+            pos = get_position(elem)
+            if pos is None or pos == (0.0, 0.0):
+                unplaced.append(elem)
+
+        if not unplaced:
+            return
+
+        # Get existing positions to avoid clashes
+        existing = [
+            pos for pos in (get_position(e) for e in self.elements)
+            if pos is not None and pos != (0.0, 0.0)
+        ]
+
+        # Place unplaced elements in a grid
+        import math
+        cols = max(1, int(math.sqrt(len(unplaced))))
+
+        for i, elem in enumerate(unplaced):
+            row = i // cols
+            col = i % cols
+
+            # Calculate position
+            x = X_MIN + col * spacing
+            y = Y_MIN + row * spacing
+
+            # Ensure no clash with existing elements
+            for ex, ey in existing:
+                if abs(x - ex) < spacing / 2 and abs(y - ey) < spacing / 2:
+                    # Shift this element
+                    x += spacing
+                    break
+
+            from pykorf.layout import set_position
+            set_position(self, elem.name, x, y)
+            existing.append((x, y))
+
     def visualize_network(self, path: str | Path = "network.html") -> None:
         """Generate an interactive PyVis HTML visualization.
 
@@ -863,19 +1054,34 @@ class Model:
     def path(self) -> Path:
         return self._parser.path
 
-    def save(self, path: str | Path | None = None) -> None:
+    def save(self, path: str | Path | None = None, *, check_layout: bool = True) -> None:
         """Serialise the (possibly modified) model back to a .kdf file.
 
         Parameters
         ----------
         path:
             Destination path.  If *None*, overwrites the source file.
+        check_layout:
+            If True (default), validate layout before saving and warn about
+            overlapping elements or elements outside bounds.
         """
+        if check_layout:
+            from pykorf.layout import check_layout as _check_layout
+            issues = _check_layout(self)
+            if issues:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(
+                    f"Layout issues detected ({len(issues)}): "
+                    "Run model.auto_layout() to fix, or save with check_layout=False to ignore"
+                )
+                for issue in issues[:5]:  # Log first 5
+                    logger.warning(f"  - {issue}")
         self._parser.save(path)
 
-    def save_as(self, path: str | Path) -> None:
+    def save_as(self, path: str | Path, *, check_layout: bool = True) -> None:
         """Save to a new path (alias for :meth:`save` with a path argument)."""
-        self._parser.save(path)
+        self.save(path, check_layout=check_layout)
 
     # ------------------------------------------------------------------
     # Meta-information

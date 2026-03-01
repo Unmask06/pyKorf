@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Fluid Class Demo - Direct KDF Fluid Properties Management
+Fluid Class Demo - Direct KDF Fluid Properties Management.
 
 This example demonstrates the new Fluid class that allows direct
 manipulation of fluid properties in KDF files without requiring
@@ -34,13 +34,13 @@ def demo_basic_usage():
     print("DEMO 1: Basic Fluid Usage")
     print("=" * 70)
     print("NOTE: Use metric units. KORF will auto-convert to your display units!")
-    print("      (e.g., kPag -> barg/psig, °C -> °F)")
+    print("      (e.g., kPag -> barg/psig, degC -> degF)")
     print()
 
     # Create a single-phase liquid fluid
     # These are METRIC units - KORF will convert to your preferred display units
     water = Fluid.single_phase_liquid(
-        temp=25.0,           # °C -> KORF shows 77°F if using imperial
+        temp=25.0,           # degC -> KORF shows 77F if using imperial
         pres=100.0,          # kPag -> KORF shows 1 barg or 14.5 psig
         density=1000.0,      # kg/m³
         viscosity=1.0,       # cP
@@ -103,7 +103,7 @@ def demo_load_and_apply():
 
     # Apply to pipe (directly updates KDF)
     pipe.set_fluid(new_fluid)
-    print("✓ Fluid properties applied to pipe")
+    print("* Fluid properties applied to pipe")
 
     # Verify the update
     updated_fluid = pipe.get_fluid()
@@ -134,8 +134,10 @@ def demo_multicase():
     )
 
     print(f"Created multi-case fluid with {multicase_fluid.num_cases} cases")
-    print(f"Temperature range: {multicase_fluid.temp_range}")
-    print(f"Pressure range: {multicase_fluid.pres_range}")
+    temp_range = (min(multicase_fluid.temp_inlet), max(multicase_fluid.temp_inlet))
+    pres_range = (min(multicase_fluid.pres_inlet), max(multicase_fluid.pres_inlet))
+    print(f"Temperature range: {temp_range}")
+    print(f"Pressure range: {pres_range}")
     print()
 
     # Show KDF record format
@@ -194,17 +196,17 @@ and KORF will display them in your preferred units in the GUI.
 
 Example:
     Python input (metric):        KORF GUI display:
-    ──────────────────────────    ───────────────────────────────
-    temp = 52.25    # °C    →     52.25°C  (or 126.05°F)
-    pres = 398.7    # kPag  →     3.987 barg  (or 57.85 psig)
-    dens = 570.24   # kg/m³ →     570.24 kg/m³ (or 35.6 lb/ft³)
-    
+    --------------------------    -------------------------------
+    temp = 52.25    # degC  ->    52.25C  (or 126.05F)
+    pres = 398.7    # kPag  ->    3.987 barg  (or 57.85 psig)
+    dens = 570.24   # kg/m3 ->    570.24 kg/m3 (or 35.6 lb/ft3)
+
 You don't need to do any conversion - KORF handles it!
 """)
 
     # Create fluid with metric units
-    fluid = Fluid(
-        temp_inlet=52.25,    # °C
+    Fluid(
+        temp_inlet=52.25,    # degC
         pres_inlet=398.7,    # kPag
         liquid_density=570.24,  # kg/m³
     )
@@ -222,7 +224,7 @@ pipe.set_fluid(fluid)
     print()
     print("KORF GUI will display (depending on your settings):")
     print("-" * 40)
-    print("  Temperature: 52.25°C  (or 126.1°F)")
+    print("  Temperature: 52.25C  (or 126.1F)")
     print("  Pressure: 3.987 barg  (or 57.9 psig)")
     print("  Density: 570.24 kg/m³ (or 35.6 lb/ft³)")
     print()
@@ -243,7 +245,7 @@ def demo_comparison_with_text_import():
    "\\PIPE","L1","PRES",398.7,398.7,398.7,"kPag"
    ...
 
-2. Use KORF GUI: File → Import → Select fluids.txt
+2. Use KORF GUI: File -> Import -> Select fluids.txt
 
 3. Check import log for errors
 
@@ -316,14 +318,14 @@ def demo_batch_update():
 
     print("Simulating batch update from Excel data:")
     for line_name, data in lines_data.items():
-        fluid = Fluid.single_phase_liquid(
+        Fluid.single_phase_liquid(
             temp=data["temp"],
             pres=data["pres"],
             density=data["density"],
             viscosity=data["viscosity"],
         )
-        print(f"  {line_name}: T={data['temp']}°C, P={data['pres']}kPag, "
-              f"ρ={data['density']}kg/m³")
+        print(f"  {line_name}: T={data['temp']}C, P={data['pres']}kPag, "
+              f"rho={data['density']}kg/m3")
 
     print("\nCode to apply:")
     print("-" * 40)
@@ -332,7 +334,7 @@ for line_name, data in lines_data.items():
     pipe = model.get_element(line_name)
     fluid = Fluid.single_phase_liquid(**data)
     pipe.set_fluid(fluid)
-    
+
 model.save()
 """
     print(code)
@@ -341,11 +343,11 @@ model.save()
 def main():
     """Run all demos."""
     print("\n")
-    print("█" * 70)
-    print("█" + " " * 68 + "█")
-    print("█" + "  Fluid Class Demo - Direct KDF Fluid Management".center(68) + "█")
-    print("█" + " " * 68 + "█")
-    print("█" * 70)
+    print("=" * 70)
+    print("|" + " " * 68 + "|")
+    print("|" + "  Fluid Class Demo - Direct KDF Fluid Management".center(68) + "|")
+    print("|" + " " * 68 + "|")
+    print("=" * 70)
     print()
 
     demo_basic_usage()
@@ -361,13 +363,13 @@ def main():
     print("=" * 70)
     print()
     print("Key benefits of the Fluid class:")
-    print("  ✓ No intermediate text files needed")
-    print("  ✓ Type-safe property access")
-    print("  ✓ Multi-case support built-in")
-    print("  ✓ Easy integration with Excel/pandas")
-    print("  ✓ Validation before saving")
-    print("  ✓ Batch processing support")
-    print("  ✓ Automatic unit conversion by KORF!")
+    print("  * No intermediate text files needed")
+    print("  * Type-safe property access")
+    print("  * Multi-case support built-in")
+    print("  * Easy integration with Excel/pandas")
+    print("  * Validation before saving")
+    print("  * Batch processing support")
+    print("  * Automatic unit conversion by KORF!")
 
 
 if __name__ == "__main__":

@@ -284,12 +284,16 @@ def export_to_csv_separate(
         writer = csv.writer(f)
         writer.writerow(["From", "To", "Pipe"])
 
-        # This is a simplified connectivity export
-        # Real implementation would parse CON/NOZL records
         for pipe in model.pipes.values():
             if pipe.index == 0:
                 continue
-            writer.writerow(["Source", "Target", pipe.name])
+            connected = [
+                name for name in model.get_connection(pipe.name)
+                if name in model and model[name].etype != "PIPE"
+            ]
+            source = connected[0] if len(connected) > 0 else ""
+            target = connected[1] if len(connected) > 1 else ""
+            writer.writerow([source, target, pipe.name])
 
     exported.append(conn_file)
     print(f"  ✓ {conn_file.name}")
@@ -383,18 +387,15 @@ def create_network_visualization(
             )
             equipment_added.add(elem.name)
 
-    # Add edges for pipes (simplified - actual would parse connectivity)
+    # Add edges for pipes
     for pipe in model.pipes.values():
         if pipe.index == 0:
             continue
 
-        # Try to find connected equipment
-        # This is a simplified representation
-        connected = []
-        for eq_name in equipment_added:
-            # Check if pipe name suggests connection (simplified)
-            if any(x in pipe.name for x in ["SUCT", "DISC", "IN", "OUT"]):
-                connected.append(eq_name)
+        connected = [
+            name for name in model.get_connection(pipe.name)
+            if name in equipment_added
+        ]
 
         if len(connected) >= 2:
             net.add_edge(

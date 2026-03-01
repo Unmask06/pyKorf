@@ -32,7 +32,7 @@ Example::
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from pykorf.definitions import Pipe as PipeParams
 
@@ -144,40 +144,40 @@ class Fluid:
     vapor_z: float | list[float] = 0.0
     vapor_k: float | list[float] = 0.0
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Normalize scalar values to lists for multi-case support."""
         # Determine number of cases from array values
         num_cases = self._get_num_cases()
 
-        # Convert scalars to lists
-        self.temp_inlet = self._normalize_to_list(self.temp_inlet, num_cases)
-        self.temp_outlet = self._normalize_to_list(self.temp_outlet, num_cases)
-        self.temp_average = self._normalize_to_list(self.temp_average, num_cases)
-        self.pres_inlet = self._normalize_to_list(self.pres_inlet, num_cases)
-        self.pres_outlet = self._normalize_to_list(self.pres_outlet, num_cases)
-        self.pres_average = self._normalize_to_list(self.pres_average, num_cases)
-        self.liquid_fraction = self._normalize_to_list(self.liquid_fraction, num_cases)
-        self.liquid_density = self._normalize_to_list(self.liquid_density, num_cases)
-        self.liquid_viscosity = self._normalize_to_list(
-            self.liquid_viscosity, num_cases
+        # Convert scalars to lists (cast to inform mypy of the transformation)
+        self.temp_inlet = cast(list[float], self._normalize_to_list(self.temp_inlet, num_cases))
+        self.temp_outlet = cast(list[float], self._normalize_to_list(self.temp_outlet, num_cases))
+        self.temp_average = cast(list[float], self._normalize_to_list(self.temp_average, num_cases))
+        self.pres_inlet = cast(list[float], self._normalize_to_list(self.pres_inlet, num_cases))
+        self.pres_outlet = cast(list[float], self._normalize_to_list(self.pres_outlet, num_cases))
+        self.pres_average = cast(list[float], self._normalize_to_list(self.pres_average, num_cases))
+        self.liquid_fraction = cast(list[float], self._normalize_to_list(self.liquid_fraction, num_cases))
+        self.liquid_density = cast(list[float], self._normalize_to_list(self.liquid_density, num_cases))
+        self.liquid_viscosity = cast(
+            list[float], self._normalize_to_list(self.liquid_viscosity, num_cases)
         )
-        self.liquid_surface_tension = self._normalize_to_list(
-            self.liquid_surface_tension, num_cases
+        self.liquid_surface_tension = cast(
+            list[float], self._normalize_to_list(self.liquid_surface_tension, num_cases)
         )
-        self.liquid_conductivity = self._normalize_to_list(
-            self.liquid_conductivity, num_cases
+        self.liquid_conductivity = cast(
+            list[float], self._normalize_to_list(self.liquid_conductivity, num_cases)
         )
-        self.liquid_cp = self._normalize_to_list(self.liquid_cp, num_cases)
-        self.liquid_mw = self._normalize_to_list(self.liquid_mw, num_cases)
-        self.vapor_density = self._normalize_to_list(self.vapor_density, num_cases)
-        self.vapor_viscosity = self._normalize_to_list(self.vapor_viscosity, num_cases)
-        self.vapor_conductivity = self._normalize_to_list(
-            self.vapor_conductivity, num_cases
+        self.liquid_cp = cast(list[float], self._normalize_to_list(self.liquid_cp, num_cases))
+        self.liquid_mw = cast(list[float], self._normalize_to_list(self.liquid_mw, num_cases))
+        self.vapor_density = cast(list[float], self._normalize_to_list(self.vapor_density, num_cases))
+        self.vapor_viscosity = cast(list[float], self._normalize_to_list(self.vapor_viscosity, num_cases))
+        self.vapor_conductivity = cast(
+            list[float], self._normalize_to_list(self.vapor_conductivity, num_cases)
         )
-        self.vapor_cp = self._normalize_to_list(self.vapor_cp, num_cases)
-        self.vapor_mw = self._normalize_to_list(self.vapor_mw, num_cases)
-        self.vapor_z = self._normalize_to_list(self.vapor_z, num_cases)
-        self.vapor_k = self._normalize_to_list(self.vapor_k, num_cases)
+        self.vapor_cp = cast(list[float], self._normalize_to_list(self.vapor_cp, num_cases))
+        self.vapor_mw = cast(list[float], self._normalize_to_list(self.vapor_mw, num_cases))
+        self.vapor_z = cast(list[float], self._normalize_to_list(self.vapor_z, num_cases))
+        self.vapor_k = cast(list[float], self._normalize_to_list(self.vapor_k, num_cases))
 
     def _get_num_cases(self) -> int:
         """Determine number of cases from any list values."""

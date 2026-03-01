@@ -1,0 +1,48 @@
+{
+  "specifications": [
+    {
+      "material": "Carbon Steel",
+      "schedule": "40",
+      "nominal_diameter_inch": 4,
+      "outer_diameter_mm": 114.3,
+      "wall_thickness_mm": 6.02,
+      "roughness_mm": 0.046,
+      "max_pressure_bar": 100,
+      "max_temp_c": 400,
+      "pms_code": "CS-40-4"
+    },
+    {
+      "material": "Carbon Steel",
+      "schedule": "80",
+      "nominal_diameter_inch": 6,
+      "outer_diameter_mm": 168.3,
+      "wall_thickness_mm": 7.11,
+      "roughness_mm": 0.046,
+      "max_pressure_bar": 150,
+      "max_temp_c": 400,
+      "pms_code": "CS-80-6"
+    },
+    {
+      "material": "Stainless Steel",
+      "schedule": "40",
+      "nominal_diameter_inch": 4,
+      "outer_diameter_mm": 114.3,
+      "wall_thickness_mm": 6.02,
+      "roughness_mm": 0.015,
+      "max_pressure_bar": 100,
+      "max_temp_c": 500,
+      "pms_code": "SS-40-4"
+    },
+    {
+      "material": "Stainless Steel",
+      "schedule": "80",
+      "nominal_diameter_inch": 6,
+      "outer_diameter_mm": 168.3,
+      "wall_thickness_mm": 7.11,
+      "roughness_mm": 0.015,
+      "max_pressure_bar": 150,
+      "max_temp_c": 500,
+      "pms_code": "SS-80-6"
+    }
+  ]
+}

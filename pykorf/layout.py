@@ -24,15 +24,24 @@ if TYPE_CHECKING:
     from pykorf.model import Model
 
 # KORF drawing coordinate bounds
-_X_MIN = 1000.0
-_Y_MIN = 1000.0
-_X_MAX = 15500.0
-_Y_MAX = 8500.0
+X_MIN = 1000.0
+Y_MIN = 1000.0
+X_MAX = 15500.0
+Y_MAX = 8500.0
 
 # Spacing rules
-_MIN_SPACING = 1000.0
-_COMFORT_SPACING_X = 1500.0
-_COMFORT_SPACING_Y = 1500.0
+MIN_SPACING = 1000.0
+COMFORT_SPACING_X = 1500.0
+COMFORT_SPACING_Y = 1500.0
+
+# Backward compatibility aliases
+_X_MIN = X_MIN
+_Y_MIN = Y_MIN
+_X_MAX = X_MAX
+_Y_MAX = Y_MAX
+_MIN_SPACING = MIN_SPACING
+_COMFORT_SPACING_X = COMFORT_SPACING_X
+_COMFORT_SPACING_Y = COMFORT_SPACING_Y
 
 
 def get_position(elem: BaseElement) -> tuple[float, float] | None:
@@ -116,10 +125,10 @@ def check_layout(model: Model) -> list[str]:
         x, y = float(pos[0]), float(pos[1])
         placed.append((name, x, y))
 
-        if not (_X_MIN <= x <= _X_MAX and _Y_MIN <= y <= _Y_MAX):
+        if not (X_MIN <= x <= X_MAX and Y_MIN <= y <= Y_MAX):
             issues.append(
                 f"Element {name} at ({x:.1f}, {y:.1f}) is outside layout bounds "
-                f"[{_X_MIN:.0f},{_Y_MIN:.0f}]–[{_X_MAX:.0f},{_Y_MAX:.0f}]"
+                f"[{X_MIN:.0f},{Y_MIN:.0f}]–[{X_MAX:.0f},{Y_MAX:.0f}]"
             )
 
         key = (round(x, 1), round(y, 1))
@@ -139,9 +148,9 @@ def check_layout(model: Model) -> list[str]:
             dx = x2 - x1
             dy = y2 - y1
             dist = (dx * dx + dy * dy) ** 0.5
-            if dist < _MIN_SPACING:
+            if dist < MIN_SPACING:
                 issues.append(
-                    f"Elements {n1} and {n2} are too close ({dist:.1f} < {_MIN_SPACING:.0f})"
+                    f"Elements {n1} and {n2} are too close ({dist:.1f} < {MIN_SPACING:.0f})"
                 )
 
     return issues
@@ -160,24 +169,24 @@ def auto_place(model: Model, elem: BaseElement) -> None:
 
     def _fits(candidate: tuple[float, float]) -> bool:
         cx, cy = candidate
-        if not (_X_MIN <= cx <= _X_MAX and _Y_MIN <= cy <= _Y_MAX):
+        if not (X_MIN <= cx <= X_MAX and Y_MIN <= cy <= Y_MAX):
             return False
         for ex, ey in existing:
             dx = cx - ex
             dy = cy - ey
             dist = (dx * dx + dy * dy) ** 0.5
-            if dist < _MIN_SPACING:
+            if dist < MIN_SPACING:
                 return False
         return True
 
-    cols = int((_X_MAX - _X_MIN) // _COMFORT_SPACING_X) + 1
-    rows = int((_Y_MAX - _Y_MIN) // _COMFORT_SPACING_Y) + 1
+    cols = int((X_MAX - X_MIN) // COMFORT_SPACING_X) + 1
+    rows = int((Y_MAX - Y_MIN) // COMFORT_SPACING_Y) + 1
 
     for row in range(rows):
         for col in range(cols):
             candidate = (
-                _X_MIN + col * _COMFORT_SPACING_X,
-                _Y_MIN + row * _COMFORT_SPACING_Y,
+                X_MIN + col * COMFORT_SPACING_X,
+                Y_MIN + row * COMFORT_SPACING_Y,
             )
             if _fits(candidate):
                 _set_position_on_element(elem, candidate[0], candidate[1])
@@ -185,8 +194,8 @@ def auto_place(model: Model, elem: BaseElement) -> None:
 
     raise LayoutError(
         "No available layout position within bounds "
-        f"[{_X_MIN:.0f},{_Y_MIN:.0f}]–[{_X_MAX:.0f},{_Y_MAX:.0f}] "
-        f"with minimum spacing {_MIN_SPACING:.0f}."
+        f"[{X_MIN:.0f},{Y_MIN:.0f}]–[{X_MAX:.0f},{Y_MAX:.0f}] "
+        f"with minimum spacing {MIN_SPACING:.0f}."
     )
 
 

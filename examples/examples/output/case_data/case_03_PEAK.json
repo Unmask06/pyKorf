@@ -1,0 +1,9 @@
+{
+  "case_name": "PEAK",
+  "case_number": 3,
+  "parameters": {
+    "SUCT_L1_flow": "120",
+    "DISC_L2_flow": "150",
+    "RETURN_L3_flow": "90"
+  }
+}

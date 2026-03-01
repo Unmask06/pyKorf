@@ -51,6 +51,37 @@ class TestConnectDisconnect:
         assert "L_AUTO_CON" in m
         assert m["L_AUTO_CON"].etype == "PIPE"
 
+    def test_connect_no_pipe_auto_creates_pipe_for_hx(self):
+        m = Model(PUMP_KDF)
+        m.add_element("PUMP", "P_HX")
+        m.add_element("HX", "HX_A")
+        m.connect_elements("P_HX", "HX_A", pipe_name="L_HX")
+
+        pipe_idx = m["L_HX"].index
+        pump_con = m["P_HX"]._get("CON")
+        assert str(pump_con.values[0]) == str(pipe_idx)
+
+        hx = m["HX_A"]
+        nozzles = [hx._get("NOZI"), hx._get("NOZO")]
+        assert any(rec and str(rec.values[0]) == str(pipe_idx) for rec in nozzles)
+
+    def test_disconnect_pipe_from_hx_nozzle(self):
+        m = Model(PUMP_KDF)
+        m.add_element("PUMP", "P_HXD")
+        m.add_element("HX", "HX_D")
+        m.connect_elements("P_HXD", "HX_D", pipe_name="L_HXD")
+
+        pipe_idx = str(m["L_HXD"].index)
+        m.disconnect_elements("L_HXD", "HX_D")
+
+        hx = m["HX_D"]
+        nozzles = [hx._get("NOZI"), hx._get("NOZO")]
+        assert all(
+            not rec or not rec.values or str(rec.values[0]) != pipe_idx
+            for rec in nozzles
+        )
+        assert any(rec and str(rec.values[0]) == "0" for rec in nozzles)
+
     def test_disconnect_not_connected_raises(self):
         m = Model(PUMP_KDF)
         m.add_element("PUMP", "P_NC")
