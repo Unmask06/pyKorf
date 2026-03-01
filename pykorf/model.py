@@ -1084,6 +1084,104 @@ class Model:
         self.save(path, check_layout=check_layout)
 
     # ------------------------------------------------------------------
+    # DataFrame / Excel conversion
+    # ------------------------------------------------------------------
+
+    def to_dataframes(self) -> dict:
+        """Convert the model to a dict of DataFrames (one per element type).
+
+        Each DataFrame preserves the raw KDF record lines so that the model
+        can be perfectly reconstructed.  Verbatim / header lines are stored
+        in a ``"_HEADER"`` DataFrame.
+
+        Returns:
+            ``dict[str, pd.DataFrame]`` keyed by element type name.
+
+        Raises:
+            ExportError: If *pandas* is not installed.
+
+        Example:
+            ```python
+            model = Model("Pumpcases.kdf")
+            dfs = model.to_dataframes()
+            for name, df in dfs.items():
+                print(name, len(df))
+            ```
+        """
+        from pykorf.export import model_to_dataframes
+
+        return model_to_dataframes(self)
+
+    @classmethod
+    def from_dataframes(cls, dfs: dict) -> "Model":
+        """Create a Model from a dict of DataFrames.
+
+        This is the inverse of :meth:`to_dataframes`.
+
+        Args:
+            dfs: Dict of DataFrames as returned by :meth:`to_dataframes`.
+
+        Returns:
+            A new :class:`Model` instance.
+
+        Example:
+            ```python
+            dfs = model.to_dataframes()
+            reconstructed = Model.from_dataframes(dfs)
+            ```
+        """
+        from pykorf.export import model_from_dataframes
+
+        return model_from_dataframes(dfs)
+
+    def to_excel(self, path: str | Path) -> None:
+        """Export the model to an Excel workbook with lossless round-trip fidelity.
+
+        Each element type is written to a separate sheet.  The workbook
+        can be read back with :meth:`from_excel` to produce an identical
+        ``.kdf`` file.
+
+        Args:
+            path: Destination ``.xlsx`` file path.
+
+        Raises:
+            ExportError: If *pandas* or *openpyxl* is not installed.
+
+        Example:
+            ```python
+            model = Model("Pumpcases.kdf")
+            model.to_excel("Pumpcases.xlsx")
+            ```
+        """
+        from pykorf.export import dataframes_to_excel, model_to_dataframes
+
+        dfs = model_to_dataframes(self)
+        dataframes_to_excel(dfs, path)
+
+    @classmethod
+    def from_excel(cls, path: str | Path) -> "Model":
+        """Create a Model from an Excel workbook.
+
+        This is the inverse of :meth:`to_excel`.
+
+        Args:
+            path: Path to the ``.xlsx`` file.
+
+        Returns:
+            A new :class:`Model` instance.
+
+        Example:
+            ```python
+            model = Model.from_excel("Pumpcases.xlsx")
+            model.save("Pumpcases_roundtrip.kdf")
+            ```
+        """
+        from pykorf.export import excel_to_dataframes, model_from_dataframes
+
+        dfs = excel_to_dataframes(path)
+        return model_from_dataframes(dfs)
+
+    # ------------------------------------------------------------------
     # Meta-information
     # ------------------------------------------------------------------
 

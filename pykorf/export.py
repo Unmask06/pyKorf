@@ -413,9 +413,285 @@ def _extract_connectivity(model: Model) -> list[dict[str, Any]]:
     return connections
 
 
+_HEADER_SHEET = "_HEADER"
+_LINE_NO_COL = "line_no"
+_ETYPE_COL = "element_type"
+_INDEX_COL = "index"
+_PARAM_COL = "param"
+_RAW_LINE_COL = "raw_line"
+_DF_COLUMNS = [_LINE_NO_COL, _ETYPE_COL, _INDEX_COL, _PARAM_COL, _RAW_LINE_COL]
+_HEADER_COLUMNS = [_LINE_NO_COL, _RAW_LINE_COL]
+
+
+def model_to_dataframes(model: Model) -> dict[str, "pd.DataFrame"]:
+    """Convert a Model to a dict of DataFrames, one per element type.
+
+    Each DataFrame preserves the raw KDF record lines so that the model can
+    be perfectly reconstructed via :func:`dataframes_to_kdf`.
+
+    Verbatim/header lines (version string, blank lines) are stored in a
+    special ``"_HEADER"`` DataFrame.  All other records are grouped by their
+    element type (``"GEN"``, ``"PIPE"``, ``"PUMP"``, etc.).
+
+    Every DataFrame contains a ``line_no`` column that records the original
+    line position.  This is used during reconstruction to restore the exact
+    file ordering.
+
+    Args:
+        model: The model to convert.
+
+    Returns:
+        A dict mapping sheet name → DataFrame.
+
+    Raises:
+        ExportError: If pandas is not installed.
+
+    Example:
+        ```python
+        from pykorf import Model
+        from pykorf.export import model_to_dataframes
+
+        model = Model("Pumpcases.kdf")
+        dfs = model_to_dataframes(model)
+        for name, df in dfs.items():
+            print(name, len(df))
+        ```
+    """
+    try:
+        import pandas as pd
+    except ImportError as exc:
+        raise ExportError(
+            "pandas is required for DataFrame conversion. "
+            "Install with: pip install pandas",
+        ) from exc
+
+    header_rows: list[dict[str, Any]] = []
+    typed_rows: dict[str, list[dict[str, Any]]] = {}
+
+    for line_no, rec in enumerate(model._parser.records):
+        # Skip NUM records for non-zero indices (parser.save() skips these)
+        if (
+            rec.element_type is not None
+            and rec.param == "NUM"
+            and rec.index != 0
+        ):
+            continue
+
+        raw = rec.to_line()
+        if rec.element_type is None:
+            header_rows.append({_LINE_NO_COL: line_no, _RAW_LINE_COL: raw})
+        else:
+            etype = rec.element_type
+            typed_rows.setdefault(etype, []).append(
+                {
+                    _LINE_NO_COL: line_no,
+                    _ETYPE_COL: etype,
+                    _INDEX_COL: rec.index,
+                    _PARAM_COL: rec.param,
+                    _RAW_LINE_COL: raw,
+                }
+            )
+
+    result: dict[str, pd.DataFrame] = {}
+    if header_rows:
+        result[_HEADER_SHEET] = pd.DataFrame(header_rows, columns=_HEADER_COLUMNS)
+    for etype, rows in typed_rows.items():
+        result[etype] = pd.DataFrame(rows, columns=_DF_COLUMNS)
+    return result
+
+
+def dataframes_to_kdf(
+    dfs: dict[str, "pd.DataFrame"],
+    path: str | Path,
+    encoding: str = "latin-1",
+) -> None:
+    """Write a dict of DataFrames (as produced by :func:`model_to_dataframes`) to a ``.kdf`` file.
+
+    The raw lines are reassembled in their original order using the
+    ``line_no`` column and written with ``latin-1`` encoding and ``\\r\\n``
+    line endings — exactly as the KORF format requires.
+
+    Args:
+        dfs: Dict of DataFrames keyed by sheet name.
+        path: Destination ``.kdf`` file path.
+        encoding: File encoding (default ``"latin-1"``).
+
+    Raises:
+        ExportError: If the DataFrames are missing required columns.
+
+    Example:
+        ```python
+        from pykorf.export import model_to_dataframes, dataframes_to_kdf
+
+        dfs = model_to_dataframes(model)
+        dataframes_to_kdf(dfs, "reconstructed.kdf")
+        ```
+    """
+    try:
+        import pandas as pd
+    except ImportError as exc:
+        raise ExportError(
+            "pandas is required for DataFrame conversion. "
+            "Install with: pip install pandas",
+        ) from exc
+
+    all_rows: list[tuple[int, str]] = []
+
+    for sheet_name, df in dfs.items():
+        if _LINE_NO_COL not in df.columns or _RAW_LINE_COL not in df.columns:
+            raise ExportError(
+                f"Sheet {sheet_name!r} is missing required columns "
+                f"({_LINE_NO_COL!r}, {_RAW_LINE_COL!r}).",
+            )
+        for _, row in df.iterrows():
+            line_no = int(row[_LINE_NO_COL])
+            raw_line = str(row[_RAW_LINE_COL]) if pd.notna(row[_RAW_LINE_COL]) else ""
+            all_rows.append((line_no, raw_line))
+
+    # Sort by original line number to restore file order
+    all_rows.sort(key=lambda t: t[0])
+
+    dest = Path(path)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    with dest.open("w", encoding=encoding, newline="") as fh:
+        for _, raw_line in all_rows:
+            fh.write(raw_line + "\r\n")
+
+
+def model_from_dataframes(dfs: dict[str, "pd.DataFrame"]) -> Model:
+    """Create a :class:`Model` from a dict of DataFrames.
+
+    This is the inverse of :func:`model_to_dataframes`.  A temporary
+    ``.kdf`` file is written and then loaded, so the returned model
+    behaves identically to one loaded from a regular KDF file.
+
+    Args:
+        dfs: Dict of DataFrames as returned by :func:`model_to_dataframes`.
+
+    Returns:
+        A new :class:`Model` instance.
+
+    Raises:
+        ExportError: If reconstruction fails.
+
+    Example:
+        ```python
+        from pykorf.export import model_to_dataframes, model_from_dataframes
+
+        dfs = model_to_dataframes(model)
+        reconstructed = model_from_dataframes(dfs)
+        ```
+    """
+    import tempfile
+
+    with tempfile.NamedTemporaryFile(
+        suffix=".kdf", delete=False, mode="w"
+    ) as tmp:
+        tmp_path = tmp.name
+
+    try:
+        dataframes_to_kdf(dfs, tmp_path)
+        from pykorf.model import Model as _Model
+
+        return _Model(tmp_path)
+    except Exception as exc:
+        raise ExportError(f"Failed to reconstruct model from DataFrames: {exc}") from exc
+    finally:
+        Path(tmp_path).unlink(missing_ok=True)
+
+
+def dataframes_to_excel(
+    dfs: dict[str, "pd.DataFrame"],
+    path: str | Path,
+) -> None:
+    """Write a dict of DataFrames to an Excel workbook.
+
+    Each DataFrame becomes a separate sheet.  The sheet names
+    correspond to the element types (``"GEN"``, ``"PIPE"``, etc.) plus
+    a ``"_HEADER"`` sheet for verbatim lines.
+
+    Args:
+        dfs: Dict of DataFrames keyed by sheet name.
+        path: Destination ``.xlsx`` file path.
+
+    Raises:
+        ExportError: If pandas or openpyxl is not installed.
+
+    Example:
+        ```python
+        from pykorf.export import model_to_dataframes, dataframes_to_excel
+
+        dfs = model_to_dataframes(model)
+        dataframes_to_excel(dfs, "model.xlsx")
+        ```
+    """
+    try:
+        import pandas as pd
+    except ImportError as exc:
+        raise ExportError(
+            "pandas and openpyxl are required for Excel export. "
+            "Install with: pip install pandas openpyxl",
+        ) from exc
+
+    path = Path(path)
+    with pd.ExcelWriter(path, engine="openpyxl") as writer:
+        for sheet_name, df in dfs.items():
+            # Excel sheet names max 31 chars
+            safe_name = sheet_name[:31]
+            df.to_excel(writer, sheet_name=safe_name, index=False)
+
+
+def excel_to_dataframes(path: str | Path) -> dict[str, "pd.DataFrame"]:
+    """Read an Excel workbook back into a dict of DataFrames.
+
+    This is the inverse of :func:`dataframes_to_excel`.
+
+    Args:
+        path: Path to the ``.xlsx`` file.
+
+    Returns:
+        Dict of DataFrames keyed by sheet name.
+
+    Raises:
+        ExportError: If pandas or openpyxl is not installed, or the file
+            cannot be read.
+
+    Example:
+        ```python
+        from pykorf.export import excel_to_dataframes, model_from_dataframes
+
+        dfs = excel_to_dataframes("model.xlsx")
+        model = model_from_dataframes(dfs)
+        ```
+    """
+    try:
+        import pandas as pd
+    except ImportError as exc:
+        raise ExportError(
+            "pandas and openpyxl are required for Excel import. "
+            "Install with: pip install pandas openpyxl",
+        ) from exc
+
+    path = Path(path)
+    result: dict[str, pd.DataFrame] = {}
+    xls = pd.ExcelFile(path, engine="openpyxl")
+    for sheet_name in xls.sheet_names:
+        df = pd.read_excel(xls, sheet_name=sheet_name, dtype=str)
+        # Ensure line_no is integer (read back as string from dtype=str)
+        if _LINE_NO_COL in df.columns:
+            df[_LINE_NO_COL] = df[_LINE_NO_COL].astype(int)
+        result[sheet_name] = df
+    return result
+
+
 __all__ = [
     "export_to_json",
     "export_to_yaml",
     "export_to_excel",
     "export_to_csv",
+    "model_to_dataframes",
+    "dataframes_to_kdf",
+    "model_from_dataframes",
+    "dataframes_to_excel",
+    "excel_to_dataframes",
 ]
