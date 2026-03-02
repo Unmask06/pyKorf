@@ -1,5 +1,4 @@
-"""
-Export functionality for pyKorf models.
+"""Export functionality for pyKorf models.
 
 Supports exporting model data to various formats:
 - JSON (with optional pretty printing)
@@ -22,7 +21,8 @@ import json
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
-from pykorf.config import get_config
+import pandas as pd
+
 from pykorf.exceptions import ExportError
 from pykorf.log import get_logger, log_operation
 from pykorf.types import ExportOptions
@@ -96,7 +96,9 @@ def export_to_json(
             try:
                 import orjson
 
-                output = orjson.dumps(data, option=orjson.OPT_INDENT_2 if options.indent else 0)
+                output = orjson.dumps(
+                    data, option=orjson.OPT_INDENT_2 if options.indent else 0
+                )
                 path.write_bytes(output)
             except ImportError:
                 path.write_text(
@@ -221,7 +223,9 @@ def export_to_excel(
                         len([e for e in model.vessels.values() if e.index > 0]),
                     ],
                 }
-                pd.DataFrame(summary_data).to_excel(writer, sheet_name="Summary", index=False)
+                pd.DataFrame(summary_data).to_excel(
+                    writer, sheet_name="Summary", index=False
+                )
 
                 # Pipes sheet
                 pipe_rows = []
@@ -242,7 +246,9 @@ def export_to_excel(
                     pipe_rows.append(row)
 
                 if pipe_rows:
-                    pd.DataFrame(pipe_rows).to_excel(writer, sheet_name="Pipes", index=False)
+                    pd.DataFrame(pipe_rows).to_excel(
+                        writer, sheet_name="Pipes", index=False
+                    )
 
                 # Pumps sheet
                 pump_rows = []
@@ -252,7 +258,9 @@ def export_to_excel(
                     row = {
                         "Index": idx,
                         "Name": pump.name,
-                        "Type": pump.pump_type if hasattr(pump, "pump_type") else "Unknown",
+                        "Type": pump.pump_type
+                        if hasattr(pump, "pump_type")
+                        else "Unknown",
                     }
                     if include_results and hasattr(pump, "head_m"):
                         row["Head (m)"] = pump.head_m
@@ -261,7 +269,9 @@ def export_to_excel(
                     pump_rows.append(row)
 
                 if pump_rows:
-                    pd.DataFrame(pump_rows).to_excel(writer, sheet_name="Pumps", index=False)
+                    pd.DataFrame(pump_rows).to_excel(
+                        writer, sheet_name="Pumps", index=False
+                    )
 
                 # Case info
                 if hasattr(model, "general"):
@@ -269,9 +279,13 @@ def export_to_excel(
                         "Case Number": model.general.case_numbers,
                         "Description": model.general.case_descriptions,
                     }
-                    pd.DataFrame(case_data).to_excel(writer, sheet_name="Cases", index=False)
+                    pd.DataFrame(case_data).to_excel(
+                        writer, sheet_name="Cases", index=False
+                    )
 
-            logger.info("export_to_excel_success", path=str(path), sheets=writer.sheets.keys())
+            logger.info(
+                "export_to_excel_success", path=str(path), sheets=writer.sheets.keys()
+            )
 
         except ImportError as e:
             raise ExportError(
@@ -345,7 +359,9 @@ def export_to_csv(
                     row = {"index": idx, "name": pump.name}
                     if include_results:
                         row["head_m"] = pump.head_m if hasattr(pump, "head_m") else None
-                        row["power_kw"] = pump.power_kW if hasattr(pump, "power_kW") else None
+                        row["power_kw"] = (
+                            pump.power_kW if hasattr(pump, "power_kW") else None
+                        )
                     pump_rows.append(row)
 
                 if pump_rows:
@@ -377,7 +393,9 @@ def _model_to_dict(model: Model, options: ExportOptions) -> dict[str, Any]:
 
     if options.include_metadata and hasattr(model, "general"):
         data["metadata"]["cases"] = model.general.case_descriptions
-        data["metadata"]["units"] = model.general.units if hasattr(model.general, "units") else None
+        data["metadata"]["units"] = (
+            model.general.units if hasattr(model.general, "units") else None
+        )
 
     # Export elements
     for elem in model.elements:
@@ -425,11 +443,18 @@ _INDEX_COL = "index"
 _PARAM_COL = "param"
 _VALUES_COL = "values"
 _RAW_LINE_COL = "raw_line"
-_DF_COLUMNS = [_LINE_NO_COL, _ETYPE_COL, _INDEX_COL, _PARAM_COL, _VALUES_COL, _RAW_LINE_COL]
+_DF_COLUMNS = [
+    _LINE_NO_COL,
+    _ETYPE_COL,
+    _INDEX_COL,
+    _PARAM_COL,
+    _VALUES_COL,
+    _RAW_LINE_COL,
+]
 _HEADER_COLUMNS = [_LINE_NO_COL, _RAW_LINE_COL]
 
 
-def model_to_dataframes(model: Model) -> dict[str, "pd.DataFrame"]:
+def model_to_dataframes(model: Model) -> dict[str, pd.DataFrame]:
     """Convert a Model to a dict of DataFrames, one per element type.
 
     Each DataFrame preserves the raw KDF record lines so that the model can
@@ -502,8 +527,34 @@ def model_to_dataframes(model: Model) -> dict[str, "pd.DataFrame"]:
     return result
 
 
+def _parse_values_string(values_str: str) -> list[str]:
+    """Parse a comma-separated values string back to a list.
+
+    Handles quoted strings and numeric values correctly.
+    """
+    from pykorf.utils import parse_line
+
+    if not values_str:
+        return []
+    # Use parse_line to properly handle CSV quoting
+    parsed = parse_line(values_str)
+    return parsed if parsed else []
+
+
+def _build_kdf_line(etype: str, idx: int, param: str, values: list[str]) -> str:
+    """Build a KDF line from element type, index, param, and values.
+
+    Format: \\ETYPE,idx,"PARAM",value1,value2,...
+    """
+    from pykorf.utils import format_line
+
+    parts: list = [f"\\{etype.upper()}", idx, param]
+    parts.extend(values)
+    return format_line(parts)
+
+
 def dataframes_to_kdf(
-    dfs: dict[str, "pd.DataFrame"],
+    dfs: dict[str, pd.DataFrame],
     path: str | Path,
     encoding: str = "latin-1",
 ) -> None:
@@ -539,15 +590,45 @@ def dataframes_to_kdf(
     all_rows: list[tuple[int, str]] = []
 
     for sheet_name, df in dfs.items():
-        if _LINE_NO_COL not in df.columns or _RAW_LINE_COL not in df.columns:
+        if _LINE_NO_COL not in df.columns:
             raise ExportError(
-                f"Sheet {sheet_name!r} is missing required columns "
-                f"({_LINE_NO_COL!r}, {_RAW_LINE_COL!r}).",
+                f"Sheet {sheet_name!r} is missing required column {_LINE_NO_COL!r}.",
             )
+
+        # Check if this is a header sheet (no element_type column)
+        is_header_sheet = _ETYPE_COL not in df.columns
+
         for _, row in df.iterrows():
-            line_no = int(row[_LINE_NO_COL])
-            raw_line = str(row[_RAW_LINE_COL]) if pd.notna(row[_RAW_LINE_COL]) else ""
-            all_rows.append((line_no, raw_line))
+            line_no = int(row[_LINE_NO_COL])  # type: ignore[arg-type]
+
+            if is_header_sheet:
+                # Header sheet: use raw_line column
+                raw_line_val = row.get(_RAW_LINE_COL, "")
+                raw_line = str(raw_line_val) if pd.notna(raw_line_val) else ""  # type: ignore[arg-type]
+                all_rows.append((line_no, raw_line))
+            else:
+                # Element sheet: rebuild from columns if values is present
+                values_val = row.get(_VALUES_COL) if _VALUES_COL in df.columns else None
+                if values_val is not None and pd.notna(values_val):  # type: ignore[arg-type]
+                    # Rebuild KDF line from parsed columns
+                    etype = str(row[_ETYPE_COL])
+                    idx = int(row[_INDEX_COL])  # type: ignore[arg-type]
+                    param = str(row[_PARAM_COL])
+                    values_str = str(values_val)
+                    # Parse values string (comma-separated) back to list
+                    values = _parse_values_string(values_str)
+                    # Build KDF line
+                    kdf_line = _build_kdf_line(etype, idx, param, values)
+                    all_rows.append((line_no, kdf_line))
+                elif _RAW_LINE_COL in df.columns:
+                    raw_line_val = row.get(_RAW_LINE_COL)
+                    if raw_line_val is not None and pd.notna(raw_line_val):  # type: ignore[arg-type]
+                        # Fall back to raw_line if values not available
+                        raw_line = str(raw_line_val)
+                        all_rows.append((line_no, raw_line))
+                else:
+                    # Skip rows with no data
+                    continue
 
     # Sort by original line number to restore file order
     all_rows.sort(key=lambda t: t[0])
@@ -555,16 +636,120 @@ def dataframes_to_kdf(
     dest = Path(path)
     dest.parent.mkdir(parents=True, exist_ok=True)
     with dest.open("w", encoding=encoding, newline="") as fh:
-        for _, raw_line in all_rows:
-            fh.write(raw_line + "\r\n")
+        for _, line in all_rows:
+            fh.write(line + "\r\n")
 
 
-def model_from_dataframes(dfs: dict[str, "pd.DataFrame"]) -> Model:
+def _dataframes_to_records(
+    dfs: dict[str, pd.DataFrame],
+) -> list:
+    """Convert DataFrames to a sorted list of :class:`KdfRecord` objects.
+
+    Builds records directly from DataFrame columns without writing a
+    temporary file.  Header rows use the ``raw_line`` column; element
+    rows reconstruct records from ``element_type``, ``index``,
+    ``param``, and ``values`` columns.
+
+    Args:
+        dfs: Dict of DataFrames as produced by :func:`model_to_dataframes`.
+
+    Returns:
+        Sorted list of KdfRecord objects in original file order.
+
+    Raises:
+        ExportError: If required columns are missing.
+    """
+    try:
+        import pandas as pd
+    except ImportError as exc:
+        raise ExportError(
+            "pandas is required for DataFrame conversion. Install with: pip install pandas",
+        ) from exc
+
+    from pykorf.parser import _ETYPE_RE, KdfRecord
+    from pykorf.utils import parse_line
+
+    indexed: list[tuple[int, KdfRecord]] = []
+
+    for sheet_name, df in dfs.items():
+        if _LINE_NO_COL not in df.columns:
+            raise ExportError(
+                f"Sheet {sheet_name!r} is missing required column {_LINE_NO_COL!r}.",
+            )
+
+        is_header = _ETYPE_COL not in df.columns
+
+        for _, row in df.iterrows():
+            line_no = int(row[_LINE_NO_COL])
+
+            if is_header:
+                raw_val = row.get(_RAW_LINE_COL, "")
+                raw = str(raw_val) if pd.notna(raw_val) else ""
+                indexed.append((line_no, KdfRecord(None, None, None, [], raw_line=raw)))
+                continue
+
+            # Element sheet — prefer the editable *values* column
+            values_val = row.get(_VALUES_COL) if _VALUES_COL in df.columns else None
+            if values_val is not None and pd.notna(values_val):
+                etype = str(row[_ETYPE_COL]).upper()
+                idx = int(row[_INDEX_COL])
+                param = str(row[_PARAM_COL]).upper()
+                values = _parse_values_string(str(values_val))
+                indexed.append(
+                    (line_no, KdfRecord(etype, idx, param, values, raw_line=""))
+                )
+            elif _RAW_LINE_COL in df.columns:
+                # Fallback: rebuild record from the raw_line text
+                raw_val = row.get(_RAW_LINE_COL)
+                if raw_val is None or not pd.notna(raw_val):
+                    continue
+                raw_line = str(raw_val)
+                tokens = parse_line(raw_line)
+                if tokens:
+                    m = _ETYPE_RE.match(tokens[0])
+                    if m and len(tokens) >= 3:
+                        etype = m.group(1).upper()
+                        try:
+                            idx = int(tokens[1])
+                        except (ValueError, IndexError):
+                            indexed.append(
+                                (
+                                    line_no,
+                                    KdfRecord(None, None, None, [], raw_line=raw_line),
+                                )
+                            )
+                            continue
+                        param = tokens[2].strip('"').upper()
+                        vals = tokens[3:]
+                        indexed.append(
+                            (
+                                line_no,
+                                KdfRecord(etype, idx, param, vals, raw_line=raw_line),
+                            )
+                        )
+                    else:
+                        indexed.append(
+                            (
+                                line_no,
+                                KdfRecord(None, None, None, [], raw_line=raw_line),
+                            )
+                        )
+                else:
+                    indexed.append(
+                        (line_no, KdfRecord(None, None, None, [], raw_line=raw_line))
+                    )
+
+    # Sort by original line number to restore file order
+    indexed.sort(key=lambda t: t[0])
+    return [rec for _, rec in indexed]
+
+
+def model_from_dataframes(dfs: dict[str, pd.DataFrame]) -> Model:
     """Create a :class:`Model` from a dict of DataFrames.
 
-    This is the inverse of :func:`model_to_dataframes`.  A temporary
-    ``.kdf`` file is written and then loaded, so the returned model
-    behaves identically to one loaded from a regular KDF file.
+    This is the inverse of :func:`model_to_dataframes`.  Records are
+    built directly from the DataFrame columns and injected into a
+    :class:`Model` instance — no temporary file is created.
 
     Args:
         dfs: Dict of DataFrames as returned by :func:`model_to_dataframes`.
@@ -583,24 +768,26 @@ def model_from_dataframes(dfs: dict[str, "pd.DataFrame"]) -> Model:
         reconstructed = model_from_dataframes(dfs)
         ```
     """
-    import tempfile
-
-    with tempfile.NamedTemporaryFile(suffix=".kdf", delete=False, mode="w") as tmp:
-        tmp_path = tmp.name
+    from pykorf.model import Model as _Model
 
     try:
-        dataframes_to_kdf(dfs, tmp_path)
-        from pykorf.model import Model as _Model
-
-        return _Model(tmp_path)
+        records = _dataframes_to_records(dfs)
+    except ExportError:
+        raise
     except Exception as exc:
-        raise ExportError(f"Failed to reconstruct model from DataFrames: {exc}") from exc
-    finally:
-        Path(tmp_path).unlink(missing_ok=True)
+        raise ExportError(
+            f"Failed to reconstruct model from DataFrames: {exc}"
+        ) from exc
+
+    model = _Model()  # blank model from default template
+    model._parser._records = records
+    model._parser.path = Path("untitled.kdf")  # prevent accidental template overwrite
+    model._build_collections()
+    return model
 
 
 def dataframes_to_excel(
-    dfs: dict[str, "pd.DataFrame"],
+    dfs: dict[str, pd.DataFrame],
     path: str | Path,
 ) -> None:
     """Write a dict of DataFrames to an Excel workbook.
@@ -640,7 +827,7 @@ def dataframes_to_excel(
             df.to_excel(writer, sheet_name=safe_name, index=False)
 
 
-def excel_to_dataframes(path: str | Path) -> dict[str, "pd.DataFrame"]:
+def excel_to_dataframes(path: str | Path) -> dict[str, pd.DataFrame]:
     """Read an Excel workbook back into a dict of DataFrames.
 
     This is the inverse of :func:`dataframes_to_excel`.
