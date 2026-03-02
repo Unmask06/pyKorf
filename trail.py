@@ -5,6 +5,6 @@ model = Model(KORF_FILE)
 
 # model.to_excel("Cooling Water Circuit-EES-IT-LT-00141.xlsx")
 
-model.from_excel("Cooling Water Circuit-EES-IT-LT-00141.xlsx")
+model = model.from_excel("Cooling Water Circuit-EES-IT-LT-00141.xlsx")
 
-model.save()
+model.save(KORF_FILE)

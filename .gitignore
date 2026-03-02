@@ -13,3 +13,5 @@ wheels/
 network.html
 network_data.json
 lib/
+
+*.xlsx*

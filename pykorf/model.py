@@ -1254,6 +1254,7 @@ class Model:
                 )
                 for issue in issues[:5]:  # Log first 5
                     logger.warning(f"  - {issue}")
+        print(f"Saving model to {path or self._parser.path}...")
         self._parser.save(path)
 
     def save_as(self, path: str | Path, *, check_layout: bool = True) -> None:

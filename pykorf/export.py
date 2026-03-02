@@ -96,9 +96,7 @@ def export_to_json(
             try:
                 import orjson
 
-                output = orjson.dumps(
-                    data, option=orjson.OPT_INDENT_2 if options.indent else 0
-                )
+                output = orjson.dumps(data, option=orjson.OPT_INDENT_2 if options.indent else 0)
                 path.write_bytes(output)
             except ImportError:
                 path.write_text(
@@ -223,9 +221,7 @@ def export_to_excel(
                         len([e for e in model.vessels.values() if e.index > 0]),
                     ],
                 }
-                pd.DataFrame(summary_data).to_excel(
-                    writer, sheet_name="Summary", index=False
-                )
+                pd.DataFrame(summary_data).to_excel(writer, sheet_name="Summary", index=False)
 
                 # Pipes sheet
                 pipe_rows = []
@@ -246,9 +242,7 @@ def export_to_excel(
                     pipe_rows.append(row)
 
                 if pipe_rows:
-                    pd.DataFrame(pipe_rows).to_excel(
-                        writer, sheet_name="Pipes", index=False
-                    )
+                    pd.DataFrame(pipe_rows).to_excel(writer, sheet_name="Pipes", index=False)
 
                 # Pumps sheet
                 pump_rows = []
@@ -258,9 +252,7 @@ def export_to_excel(
                     row = {
                         "Index": idx,
                         "Name": pump.name,
-                        "Type": pump.pump_type
-                        if hasattr(pump, "pump_type")
-                        else "Unknown",
+                        "Type": pump.pump_type if hasattr(pump, "pump_type") else "Unknown",
                     }
                     if include_results and hasattr(pump, "head_m"):
                         row["Head (m)"] = pump.head_m
@@ -269,9 +261,7 @@ def export_to_excel(
                     pump_rows.append(row)
 
                 if pump_rows:
-                    pd.DataFrame(pump_rows).to_excel(
-                        writer, sheet_name="Pumps", index=False
-                    )
+                    pd.DataFrame(pump_rows).to_excel(writer, sheet_name="Pumps", index=False)
 
                 # Case info
                 if hasattr(model, "general"):
@@ -279,13 +269,9 @@ def export_to_excel(
                         "Case Number": model.general.case_numbers,
                         "Description": model.general.case_descriptions,
                     }
-                    pd.DataFrame(case_data).to_excel(
-                        writer, sheet_name="Cases", index=False
-                    )
+                    pd.DataFrame(case_data).to_excel(writer, sheet_name="Cases", index=False)
 
-            logger.info(
-                "export_to_excel_success", path=str(path), sheets=writer.sheets.keys()
-            )
+            logger.info("export_to_excel_success", path=str(path), sheets=writer.sheets.keys())
 
         except ImportError as e:
             raise ExportError(
@@ -359,9 +345,7 @@ def export_to_csv(
                     row = {"index": idx, "name": pump.name}
                     if include_results:
                         row["head_m"] = pump.head_m if hasattr(pump, "head_m") else None
-                        row["power_kw"] = (
-                            pump.power_kW if hasattr(pump, "power_kW") else None
-                        )
+                        row["power_kw"] = pump.power_kW if hasattr(pump, "power_kW") else None
                     pump_rows.append(row)
 
                 if pump_rows:
@@ -393,9 +377,7 @@ def _model_to_dict(model: Model, options: ExportOptions) -> dict[str, Any]:
 
     if options.include_metadata and hasattr(model, "general"):
         data["metadata"]["cases"] = model.general.case_descriptions
-        data["metadata"]["units"] = (
-            model.general.units if hasattr(model.general, "units") else None
-        )
+        data["metadata"]["units"] = model.general.units if hasattr(model.general, "units") else None
 
     # Export elements
     for elem in model.elements:
@@ -498,6 +480,8 @@ def model_to_dataframes(model: Model) -> dict[str, pd.DataFrame]:
     header_rows: list[dict[str, Any]] = []
     typed_rows: dict[str, list[dict[str, Any]]] = {}
 
+    from pykorf.utils import format_line
+
     for line_no, rec in enumerate(model._parser.records):
         # Skip NUM records for non-zero indices (parser.save() skips these)
         if rec.element_type is not None and rec.param == "NUM" and rec.index != 0:
@@ -514,7 +498,7 @@ def model_to_dataframes(model: Model) -> dict[str, pd.DataFrame]:
                     _ETYPE_COL: etype,
                     _INDEX_COL: rec.index,
                     _PARAM_COL: rec.param,
-                    _VALUES_COL: ",".join(str(v) for v in rec.values),
+                    _VALUES_COL: format_line(rec.values),
                     _RAW_LINE_COL: raw,
                 }
             )
@@ -695,9 +679,7 @@ def _dataframes_to_records(
                 idx = int(row[_INDEX_COL])
                 param = str(row[_PARAM_COL]).upper()
                 values = _parse_values_string(str(values_val))
-                indexed.append(
-                    (line_no, KdfRecord(etype, idx, param, values, raw_line=""))
-                )
+                indexed.append((line_no, KdfRecord(etype, idx, param, values, raw_line="")))
             elif _RAW_LINE_COL in df.columns:
                 # Fallback: rebuild record from the raw_line text
                 raw_val = row.get(_RAW_LINE_COL)
@@ -735,9 +717,7 @@ def _dataframes_to_records(
                             )
                         )
                 else:
-                    indexed.append(
-                        (line_no, KdfRecord(None, None, None, [], raw_line=raw_line))
-                    )
+                    indexed.append((line_no, KdfRecord(None, None, None, [], raw_line=raw_line)))
 
     # Sort by original line number to restore file order
     indexed.sort(key=lambda t: t[0])
@@ -775,9 +755,7 @@ def model_from_dataframes(dfs: dict[str, pd.DataFrame]) -> Model:
     except ExportError:
         raise
     except Exception as exc:
-        raise ExportError(
-            f"Failed to reconstruct model from DataFrames: {exc}"
-        ) from exc
+        raise ExportError(f"Failed to reconstruct model from DataFrames: {exc}") from exc
 
     model = _Model()  # blank model from default template
     model._parser._records = records
