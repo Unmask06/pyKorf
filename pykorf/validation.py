@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pykorf.definitions import PROPERTIES_BY_ELEMENT, Element
+from pykorf.elements import PROPERTIES_BY_ELEMENT, Element
 
 if TYPE_CHECKING:
     from pykorf.model import Model
@@ -96,10 +96,7 @@ def _check_num_counts(model: Model, issues: list[str]) -> None:
         declared = model._parser.num_instances(etype)
         actual = sum(1 for idx in collection if idx >= 1)
         if declared != actual:
-            issues.append(
-                f"{etype}: NUM declares {declared} instances but "
-                f"{actual} found in file"
-            )
+            issues.append(f"{etype}: NUM declares {declared} instances but {actual} found in file")
 
 
 def _check_required_params(model: Model, issues: list[str]) -> None:
@@ -113,9 +110,7 @@ def _check_required_params(model: Model, issues: list[str]) -> None:
         existing_params = {r.param for r in template_recs}
         for param in required:
             if param not in existing_params:
-                issues.append(
-                    f"{etype} template (index 0): missing required param {param!r}"
-                )
+                issues.append(f"{etype} template (index 0): missing required param {param!r}")
 
 
 def _check_instance_names(model: Model, issues: list[str]) -> None:
@@ -123,10 +118,6 @@ def _check_instance_names(model: Model, issues: list[str]) -> None:
     for elem in model.elements:
         name_rec = elem._get("NAME")
         if name_rec is None or not name_rec.values:
-            issues.append(
-                f"{elem.etype} index {elem.index}: missing NAME record"
-            )
+            issues.append(f"{elem.etype} index {elem.index}: missing NAME record")
         elif not name_rec.values[0] or name_rec.values[0].strip() == "":
-            issues.append(
-                f"{elem.etype} index {elem.index}: NAME is empty"
-            )
+            issues.append(f"{elem.etype} index {elem.index}: NAME is empty")

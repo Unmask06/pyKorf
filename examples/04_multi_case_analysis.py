@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from pykorf import CaseSet, Model
-from pykorf.definitions import Feed, Pipe, Prod
+from pykorf.elements import Feed, Pipe, Prod
 
 
 def setup_multicase_scenarios(
@@ -189,7 +189,7 @@ def generate_case_comparison_table(
                 # Pad if needed
                 while len(values) < cases.count:
                     values.append(values[-1] if values else "N/A")
-                rows.append([f"Feed '{feed.name}' Pressure (bara)", *list(values[:cases.count])])
+                rows.append([f"Feed '{feed.name}' Pressure (bara)", *list(values[: cases.count])])
 
     # Product pressures
     for prod in model.products.values():
@@ -199,7 +199,9 @@ def generate_case_comparison_table(
                 values = pres_rec.values if pres_rec.values else ["N/A"] * cases.count
                 while len(values) < cases.count:
                     values.append(values[-1] if values else "N/A")
-                rows.append([f"Product '{prod.name}' Pressure (bara)", *list(values[:cases.count])])
+                rows.append(
+                    [f"Product '{prod.name}' Pressure (bara)", *list(values[: cases.count])]
+                )
 
     # Pipe flows
     for pipe in model.pipes.values():
@@ -209,7 +211,7 @@ def generate_case_comparison_table(
                 values = flow_rec.values if flow_rec.values else ["N/A"] * cases.count
                 while len(values) < cases.count:
                     values.append(values[-1] if values else "N/A")
-                rows.append([f"Pipe '{pipe.name}' Flow (t/h)", *list(values[:cases.count])])
+                rows.append([f"Pipe '{pipe.name}' Flow (t/h)", *list(values[: cases.count])])
 
     # Generate output
     if output_format == "markdown":
@@ -284,24 +286,19 @@ def export_case_data(
 
     # Export per-case parameter files
     for case_idx, case_name in enumerate(cases.names, 1):
-        case_data = {
-            "case_name": case_name,
-            "case_number": case_idx,
-            "parameters": {}
-        }
+        case_data = {"case_name": case_name, "case_number": case_idx, "parameters": {}}
 
         # Collect parameters for this case
         for pipe in model.pipes.values():
             if pipe.index > 0:
                 flow_rec = pipe._get(Pipe.TFLOW)
                 if flow_rec and flow_rec.values:
-                    flow_val = cases.get_case_value(
-                        ";".join(flow_rec.values), case_idx
-                    )
+                    flow_val = cases.get_case_value(";".join(flow_rec.values), case_idx)
                     case_data["parameters"][f"{pipe.name}_flow"] = flow_val
 
         # Save as JSON
         import json
+
         json_path = output_path / f"case_{case_idx:02d}_{case_name}.json"
         json_path.write_text(json.dumps(case_data, indent=2))
 
@@ -337,9 +334,7 @@ def analyze_case_sensitivity(
                 flow_rec = pipe._get(Pipe.TFLOW)
                 if flow_rec and flow_rec.values:
                     for case_idx in range(1, cases.count + 1):
-                        val = cases.get_case_value(
-                            ";".join(flow_rec.values), case_idx
-                        )
+                        val = cases.get_case_value(";".join(flow_rec.values), case_idx)
                         with contextlib.suppress(ValueError, TypeError):
                             values.append(float(val))
 

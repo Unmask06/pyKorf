@@ -12,50 +12,103 @@ class Compressor(BaseElement):
     """
 
     ETYPE = "COMP"
+    ENAME = "Compressor"
+
+    # ------------------------------------------------------------------
+    # Parameter constants (moved from definitions/comp.py)
+    # ------------------------------------------------------------------
+    ELEV = "ELEV"
+    DP = "DP"
+    PIN = "PIN"
+    POUT = "POUT"
+    PRAT = "PRAT"
+    QACT = "QACT"
+    TYPE = "TYPE"
+    EFFC = "EFFC"
+    EFFS = "EFFS"
+    POW = "POW"
+    FHAD = "FHAD"
+    HQACT = "HQACT"
+    CURRPM = "CURRPM"
+    CURDIA = "CURDIA"
+    CURNP = "CURNP"
+    CURQ = "CURQ"
+    CURH = "CURH"
+    CUREFF = "CUREFF"
+
+    ALL = (
+        "NUM",
+        "NAME",
+        "XY",
+        "ROT",
+        "FLIP",
+        "LBL",
+        "COLOR",
+        "CON",
+        ELEV,
+        DP,
+        PIN,
+        POUT,
+        PRAT,
+        QACT,
+        TYPE,
+        EFFC,
+        EFFS,
+        POW,
+        FHAD,
+        HQACT,
+        CURRPM,
+        CURDIA,
+        CURNP,
+        CURQ,
+        CURH,
+        CUREFF,
+        "NOTES",
+    )
 
     def __init__(self, parser, index: int):
         super().__init__(parser, "COMP", index)
 
     @property
     def comp_type(self) -> str:
-        return str(self._scalar("TYPE", 0, "Centrifugal"))
+        return str(self._scalar(Compressor.TYPE, 0, "Centrifugal"))
 
     @property
     def efficiency(self) -> float:
         try:
-            return float(self._scalar("EFFC", 1, 0.0))
+            return float(self._scalar(Compressor.EFFC, 1, 0.0))
         except (TypeError, ValueError):
             return 0.0
 
     def set_efficiency(self, value: float) -> None:
-        rec = self._get("EFFC")
+        rec = self._get(Compressor.EFFC)
         if rec:
-            self._set("EFFC", [str(value)] + rec.values[1:])
+            self._set(Compressor.EFFC, [str(value)] + rec.values[1:])
 
     @property
     def power_kW(self) -> float:
         try:
-            return float(self._scalar("POW", 0, 0.0))
+            return float(self._scalar(Compressor.POW, 0, 0.0))
         except (TypeError, ValueError):
             return 0.0
 
     @property
     def head_m(self) -> float:
         try:
-            return float(self._scalar("HQACT", 0, 0.0))
+            return float(self._scalar(Compressor.HQACT, 0, 0.0))
         except (TypeError, ValueError):
             return 0.0
 
     @property
     def dp_kPag(self) -> float:
         try:
-            return float(self._scalar("DP", 1, 0.0))
+            return float(self._scalar(Compressor.DP, 1, 0.0))
         except (TypeError, ValueError):
             return 0.0
 
     @property
     def connection(self) -> tuple[int, int]:
-        vals = self._values("CON")
+        vals = self._values(self.CON)
         try:
             return (int(vals[0]), int(vals[1]))
         except (IndexError, TypeError, ValueError):

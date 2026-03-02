@@ -25,6 +25,77 @@ class Pump(BaseElement):
     """
 
     ETYPE = "PUMP"
+    ENAME = "Pump"
+
+    # ------------------------------------------------------------------
+    # Parameter constants (moved from definitions/pump.py)
+    # ------------------------------------------------------------------
+    ELEV = "ELEV"
+    DP = "DP"
+    PIN = "PIN"
+    POUT = "POUT"
+    TYPE = "TYPE"
+    EFFP = "EFFP"
+    EFFS = "EFFS"
+    POW = "POW"
+    HQACT = "HQACT"
+    CURRPM = "CURRPM"
+    CURDIA = "CURDIA"
+    CURVSD = "CURVSD"
+    CURC1 = "CURC1"
+    CURNP = "CURNP"
+    CURQ = "CURQ"
+    CURH = "CURH"
+    CUREFF = "CUREFF"
+    CURNPSH = "CURNPSH"
+    NPSHA13 = "NPSHA13"
+    NPSHR13 = "NPSHR13"
+    NPSHAF = "NPSHAF"
+    NPSHRE = "NPSHRE"
+    NPSHVV = "NPSHVV"
+    NPSHVT = "NPSHVT"
+    PZPRES = "PZPRES"
+    PZRAT = "PZRAT"
+    PZVES = "PZVES"
+
+    ALL = (
+        "NUM",
+        "NAME",
+        "XY",
+        "ROT",
+        "FLIP",
+        "LBL",
+        "COLOR",
+        "CON",
+        ELEV,
+        DP,
+        PIN,
+        POUT,
+        TYPE,
+        EFFP,
+        EFFS,
+        POW,
+        HQACT,
+        CURRPM,
+        CURDIA,
+        CURVSD,
+        CURC1,
+        CURNP,
+        CURQ,
+        CURH,
+        CUREFF,
+        CURNPSH,
+        NPSHA13,
+        NPSHR13,
+        NPSHAF,
+        NPSHRE,
+        NPSHVV,
+        NPSHVT,
+        PZPRES,
+        PZRAT,
+        PZVES,
+        "NOTES",
+    )
 
     def __init__(self, parser, index: int):
         super().__init__(parser, "PUMP", index)
@@ -36,20 +107,20 @@ class Pump(BaseElement):
     @property
     def inlet_pipe(self) -> int:
         try:
-            return int(self._scalar("CON", 0, 0))
+            return int(self._scalar(self.CON, 0, 0))
         except (TypeError, ValueError):
             return 0
 
     @property
     def outlet_pipe(self) -> int:
         try:
-            return int(self._scalar("CON", 1, 0))
+            return int(self._scalar(self.CON, 1, 0))
         except (TypeError, ValueError):
             return 0
 
     @property
     def pump_type(self) -> str:
-        return str(self._scalar("TYPE", 0, "Centrifugal"))
+        return str(self._scalar(Pump.TYPE, 0, "Centrifugal"))
 
     # ------------------------------------------------------------------
     # Specified ΔP
@@ -57,13 +128,13 @@ class Pump(BaseElement):
 
     @property
     def dp_string(self) -> str:
-        return str(self._scalar("DP", 0, ""))
+        return str(self._scalar(Pump.DP, 0, ""))
 
     @property
     def dp_kPag(self) -> float:
         """Calculated differential pressure [kPag]."""
         try:
-            return float(self._scalar("DP", 1, 0.0))
+            return float(self._scalar(Pump.DP, 1, 0.0))
         except (TypeError, ValueError):
             return 0.0
 
@@ -72,10 +143,10 @@ class Pump(BaseElement):
 
         Pass an empty string ``""`` to let KORF calculate via the curve.
         """
-        rec = self._get("DP")
+        rec = self._get(Pump.DP)
         if rec:
             new_vals = [str(value)] + rec.values[1:]
-            self._set("DP", new_vals)
+            self._set(Pump.DP, new_vals)
 
     # ------------------------------------------------------------------
     # Efficiency
@@ -83,13 +154,13 @@ class Pump(BaseElement):
 
     @property
     def efficiency_string(self) -> str:
-        return str(self._scalar("EFFP", 0, ""))
+        return str(self._scalar(Pump.EFFP, 0, ""))
 
     @property
     def efficiency(self) -> float:
         """Pump hydraulic efficiency (fraction, 0–1)."""
         try:
-            v = self._scalar("EFFP", 1, 0.0)
+            v = self._scalar(Pump.EFFP, 1, 0.0)
             return float(v)
         except (TypeError, ValueError):
             return 0.0
@@ -103,9 +174,9 @@ class Pump(BaseElement):
             Fraction, e.g. ``0.72`` for 72 %.
             Pass ``""`` to restore curve-based calculation.
         """
-        rec = self._get("EFFP")
+        rec = self._get(Pump.EFFP)
         if rec:
-            self._set("EFFP", [str(value)] + rec.values[1:])
+            self._set(Pump.EFFP, [str(value)] + rec.values[1:])
 
     # ------------------------------------------------------------------
     # Results
@@ -115,7 +186,7 @@ class Pump(BaseElement):
     def power_kW(self) -> float:
         """Calculated absorbed power [kW]."""
         try:
-            return float(self._scalar("POW", 0, 0.0))
+            return float(self._scalar(Pump.POW, 0, 0.0))
         except (TypeError, ValueError):
             return 0.0
 
@@ -123,7 +194,7 @@ class Pump(BaseElement):
     def head_m(self) -> float:
         """Calculated operating head [m]."""
         try:
-            return float(self._scalar("HQACT", 0, 0.0))
+            return float(self._scalar(Pump.HQACT, 0, 0.0))
         except (TypeError, ValueError):
             return 0.0
 
@@ -131,14 +202,14 @@ class Pump(BaseElement):
     def flow_m3h(self) -> float:
         """Calculated operating flow [m³/h]."""
         try:
-            return float(self._scalar("HQACT", 2, 0.0))
+            return float(self._scalar(Pump.HQACT, 2, 0.0))
         except (TypeError, ValueError):
             return 0.0
 
     @property
     def npsh_required_m(self) -> float:
         try:
-            return float(self._scalar("NPSHR13", 1, 0.0))
+            return float(self._scalar(Pump.NPSHR13, 1, 0.0))
         except (TypeError, ValueError):
             return 0.0
 
@@ -149,25 +220,25 @@ class Pump(BaseElement):
     @property
     def curve_q(self) -> list[str]:
         """Flow points on the pump curve [m³/h]."""
-        vals = self._values("CURQ")
+        vals = self._values(Pump.CURQ)
         return vals[:-1] if vals else []  # last token is unit
 
     @property
     def curve_h(self) -> list[str]:
         """Head points on the pump curve [m]."""
-        vals = self._values("CURH")
+        vals = self._values(Pump.CURH)
         return vals[:-1] if vals else []
 
     @property
     def curve_eff(self) -> list[str]:
         """Efficiency points on the pump curve [fraction]."""
-        vals = self._values("CUREFF")
+        vals = self._values(Pump.CUREFF)
         return vals[:-1] if vals else []
 
     @property
     def curve_npsh(self) -> list[str]:
         """NPSH required points [m]."""
-        vals = self._values("CURNPSH")
+        vals = self._values(Pump.CURNPSH)
         return vals[:-1] if vals else []
 
     @property
@@ -195,12 +266,12 @@ class Pump(BaseElement):
         q_unit:   Unit for flow (default ``'m3/h'``).
         h_unit:   Unit for head (default ``'m'``).
         """
-        self._set("CURQ", [str(v) for v in q] + [q_unit])
-        self._set("CURH", [str(v) for v in h] + [h_unit])
-        self._set("CUREFF", [str(v) for v in eff] + ["fraction"])
+        self._set(Pump.CURQ, [str(v) for v in q] + [q_unit])
+        self._set(Pump.CURH, [str(v) for v in h] + [h_unit])
+        self._set(Pump.CUREFF, [str(v) for v in eff] + ["fraction"])
         if npsh is not None:
-            self._set("CURNPSH", [str(v) for v in npsh] + ["m"])
-        self._set("CURNP", [len(q)])
+            self._set(Pump.CURNPSH, [str(v) for v in npsh] + ["m"])
+        self._set(Pump.CURNP, [len(q)])
 
     # ------------------------------------------------------------------
     # Convenience

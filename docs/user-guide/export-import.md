@@ -10,6 +10,107 @@ pyKorf supports multiple export formats:
 - **YAML** - Human-readable, hierarchical
 - **Excel** - Multi-sheet workbook
 - **CSV** - Tabular data files
+- **DataFrame** - In-memory pandas DataFrames (lossless round-trip)
+
+## DataFrame Conversion (Lossless Round-Trip)
+
+pyKorf can convert any `.kdf` model to a dict of pandas DataFrames and back
+**without losing any data**.  This enables workflows like:
+
+- KDF → DataFrame → KDF (identical file)
+- KDF → DataFrame → Excel → DataFrame → KDF (identical file)
+
+### KDF → DataFrames
+
+```python
+from pykorf import Model
+
+model = Model("Pumpcases.kdf")
+dfs = model.to_dataframes()
+
+# Inspect the sheets
+for name, df in dfs.items():
+    print(f"{name}: {len(df)} records")
+```
+
+Each element type (``GEN``, ``PIPE``, ``PUMP``, …) gets its own DataFrame.
+A special ``_HEADER`` DataFrame stores the version header and any verbatim
+lines.  Every row preserves the original raw KDF line text, so round-trip
+fidelity is guaranteed.
+
+### DataFrames → KDF
+
+```python
+# Reconstruct a Model from DataFrames
+reconstructed = Model.from_dataframes(dfs)
+reconstructed.save("Pumpcases_copy.kdf")
+```
+
+### KDF → Excel
+
+```python
+model = Model("Pumpcases.kdf")
+model.to_excel("Pumpcases.xlsx")
+```
+
+Each element type is written to a separate Excel sheet.
+
+### Excel → KDF
+
+```python
+model = Model.from_excel("Pumpcases.xlsx")
+model.save("Pumpcases_from_excel.kdf")
+```
+
+### Full Round-Trip Example
+
+```python
+from pykorf import Model
+
+# Original
+model = Model("Pumpcases.kdf")
+
+# KDF → Excel
+model.to_excel("Pumpcases.xlsx")
+
+# Excel → KDF
+restored = Model.from_excel("Pumpcases.xlsx")
+restored.save("Pumpcases_restored.kdf")
+
+# The two .kdf files are byte-identical
+```
+
+### Using Standalone Functions
+
+The conversion functions are also available directly from
+`pykorf.export`:
+
+```python
+from pykorf.export import (
+    model_to_dataframes,
+    model_from_dataframes,
+    dataframes_to_kdf,
+    dataframes_to_excel,
+    excel_to_dataframes,
+)
+
+model = Model("Pumpcases.kdf")
+
+# Convert to DataFrames
+dfs = model_to_dataframes(model)
+
+# Write DataFrames directly to a .kdf file
+dataframes_to_kdf(dfs, "output.kdf")
+
+# Write DataFrames to Excel
+dataframes_to_excel(dfs, "output.xlsx")
+
+# Read Excel back to DataFrames
+dfs_back = excel_to_dataframes("output.xlsx")
+
+# Reconstruct Model from DataFrames
+restored = model_from_dataframes(dfs_back)
+```
 
 ## JSON Export
 
@@ -99,7 +200,17 @@ export_to_csv(
 
 ## Import
 
-Currently, pyKorf only supports importing KDF files directly:
+### From DataFrames or Excel (Lossless)
+
+```python
+# From DataFrames
+model = Model.from_dataframes(dfs)
+
+# From Excel workbook
+model = Model.from_excel("model.xlsx")
+```
+
+### From KDF
 
 ```python
 # Load KDF
@@ -117,7 +228,7 @@ model.save("output.kdf")
 ```python
 import json
 from pykorf import Model
-from pykorf.definitions import Element, Pipe
+from pykorf.elements import Element, Pipe
 
 # Load JSON data
 with open("data.json") as f:

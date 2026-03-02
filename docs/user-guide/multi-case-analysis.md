@@ -210,7 +210,7 @@ for case_idx in range(1, cases.count + 1):
 
 ```python
 from pykorf import Model, CaseSet
-from pykorf.definitions import Element, Pipe, Feed, Prod
+from pykorf.elements import Element, Pipe, Feed, Product
 
 # Create model
 model = Model()
@@ -222,7 +222,7 @@ model.general.case_descriptions = case_names
 
 # Add elements
 model.add_element(Element.FEED, "Source", {Feed.PRES: "100;110;90"})
-model.add_element(Element.PROD, "Sink", {Prod.PRES: "50"})
+model.add_element(Element.PROD, "Sink", {Product.PRES: "50"})
 model.connect_elements("Source", "Sink", pipe_name="MainLine")
 
 # Set flows for all cases

@@ -21,7 +21,7 @@ import json
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from pykorf.definitions import Common, Element
+from pykorf.elements import Common, Element, Vessel
 from pykorf.layout import _X_MAX, _X_MIN, _Y_MAX, _Y_MIN, _all_positions
 from pykorf.visualization.models import EdgeData, NetworkData, NodeData
 
@@ -84,9 +84,7 @@ def _legend_html() -> str:
         "padding:10px 12px;z-index:9999;box-shadow:0 1px 6px rgba(0,0,0,0.15);"
         "max-height:80vh;overflow:auto;'>"
         "<div style='font-weight:600;font-family:Arial,sans-serif;font-size:13px;"
-        "margin-bottom:6px;'>Legend</div>"
-        + "".join(items)
-        + "</div>"
+        "margin-bottom:6px;'>Legend</div>" + "".join(items) + "</div>"
     )
 
 
@@ -193,7 +191,14 @@ class Visualizer:
             return "unknown"
 
         # Equipment with CON = [inlet_pipe, outlet_pipe]
-        if et in {Element.PUMP, Element.VALVE, Element.CHECK, Element.COMP, Element.EXPAND, Element.ORIFICE}:
+        if et in {
+            Element.PUMP,
+            Element.VALVE,
+            Element.CHECK,
+            Element.COMP,
+            Element.EXPAND,
+            Element.ORIFICE,
+        }:
             con_rec = elem._get(Common.CON)
             if con_rec and len(con_rec.values) >= 2:
                 if str(con_rec.values[0]) == pipe_idx_str:
@@ -230,10 +235,10 @@ class Visualizer:
         # VESSEL - check NOZLI/NOZLO
         if et == Element.VESSEL:
             for rec in elem.records():
-                if rec.param == Common.NOZLI and len(rec.values) >= 2:
+                if rec.param == Vessel.NOZLI and len(rec.values) >= 2:
                     if str(rec.values[1]) == pipe_idx_str:
                         return "inlet"
-                if rec.param == Common.NOZLO and len(rec.values) >= 2:
+                if rec.param == Vessel.NOZLO and len(rec.values) >= 2:
                     if str(rec.values[1]) == pipe_idx_str:
                         return "outlet"
             return "unknown"
@@ -256,9 +261,7 @@ class Visualizer:
             name2, etype2, role2 = connected[1]
 
             # Determine flow direction based on roles
-            source, target = self._determine_flow_direction(
-                name1, role1, name2, role2
-            )
+            source, target = self._determine_flow_direction(name1, role1, name2, role2)
 
             if source and target:
                 edges.append(EdgeData(source=source, target=target))
@@ -273,9 +276,7 @@ class Visualizer:
                 for j in range(i + 1, len(connected)):
                     name1, _, role1 = connected[i]
                     name2, _, role2 = connected[j]
-                    source, target = self._determine_flow_direction(
-                        name1, role1, name2, role2
-                    )
+                    source, target = self._determine_flow_direction(name1, role1, name2, role2)
                     if source and target:
                         edges.append(EdgeData(source=source, target=target))
 
@@ -292,13 +293,13 @@ class Visualizer:
         """
         # Define role hierarchy: lower index = upstream
         role_order = {
-            "outlet": 0,      # Flows FROM equipment outlet
-            "combined": 1,    # Flows FROM tee combined (splitting)
-            "main": 2,        # TEE main outlet
-            "branch": 3,      # TEE branch outlet
-            "junction": 4,    # Neutral
+            "outlet": 0,  # Flows FROM equipment outlet
+            "combined": 1,  # Flows FROM tee combined (splitting)
+            "main": 2,  # TEE main outlet
+            "branch": 3,  # TEE branch outlet
+            "junction": 4,  # Neutral
             "unknown": 5,
-            "inlet": 6,       # Flows TO equipment inlet
+            "inlet": 6,  # Flows TO equipment inlet
         }
 
         order1 = role_order.get(role1, 5)
@@ -354,8 +355,7 @@ class Visualizer:
             from pyvis.network import Network
         except ImportError as exc:
             raise ImportError(
-                "pyvis is required for HTML visualization. "
-                "Install it with: pip install pyvis"
+                "pyvis is required for HTML visualization. Install it with: pip install pyvis"
             ) from exc
 
         net = Network(

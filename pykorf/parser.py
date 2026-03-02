@@ -82,7 +82,7 @@ class KdfRecord:
             The same record instance (for chaining).
 
         Example:
-            >>> from pykorf.definitions import Feed
+            >>> from pykorf.elements import Feed
             >>> model.get_element("Exp Drum").get_param(Feed.NAME).update(
             ...     ["EXP DRUM", "FEED"]
             ... )
@@ -176,11 +176,7 @@ class KdfParser:
         dest.parent.mkdir(parents=True, exist_ok=True)
         with dest.open("w", encoding=self.encoding, newline="") as fh:
             for rec in self._records:
-                if (
-                    rec.element_type is not None
-                    and rec.param == "NUM"
-                    and rec.index != 0
-                ):
+                if rec.element_type is not None and rec.param == "NUM" and rec.index != 0:
                     continue
                 fh.write(rec.to_line() + "\r\n")
 
@@ -267,7 +263,8 @@ class KdfParser:
             rec.raw_line = ""
 
     def _find_insert_position(self, element_type: str) -> int:
-        """Return the list index where new records for *element_type* should
+        """
+        Return the list index where new records for *element_type* should
         be inserted (after the last existing record for that type).
         """
         et = element_type.upper()
@@ -321,9 +318,7 @@ class KdfParser:
         second_comma = raw_line.index(",", first_comma + 1)
         return raw_line[: first_comma + 1] + str(new_index) + raw_line[second_comma:]
 
-    def clone_records(
-        self, element_type: str, src_index: int, dst_index: int
-    ) -> list[KdfRecord]:
+    def clone_records(self, element_type: str, src_index: int, dst_index: int) -> list[KdfRecord]:
         """Deep-copy all records from *src_index* to *dst_index*.
 
         Returns the new records (already inserted into the record list).

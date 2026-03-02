@@ -23,14 +23,14 @@ print(f"Pumps: {model.num_pumps}")
 
 ```python
 from pykorf import Model
-from pykorf.definitions import Element, Pipe, Feed, Prod
+from pykorf.elements import Element, Pipe, Feed, Product
 
 # Create a blank model from the default template
 model = Model()
 
 # Add elements
 model.add_element(Element.FEED, "S1", {Feed.PRES: "100"})
-model.add_element(Element.PROD, "D1", {Prod.PRES: "50"})
+model.add_element(Element.PROD, "D1", {Product.PRES: "50"})
 
 # Connect them with a pipe
 model.connect_elements("S1", "D1", pipe_name="L1")

@@ -23,11 +23,11 @@ Basic workflow::
     print(model["L1"].get_flow())
 
     # Edit by name
-    from pykorf.definitions import Pipe
+    from pykorf.elements import Pipe
     model.update_element("L1", {Pipe.LEN: 200, Pipe.TFLOW: "80;90;60"})
 
     # Add / delete / copy
-    from pykorf.definitions import Element
+    from pykorf.elements import Element
     model.add_element(Element.PIPE, "L10", {Pipe.LEN: 50})
     model.delete_element("L10")
     model.copy_element("L1", "L11")
@@ -38,16 +38,18 @@ Basic workflow::
 
 from __future__ import annotations
 
+import fnmatch
 import logging
 from pathlib import Path
 from typing import Any
 
-from pykorf.definitions import Common, Element
 from pykorf.elements import (
     ELEMENT_REGISTRY,
     BaseElement,
     CheckValve,
+    Common,
     Compressor,
+    Element,
     Expander,
     Feed,
     FlowOrifice,
@@ -63,8 +65,8 @@ from pykorf.elements import (
     Valve,
     Vessel,
 )
-from pykorf.exceptions import ElementNotFound
-from pykorf.parser import KdfParser
+from pykorf.exceptions import ElementNotFound, ParameterError
+from pykorf.parser import KdfParser, KdfRecord
 
 # Path to the bundled default template
 _DEFAULT_TEMPLATE = Path(__file__).resolve().parent / "library" / "New.kdf"
@@ -122,9 +124,7 @@ class Model:
         self.orifices: dict[int, FlowOrifice] = self._build(Element.ORIFICE, FlowOrifice)
         self.exchangers: dict[int, HeatExchanger] = self._build(Element.HX, HeatExchanger)
         self.compressors: dict[int, Compressor] = self._build(Element.COMP, Compressor)
-        self.misc_equipment: dict[int, MiscEquipment] = self._build(
-            Element.MISC, MiscEquipment
-        )
+        self.misc_equipment: dict[int, MiscEquipment] = self._build(Element.MISC, MiscEquipment)
         self.expanders: dict[int, Expander] = self._build(Element.EXPAND, Expander)
         self.junctions: dict[int, Junction] = self._build(Element.JUNC, Junction)
         self.tees: dict[int, Tee] = self._build(Element.TEE, Tee)
@@ -191,8 +191,7 @@ class Model:
             unique_name = f"{name}_{suffix_num}"
             if len(unique_name) > 9:
                 raise ValueError(
-                    f"Generated unique name {unique_name!r} for {name!r} "
-                    "exceeds 9 character limit"
+                    f"Generated unique name {unique_name!r} for {name!r} exceeds 9 character limit"
                 )
             if unique_name not in self._name_map:
                 _logger.info(
@@ -299,6 +298,174 @@ class Model:
         if collection is None:
             return []
         return [elem for idx, elem in sorted(collection.items()) if idx >= 1]
+
+    def get_elements(
+        self,
+        etype: str | None = None,
+        name: str | None = None,
+    ) -> list[BaseElement]:
+        """Get elements with optional filtering by type and/or name.
+
+        Parameters
+        ----------
+        etype:
+            Filter by element type (e.g., ``'PIPE'``, ``'PUMP'``).
+            If None, all element types are included.
+        name:
+            Filter by element name. Supports glob patterns (e.g., ``'P*'``, ``'L?'``).
+            If None, all names are included.
+
+        Returns:
+        --------
+        List of matching elements.
+
+        Example:
+        --------
+        ```python
+        # Get all pipes
+        pipes = model.get_elements(etype="PIPE")
+
+        # Get elements by name pattern
+        p_elements = model.get_elements(name="P*")
+
+        # Get pumps with names starting with "P"
+        pumps = model.get_elements(etype="PUMP", name="P*")
+
+        # Get all elements (no filters)
+        all_elements = model.get_elements()
+        ```
+        """
+        # Start with all elements or filter by type
+        if etype is not None:
+            results = self.get_elements_by_type(etype)
+        else:
+            results = self.elements
+
+        # Filter by name pattern if specified
+        if name is not None:
+            results = [e for e in results if fnmatch.fnmatch(e.name, name)]
+
+        return results
+
+    def get_params(
+        self,
+        ename: str,
+        param: str | None = None,
+    ) -> dict[str, KdfRecord] | KdfRecord:
+        """Get parameters for an element.
+
+        Parameters
+        ----------
+        ename:
+            Element name (NAME tag).
+        param:
+            Specific parameter name to retrieve. If None, returns all
+            parameters as a dictionary.
+
+        Returns:
+        --------
+        If ``param`` is specified, returns the single ``KdfRecord``.
+        If ``param`` is None, returns a dict mapping parameter names to
+        ``KdfRecord`` objects.
+
+        Raises:
+        -------
+        ElementNotFound:
+            If the element does not exist.
+        ParameterError:
+            If the specified parameter does not exist on the element.
+
+        Example:
+        --------
+        ```python
+        # Get all parameters as dict
+        all_params = model.get_params("P1")
+        # Returns: {"LEN": KdfRecord(...), "DIAM": KdfRecord(...), ...}
+
+        # Get single parameter
+        len_record = model.get_params("P1", param="LEN")
+        # Returns: KdfRecord(...)
+
+        # Access multi-case values
+        values = len_record.values  # List of strings
+        ```
+        """
+        from pykorf.exceptions import ErrorContext
+
+        elem = self.get_element(ename)
+
+        if param is not None:
+            # Return single parameter
+            record = elem._get(param.upper())
+            if record is None:
+                raise ParameterError(
+                    f"Parameter {param!r} not found on element {ename!r}",
+                    context=ErrorContext(
+                        element_name=ename,
+                        element_type=elem.etype,
+                        parameter=param,
+                    ),
+                )
+            return record
+        else:
+            # Return all parameters as dict
+            # Get all records for this element from the parser
+            all_records = self._parser.get_all(elem.etype, elem.index)
+            return {rec.param: rec for rec in all_records if rec.param is not None}
+
+    def set_params(self, ename: str, params: dict[str, Any]) -> None:
+        """Set parameters for an element.
+
+        Parameters
+        ----------
+        ename:
+            Element name (NAME tag).
+        params:
+            Dictionary mapping parameter names to values. Values can be:
+            - Single values (int, float, str) - set as first case
+            - Lists - set as multi-case values
+            - Strings with semicolons - treated as multi-case
+
+        Raises:
+        -------
+        ElementNotFound:
+            If the element does not exist.
+
+        Example:
+        --------
+        ```python
+        # Set single values
+        model.set_params("P1", {"LEN": 200, "DIAM": 50})
+
+        # Set multi-case values
+        model.set_params("P1", {"TFLOW": [80, 90, 60]})
+
+        # Set from string with semicolons
+        model.set_params("P1", {"TFLOW": "80;90;60"})
+        ```
+        """
+        elem = self.get_element(ename)
+
+        for param_name, value in params.items():
+            param_key = param_name.upper()
+
+            # Handle XY coordinates specially
+            if param_key in (Common.X, Common.Y):
+                xy_update = {param_key: float(value)}
+                self._update_xy(elem, xy_update)
+                continue
+
+            # Convert value to list of strings
+            if isinstance(value, (list, tuple)):
+                val_list = [str(v) for v in value]
+            elif isinstance(value, str) and ";" in value:
+                # Already semicolon-separated, split it
+                val_list = value.split(";")
+            else:
+                val_list = [str(value)]
+
+            # Update the record via validated path
+            elem.set_param(param_key, val_list)
 
     # ------------------------------------------------------------------
     # Update element parameters
@@ -482,21 +649,21 @@ class Model:
         params: dict[str, Any] | None = None,
     ) -> PipeData:
         """Add a new PIPEDATA entry.
-        
+
         PIPEDATA elements don't have a NAME parameter in KORF, so we need
         to handle them specially - they can't be looked up by name.
         """
         et = Element.PIPEDATA
         new_idx = self._parser.next_index(et)
-        
+
         # Find a source index to clone from - try index 1 if exists, otherwise use max
         src_idx = 1 if self._parser.num_instances(et) > 0 else 0
         self._parser.clone_records(et, src_idx, new_idx)
-        
+
         # Update NUM count
         current_count = self._parser.num_instances(et)
         self._parser.set_num_instances(et, current_count + 1)
-        
+
         # Apply user params directly to parser records
         if params:
             for param, value in params.items():
@@ -506,10 +673,10 @@ class Model:
                 else:
                     val_list = [str(value)]
                 self._parser.set_value(et, new_idx, key, val_list)
-        
+
         # Rebuild to pick up the new element
         self._build_collections()
-        
+
         # Return the newly created PipeData element
         return self.pipedata[new_idx]
 
@@ -522,9 +689,7 @@ class Model:
                 return candidate
             i += 1
 
-    def _position_pipe_between(
-        self, pipe_name: str, elem1_name: str, elem2_name: str
-    ) -> None:
+    def _position_pipe_between(self, pipe_name: str, elem1_name: str, elem2_name: str) -> None:
         """Position a pipe between two elements with proper spacing.
 
         Places the pipe at a position that visually connects elem1 and elem2,
@@ -563,7 +728,7 @@ class Model:
         candidate = (mid_x, pipe_y)
         offset = MIN_SPACING / 2  # Offset by half minimum spacing
         max_attempts = 5
-        
+
         for _ in range(max_attempts):
             clash = False
             for elem in self.elements:
@@ -580,8 +745,10 @@ class Model:
                     clash = True
                     # Offset to the side (perpendicular to flow)
                     candidate = (candidate[0], candidate[1] + offset)
-                    candidate = (max(X_MIN, min(X_MAX, candidate[0])),
-                                max(Y_MIN, min(Y_MAX, candidate[1])))
+                    candidate = (
+                        max(X_MIN, min(X_MAX, candidate[0])),
+                        max(Y_MIN, min(Y_MAX, candidate[1])),
+                    )
                     break
             if not clash:
                 break
@@ -843,8 +1010,7 @@ class Model:
                     n1, n2, p_name = pair
                 else:
                     raise ValueError(
-                        "Each connection pair must be (name1, name2) or "
-                        "(name1, name2, pipe_name)."
+                        "Each connection pair must be (name1, name2) or (name1, name2, pipe_name)."
                     )
                 self.connect_elements(n1, n2, pipe_name=p_name)
         else:
@@ -855,8 +1021,7 @@ class Model:
             if elem1.etype == Element.PIPE or elem2.etype == Element.PIPE:
                 if pipe_name is not None:
                     raise ValueError(
-                        "pipe_name can only be provided when connecting two "
-                        "non-PIPE elements."
+                        "pipe_name can only be provided when connecting two non-PIPE elements."
                     )
                 connect(self, name1_or_pairs, name2)
                 return
@@ -864,10 +1029,10 @@ class Model:
             new_pipe_name = pipe_name or self._next_auto_pipe_name()
             # Create pipe without auto-positioning - we'll position it manually
             self._add_element_internal(Element.PIPE, new_pipe_name, auto_position=False)
-            
+
             # Position the pipe intelligently between the two elements
             self._position_pipe_between(new_pipe_name, name1_or_pairs, name2)
-            
+
             connect(self, new_pipe_name, name1_or_pairs)
             connect(self, new_pipe_name, name2)
 
@@ -952,7 +1117,14 @@ class Model:
         model.auto_layout()  # Arrange all unplaced elements
         ```
         """
-        from pykorf.layout import auto_place, get_position, X_MIN, Y_MIN, COMFORT_SPACING_X, COMFORT_SPACING_Y
+        from pykorf.layout import (
+            auto_place,
+            get_position,
+            X_MIN,
+            Y_MIN,
+            COMFORT_SPACING_X,
+            COMFORT_SPACING_Y,
+        )
 
         spacing = spacing or COMFORT_SPACING_X
 
@@ -968,12 +1140,14 @@ class Model:
 
         # Get existing positions to avoid clashes
         existing = [
-            pos for pos in (get_position(e) for e in self.elements)
+            pos
+            for pos in (get_position(e) for e in self.elements)
             if pos is not None and pos != (0.0, 0.0)
         ]
 
         # Place unplaced elements in a grid
         import math
+
         cols = max(1, int(math.sqrt(len(unplaced))))
 
         for i, elem in enumerate(unplaced):
@@ -992,6 +1166,7 @@ class Model:
                     break
 
             from pykorf.layout import set_position
+
             set_position(self, elem.name, x, y)
             existing.append((x, y))
 
@@ -1067,9 +1242,11 @@ class Model:
         """
         if check_layout:
             from pykorf.layout import check_layout as _check_layout
+
             issues = _check_layout(self)
             if issues:
                 import logging
+
                 logger = logging.getLogger(__name__)
                 logger.warning(
                     f"Layout issues detected ({len(issues)}): "
@@ -1082,6 +1259,104 @@ class Model:
     def save_as(self, path: str | Path, *, check_layout: bool = True) -> None:
         """Save to a new path (alias for :meth:`save` with a path argument)."""
         self.save(path, check_layout=check_layout)
+
+    # ------------------------------------------------------------------
+    # DataFrame / Excel conversion
+    # ------------------------------------------------------------------
+
+    def to_dataframes(self) -> dict:
+        """Convert the model to a dict of DataFrames (one per element type).
+
+        Each DataFrame preserves the raw KDF record lines so that the model
+        can be perfectly reconstructed.  Verbatim / header lines are stored
+        in a ``"_HEADER"`` DataFrame.
+
+        Returns:
+            ``dict[str, pd.DataFrame]`` keyed by element type name.
+
+        Raises:
+            ExportError: If *pandas* is not installed.
+
+        Example:
+            ```python
+            model = Model("Pumpcases.kdf")
+            dfs = model.to_dataframes()
+            for name, df in dfs.items():
+                print(name, len(df))
+            ```
+        """
+        from pykorf.export import model_to_dataframes
+
+        return model_to_dataframes(self)
+
+    @classmethod
+    def from_dataframes(cls, dfs: dict) -> "Model":
+        """Create a Model from a dict of DataFrames.
+
+        This is the inverse of :meth:`to_dataframes`.
+
+        Args:
+            dfs: Dict of DataFrames as returned by :meth:`to_dataframes`.
+
+        Returns:
+            A new :class:`Model` instance.
+
+        Example:
+            ```python
+            dfs = model.to_dataframes()
+            reconstructed = Model.from_dataframes(dfs)
+            ```
+        """
+        from pykorf.export import model_from_dataframes
+
+        return model_from_dataframes(dfs)
+
+    def to_excel(self, path: str | Path) -> None:
+        """Export the model to an Excel workbook with lossless round-trip fidelity.
+
+        Each element type is written to a separate sheet.  The workbook
+        can be read back with :meth:`from_excel` to produce an identical
+        ``.kdf`` file.
+
+        Args:
+            path: Destination ``.xlsx`` file path.
+
+        Raises:
+            ExportError: If *pandas* or *openpyxl* is not installed.
+
+        Example:
+            ```python
+            model = Model("Pumpcases.kdf")
+            model.to_excel("Pumpcases.xlsx")
+            ```
+        """
+        from pykorf.export import dataframes_to_excel, model_to_dataframes
+
+        dfs = model_to_dataframes(self)
+        dataframes_to_excel(dfs, path)
+
+    @classmethod
+    def from_excel(cls, path: str | Path) -> "Model":
+        """Create a Model from an Excel workbook.
+
+        This is the inverse of :meth:`to_excel`.
+
+        Args:
+            path: Path to the ``.xlsx`` file.
+
+        Returns:
+            A new :class:`Model` instance.
+
+        Example:
+            ```python
+            model = Model.from_excel("Pumpcases.xlsx")
+            model.save("Pumpcases_roundtrip.kdf")
+            ```
+        """
+        from pykorf.export import excel_to_dataframes, model_from_dataframes
+
+        dfs = excel_to_dataframes(path)
+        return model_from_dataframes(dfs)
 
     # ------------------------------------------------------------------
     # Meta-information

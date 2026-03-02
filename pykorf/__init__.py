@@ -25,7 +25,7 @@ layout         – Element positioning
 validation     – KDF format compliance
 visualization/ – PyVis network visualization
 export         – Export to JSON, YAML, Excel, CSV
-query          – Advanced querying and filtering
+query          – Deprecated: use Model.get_elements(), get_params(), set_params()
 types          – Pydantic models for type safety
 config         – Configuration management
 log            – Structured logging
@@ -64,9 +64,9 @@ Example Usage
 
 ### Querying
 
-    >>> from pykorf.query import Query, attr
-    >>> q = Query(model)
-    >>> large_pipes = q.pipes.where(attr("diameter_inch").in_(["8", "10"])).all()
+    >>> # Use Model.get_elements() for filtering
+    >>> pipes = model.get_elements(etype="PIPE")
+    >>> p_elements = model.get_elements(name="P*")
 
 ### Logging
 
@@ -79,7 +79,7 @@ Example Usage
 
 from pykorf.cases import CaseSet
 from pykorf.config import Config, get_config, reset_config, set_config
-from pykorf.definitions import Element
+from pykorf.elements import Element
 from pykorf.exceptions import (
     AutomationError,
     CaseError,
@@ -96,13 +96,12 @@ from pykorf.exceptions import (
     ValidationError,
     VersionError,
 )
+from pykorf.fluid import Fluid
 
 # Configure logging on import
 from pykorf.log import configure_logging
 from pykorf.model import KorfModel, Model
-from pykorf.query import Query, attr, find
 from pykorf.results import Results
-from pykorf.fluid import Fluid
 from pykorf.types import (
     CaseInfo,
     CompressorData,
@@ -155,10 +154,6 @@ __all__ = [
     "get_config",
     "set_config",
     "reset_config",
-    # Query
-    "Query",
-    "attr",
-    "find",
     # Exceptions
     "KorfError",
     "ParseError",
