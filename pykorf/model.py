@@ -464,14 +464,8 @@ class Model:
             else:
                 val_list = [str(value)]
 
-            # Update the record
-            record = elem._get(param_key)
-            if record is not None:
-                record.values = val_list
-                record.raw_line = ""  # Mark as dirty
-            else:
-                # Try to set via parser (covers params not yet fetched)
-                self._parser.set_value(elem.etype, elem.index, param_key, val_list)
+            # Update the record via validated path
+            elem.set_param(param_key, val_list)
 
     # ------------------------------------------------------------------
     # Update element parameters

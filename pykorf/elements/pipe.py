@@ -374,28 +374,27 @@ class Pipe(BaseElement):
     # Fluid properties
     # ------------------------------------------------------------------
 
-    def set_fluid(self, fluid: "Fluid") -> None:
+    def set_fluid(self, fluid: Fluid) -> None:
         """Apply fluid properties to this pipe.
 
-        This method updates all fluid-related parameters in the KDF file
+        This method updates fluid-related parameters in the KDF file
         directly, eliminating the need for intermediate text file imports.
+        Only properties that were explicitly set on the Fluid instance
+        will be written; unset properties are left unchanged.
 
         Args:
-            fluid: A :class:`Fluid` instance containing all fluid properties.
+            fluid: A :class:`Fluid` instance containing fluid properties to update.
 
         Example::
 
             from pykorf.fluid import Fluid
 
-            # Create fluid properties
-            fluid = Fluid.single_phase_liquid(
-                temp=52.25,
-                pres=398.7,
-                density=570.24,
-                viscosity=0.153,
-            )
+            # Update only LVFLOW (partial update)
+            fluid = Fluid(lvflow=13470)
+            pipe.set_fluid(fluid)
 
-            # Apply to pipe (directly updates KDF)
+            # Update multiple properties
+            fluid = Fluid(temp=52.25, pres=398.7, liqden=570.24)
             pipe.set_fluid(fluid)
 
         Note:
@@ -404,30 +403,11 @@ class Pipe(BaseElement):
         """
         records = fluid.to_kdf_records()
 
-        # Operating conditions
-        self._set(Pipe.TEMP, records["TEMP"])
-        self._set(Pipe.PRES, records["PRES"])
-        self._set(Pipe.LF, records["LF"])
-        self._set(Pipe.OUTIN, records["OUTIN"])
+        # Only update parameters that are present in the records
+        for param, values in records.items():
+            self._set(param, values)
 
-        # Liquid properties
-        self._set(Pipe.LIQDEN, records["LIQDEN"])
-        self._set(Pipe.LIQVISC, records["LIQVISC"])
-        self._set(Pipe.LIQSUR, records["LIQSUR"])
-        self._set(Pipe.LIQCON, records["LIQCON"])
-        self._set(Pipe.LIQCP, records["LIQCP"])
-        self._set(Pipe.LIQMW, records["LIQMW"])
-
-        # Vapor properties
-        self._set(Pipe.VAPDEN, records["VAPDEN"])
-        self._set(Pipe.VAPVISC, records["VAPVISC"])
-        self._set(Pipe.VAPCON, records["VAPCON"])
-        self._set(Pipe.VAPCP, records["VAPCP"])
-        self._set(Pipe.VAPMW, records["VAPMW"])
-        self._set(Pipe.VAPZ, records["VAPZ"])
-        self._set(Pipe.VAPK, records["VAPK"])
-
-    def get_fluid(self) -> "Fluid":
+    def get_fluid(self) -> Fluid:
         """Extract fluid properties from this pipe.
 
         Returns:
@@ -437,72 +417,38 @@ class Pipe(BaseElement):
         Example::
 
             fluid = pipe.get_fluid()
-            print(f"Temperature: {fluid.temp_inlet[0]}°C")
-            print(f"Density: {fluid.liquid_density[0]}kg/m³")
+            print(f"Temperature: {fluid.temp[0]}°C (inlet)")
+            print(f"Density: {fluid.liqden[0]}kg/m³")
         """
         from pykorf.fluid import Fluid
 
-        # Helper to extract values
-        def get_values(param: str, default: list = None) -> list:
+        # Helper to extract values - returns None if not present in model
+        def get_values(param: str):
             vals = self._values(param)
             if not vals:
-                return default or []
+                return None
             # Remove unit if present (last element is string)
             if vals and isinstance(vals[-1], str):
                 return [float(v) for v in vals[:-1] if _is_num(v)]
             return [float(v) for v in vals if _is_num(v)]
 
-        def get_scalar(param: str, default: float = 0.0) -> float:
-            vals = get_values(param)
-            return vals[0] if vals else default
-
-        # Extract operating conditions
-        temp_vals = get_values(Pipe.TEMP, [25.0, 25.0, 25.0])
-        pres_vals = get_values(Pipe.PRES, [100.0, 100.0, 100.0])
-        lf_vals = get_values(Pipe.LF, [1.0, 1.0, 1.0])
-
-        # Handle multi-case values
-        num_cases = len(temp_vals) // 3
-
-        if num_cases > 1:
-            # Multi-case: extract per-case values
-            temp_inlet = [temp_vals[i * 3] for i in range(num_cases)]
-            temp_outlet = [temp_vals[i * 3 + 1] for i in range(num_cases)]
-            temp_average = [temp_vals[i * 3 + 2] for i in range(num_cases)]
-            pres_inlet = [pres_vals[i * 3] for i in range(num_cases)]
-            pres_outlet = [pres_vals[i * 3 + 1] for i in range(num_cases)]
-            pres_average = [pres_vals[i * 3 + 2] for i in range(num_cases)]
-            lf = [lf_vals[i * 3] for i in range(num_cases)]
-        else:
-            temp_inlet = [temp_vals[0]] if temp_vals else [25.0]
-            temp_outlet = [temp_vals[1]] if len(temp_vals) > 1 else [25.0]
-            temp_average = [temp_vals[2]] if len(temp_vals) > 2 else [25.0]
-            pres_inlet = [pres_vals[0]] if pres_vals else [100.0]
-            pres_outlet = [pres_vals[1]] if len(pres_vals) > 1 else [100.0]
-            pres_average = [pres_vals[2]] if len(pres_vals) > 2 else [100.0]
-            lf = [lf_vals[0]] if lf_vals else [1.0]
-
         return Fluid(
-            temp_inlet=temp_inlet,
-            temp_outlet=temp_outlet,
-            temp_average=temp_average,
-            pres_inlet=pres_inlet,
-            pres_outlet=pres_outlet,
-            pres_average=pres_average,
-            liquid_fraction=lf,
-            liquid_density=get_values(Pipe.LIQDEN, [1000.0]),
-            liquid_viscosity=get_values(Pipe.LIQVISC, [1.0]),
-            liquid_surface_tension=get_values(Pipe.LIQSUR, [62.4]),
-            liquid_conductivity=get_values(Pipe.LIQCON, [0.5]),
-            liquid_cp=get_values(Pipe.LIQCP, [1.0]),
-            liquid_mw=get_values(Pipe.LIQMW, [18.0]),
-            vapor_density=get_values(Pipe.VAPDEN, [0.0]),
-            vapor_viscosity=get_values(Pipe.VAPVISC, [0.0]),
-            vapor_conductivity=get_values(Pipe.VAPCON, [0.025]),
-            vapor_cp=get_values(Pipe.VAPCP, [1.0]),
-            vapor_mw=get_values(Pipe.VAPMW, [0.0]),
-            vapor_z=get_values(Pipe.VAPZ, [0.0]),
-            vapor_k=get_values(Pipe.VAPK, [0.0]),
+            temp=get_values(Pipe.TEMP),
+            pres=get_values(Pipe.PRES),
+            lf=get_values(Pipe.LF),
+            liqden=get_values(Pipe.LIQDEN),
+            liqvisc=get_values(Pipe.LIQVISC),
+            liqsur=get_values(Pipe.LIQSUR),
+            liqcon=get_values(Pipe.LIQCON),
+            liqcp=get_values(Pipe.LIQCP),
+            liqmw=get_values(Pipe.LIQMW),
+            vapden=get_values(Pipe.VAPDEN),
+            vapvisc=get_values(Pipe.VAPVISC),
+            vapcon=get_values(Pipe.VAPCON),
+            vapcp=get_values(Pipe.VAPCP),
+            vapmw=get_values(Pipe.VAPMW),
+            vapz=get_values(Pipe.VAPZ),
+            vapk=get_values(Pipe.VAPK),
         )
 
     @property
@@ -526,6 +472,7 @@ class Pipe(BaseElement):
     @property
     def fittings(self) -> list[dict]:
         """List of fittings defined for this pipe.
+
         Each fitting is a dict with: name, count, k, ld, etc.
         """
         results = []
