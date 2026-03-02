@@ -99,11 +99,11 @@ This represents:
 
 ### Constants and Definitions
 
-**Always use constants** from `pykorf.definitions` instead of hardcoded strings:
+**Always use constants** from `pykorf.elements` instead of hardcoded strings:
 
 ```python
 # CORRECT
-from pykorf.definitions import Element, Pipe, Common
+from pykorf.elements import Element, Pipe, BaseElement
 
 model.add_element(Element.PIPE, "L1", {Pipe.LEN: 100})
 

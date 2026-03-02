@@ -80,7 +80,7 @@ print(model.summary())
 ### Modifying Elements
 
 ```python
-from pykorf.definitions import Pipe
+from pykorf.elements import Pipe
 
 model.update_element("L1", {
     Pipe.LEN: 200,
@@ -92,7 +92,7 @@ model.save()
 ### Adding Elements
 
 ```python
-from pykorf.definitions import Element, Pump
+from pykorf.elements import Element, Pump
 
 model.add_element(Element.PUMP, "P2")
 model.connect_elements("L1", "P2")

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pykorf.definitions import Pipe as PipeParams
 from pykorf.elements.base import BaseElement
 from pykorf.utils import join_cases, split_cases
 
@@ -15,8 +14,11 @@ if TYPE_CHECKING:
 class Pipe(BaseElement):
     """Represents a single KORF pipe / process line instance.
 
-    Multi-case values (flow, pressure, temperature …) are exposed as
-    plain Python lists indexed 0 … (n_cases-1).
+    Carries all PIPE parameter string constants as class attributes
+    so that callers can write ``Pipe.TFLOW`` instead of a bare string.
+
+    Multi-case values (flow, pressure, temperature ...) are exposed as
+    plain Python lists indexed 0 ... (n_cases-1).
 
     Example::
 
@@ -28,6 +30,196 @@ class Pipe(BaseElement):
     """
 
     ETYPE = "PIPE"
+    ENAME = "Pipe"
+
+    # ------------------------------------------------------------------
+    # Parameter constants (moved from definitions/pipe.py)
+    # ------------------------------------------------------------------
+    BEND = "BEND"
+    LBL = "LBL"
+    COLOR = "COLOR"
+    STRM = "STRM"
+    LOCK = "LOCK"
+    TEMP = "TEMP"
+    PRES = "PRES"
+    LF = "LF"
+    H = "H"
+    HAMB = "HAMB"
+    S = "S"
+    FT = "FT"
+    Q = "Q"
+    UI = "UI"
+    TAMB = "TAMB"
+    DAMB = "DAMB"
+    TSUR = "TSUR"
+    QFAC = "QFAC"
+    QNTU = "QNTU"
+    QAIR = "QAIR"
+    QPIP = "QPIP"
+    QINS = "QINS"
+    REFLINE = "REFLINE"
+    OUTIN = "OUTIN"
+    LVFLOW = "LVFLOW"
+    LIQDEN = "LIQDEN"
+    LIQVISC = "LIQVISC"
+    LIQSUR = "LIQSUR"
+    LIQCON = "LIQCON"
+    LIQCP = "LIQCP"
+    LIQMW = "LIQMW"
+    VAPDEN = "VAPDEN"
+    VAPVISC = "VAPVISC"
+    VAPMW = "VAPMW"
+    VAPZ = "VAPZ"
+    VAPK = "VAPK"
+    VAPCON = "VAPCON"
+    VAPCP = "VAPCP"
+    TFLOW = "TFLOW"
+    TPROP = "TPROP"
+    TOTCON = "TOTCON"
+    TOTCP = "TOTCP"
+    TOTMW = "TOTMW"
+    PSAT = "PSAT"
+    OMEGA = "OMEGA"
+    RS = "RS"
+    YW = "YW"
+    MAT = "MAT"
+    DIA = "DIA"
+    ID = "ID"
+    IDH = "IDH"
+    ODF = "ODF"
+    SCH = "SCH"
+    LEN = "LEN"
+    EQLEN = "EQLEN"
+    FITK = "FITK"
+    FITLD = "FITLD"
+    FITLR = "FITLR"
+    FIT1 = "FIT1"
+    FIT2 = "FIT2"
+    FIT3 = "FIT3"
+    FIT4 = "FIT4"
+    FIT5 = "FIT5"
+    FIT6 = "FIT6"
+    FIT7 = "FIT7"
+    FIT8 = "FIT8"
+    FIT9 = "FIT9"
+    FIT10 = "FIT10"
+    FIT11 = "FIT11"
+    SELEV = "SELEV"
+    DPELEV = "DPELEV"
+    DPFRIC = "DPFRIC"
+    DPACCEL = "DPACCEL"
+    ELEV = "ELEV"
+    FAC = "FAC"
+    EPS = "EPS"
+    F = "F"
+    RE = "RE"
+    SIZ = "SIZ"
+    DPL = "DPL"
+    VEL = "VEL"
+    HUP = "HUP"
+    REG = "REG"
+    REGA = "REGA"
+    MTP = "MTP"
+    DUK = "DUK"
+    LM = "LM"
+    EQN = "EQN"
+    FILES = "FILES"
+
+    ALL = (
+        "NUM",
+        "NAME",
+        BEND,
+        "XY",
+        LBL,
+        COLOR,
+        STRM,
+        LOCK,
+        TEMP,
+        PRES,
+        LF,
+        H,
+        HAMB,
+        S,
+        FT,
+        Q,
+        UI,
+        TAMB,
+        DAMB,
+        TSUR,
+        QFAC,
+        QNTU,
+        QAIR,
+        QPIP,
+        QINS,
+        REFLINE,
+        OUTIN,
+        LVFLOW,
+        LIQDEN,
+        LIQVISC,
+        LIQSUR,
+        LIQCON,
+        LIQCP,
+        LIQMW,
+        VAPDEN,
+        VAPVISC,
+        VAPMW,
+        VAPZ,
+        VAPK,
+        VAPCON,
+        VAPCP,
+        TFLOW,
+        TPROP,
+        TOTCON,
+        TOTCP,
+        TOTMW,
+        PSAT,
+        OMEGA,
+        RS,
+        YW,
+        MAT,
+        DIA,
+        ID,
+        IDH,
+        ODF,
+        SCH,
+        LEN,
+        EQLEN,
+        FITK,
+        FITLD,
+        FITLR,
+        FIT1,
+        FIT2,
+        FIT3,
+        FIT4,
+        FIT5,
+        FIT6,
+        FIT7,
+        FIT8,
+        FIT9,
+        FIT10,
+        FIT11,
+        SELEV,
+        DPELEV,
+        DPFRIC,
+        DPACCEL,
+        ELEV,
+        FAC,
+        EPS,
+        F,
+        RE,
+        SIZ,
+        DPL,
+        VEL,
+        HUP,
+        REG,
+        REGA,
+        MTP,
+        DUK,
+        LM,
+        EQN,
+        "NOTES",
+        FILES,
+    )
 
     def __init__(self, parser, index: int):
         super().__init__(parser, "PIPE", index)
@@ -39,11 +231,11 @@ class Pipe(BaseElement):
     @property
     def flow_string(self) -> str:
         """Raw ``TFLOW`` input string as stored in the KDF (e.g. ``'50;55;20'``)."""
-        return str(self._scalar(PipeParams.TFLOW, 0, ""))
+        return str(self._scalar(Pipe.TFLOW, 0, ""))
 
     @property
     def flow_unit(self) -> str:
-        return str(self._scalar(PipeParams.TFLOW, 2, "t/h"))
+        return str(self._scalar(Pipe.TFLOW, 2, "t/h"))
 
     def get_flow(self) -> list[str]:
         """Return the input flow for each case."""
@@ -72,12 +264,12 @@ class Pipe(BaseElement):
         else:
             flow_str = str(flow)
 
-        rec = self._get(PipeParams.TFLOW)
+        rec = self._get(Pipe.TFLOW)
         if rec is None:
             return
         # values layout: [input_string, calc_numeric, unit]
         new_vals = [flow_str] + rec.values[1:]
-        self._set(PipeParams.TFLOW, new_vals)
+        self._set(Pipe.TFLOW, new_vals)
 
     # ------------------------------------------------------------------
     # Geometry
@@ -86,32 +278,32 @@ class Pipe(BaseElement):
     @property
     def diameter_inch(self) -> str:
         """Nominal pipe diameter (inch string as stored in the KDF)."""
-        return str(self._scalar(PipeParams.DIA, 0, ""))
+        return str(self._scalar(Pipe.DIA, 0, ""))
 
     @property
     def schedule(self) -> str:
-        return str(self._scalar(PipeParams.SCH, 0, ""))
+        return str(self._scalar(Pipe.SCH, 0, ""))
 
     @property
     def length_m(self) -> float:
         try:
-            return float(self._scalar(PipeParams.LEN, 0, 0))
+            return float(self._scalar(Pipe.LEN, 0, 0))
         except (TypeError, ValueError):
             return 0.0
 
     @length_m.setter
     def length_m(self, value: float) -> None:
-        self._set(PipeParams.LEN, [value, "m"])
+        self._set(Pipe.LEN, [value, "m"])
 
     @property
     def material(self) -> str:
-        return str(self._scalar(PipeParams.MAT, 0, "Steel"))
+        return str(self._scalar(Pipe.MAT, 0, "Steel"))
 
     @property
     def roughness_m(self) -> float:
         """Pipe wall roughness in metres."""
         try:
-            return float(self._scalar(PipeParams.EPS, 1, 0.0000457))
+            return float(self._scalar(Pipe.EPS, 1, 0.0000457))
         except (TypeError, ValueError):
             return 0.0000457
 
@@ -119,7 +311,7 @@ class Pipe(BaseElement):
     def id_m(self) -> float:
         """Internal diameter in metres (calculated / set)."""
         try:
-            return float(self._scalar(PipeParams.ID, 1, 0.0))
+            return float(self._scalar(Pipe.ID, 1, 0.0))
         except (TypeError, ValueError):
             return 0.0
 
@@ -130,14 +322,14 @@ class Pipe(BaseElement):
     @property
     def liquid_density(self) -> list[float]:
         """Liquid density per case [kg/m³]."""
-        vals = self._values(PipeParams.LIQDEN)
+        vals = self._values(Pipe.LIQDEN)
         nums = vals[:-1] if vals and isinstance(vals[-1], str) else vals
         return [float(v) for v in nums if _is_num(v)]
 
     @property
     def liquid_viscosity(self) -> list[float]:
         """Liquid viscosity per case [cP]."""
-        vals = self._values(PipeParams.LIQVISC)
+        vals = self._values(Pipe.LIQVISC)
         nums = vals[:-1] if vals and isinstance(vals[-1], str) else vals
         return [float(v) for v in nums if _is_num(v)]
 
@@ -148,14 +340,14 @@ class Pipe(BaseElement):
     @property
     def pressure(self) -> list[float]:
         """Calculated pressures per case [kPag]."""
-        vals = self._values(PipeParams.PRES)
+        vals = self._values(Pipe.PRES)
         nums = vals[:-1] if vals and isinstance(vals[-1], str) else vals
         return [float(v) for v in nums if _is_num(v)]
 
     @property
     def velocity(self) -> list[float]:
         """Calculated velocities [m/s]."""
-        vals = self._values(PipeParams.VEL)
+        vals = self._values(Pipe.VEL)
         nums = vals[:-1] if vals and isinstance(vals[-1], str) else vals
         return [float(v) for v in nums if _is_num(v)]
 
@@ -163,20 +355,20 @@ class Pipe(BaseElement):
     def pressure_drop_per_100m(self) -> float:
         """Calculated ΔP/100 m [kPa/100m]."""
         try:
-            return float(self._scalar(PipeParams.DPL, 0, 0.0))
+            return float(self._scalar(Pipe.DPL, 0, 0.0))
         except (TypeError, ValueError):
             return 0.0
 
     @property
     def reynolds_number(self) -> float:
         try:
-            return float(self._scalar(PipeParams.RE, 0, 0.0))
+            return float(self._scalar(Pipe.RE, 0, 0.0))
         except (TypeError, ValueError):
             return 0.0
 
     @property
     def flow_regime(self) -> list[str]:
-        return self._values(PipeParams.REG)
+        return self._values(Pipe.REG)
 
     # ------------------------------------------------------------------
     # Fluid properties
@@ -210,32 +402,30 @@ class Pipe(BaseElement):
             This updates the in-memory model. Call ``model.save()`` to
             persist changes to disk.
         """
-        from pykorf.definitions import Pipe as PipeParams
-
         records = fluid.to_kdf_records()
 
         # Operating conditions
-        self._set(PipeParams.TEMP, records["TEMP"])
-        self._set(PipeParams.PRES, records["PRES"])
-        self._set(PipeParams.LF, records["LF"])
-        self._set(PipeParams.OUTIN, records["OUTIN"])
+        self._set(Pipe.TEMP, records["TEMP"])
+        self._set(Pipe.PRES, records["PRES"])
+        self._set(Pipe.LF, records["LF"])
+        self._set(Pipe.OUTIN, records["OUTIN"])
 
         # Liquid properties
-        self._set(PipeParams.LIQDEN, records["LIQDEN"])
-        self._set(PipeParams.LIQVISC, records["LIQVISC"])
-        self._set(PipeParams.LIQSUR, records["LIQSUR"])
-        self._set(PipeParams.LIQCON, records["LIQCON"])
-        self._set(PipeParams.LIQCP, records["LIQCP"])
-        self._set(PipeParams.LIQMW, records["LIQMW"])
+        self._set(Pipe.LIQDEN, records["LIQDEN"])
+        self._set(Pipe.LIQVISC, records["LIQVISC"])
+        self._set(Pipe.LIQSUR, records["LIQSUR"])
+        self._set(Pipe.LIQCON, records["LIQCON"])
+        self._set(Pipe.LIQCP, records["LIQCP"])
+        self._set(Pipe.LIQMW, records["LIQMW"])
 
         # Vapor properties
-        self._set(PipeParams.VAPDEN, records["VAPDEN"])
-        self._set(PipeParams.VAPVISC, records["VAPVISC"])
-        self._set(PipeParams.VAPCON, records["VAPCON"])
-        self._set(PipeParams.VAPCP, records["VAPCP"])
-        self._set(PipeParams.VAPMW, records["VAPMW"])
-        self._set(PipeParams.VAPZ, records["VAPZ"])
-        self._set(PipeParams.VAPK, records["VAPK"])
+        self._set(Pipe.VAPDEN, records["VAPDEN"])
+        self._set(Pipe.VAPVISC, records["VAPVISC"])
+        self._set(Pipe.VAPCON, records["VAPCON"])
+        self._set(Pipe.VAPCP, records["VAPCP"])
+        self._set(Pipe.VAPMW, records["VAPMW"])
+        self._set(Pipe.VAPZ, records["VAPZ"])
+        self._set(Pipe.VAPK, records["VAPK"])
 
     def get_fluid(self) -> "Fluid":
         """Extract fluid properties from this pipe.
@@ -267,9 +457,9 @@ class Pipe(BaseElement):
             return vals[0] if vals else default
 
         # Extract operating conditions
-        temp_vals = get_values(PipeParams.TEMP, [25.0, 25.0, 25.0])
-        pres_vals = get_values(PipeParams.PRES, [100.0, 100.0, 100.0])
-        lf_vals = get_values(PipeParams.LF, [1.0, 1.0, 1.0])
+        temp_vals = get_values(Pipe.TEMP, [25.0, 25.0, 25.0])
+        pres_vals = get_values(Pipe.PRES, [100.0, 100.0, 100.0])
+        lf_vals = get_values(Pipe.LF, [1.0, 1.0, 1.0])
 
         # Handle multi-case values
         num_cases = len(temp_vals) // 3
@@ -300,25 +490,25 @@ class Pipe(BaseElement):
             pres_outlet=pres_outlet,
             pres_average=pres_average,
             liquid_fraction=lf,
-            liquid_density=get_values(PipeParams.LIQDEN, [1000.0]),
-            liquid_viscosity=get_values(PipeParams.LIQVISC, [1.0]),
-            liquid_surface_tension=get_values(PipeParams.LIQSUR, [62.4]),
-            liquid_conductivity=get_values(PipeParams.LIQCON, [0.5]),
-            liquid_cp=get_values(PipeParams.LIQCP, [1.0]),
-            liquid_mw=get_values(PipeParams.LIQMW, [18.0]),
-            vapor_density=get_values(PipeParams.VAPDEN, [0.0]),
-            vapor_viscosity=get_values(PipeParams.VAPVISC, [0.0]),
-            vapor_conductivity=get_values(PipeParams.VAPCON, [0.025]),
-            vapor_cp=get_values(PipeParams.VAPCP, [1.0]),
-            vapor_mw=get_values(PipeParams.VAPMW, [0.0]),
-            vapor_z=get_values(PipeParams.VAPZ, [0.0]),
-            vapor_k=get_values(PipeParams.VAPK, [0.0]),
+            liquid_density=get_values(Pipe.LIQDEN, [1000.0]),
+            liquid_viscosity=get_values(Pipe.LIQVISC, [1.0]),
+            liquid_surface_tension=get_values(Pipe.LIQSUR, [62.4]),
+            liquid_conductivity=get_values(Pipe.LIQCON, [0.5]),
+            liquid_cp=get_values(Pipe.LIQCP, [1.0]),
+            liquid_mw=get_values(Pipe.LIQMW, [18.0]),
+            vapor_density=get_values(Pipe.VAPDEN, [0.0]),
+            vapor_viscosity=get_values(Pipe.VAPVISC, [0.0]),
+            vapor_conductivity=get_values(Pipe.VAPCON, [0.025]),
+            vapor_cp=get_values(Pipe.VAPCP, [1.0]),
+            vapor_mw=get_values(Pipe.VAPMW, [0.0]),
+            vapor_z=get_values(Pipe.VAPZ, [0.0]),
+            vapor_k=get_values(Pipe.VAPK, [0.0]),
         )
 
     @property
     def elevation_m(self) -> list[float]:
         """[inlet_elevation, outlet_elevation] in metres."""
-        vals = self._values(PipeParams.ELEV)
+        vals = self._values(Pipe.ELEV)
         nums = vals[:-1] if vals and isinstance(vals[-1], str) else vals
         return [float(v) for v in nums if _is_num(v)]
 
@@ -329,7 +519,7 @@ class Pipe(BaseElement):
     @property
     def equivalent_length_m(self) -> float:
         try:
-            return float(self._scalar(PipeParams.EQLEN, 0, 0.0))
+            return float(self._scalar(Pipe.EQLEN, 0, 0.0))
         except (TypeError, ValueError):
             return 0.0
 
@@ -340,7 +530,7 @@ class Pipe(BaseElement):
         """
         results = []
         for i in range(1, 12):
-            vals = self._values(getattr(PipeParams, f"FIT{i}"))
+            vals = self._values(getattr(Pipe, f"FIT{i}"))
             if vals and vals[0] and vals[0] != "None":
                 results.append(
                     {

@@ -45,51 +45,21 @@ dependencies = [
     "pydantic>=2.0,<3.0",
     "typing-extensions>=4.5.0",
     "structlog>=24.0",
-]
-
-[project.optional-dependencies]
-automation = [
+    "pyvis>=0.3",
     "pywinauto>=0.6.9",
     "pywin32>=311",
-]
-visualization = [
-    "pyvis>=0.3",
     "networkx>=3.0",
-]
-dataframe = [
     "pandas>=2.0",
     "openpyxl>=3.1",
-]
-export = [
     "pyyaml>=6.0",
     "orjson>=3.9",
-]
-cli = [
     "click>=8.0",
     "rich>=13.0",
 ]
-docs = [
-    "mkdocs>=1.6",
-    "mkdocs-material>=9.5,<9.7",
-    "mkdocstrings[python]>=0.25",
-    "mkdocs-minify-plugin>=0.8",
-    "mkdocs-git-revision-date-localized-plugin>=1.2",
-    "mkdocs-git-committers-plugin-2>=2.3",
-    "mkdocs-redirects>=1.2",
-    "pymdown-extensions>=10.8",
-    "mkdocs-awesome-pages-plugin>=2.9",
-]
-dev = [
-    "pytest>=7.0",
-    "pytest-cov>=4.0",
-    "pytest-asyncio>=0.21",
-    "pytest-xdist>=3.0",
-    "mypy>=1.5",
-    "ruff>=0.1.0",
-    "pre-commit>=3.0",
-]
+
+[project.optional-dependencies]
 all = [
-    "pykorf[automation,visualization,dataframe,export,cli,docs]",
+    "pykorf",
 ]
 
 [project.scripts]
@@ -103,28 +73,24 @@ Issues = "https://github.com/pykorf/pykorf/issues"
 Changelog = "https://github.com/pykorf/pykorf/blob/main/CHANGELOG.md"
 
 [tool.uv]
-default-groups = ["dev"]
+default-groups = ["dev", "docs"]
 
 [dependency-groups]
 dev = [
-    {include-group = "test"},
-    {include-group = "lint"},
-    {include-group = "docs"},
-]
-test = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
     "pytest-asyncio>=0.21",
     "pytest-xdist>=3.0",
-]
-lint = [
     "mypy>=1.5",
     "ruff>=0.1.0",
     "pre-commit>=3.0",
+    "jupyter>=1.0",
+    "notebook>=7.0",
+    "ipykernel>=6.0",
 ]
 docs = [
     "mkdocs>=1.6",
-    "mkdocs-material>=9.5",
+    "mkdocs-material>=9.5,<9.7",
     "mkdocstrings[python]>=0.25",
     "mkdocs-minify-plugin>=0.8",
     "mkdocs-git-revision-date-localized-plugin>=1.2",
@@ -150,7 +116,7 @@ addopts = "-v --tb=short --strict-markers"
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",
-    "unit: marks tests as unit tests",
+    "unit: marks tests are unit tests",
     "automation: marks tests that require KORF GUI automation",
 ]
 asyncio_mode = "auto"

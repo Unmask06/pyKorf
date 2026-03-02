@@ -228,7 +228,7 @@ model.save("output.kdf")
 ```python
 import json
 from pykorf import Model
-from pykorf.definitions import Element, Pipe
+from pykorf.elements import Element, Pipe
 
 # Load JSON data
 with open("data.json") as f:

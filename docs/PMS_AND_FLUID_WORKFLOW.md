@@ -22,7 +22,7 @@ PMS:PMS-A11-CS2; LINE-001;
 
 ```python
 from pykorf import Model
-from pykorf.definitions import Pipe
+from pykorf.elements import Pipe
 import pandas as pd
 
 def extract_pms_code(notes):

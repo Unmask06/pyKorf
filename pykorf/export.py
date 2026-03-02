@@ -10,7 +10,7 @@ Supports exporting model data to various formats:
 Example:
     >>> from pykorf import Model
     >>> from pykorf.export import export_to_json, export_to_excel
-    >>> 
+    >>>
     >>> model = Model("Pumpcases.kdf")
     >>> export_to_json(model, "output.json", include_results=True)
     >>> export_to_excel(model, "output.xlsx")
@@ -40,25 +40,26 @@ def _element_to_dict(elem: Any, options: ExportOptions) -> dict[str, Any]:
         "name": elem.name,
         "type": elem.etype,
     }
-    
+
     if elem.description:
         data["description"] = elem.description
-    
+
     if options.include_geometry:
         try:
             from pykorf.layout import get_position
+
             pos = get_position(elem)
             if pos:
                 data["position"] = {"x": pos[0], "y": pos[1]}
         except Exception:
             pass
-    
+
     if options.include_results and hasattr(elem, "summary"):
         try:
             data["summary"] = elem.summary()
         except Exception:
             pass
-    
+
     return data
 
 
@@ -69,31 +70,32 @@ def export_to_json(
     options: ExportOptions | None = None,
 ) -> None:
     """Export model data to JSON.
-    
+
     Args:
         model: The model to export
         path: Output file path
         options: Export options
-    
+
     Raises:
         ExportError: If export fails
     """
     options = options or ExportOptions()
     path = Path(path)
-    
+
     with log_operation("export_to_json", path=str(path)):
         try:
             data = _model_to_dict(model, options)
-            
+
             json_kwargs: dict[str, Any] = {
                 "ensure_ascii": False,
             }
             if options.indent:
                 json_kwargs["indent"] = options.indent
-            
+
             # Use orjson if available for better performance
             try:
                 import orjson
+
                 output = orjson.dumps(data, option=orjson.OPT_INDENT_2 if options.indent else 0)
                 path.write_bytes(output)
             except ImportError:
@@ -101,9 +103,9 @@ def export_to_json(
                     json.dumps(data, **json_kwargs),
                     encoding=options.encoding,
                 )
-            
+
             logger.info("export_to_json_success", path=str(path))
-            
+
         except Exception as e:
             raise ExportError(
                 f"Failed to export to JSON: {e}",
@@ -118,34 +120,34 @@ def export_to_yaml(
     options: ExportOptions | None = None,
 ) -> None:
     """Export model data to YAML.
-    
+
     Args:
         model: The model to export
         path: Output file path
         options: Export options
-    
+
     Raises:
         ExportError: If export fails
     """
     options = options or ExportOptions()
     path = Path(path)
-    
+
     with log_operation("export_to_yaml", path=str(path)):
         try:
             import yaml
-            
+
             data = _model_to_dict(model, options)
-            
+
             yaml_content = yaml.dump(
                 data,
                 default_flow_style=False,
                 allow_unicode=True,
                 sort_keys=False,
             )
-            
+
             path.write_text(yaml_content, encoding=options.encoding)
             logger.info("export_to_yaml_success", path=str(path))
-            
+
         except ImportError as e:
             raise ExportError(
                 "PyYAML is required for YAML export. Install with: pip install pyyaml",
@@ -161,7 +163,7 @@ def export_to_excel(
     include_results: bool = True,
 ) -> None:
     """Export model data to Excel workbook.
-    
+
     Creates multiple sheets:
     - Summary: Model overview
     - Pipes: Pipe data
@@ -170,21 +172,21 @@ def export_to_excel(
     - Feeds: Feed boundary conditions
     - Products: Product boundary conditions
     - Connectivity: Connection matrix
-    
+
     Args:
         model: The model to export
         path: Output file path
         include_results: Whether to include calculated results
-    
+
     Raises:
         ExportError: If export fails
     """
     path = Path(path)
-    
+
     with log_operation("export_to_excel", path=str(path)):
         try:
             import pandas as pd
-            
+
             with pd.ExcelWriter(path, engine="openpyxl") as writer:
                 # Summary sheet
                 summary_data = {
@@ -220,7 +222,7 @@ def export_to_excel(
                     ],
                 }
                 pd.DataFrame(summary_data).to_excel(writer, sheet_name="Summary", index=False)
-                
+
                 # Pipes sheet
                 pipe_rows = []
                 for idx, pipe in model.pipes.items():
@@ -238,10 +240,10 @@ def export_to_excel(
                         row["dP/100m (kPa)"] = pipe.pressure_drop_per_100m
                         row["Reynolds"] = pipe.reynolds_number
                     pipe_rows.append(row)
-                
+
                 if pipe_rows:
                     pd.DataFrame(pipe_rows).to_excel(writer, sheet_name="Pipes", index=False)
-                
+
                 # Pumps sheet
                 pump_rows = []
                 for idx, pump in model.pumps.items():
@@ -257,10 +259,10 @@ def export_to_excel(
                         row["Power (kW)"] = pump.power_kW
                         row["Efficiency"] = pump.efficiency
                     pump_rows.append(row)
-                
+
                 if pump_rows:
                     pd.DataFrame(pump_rows).to_excel(writer, sheet_name="Pumps", index=False)
-                
+
                 # Case info
                 if hasattr(model, "general"):
                     case_data = {
@@ -268,9 +270,9 @@ def export_to_excel(
                         "Description": model.general.case_descriptions,
                     }
                     pd.DataFrame(case_data).to_excel(writer, sheet_name="Cases", index=False)
-            
+
             logger.info("export_to_excel_success", path=str(path), sheets=writer.sheets.keys())
-            
+
         except ImportError as e:
             raise ExportError(
                 "pandas and openpyxl are required for Excel export. "
@@ -288,28 +290,28 @@ def export_to_csv(
     include_results: bool = True,
 ) -> list[Path]:
     """Export model data to CSV files.
-    
+
     Args:
         model: The model to export
         directory: Output directory
         element_type: Which elements to export
         include_results: Whether to include calculated results
-    
+
     Returns:
         List of created file paths
-    
+
     Raises:
         ExportError: If export fails
     """
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
-    
+
     created_files: list[Path] = []
-    
+
     with log_operation("export_to_csv", directory=str(directory)):
         try:
             import pandas as pd
-            
+
             # Export pipes
             if element_type in ("all", "pipes"):
                 pipe_rows = []
@@ -328,12 +330,12 @@ def export_to_csv(
                         row["pressure_drop_kpa_100m"] = pipe.pressure_drop_per_100m
                         row["reynolds_number"] = pipe.reynolds_number
                     pipe_rows.append(row)
-                
+
                 if pipe_rows:
                     path = directory / "pipes.csv"
                     pd.DataFrame(pipe_rows).to_csv(path, index=False)
                     created_files.append(path)
-            
+
             # Export pumps
             if element_type in ("all", "pumps"):
                 pump_rows = []
@@ -345,15 +347,15 @@ def export_to_csv(
                         row["head_m"] = pump.head_m if hasattr(pump, "head_m") else None
                         row["power_kw"] = pump.power_kW if hasattr(pump, "power_kW") else None
                     pump_rows.append(row)
-                
+
                 if pump_rows:
                     path = directory / "pumps.csv"
                     pd.DataFrame(pump_rows).to_csv(path, index=False)
                     created_files.append(path)
-            
+
             logger.info("export_to_csv_success", files=[str(f) for f in created_files])
             return created_files
-            
+
         except ImportError as e:
             raise ExportError(
                 "pandas is required for CSV export. Install with: pip install pandas",
@@ -372,44 +374,47 @@ def _model_to_dict(model: Model, options: ExportOptions) -> dict[str, Any]:
         },
         "elements": {},
     }
-    
+
     if options.include_metadata and hasattr(model, "general"):
         data["metadata"]["cases"] = model.general.case_descriptions
         data["metadata"]["units"] = model.general.units if hasattr(model.general, "units") else None
-    
+
     # Export elements
     for elem in model.elements:
         etype = elem.etype.lower() + "s"
         if etype not in data["elements"]:
             data["elements"][etype] = []
         data["elements"][etype].append(_element_to_dict(elem, options))
-    
+
     if options.include_connectivity:
         data["connectivity"] = _extract_connectivity(model)
-    
+
     return data
 
 
 def _extract_connectivity(model: Model) -> list[dict[str, Any]]:
     """Extract connectivity information."""
     connections = []
-    
+
     for elem in model.elements:
         if elem.etype == "PIPE":
             continue
-        
+
         try:
             from pykorf.connectivity import get_connections
+
             conns = get_connections(model, elem.name)
             if conns:
-                connections.append({
-                    "element": elem.name,
-                    "type": elem.etype,
-                    "connected_to": conns,
-                })
+                connections.append(
+                    {
+                        "element": elem.name,
+                        "type": elem.etype,
+                        "connected_to": conns,
+                    }
+                )
         except Exception:
             pass
-    
+
     return connections
 
 
@@ -418,8 +423,9 @@ _LINE_NO_COL = "line_no"
 _ETYPE_COL = "element_type"
 _INDEX_COL = "index"
 _PARAM_COL = "param"
+_VALUES_COL = "values"
 _RAW_LINE_COL = "raw_line"
-_DF_COLUMNS = [_LINE_NO_COL, _ETYPE_COL, _INDEX_COL, _PARAM_COL, _RAW_LINE_COL]
+_DF_COLUMNS = [_LINE_NO_COL, _ETYPE_COL, _INDEX_COL, _PARAM_COL, _VALUES_COL, _RAW_LINE_COL]
 _HEADER_COLUMNS = [_LINE_NO_COL, _RAW_LINE_COL]
 
 
@@ -461,8 +467,7 @@ def model_to_dataframes(model: Model) -> dict[str, "pd.DataFrame"]:
         import pandas as pd
     except ImportError as exc:
         raise ExportError(
-            "pandas is required for DataFrame conversion. "
-            "Install with: pip install pandas",
+            "pandas is required for DataFrame conversion. Install with: pip install pandas",
         ) from exc
 
     header_rows: list[dict[str, Any]] = []
@@ -470,11 +475,7 @@ def model_to_dataframes(model: Model) -> dict[str, "pd.DataFrame"]:
 
     for line_no, rec in enumerate(model._parser.records):
         # Skip NUM records for non-zero indices (parser.save() skips these)
-        if (
-            rec.element_type is not None
-            and rec.param == "NUM"
-            and rec.index != 0
-        ):
+        if rec.element_type is not None and rec.param == "NUM" and rec.index != 0:
             continue
 
         raw = rec.to_line()
@@ -488,6 +489,7 @@ def model_to_dataframes(model: Model) -> dict[str, "pd.DataFrame"]:
                     _ETYPE_COL: etype,
                     _INDEX_COL: rec.index,
                     _PARAM_COL: rec.param,
+                    _VALUES_COL: ",".join(str(v) for v in rec.values),
                     _RAW_LINE_COL: raw,
                 }
             )
@@ -531,8 +533,7 @@ def dataframes_to_kdf(
         import pandas as pd
     except ImportError as exc:
         raise ExportError(
-            "pandas is required for DataFrame conversion. "
-            "Install with: pip install pandas",
+            "pandas is required for DataFrame conversion. Install with: pip install pandas",
         ) from exc
 
     all_rows: list[tuple[int, str]] = []
@@ -584,9 +585,7 @@ def model_from_dataframes(dfs: dict[str, "pd.DataFrame"]) -> Model:
     """
     import tempfile
 
-    with tempfile.NamedTemporaryFile(
-        suffix=".kdf", delete=False, mode="w"
-    ) as tmp:
+    with tempfile.NamedTemporaryFile(suffix=".kdf", delete=False, mode="w") as tmp:
         tmp_path = tmp.name
 
     try:

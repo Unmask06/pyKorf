@@ -94,7 +94,7 @@ print(pump.flow_m3h)           # Calculated flow
 ### Update Parameters
 
 ```python
-from pykorf.definitions import Pipe, Pump
+from pykorf.elements import Pipe, Pump
 
 # Update single parameter
 model.update_element("L1", {Pipe.LEN: 200})
@@ -131,7 +131,7 @@ set_pos(pipe, 1000.0, 2000.0)
 ### Add Equipment
 
 ```python
-from pykorf.definitions import Element, Pump, Valve
+from pykorf.elements import Element, Pump, Valve
 
 # Add a pump
 model.add_element(Element.PUMP, "P2", {
@@ -155,13 +155,13 @@ model.connect_elements("P1", "V1", pipe_name="L10")
 ### Batch Add
 
 ```python
-from pykorf.definitions import Element, Feed, Prod
+from pykorf.elements import Element, Feed, Product
 
 # Add multiple elements at once
 elements = model.add_elements([
     (Element.FEED, "S2", {Feed.PRES: "100"}),
     (Element.FEED, "S3", {Feed.PRES: "120"}),
-    (Element.PROD, "D2", {Prod.PRES: "50"}),
+    (Element.PROD, "D2", {Product.PRES: "50"}),
 ])
 ```
 
@@ -261,8 +261,8 @@ pumps = model.get_elements_by_type("PUMP")
 ### 1. Use Constants
 
 ```python
-# Always use constants from definitions
-from pykorf.definitions import Element, Pipe, Common
+# Always use constants from element classes
+from pykorf.elements import Element, Pipe, BaseElement
 
 model.update_element("L1", {Pipe.LEN: 100})  # Good
 model.update_element("L1", {"LEN": 100})     # Bad

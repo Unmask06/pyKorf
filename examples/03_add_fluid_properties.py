@@ -12,7 +12,7 @@ from __future__ import annotations
 from typing import Any
 
 from pykorf import Model
-from pykorf.definitions import Common, Pipe
+from pykorf.elements import Common, Pipe
 
 
 class Fluid:
@@ -222,10 +222,7 @@ def add_fluid_to_model(
         fluid_element_name = fluid.name.replace(" ", "_").replace("deg", "DEG")[:9]
 
     print(f"  [OK] Registered fluid '{fluid_element_name}': {fluid.name}")
-    print(
-        f"    Density: {fluid.density_kg_m3} kg/m³, "
-        f"Viscosity: {fluid.viscosity_cp} cP"
-    )
+    print(f"    Density: {fluid.density_kg_m3} kg/m³, Viscosity: {fluid.viscosity_cp} cP")
     return fluid_element_name
 
 
@@ -391,9 +388,7 @@ if __name__ == "__main__":
         print("=" * 60)
 
         # Use the 50 degC water for the cooling circuit
-        assign_fluid_to_pipes(
-            model, fluid_objects[1], ["SUCT_L1", "DISC_L2", "RETURN_L3"]
-        )
+        assign_fluid_to_pipes(model, fluid_objects[1], ["SUCT_L1", "DISC_L2", "RETURN_L3"])
 
     # Save model
     output_path = "examples/output/pump_circuit_with_fluids.kdf"

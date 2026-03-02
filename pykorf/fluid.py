@@ -34,7 +34,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, cast
 
-from pykorf.definitions import Pipe as PipeParams
+from pykorf.elements import Pipe as PipeParams
 
 
 @dataclass
@@ -156,8 +156,12 @@ class Fluid:
         self.pres_inlet = cast(list[float], self._normalize_to_list(self.pres_inlet, num_cases))
         self.pres_outlet = cast(list[float], self._normalize_to_list(self.pres_outlet, num_cases))
         self.pres_average = cast(list[float], self._normalize_to_list(self.pres_average, num_cases))
-        self.liquid_fraction = cast(list[float], self._normalize_to_list(self.liquid_fraction, num_cases))
-        self.liquid_density = cast(list[float], self._normalize_to_list(self.liquid_density, num_cases))
+        self.liquid_fraction = cast(
+            list[float], self._normalize_to_list(self.liquid_fraction, num_cases)
+        )
+        self.liquid_density = cast(
+            list[float], self._normalize_to_list(self.liquid_density, num_cases)
+        )
         self.liquid_viscosity = cast(
             list[float], self._normalize_to_list(self.liquid_viscosity, num_cases)
         )
@@ -169,8 +173,12 @@ class Fluid:
         )
         self.liquid_cp = cast(list[float], self._normalize_to_list(self.liquid_cp, num_cases))
         self.liquid_mw = cast(list[float], self._normalize_to_list(self.liquid_mw, num_cases))
-        self.vapor_density = cast(list[float], self._normalize_to_list(self.vapor_density, num_cases))
-        self.vapor_viscosity = cast(list[float], self._normalize_to_list(self.vapor_viscosity, num_cases))
+        self.vapor_density = cast(
+            list[float], self._normalize_to_list(self.vapor_density, num_cases)
+        )
+        self.vapor_viscosity = cast(
+            list[float], self._normalize_to_list(self.vapor_viscosity, num_cases)
+        )
         self.vapor_conductivity = cast(
             list[float], self._normalize_to_list(self.vapor_conductivity, num_cases)
         )
@@ -197,9 +205,7 @@ class Fluid:
                 return len(val)
         return 1
 
-    def _normalize_to_list(
-        self, value: float | list[float], num_cases: int
-    ) -> list[float]:
+    def _normalize_to_list(self, value: float | list[float], num_cases: int) -> list[float]:
         """Convert scalar to list if needed."""
         if isinstance(value, (list, tuple)):
             return list(value)
@@ -535,10 +541,8 @@ class Fluid:
             "temp_range": (min(self.temp_inlet), max(self.temp_inlet)),
             "pres_range": (min(self.pres_inlet), max(self.pres_inlet)),
             "liquid_density_avg": sum(self.liquid_density) / len(self.liquid_density),
-            "liquid_viscosity_avg": sum(self.liquid_viscosity)
-            / len(self.liquid_viscosity),
-            "liquid_fraction_avg": sum(self.liquid_fraction)
-            / len(self.liquid_fraction),
+            "liquid_viscosity_avg": sum(self.liquid_viscosity) / len(self.liquid_viscosity),
+            "liquid_fraction_avg": sum(self.liquid_fraction) / len(self.liquid_fraction),
             "is_two_phase": any(lf < 1.0 for lf in self.liquid_fraction),
         }
 

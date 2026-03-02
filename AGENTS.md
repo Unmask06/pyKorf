@@ -51,15 +51,10 @@ pyKorf/
 │   ├── cli.py                   # Command-line interface
 │   ├── utils.py                 # Shared CSV/value helpers
 │   ├── exceptions.py            # Custom exception hierarchy
-│   ├── definitions/             # String constants for element types/params
-│   │   ├── element.py           # Element type tokens (Element.PIPE, etc.)
-│   │   ├── pipe.py              # Pipe parameter constants
-│   │   ├── pump.py              # Pump parameter constants
-│   │   └── ...                  # One module per element type
-│   ├── elements/                # Typed element wrapper classes
-│   │   ├── base.py              # BaseElement abstract class
-│   │   ├── pipe.py              # Pipe class
-│   │   ├── pump.py              # Pump class
+│   ├── elements/                # Typed element wrapper classes + constants
+│   │   ├── base.py              # BaseElement abstract class + common constants
+│   │   ├── pipe.py              # Pipe class + parameter constants
+│   │   ├── pump.py              # Pump class + parameter constants
 │   │   └── ...                  # One module per element type
 │   ├── visualization/           # Network visualization
 │   │   ├── visualizer.py        # PyVis-based visualizer
@@ -188,7 +183,7 @@ from typing import TYPE_CHECKING, Any
 from pydantic import BaseModel
 
 # Local imports last
-from pykorf.definitions import Common, Element
+from pykorf.elements import BaseElement, Element
 from pykorf.exceptions import KorfError
 
 # TYPE_CHECKING block for circular imports
@@ -221,13 +216,13 @@ def load_model(path: str | Path) -> Model:
     """
 ```
 
-### Rule 1: Always Use Constants from definitions.py
+### Rule 1: Always Use Constants from Element Classes
 
-**STRICT RULE - NO EXCEPTIONS:** Never use hardcoded string literals for element types or parameter names. Always use constants from `pykorf.definitions`:
+**STRICT RULE - NO EXCEPTIONS:** Never use hardcoded string literals for element types or parameter names. Always use constants from `pykorf.elements`:
 
 ```python
 # CORRECT - Use constants
-from pykorf.definitions import Element, Pipe, Feed, Common
+from pykorf.elements import Element, Pipe, Feed, BaseElement
 
 model.add_element(Element.PIPE, "L1", {Pipe.LEN: 100, Pipe.TFLOW: "50"})
 
@@ -236,7 +231,7 @@ model.add_element("PIPE", "L1", {"LEN": 100, "TFLOW": "50"})
 ```
 
 **Why this matters:**
-- The definitions.py file contains 400+ constants for all KDF element types and parameters
+- The element classes contain 400+ constants for all KDF element types and parameters
 - Using constants prevents typos (e.g., "VAPCP" vs "VAPCP " with trailing space)
 - Refactoring is easier when constants are used
 - IDE autocomplete works better with constants
@@ -245,8 +240,8 @@ model.add_element("PIPE", "L1", {"LEN": 100, "TFLOW": "50"})
 **Common constants to use:**
 - Element types: `Element.PIPE`, `Element.PUMP`, `Element.VALVE`, etc.
 - Pipe params: `Pipe.LEN`, `Pipe.DIA`, `Pipe.TFLOW`, `Pipe.MAT`, etc.
-- Common params: `Common.NAME`, `Common.NUM`, `Common.XY`, `Common.NOTES`
-- Connection: `Common.CON`, `Common.NOZI`, `Common.NOZO`, `Common.NOZL`
+- Common params: `BaseElement.NAME`, `BaseElement.NUM`, `BaseElement.XY`, `BaseElement.NOTES`
+- Connection: `BaseElement.CON`, `BaseElement.NOZI`, `BaseElement.NOZO`, `BaseElement.NOZL`
 
 **Checklist:**
 - [ ] No hardcoded element types like `"PIPE"`, `"PUMP"`
@@ -443,9 +438,8 @@ The code should remain version-aware for compatibility (e.g., `NOZ` vs `NOZL` pa
 
 ### Adding a New Element Type
 
-1. Add constants to `pykorf/definitions/<element>.py`
-2. Create wrapper class in `pykorf/elements/<element>.py`
-3. Register in `pykorf/elements/__init__.py` ELEMENT_REGISTRY
+1. Create wrapper class with constants in `pykorf/elements/<element>.py`
+2. Register in `pykorf/elements/__init__.py` ELEMENT_REGISTRY
 4. Add collection property to `Model` class
 5. Add tests in `tests/test_elements.py`
 

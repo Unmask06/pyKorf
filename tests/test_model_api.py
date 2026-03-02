@@ -9,8 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from pykorf.definitions.element import Element
-from pykorf.definitions.feed import Feed
+from pykorf.elements import Element
+from pykorf.elements import Feed
 from pykorf.exceptions import ElementNotFound
 from pykorf.model import KorfModel, Model
 

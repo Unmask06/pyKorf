@@ -16,7 +16,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from pykorf import Model
-from pykorf.definitions import Element, Feed, Pipe, Prod, Pump, Valve
+from pykorf.elements import Element, Feed, Pipe, Prod, Pump, Valve
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -60,7 +60,7 @@ def create_pump_circuit(
         {
             Feed.PRES: str(feed_pressure),  # Feed pressure in bara
             # Note: Temperature is typically set on pipes, not feeds
-        }
+        },
     )
     print(f"  [OK] Added feed 'FEED_01' @ {feed_pressure} bara")
 
@@ -73,9 +73,9 @@ def create_pump_circuit(
         "PUMP_01",
         {
             Pump.TYPE: "Centrifugal",
-            Pump.EFFP: "0.75",      # Pump efficiency
-            Pump.DP: "5.0",         # Differential pressure (bar)
-        }
+            Pump.EFFP: "0.75",  # Pump efficiency
+            Pump.DP: "5.0",  # Differential pressure (bar)
+        },
     )
     print("  [OK] Added centrifugal pump 'PUMP_01' (75% eff, 5 bar dP)")
 
@@ -89,8 +89,8 @@ def create_pump_circuit(
         "COOLER_01",
         {
             "TYPE": "Shell & Tube",  # Heat exchanger type
-            "DT": "10",              # Temperature difference
-        }
+            "DT": "10",  # Temperature difference
+        },
     )
     print("  [OK] Added shell & tube heat exchanger 'COOLER_01'")
 
@@ -103,9 +103,9 @@ def create_pump_circuit(
         "CV_01",
         {
             Valve.TYPE: "Linear",
-            Valve.CV: "50",         # Valve coefficient
-            Valve.OPEN: "75",       # Opening percentage
-        }
+            Valve.CV: "50",  # Valve coefficient
+            Valve.OPEN: "75",  # Opening percentage
+        },
     )
     print("  [OK] Added linear control valve 'CV_01' @ 75% open")
 
@@ -117,8 +117,8 @@ def create_pump_circuit(
         Element.PROD,
         "PROD_01",
         {
-            Prod.PRES: "50",         # Back pressure in bara
-        }
+            Prod.PRES: "50",  # Back pressure in bara
+        },
     )
     print("  [OK] Added product sink 'PROD_01' @ 50 bara")
 
@@ -147,7 +147,7 @@ def create_pump_circuit(
     for pipe_name in ["SUCT_L1", "DISC_L2", "COOL_L3", "RETURN_L4"]:
         model.update_element(
             pipe_name,
-            {Pipe.TFLOW: str(flow_rate)}  # Total flow in t/h
+            {Pipe.TFLOW: str(flow_rate)},  # Total flow in t/h
         )
     print(f"  [OK] Set flow rate to {flow_rate} t/h for all pipes")
 
@@ -156,15 +156,15 @@ def create_pump_circuit(
     # ===================================================================
     print("\n[7/7] Setting pipe properties...")
     pipe_specs = {
-        "SUCT_L1": {Pipe.LEN: "2", Pipe.DIA: "6", Pipe.SCH: "40"},      # Suction: short, large
-        "DISC_L2": {Pipe.LEN: "5", Pipe.DIA: "4", Pipe.SCH: "40"},      # Discharge: medium
-        "COOL_L3": {Pipe.LEN: "8", Pipe.DIA: "4", Pipe.SCH: "40"},      # Cooler transfer
-        "RETURN_L4": {Pipe.LEN: "15", Pipe.DIA: "6", Pipe.SCH: "40"},   # Return: longer
+        "SUCT_L1": {Pipe.LEN: "2", Pipe.DIA: "6", Pipe.SCH: "40"},  # Suction: short, large
+        "DISC_L2": {Pipe.LEN: "5", Pipe.DIA: "4", Pipe.SCH: "40"},  # Discharge: medium
+        "COOL_L3": {Pipe.LEN: "8", Pipe.DIA: "4", Pipe.SCH: "40"},  # Cooler transfer
+        "RETURN_L4": {Pipe.LEN: "15", Pipe.DIA: "6", Pipe.SCH: "40"},  # Return: longer
     }
 
     for pipe_name, specs in pipe_specs.items():
         model.update_element(pipe_name, specs)
-        print(f"  [OK] Set {pipe_name}: L={specs[Pipe.LEN]}m, D={specs[Pipe.DIA]}\"")
+        print(f'  [OK] Set {pipe_name}: L={specs[Pipe.LEN]}m, D={specs[Pipe.DIA]}"')
 
     # ===================================================================
     # Validation & Save
@@ -229,9 +229,9 @@ def add_multicase_support(model: Model, case_names: list[str] | None = None) -> 
     # Set different flow rates for each case
     # Format: value1;value2;value3
     flow_scenarios = {
-        "MIN": "50;100;150",      # 50 t/h min, 100 t/h norm, 150 t/h max
-        "NORM": "75;150;225",     # 75 t/h min, 150 t/h norm, 225 t/h max
-        "MAX": "100;200;300",     # 100 t/h min, 200 t/h norm, 300 t/h max
+        "MIN": "50;100;150",  # 50 t/h min, 100 t/h norm, 150 t/h max
+        "NORM": "75;150;225",  # 75 t/h min, 150 t/h norm, 225 t/h max
+        "MAX": "100;200;300",  # 100 t/h min, 200 t/h norm, 300 t/h max
     }
 
     # Update main pipe flow
@@ -261,4 +261,3 @@ if __name__ == "__main__":
     # Save with multi-case
     model.save_as("examples/output/pump_circuit_multicase.kdf")
     print("\n  [OK] Multi-case model saved to: examples/output/pump_circuit_multicase.kdf")
-

@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from pykorf import Model
-from pykorf.definitions import Common, Element, Pipe
+from pykorf.elements import Common, Element, Pipe
 
 
 def create_sample_pms_excel(output_path: str = "examples/output/pms_data.xlsx") -> None:
@@ -199,7 +199,7 @@ def add_pms_to_model(
             print(f"  📝 Overriding {entry_name}")
 
         # Create PipeData entry
-        from pykorf.definitions import PipeData
+        from pykorf.elements import PipeData
 
         params = {
             PipeData.MAT: spec.get("material", "Carbon Steel"),
@@ -345,7 +345,7 @@ if __name__ == "__main__":
         print("  Creating new blank model...")
         model = Model()
         # Add a sample pipe for demonstration
-        from pykorf.definitions import Element
+        from pykorf.elements import Element
 
         model.add_element(Element.PIPE, "SAMPLE_PIPE")
 
