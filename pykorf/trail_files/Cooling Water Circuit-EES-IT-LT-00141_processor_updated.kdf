@@ -256,8 +256,8 @@
 "\PIPE",2,"COLOR",16711680
 "\PIPE",2,"STRM",""
 "\PIPE",2,"LOCK",0
-"\PIPE",2,"TEMP",33,33,33,"C"
-"\PIPE",2,"PRES",300,300,300,"kPag"
+"\PIPE",2,"TEMP",55,55,55,"C"
+"\PIPE",2,"PRES",101,101,101,"kPag"
 "\PIPE",2,"LF",1,1,1
 "\PIPE",2,"H",0,0,"kJ/kg"
 "\PIPE",2,"HAMB",0,"kJ/kg"
@@ -276,7 +276,7 @@
 "\PIPE",2,"REFLINE",0
 "\PIPE",2,"OUTIN",-1
 "\PIPE",2,"LVFLOW",6735,0,"t/h"
-"\PIPE",2,"LIQDEN",1011.123,1011.123,1011.123,"kg/m3"
+"\PIPE",2,"LIQDEN",1011,1011,1011,"kg/m3"
 "\PIPE",2,"LIQVISC",1.299,1.299,1.299,"cP"
 "\PIPE",2,"LIQSUR",62.4,62.4,62.4,"dyne/cm"
 "\PIPE",2,"LIQCON",.5,.5,.5,"W/m/K"
@@ -299,7 +299,7 @@
 "\PIPE",2,"RS",1
 "\PIPE",2,"YW",1
 "\PIPE",2,"MAT","Steel"
-"\PIPE",2,"DIA","36","36","inch"
+"\PIPE",2,"DIA",3,3,"inch"
 "\PIPE",2,"ID","",.89535,"m"
 "\PIPE",2,"IDH","",.89535,"m"
 "\PIPE",2,"ODF","",.9144,"m"
@@ -326,7 +326,7 @@
 "\PIPE",2,"DPACCEL",0,"kPag"
 "\PIPE",2,"ELEV",0,0,"m"
 "\PIPE",2,"FAC",1
-"\PIPE",2,"EPS","9.99999999996E-05",9.99999999996E-05,"m"
+"\PIPE",2,"EPS","",4.6e-05,"m"
 "\PIPE",2,"F",1.29850090928928E-02,1.22260222770471E-02
 "\PIPE",2,"RE",2048192.02523276
 "\PIPE",2,"SIZ","",22.6,"kPa/100m",100,.3,120,10,"m/s"

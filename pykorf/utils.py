@@ -24,16 +24,44 @@ import io
 # ---------------------------------------------------------------------------
 
 
+def _unescape_korf_chars(value: str) -> str:
+    """Convert KORF HTML entity encoding back to normal characters.
+
+    KORF uses HTML-style entities for special characters:
+    - <CHR34> -> " (double quote)
+    - <CHR60> -> < (less than)
+    - <CHR62> -> > (greater than)
+    """
+    return value.replace("<CHR34>", '"').replace("<CHR60>", "<").replace("<CHR62>", ">")
+
+
 def parse_line(line: str) -> list[str]:
     """Parse a single KDF CSV line into a list of string tokens.
 
     The KDF format uses standard CSV with double-quote strings, so the
     stdlib :mod:`csv` reader handles it correctly.
+
+    Also converts KORF HTML entity encoding (<CHR34>, etc.) back to normal characters.
     """
     reader = csv.reader(io.StringIO(line.strip()))
     for row in reader:
-        return row
+        return [_unescape_korf_chars(token) for token in row]
     return []
+
+
+def _escape_korf_chars(value: str) -> str:
+    """Convert special characters to KORF HTML entity encoding.
+
+    KORF uses HTML-style entities for special characters:
+    - " -> <CHR34> (double quote)
+    - < -> <CHR60> (less than)
+    - > -> <CHR62> (greater than)
+
+    Note: Must escape < and > first to avoid double-escaping entity codes.
+    """
+    # Escape in order: first < and >, then "
+    # This prevents <CHR34> from becoming <CHR60>CHR34<CHR62>
+    return value.replace("<", "<CHR60>").replace(">", "<CHR62>").replace('"', "<CHR34>")
 
 
 def format_line(tokens: list) -> str:
@@ -41,10 +69,8 @@ def format_line(tokens: list) -> str:
 
     * Strings (detected as containing non-numeric chars or empty) are quoted.
     * Numbers are written without quotes.
+    * Special characters are converted to KORF HTML entity encoding.
     """
-    buf = io.StringIO()
-    writer = csv.writer(buf, quoting=csv.QUOTE_NONNUMERIC, lineterminator="")
-    # csv.QUOTE_NONNUMERIC quotes everything; we post-process to unquote numbers.
     raw_tokens: list[str] = []
     for t in tokens:
         if isinstance(t, str) and _is_numeric_str(t):
@@ -52,7 +78,9 @@ def format_line(tokens: list) -> str:
         elif isinstance(t, (int, float)):
             raw_tokens.append(_fmt_number(t))
         else:
-            raw_tokens.append(f'"{t}"')  # quoted string
+            # Convert special chars to KORF entity encoding
+            escaped = _escape_korf_chars(str(t))
+            raw_tokens.append(f'"{escaped}"')  # quoted string with KORF encoding
     return ",".join(raw_tokens)
 
 

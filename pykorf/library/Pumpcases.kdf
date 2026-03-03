@@ -91,8 +91,8 @@
 "\PIPE",1,"COLOR",16711680
 "\PIPE",1,"STRM",""
 "\PIPE",1,"LOCK",0
-"\PIPE",1,"TEMP",25,25,25,"C"
-"\PIPE",1,"PRES",69.62,68.9778783103635,69.2989391551818,"kPag"
+"\PIPE",1,"TEMP",55,55,55,"C"
+"\PIPE",1,"PRES",101,101,101,"kPag"
 "\PIPE",1,"LF",1,1,1
 "\PIPE",1,"H",0,0,"kJ/kg"
 "\PIPE",1,"S",0,0,"kJ/kg/K"
@@ -102,7 +102,7 @@
 "\PIPE",1,"TAMB",0,"C"
 "\PIPE",1,"OUTIN",-1
 "\PIPE",1,"LVFLOW",20,0,"t/h"
-"\PIPE",1,"LIQDEN",1000,1000,1000,"kg/m3"
+"\PIPE",1,"LIQDEN",1011,1011,1011,"kg/m3"
 "\PIPE",1,"LIQVISC",1,1,1,"cP"
 "\PIPE",1,"VAPDEN",0,0,0,"kg/m3"
 "\PIPE",1,"VAPVISC",0,0,0,"cP"
@@ -112,10 +112,10 @@
 "\PIPE",1,"TFLOW","50;55;20",20,"t/h"
 "\PIPE",1,"TPROP",1000,1000,1000,1000,"kg/m3",1,"cP"
 "\PIPE",1,"MAT","Steel"
-"\PIPE",1,"DIA","6","6","inch"
+"\PIPE",1,"DIA",6,6,"inch"
 "\PIPE",1,"ID","",.154051,"m"
 "\PIPE",1,"IDH","",.154051,"m"
-"\PIPE",1,"SCH","40"
+"\PIPE",1,"SCH","STD"
 "\PIPE",1,"LEN",100,"m"
 "\PIPE",1,"EQLEN",100,"m"
 "\PIPE",1,"FITK",0
@@ -127,7 +127,7 @@
 "\PIPE",1,"DPELEV",0,"kPag"
 "\PIPE",1,"ELEV",0,0,"m"
 "\PIPE",1,"FAC",1
-"\PIPE",1,"EPS","",.0000457,"m"
+"\PIPE",1,"EPS","",4.6e-05,"m"
 "\PIPE",1,"F",2.22736570708114E-02,1.48886145802264E-02
 "\PIPE",1,"RE",45919.8577094599
 "\PIPE",1,"SIZ","",22.6,"kPa/100m",100,.3,120,10,"m/s"
@@ -138,7 +138,7 @@
 "\PIPE",1,"MTP","Homogeneous"
 "\PIPE",1,"DUK",0,0,"kg/m3"
 "\PIPE",1,"LM",0,0,0,0,0,0,0
-"\PIPE",1,"NOTES",""
+"\PIPE",1,"NOTES","6-10U01-WATR-001-BC1A1B-FDA;S-101;"
 "\PIPE",1,"FILES","","","","","","","","","",""
 "\PIPE",2,"NAME","L2","Pipe"
 "\PIPE",2,"XY",3825,1668,3825,1668,5250,1677,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5250,1677
