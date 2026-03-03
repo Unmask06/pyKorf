@@ -57,6 +57,7 @@ dependencies = [
     "rich>=13.0",
     "textual>=1.0",
     "appdirs>=1.4",
+    "pyperclip>=1.8",
 ]
 
 [project.optional-dependencies]

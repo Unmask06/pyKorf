@@ -28,7 +28,11 @@ from pykorf.use_case.exceptions import (
     StreamNotFoundError,
 )
 from pykorf.use_case.hmb import apply_hmb, load_hmb
-from pykorf.use_case.line_number import LineNumber, ValidationResult, parse_stream_from_notes
+from pykorf.use_case.line_number import (
+    LineNumber,
+    ValidationResult,
+    parse_stream_from_notes,
+)
 from pykorf.use_case.pms import apply_pms, load_pms
 from pykorf.use_case.settings import SettingsReader, UseCaseSettings
 
@@ -294,7 +298,9 @@ class PipedataProcessor:
                 if pipe_result.success:
                     result.pipes_updated += 1
                 elif pipe_result.error and pipe_result.error not in result.errors:
-                    result.errors.append(f"{pipe_result.pipe_name}: {pipe_result.error}")
+                    result.errors.append(
+                        f"{pipe_result.pipe_name}: {pipe_result.error}"
+                    )
 
             except Exception as e:
                 error_msg = f"{pipe.name}: {str(e)}"

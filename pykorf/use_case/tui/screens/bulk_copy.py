@@ -6,7 +6,16 @@ from textual import on, work
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import Button, Checkbox, Footer, Header, Input, Label, RichLog, Static
+from textual.widgets import (
+    Button,
+    Checkbox,
+    Footer,
+    Header,
+    Input,
+    Label,
+    RichLog,
+    Static,
+)
 
 
 class BulkCopyFluidsScreen(Screen):
@@ -64,6 +73,7 @@ class BulkCopyFluidsScreen(Screen):
             yield RichLog(id="copy-results", wrap=True)
             with Horizontal(id="copy-buttons"):
                 yield Button("Execute", variant="primary", id="btn-execute")
+                yield Button("Copy Log", variant="default", id="btn-copy-log")
                 yield Button("Back", variant="default", id="btn-back")
         yield Footer()
 
@@ -74,12 +84,26 @@ class BulkCopyFluidsScreen(Screen):
     def go_back(self) -> None:
         self.app.pop_screen()
 
+    @on(Button.Pressed, "#btn-copy-log")
+    def copy_log(self) -> None:
+        """Copy RichLog content to clipboard."""
+        import pyperclip
+
+        results = self.query_one("#copy-results", RichLog)
+        lines: list[str] = []
+        for line in results.lines:
+            lines.append(str(line))
+        text = "\n".join(lines)
+        pyperclip.copy(text)
+        results.write("[dim]Log copied to clipboard.[/dim]")
+
     @on(Button.Pressed, "#btn-execute")
     def execute(self) -> None:
         self._run_copy()
 
     @work(thread=True)
     def _run_copy(self) -> None:
+        from rich.text import Text
         from pykorf.use_case.tui.app import UseCaseTUI
         from pykorf.use_case.tui.screens.save_confirm import SaveConfirmScreen
 
@@ -91,14 +115,16 @@ class BulkCopyFluidsScreen(Screen):
         self.app.call_from_thread(results.clear)
 
         if not ref_input:
-            self.app.call_from_thread(results.write, "[red]Please enter a reference pipe.[/red]")
+            self.app.call_from_thread(
+                lambda: results.write(Text.from_markup("[red]Please enter a reference pipe.[/red]"))
+            )
             return
 
         target_lines: list[str] | None = None
         if target_input:
             target_lines = [t.strip() for t in target_input.split(",") if t.strip()]
 
-        self.app.call_from_thread(results.write, "Copying fluids...")
+        self.app.call_from_thread(lambda: results.write("Copying fluids..."))
 
         try:
             from pykorf.use_case import copy_fluids
@@ -111,12 +137,16 @@ class BulkCopyFluidsScreen(Screen):
             updated = copy_fluids(model, ref_input, target_lines, exclude)
 
             self.app.call_from_thread(
-                results.write, f"[green]Updated {len(updated)} pipes.[/green]"
+                lambda: results.write(
+                    Text.from_markup(f"[green]Updated {len(updated)} pipes.[/green]")
+                )
             )
             if updated:
                 for name in updated:
-                    self.app.call_from_thread(results.write, f"  - {name}")
+                    self.app.call_from_thread(lambda n=name: results.write(f"  - {n}"))
 
             self.app.call_from_thread(self.app.push_screen, SaveConfirmScreen(model))
         except Exception as exc:
-            self.app.call_from_thread(results.write, f"[red]Error: {exc}[/red]")
+            self.app.call_from_thread(
+                lambda: results.write(Text.from_markup(f"[red]Error: {exc}[/red]"))
+            )

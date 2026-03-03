@@ -67,8 +67,6 @@ def copy_fluids(
         >>> # Copy to all except L1 and L10
         >>> updated = copy_fluids(model, "L1", ["L1", "L10"], exclude=True)
     """
-    from pykorf.exceptions import ElementNotFound
-
     # Validate inputs
     if exclude and target_lines is None:
         raise ValueError("target_lines must be provided when exclude=True")

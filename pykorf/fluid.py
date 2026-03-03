@@ -183,9 +183,7 @@ class Fluid:
         if self.lf is not None:
             self.lf = self._normalize_to_list(self.lf, num_cases)
 
-    def _normalize_to_list(
-        self, value: float | list[float], num_cases: int
-    ) -> list[float]:
+    def _normalize_to_list(self, value: float | list[float], num_cases: int) -> list[float]:
         """Convert scalar to list of *num_cases* floats.
 
         - Scalar ``float``/``int`` -> replicated to ``[value] * num_cases``
@@ -228,46 +226,66 @@ class Fluid:
         Only non-None properties are included in the output.
         Each included property becomes ``[inlet, outlet, average, "unit"]``
         (3 float values + optional unit string), matching the KDF record
-        layout for ``\\PIPE,index,PARAM,...``.
+        layout for ``\PIPE,index,PARAM,...``.
 
         Returns:
             Dictionary mapping parameter names to value lists.
             Only includes parameters that were explicitly set.
         """
+
+        def _normalize_to_3(val: float | list[float] | None) -> list[float]:
+            """Ensure value is a list of exactly 3 floats."""
+            if val is None:
+                return [0.0, 0.0, 0.0]
+            if isinstance(val, (int, float)):
+                v = float(val)
+                return [v, v, v]
+            # It's a list
+            vals = list(val)
+            if len(vals) == 0:
+                return [0.0, 0.0, 0.0]
+            if len(vals) == 1:
+                return [vals[0], vals[0], vals[0]]
+            if len(vals) == 2:
+                return [vals[0], vals[1], (vals[0] + vals[1]) / 2]
+            if len(vals) >= 3:
+                return [float(v) for v in vals[:3]]
+            return [0.0, 0.0, 0.0]
+
         records: dict[str, list] = {}
 
         if self.temp is not None:
-            records[Pipe.TEMP] = list(self.temp) + [self.temp_unit]
+            records[Pipe.TEMP] = _normalize_to_3(self.temp) + [self.temp_unit]
         if self.pres is not None:
-            records[Pipe.PRES] = list(self.pres) + [self.pres_unit]
+            records[Pipe.PRES] = _normalize_to_3(self.pres) + [self.pres_unit]
         if self.lf is not None:
-            records[Pipe.LF] = list(self.lf)
+            records[Pipe.LF] = _normalize_to_3(self.lf)
         if self.liqden is not None:
-            records[Pipe.LIQDEN] = list(self.liqden) + [self.liqden_unit]
+            records[Pipe.LIQDEN] = _normalize_to_3(self.liqden) + [self.liqden_unit]
         if self.liqvisc is not None:
-            records[Pipe.LIQVISC] = list(self.liqvisc) + [self.liqvisc_unit]
+            records[Pipe.LIQVISC] = _normalize_to_3(self.liqvisc) + [self.liqvisc_unit]
         if self.liqsur is not None:
-            records[Pipe.LIQSUR] = list(self.liqsur) + [self.liqsur_unit]
+            records[Pipe.LIQSUR] = _normalize_to_3(self.liqsur) + [self.liqsur_unit]
         if self.liqcon is not None:
-            records[Pipe.LIQCON] = list(self.liqcon) + [self.liqcon_unit]
+            records[Pipe.LIQCON] = _normalize_to_3(self.liqcon) + [self.liqcon_unit]
         if self.liqcp is not None:
-            records[Pipe.LIQCP] = list(self.liqcp) + [self.liqcp_unit]
+            records[Pipe.LIQCP] = _normalize_to_3(self.liqcp) + [self.liqcp_unit]
         if self.liqmw is not None:
-            records[Pipe.LIQMW] = list(self.liqmw)
+            records[Pipe.LIQMW] = _normalize_to_3(self.liqmw)
         if self.vapden is not None:
-            records[Pipe.VAPDEN] = list(self.vapden) + [self.vapden_unit]
+            records[Pipe.VAPDEN] = _normalize_to_3(self.vapden) + [self.vapden_unit]
         if self.vapvisc is not None:
-            records[Pipe.VAPVISC] = list(self.vapvisc) + [self.vapvisc_unit]
+            records[Pipe.VAPVISC] = _normalize_to_3(self.vapvisc) + [self.vapvisc_unit]
         if self.vapcon is not None:
-            records[Pipe.VAPCON] = list(self.vapcon) + [self.vapcon_unit]
+            records[Pipe.VAPCON] = _normalize_to_3(self.vapcon) + [self.vapcon_unit]
         if self.vapcp is not None:
-            records[Pipe.VAPCP] = list(self.vapcp) + [self.vapcp_unit]
+            records[Pipe.VAPCP] = _normalize_to_3(self.vapcp) + [self.vapcp_unit]
         if self.vapmw is not None:
-            records[Pipe.VAPMW] = list(self.vapmw)
+            records[Pipe.VAPMW] = _normalize_to_3(self.vapmw)
         if self.vapz is not None:
-            records[Pipe.VAPZ] = list(self.vapz)
+            records[Pipe.VAPZ] = _normalize_to_3(self.vapz)
         if self.vapk is not None:
-            records[Pipe.VAPK] = list(self.vapk)
+            records[Pipe.VAPK] = _normalize_to_3(self.vapk)
 
         return records
 

@@ -112,6 +112,7 @@ class FilePickerScreen(Screen):
             app = self.app
             assert isinstance(app, UseCaseTUI)
             app.model = model
+            app.update_file_header(str(path))
             self.app.push_screen(MainMenuScreen())
         except Exception as exc:
             error_label.update(f"Error loading file: {exc}")

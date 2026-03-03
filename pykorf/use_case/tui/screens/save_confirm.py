@@ -8,7 +8,7 @@ from textual import on
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import Button, Label
+from textual.widgets import Button, Label, RichLog
 
 if TYPE_CHECKING:
     from pykorf.model import Model
@@ -22,14 +22,20 @@ class SaveConfirmScreen(Screen):
         align: center middle;
     }
     #save-box {
-        width: 50;
+        width: 60;
         height: auto;
-        max-height: 12;
+        max-height: 20;
         border: round $accent;
         padding: 1 2;
     }
     #save-box Label {
         margin-bottom: 1;
+    }
+    #save-box #file-path {
+        width: 100%;
+        height: auto;
+        max-height: 5;
+        text-style: dim;
     }
     #save-buttons {
         height: 3;
@@ -51,7 +57,9 @@ class SaveConfirmScreen(Screen):
     def compose(self) -> ComposeResult:
         with Vertical(id="save-box"):
             yield Label("[bold]Save Changes?[/bold]")
-            yield Label(f"File: {self._model._parser.path}")
+            log = RichLog(id="file-path", wrap=True)
+            log.write(f"File: {self._model._parser.path}")
+            yield log
             yield Label("", id="save-status")
             with Horizontal(id="save-buttons"):
                 yield Button("Save", variant="primary", id="btn-save")

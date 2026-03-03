@@ -17,6 +17,7 @@ class MainMenuScreen(Screen):
         ("2", "apply_pms", "Apply PMS"),
         ("3", "apply_hmb", "Apply HMB"),
         ("4", "model_info", "Model Info"),
+        ("c", "config_menu", "Config Menu"),
         ("l", "load_file", "Load File"),
         ("q", "quit_app", "Quit"),
     ]
@@ -26,14 +27,22 @@ class MainMenuScreen(Screen):
         align: center middle;
     }
     #menu-box {
-        width: 70;
+        width: 80;
         height: auto;
-        max-height: 30;
-        border: round $accent;
-        padding: 1 2;
+        border: thick $accent;
+        padding: 1 3;
+        background: $surface;
+    }
+    #file-label {
+        width: 100%;
+        height: auto;
+        color: $text-muted;
     }
     #menu-box Label {
         margin-bottom: 1;
+    }
+    #menu-buttons {
+        margin: 1 0;
     }
     #menu-buttons Button {
         width: 100%;
@@ -42,6 +51,7 @@ class MainMenuScreen(Screen):
     #menu-footer {
         height: 3;
         align: center middle;
+        margin-top: 1;
     }
     #menu-footer Button {
         margin: 0 1;
@@ -65,7 +75,7 @@ class MainMenuScreen(Screen):
             pipe_count = len(real_elements(model.pipes))
 
         with Vertical(id="menu-box"):
-            yield Label(f"[bold]File:[/bold] {file_name}")
+            yield Label(f"[bold]File:[/bold] {file_name}", id="file-label")
             yield Label(f"[bold]Pipes:[/bold] {pipe_count}")
             yield Static("---")
             with Vertical(id="menu-buttons"):
@@ -88,6 +98,11 @@ class MainMenuScreen(Screen):
                     "[4] View Model Info",
                     variant="primary",
                     id="btn-model-info",
+                )
+                yield Button(
+                    "[C] Configuration",
+                    variant="default",
+                    id="btn-config",
                 )
             yield Static("---")
             with Horizontal(id="menu-footer"):
@@ -122,6 +137,12 @@ class MainMenuScreen(Screen):
         from pykorf.use_case.tui.screens.model_info import ModelInfoScreen
 
         self.app.push_screen(ModelInfoScreen())
+
+    @on(Button.Pressed, "#btn-config")
+    def action_config_menu(self) -> None:
+        from pykorf.use_case.tui.screens.config_menu import ConfigMenuScreen
+
+        self.app.push_screen(ConfigMenuScreen())
 
     @on(Button.Pressed, "#btn-load-file")
     def action_load_file(self) -> None:
