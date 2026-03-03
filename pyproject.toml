@@ -55,6 +55,8 @@ dependencies = [
     "orjson>=3.9",
     "click>=8.0",
     "rich>=13.0",
+    "textual>=1.0",
+    "appdirs>=1.4",
 ]
 
 [project.optional-dependencies]
@@ -64,6 +66,7 @@ all = [
 
 [project.scripts]
 pykorf = "pykorf.cli:main"
+pykorf-use-case = "pykorf.use_case.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/pykorf/pykorf"

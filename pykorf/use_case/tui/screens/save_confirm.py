@@ -1,0 +1,75 @@
+"""Save confirmation screen."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from textual import on
+from textual.app import ComposeResult
+from textual.containers import Horizontal, Vertical
+from textual.screen import Screen
+from textual.widgets import Button, Label
+
+if TYPE_CHECKING:
+    from pykorf.model import Model
+
+
+class SaveConfirmScreen(Screen):
+    """Modal screen asking the user whether to save changes."""
+
+    CSS = """
+    SaveConfirmScreen {
+        align: center middle;
+    }
+    #save-box {
+        width: 50;
+        height: auto;
+        max-height: 12;
+        border: round $accent;
+        padding: 1 2;
+    }
+    #save-box Label {
+        margin-bottom: 1;
+    }
+    #save-buttons {
+        height: 3;
+        align: center middle;
+    }
+    #save-buttons Button {
+        margin: 0 1;
+    }
+    #save-status {
+        height: auto;
+        margin-top: 1;
+    }
+    """
+
+    def __init__(self, model: "Model") -> None:
+        super().__init__()
+        self._model = model
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="save-box"):
+            yield Label("[bold]Save Changes?[/bold]")
+            yield Label(f"File: {self._model._parser.path}")
+            yield Label("", id="save-status")
+            with Horizontal(id="save-buttons"):
+                yield Button("Save", variant="primary", id="btn-save")
+                yield Button("Discard", variant="warning", id="btn-discard")
+
+    @on(Button.Pressed, "#btn-save")
+    def save(self) -> None:
+        status = self.query_one("#save-status", Label)
+        try:
+            self._model.save()
+            status.update(f"Saved successfully.")
+            self.set_timer(1.0, self._dismiss)
+        except Exception as exc:
+            status.update(f"Error saving: {exc}")
+
+    @on(Button.Pressed, "#btn-discard")
+    def discard(self) -> None:
+        self.app.pop_screen()
+
+    def _dismiss(self) -> None:
+        self.app.pop_screen()

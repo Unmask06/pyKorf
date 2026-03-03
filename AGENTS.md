@@ -44,6 +44,8 @@ model.save()
 
 ## Commands
 
+Do NOT run mypy / ruff if not explicitly asked.
+
 ```
 uv sync                    # Install deps
 pytest -m "not automation" # Run tests

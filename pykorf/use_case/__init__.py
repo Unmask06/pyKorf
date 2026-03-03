@@ -38,6 +38,7 @@ Simplified API (functions):
     >>> # Model is automatically saved by default
 """
 
+from pykorf.use_case.bulk_calc import copy_fluids
 from pykorf.use_case.exceptions import (
     ExcelConversionError,
     LineNumberParseError,
@@ -68,36 +69,35 @@ from pykorf.use_case.pms import (
 )
 from pykorf.use_case.processor import PipedataProcessor, PipeUpdateResult, ProcessResult
 from pykorf.use_case.settings import SettingsReader, UseCaseSettings
+from pykorf.use_case.tui import run_tui
 
 __all__ = [
-    # Main processor
-    "PipedataProcessor",
-    "ProcessResult",
+    "ExcelConversionError",
+    "FluidProperties",
+    "HmbReader",
+    "LineNumber",
+    "LineNumberParseError",
     "PipeUpdateResult",
-    # PMS functions (simplified API)
+    "PipedataProcessor",
+    "PmsLookupError",
+    "ProcessError",
+    "ProcessResult",
+    "SettingsReader",
+    "StreamNotFoundError",
+    "UseCaseError",
+    "UseCaseSettings",
+    "ValidationError",
+    "ValidationResult",
+    "apply_hmb",
     "apply_pms",
+    "convert_hmb_excel",
+    "convert_pms_excel",
+    "copy_fluids",
+    "load_hmb",
     "load_pms",
     "lookup_schedule",
-    "convert_pms_excel",
-    # HMB functions (simplified API)
-    "apply_hmb",
-    "load_hmb",
     "lookup_stream",
-    "convert_hmb_excel",
-    # Classes for advanced use
-    "HmbReader",
-    "FluidProperties",
-    "LineNumber",
-    "ValidationResult",
     "parse_stream_from_notes",
-    "SettingsReader",
-    "UseCaseSettings",
-    # Exceptions
-    "UseCaseError",
-    "LineNumberParseError",
-    "StreamNotFoundError",
-    "PmsLookupError",
-    "ValidationError",
-    "ExcelConversionError",
-    "ProcessError",
+    # TUI
+    "run_tui",
 ]
