@@ -8,6 +8,7 @@ Enterprise Python toolkit for KORF hydraulic model files (`.kdf`).
 - **NEVER** use hardcoded strings for element types/params. Use constants from `pykorf.elements`.
 - All model operations are **in-memory**. File writes only via `model.save()` / `model.save_as()`.
 - Use `uv` (not pip). Use `cmd.exe` command style.
+- Element index `0` = template; real instances start at `1`.
 
 ## Quick Reference
 
@@ -16,63 +17,46 @@ from pykorf import Model
 from pykorf.elements import Element, Pipe, BaseElement
 
 model = Model("Pumpcases.kdf")
-pipe = model.pipes[1]           # Index 0 = template; real instances start at 1
+pipe = model.pipes[1]
 model.add_element(Element.PIPE, "L1", {Pipe.LEN: 100, Pipe.DIA: 50})
 model.save()
 ```
 
 ## Architecture
 
-| Module                | Purpose                                           |
-| --------------------- | ------------------------------------------------- |
-| `pykorf.model`        | Primary `Model` API                               |
-| `pykorf.parser`       | `KdfParser`, record-level load/save               |
-| `pykorf.elements`     | Typed wrappers (`Pipe`, `Pump`, etc.) + constants |
-| `pykorf.connectivity` | Connect/disconnect logic                          |
-| `pykorf.layout`       | Positioning, clash checks                         |
-| `pykorf.validation`   | KDF validation rules                              |
-| `pykorf.cases`        | Multi-case utilities                              |
-| `pykorf.results`      | Calculated-results extraction                     |
-| `pykorf.automation`   | GUI automation (`KorfApp`)                        |
-| `pykorf.export`       | JSON/YAML/Excel/CSV export                        |
-
-## KDF Format
-
-Encoding: `latin-1`, line endings: `\r\n`, record: `\ETYPE,index,PARAM,value1,...`
-Multi-case: semicolons (`"50;55;20"`), calculated marker: `";C"`.
-Versions: `KORF_2.0`, `KORF_3.0`, `KORF_3.6` (version-aware: `NOZ` vs `NOZL`).
+| Module         | Purpose                             |
+| -------------- | ----------------------------------- |
+| `model`        | Primary `Model` API                 |
+| `parser`       | `KdfParser`, record-level load/save |
+| `elements`     | Typed wrappers + constants          |
+| `connectivity` | Connect/disconnect logic            |
+| `validation`   | KDF validation rules                |
+| `cases`        | Multi-case utilities                |
+| `results`      | Calculated-results extraction       |
+| `automation`   | GUI automation (`KorfApp`)          |
+| `export`       | JSON/YAML/Excel/CSV export          |
 
 ## Code Style
 
-- Python 3.10+, full type hints, `from __future__ import annotations`, `str | None` unions
-- Google-style docstrings with markdown code blocks (not `>>>`)
-- Import order: stdlib → third-party → local. Use `TYPE_CHECKING` for circular imports.
-- Constants: `Element.PIPE`, `Pipe.LEN`, `BaseElement.NAME`, `BaseElement.CON`, etc.
+- Python 3.10+, full type hints, `from __future__ import annotations`
+- Google-style docstrings. Import order: stdlib → third-party → local.
 - Add missing constants under `pykorf/definitions/` before using them.
 
 ## Commands
 
 ```
-uv sync                                    # Install deps
-pytest                                     # Run tests
-pytest -m "not automation"                 # Skip GUI tests
-ruff check pykorf tests; ruff format pykorf tests  # Lint
-mypy pykorf                                # Type check
-uv run mkdocs serve                        # Local docs
+uv sync                    # Install deps
+pytest -m "not automation" # Run tests
+ruff check pykorf tests    # Lint
+mypy pykorf                # Type check
 ```
 
-## Common Tasks
+## Skills (on-demand context)
 
-**New element type:** Create class in `pykorf/elements/`, register in `__init__.py`, add `Model` property, add tests.
-**New export format:** Implement in `export.py`, options in `types.py`, CLI in `cli.py`.
-**Parser changes:** Update `KdfRecord` → `KdfParser.load()` → `KdfRecord.to_line()` → ensure round-trip fidelity.
+Detailed reference is in `.agents/skills/`. Agent loads these only when relevant:
 
-## Testing
-
-Fixtures from `pykorf/library/`. Markers: `unit`, `integration`, `slow`, `automation`.
-
-## Agent Workflow
-
-- Ask clarifying questions before large changes (>5 files or breaking changes → suggest a branch).
-- Small changes: proceed directly. Always verify with tests/linting.
-- Use `pathlib.Path` for file ops. Validate paths. Backup before overwriting.
+- **kdf-format** — parser, KDF record structure, encoding, round-trip rules
+- **elements** — element types, constants, registry, adding new elements
+- **automation** — GUI automation, KorfApp, safety rules
+- **testing** — pytest markers, fixtures, test patterns, coverage
+- **connectivity** — connect/disconnect, nozzles, pipe references
