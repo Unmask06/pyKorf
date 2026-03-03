@@ -1,0 +1,79 @@
+{
+  "material": "Steel",
+  "specifications": {
+    "BC1A1B-FDA": {
+      "0.5": {
+        "schedule": "80",
+        "od_mm": 21.3
+      },
+      "0.75": {
+        "schedule": "80",
+        "od_mm": 26.7
+      },
+      "1.0": {
+        "schedule": "80",
+        "od_mm": 33.4
+      },
+      "1.25": {
+        "schedule": "80",
+        "od_mm": 42.2
+      },
+      "1.5": {
+        "schedule": "80",
+        "od_mm": 48.3
+      },
+      "2.0": {
+        "schedule": "80",
+        "od_mm": 60.3
+      },
+      "2.5": {
+        "schedule": "STD",
+        "od_mm": 73.0
+      },
+      "3.0": {
+        "schedule": "STD",
+        "od_mm": 88.9
+      },
+      "4.0": {
+        "schedule": "STD",
+        "od_mm": 114.3
+      },
+      "6.0": {
+        "schedule": "STD",
+        "od_mm": 168.3
+      },
+      "8.0": {
+        "schedule": "STD",
+        "od_mm": 219.1
+      },
+      "10.0": {
+        "schedule": "STD",
+        "od_mm": 273.0
+      },
+      "12.0": {
+        "schedule": "40",
+        "od_mm": 323.8
+      },
+      "14.0": {
+        "schedule": "40",
+        "od_mm": 355.6
+      },
+      "16.0": {
+        "schedule": "40",
+        "od_mm": 406.4
+      },
+      "18.0": {
+        "schedule": "40",
+        "od_mm": 457.0
+      },
+      "20.0": {
+        "schedule": "40",
+        "od_mm": 508.0
+      },
+      "24.0": {
+        "schedule": "40",
+        "od_mm": 610.0
+      }
+    }
+  }
+}

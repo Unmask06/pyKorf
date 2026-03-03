@@ -109,8 +109,8 @@ class Pipe(BaseElement):
     DPFRIC = "DPFRIC"
     DPACCEL = "DPACCEL"
     ELEV = "ELEV"
-    FAC = "FAC"
-    EPS = "EPS"
+    DP_DES_FAC = "FAC"
+    ROUGHNESS = "EPS"
     F = "F"
     RE = "RE"
     SIZ = "SIZ"
@@ -203,8 +203,8 @@ class Pipe(BaseElement):
         DPFRIC,
         DPACCEL,
         ELEV,
-        FAC,
-        EPS,
+        DP_DES_FAC,
+        ROUGHNESS,
         F,
         RE,
         SIZ,
@@ -303,7 +303,7 @@ class Pipe(BaseElement):
     def roughness_m(self) -> float:
         """Pipe wall roughness in metres."""
         try:
-            return float(self._scalar(Pipe.EPS, 1, 0.0000457))
+            return float(self._scalar(Pipe.ROUGHNESS, 1, 0.0000457))
         except (TypeError, ValueError):
             return 0.0000457
 
