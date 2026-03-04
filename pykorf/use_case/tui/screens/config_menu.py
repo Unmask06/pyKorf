@@ -98,14 +98,19 @@ class ConfigMenuScreen(Screen):
         last_interaction = get_last_interaction()
         if last_interaction.get("screen") == "config_menu":
             data = last_interaction.get("data", {})
-            if "pms_excel_path" in data:
-                self.query_one("#pms-excel-input", Input).value = data["pms_excel_path"]
-            if "pms_output" in data:
-                self.query_one("#pms-output-input", Input).value = data["pms_output"]
-            if "stream_excel_path" in data:
-                self.query_one("#stream-excel-input", Input).value = data["stream_excel_path"]
-            if "stream_output" in data:
-                self.query_one("#stream-output-input", Input).value = data["stream_output"]
+            # Only set values if they exist and are not empty
+            pms_excel_path = data.get("pms_excel_path", "")
+            if pms_excel_path:
+                self.query_one("#pms-excel-input", Input).value = pms_excel_path
+            pms_output = data.get("pms_output", "")
+            if pms_output:
+                self.query_one("#pms-output-input", Input).value = pms_output
+            stream_excel_path = data.get("stream_excel_path", "")
+            if stream_excel_path:
+                self.query_one("#stream-excel-input", Input).value = stream_excel_path
+            stream_output = data.get("stream_output", "")
+            if stream_output:
+                self.query_one("#stream-output-input", Input).value = stream_output
 
     def action_go_back(self) -> None:
         self.app.pop_screen()
@@ -117,7 +122,11 @@ class ConfigMenuScreen(Screen):
     @on(Button.Pressed, "#btn-import-pms")
     def import_pms(self) -> None:
         """Import PMS data from Excel file."""
-        from pykorf.use_case.config import import_pms_from_excel, set_last_interaction
+        from pykorf.use_case.config import (
+            get_last_interaction,
+            import_pms_from_excel,
+            set_last_interaction,
+        )
 
         results = self.query_one("#config-results", RichLog)
         results.clear()
@@ -136,16 +145,27 @@ class ConfigMenuScreen(Screen):
             path = import_pms_from_excel(excel_path, output_name)
             results.write("[green]Imported PMS from Excel:[/green]")
             results.write(f"  {path}")
-            set_last_interaction(
-                "config_menu", {"pms_excel_path": excel_path, "pms_output": output_name}
+            # Merge with existing data, only update non-empty values
+            last_interaction = get_last_interaction()
+            data = (
+                last_interaction.get("data", {})
+                if last_interaction.get("screen") == "config_menu"
+                else {}
             )
+            data["pms_excel_path"] = excel_path
+            data["pms_output"] = output_name
+            set_last_interaction("config_menu", data)
         except Exception as exc:
             results.write(f"[red]Error importing PMS: {exc}[/red]")
 
     @on(Button.Pressed, "#btn-import-stream")
     def import_stream(self) -> None:
         """Import stream data from Excel file."""
-        from pykorf.use_case.config import import_stream_from_excel, set_last_interaction
+        from pykorf.use_case.config import (
+            get_last_interaction,
+            import_stream_from_excel,
+            set_last_interaction,
+        )
 
         results = self.query_one("#config-results", RichLog)
         results.clear()
@@ -168,9 +188,16 @@ class ConfigMenuScreen(Screen):
             path = import_stream_from_excel(excel_path, output_name)
             results.write("[green]Imported Stream Data from Excel:[/green]")
             results.write(f"  {path}")
-            set_last_interaction(
-                "config_menu", {"stream_excel_path": excel_path, "stream_output": output_name}
+            # Merge with existing data, only update non-empty values
+            last_interaction = get_last_interaction()
+            data = (
+                last_interaction.get("data", {})
+                if last_interaction.get("screen") == "config_menu"
+                else {}
             )
+            data["stream_excel_path"] = excel_path
+            data["stream_output"] = output_name
+            set_last_interaction("config_menu", data)
         except Exception as exc:
             results.write(f"[red]Error importing Stream Data: {exc}[/red]")
 

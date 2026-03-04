@@ -90,7 +90,7 @@ class LineNumber:
             line_part = notes_value
 
         # Remove quote character from NPS (e.g., "24"" becomes "24")
-        line_part = line_part.replace('"', "")
+        line_part = line_part.replace('"', "").replace(" ", "")
 
         match = cls.LINE_NUMBER_PATTERN.match(line_part)
         if not match:
