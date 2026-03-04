@@ -98,7 +98,7 @@ class PipedataProcessor:
 
         self._pms_source: Path | str | None = None
         self._hmb_source: Path | str | None = None
-        self._pms_data: tuple[str, dict] | None = None  # (material, pms_data)
+        self._pms_data: tuple[str, dict, dict] | None = None  # (material, pms_data, od_data)
         self._hmb_data: dict[str, dict[str, Any]] | None = None
 
     @property
@@ -113,7 +113,8 @@ class PipedataProcessor:
             source: Path to PMS Excel or JSON file
         """
         self._pms_source = source
-        self._pms_data = load_pms(source)
+        material, pms_data, od_data = load_pms(source)
+        self._pms_data = (material, pms_data, od_data)
 
     def load_hmb(self, source: Path | str) -> None:
         """Load HMB data.
@@ -188,16 +189,28 @@ class PipedataProcessor:
         if self._pms_data is not None:
             from pykorf.use_case.pms import lookup_schedule
 
-            material, pms_data = self._pms_data
+            material, pms_data, od_data = self._pms_data
             pms_code = line_number.pms_code
             nps = line_number.nominal_pipe_size
 
             logger.info(f"  Looking up PMS: class={pms_code}, NPS={nps}")
             try:
-                schedule = lookup_schedule(pms_data, pms_code, float(nps))
-                result.pms_schedule = schedule
+                spec = lookup_schedule(pms_data, pms_code, float(nps))
+                if "schedule" in spec:
+                    result.pms_schedule = spec["schedule"]
+                elif "wall_mm" in spec:
+                    # Calculate ID from OD and wall thickness
+                    wall_mm = spec["wall_mm"]
+                    nps_float = float(nps)
+                    od_mm = od_data.get(nps_float)
+                    if od_mm is not None:
+                        id_mm = od_mm - 2 * wall_mm
+                        id_inch = id_mm / 25.4
+                        result.pms_schedule = f"ID={id_inch:.3f}"
+                    else:
+                        result.pms_schedule = f"wall={wall_mm}mm"
                 result.pms_material = material
-                logger.info(f"  PMS lookup successful: SCH={schedule}, MAT={material}")
+                logger.info(f"  PMS lookup successful: SCH={result.pms_schedule}, MAT={material}")
             except PmsLookupError as e:
                 logger.error(f"  PMS lookup failed: {e}")
                 result.error = str(e)
@@ -298,9 +311,7 @@ class PipedataProcessor:
                 if pipe_result.success:
                     result.pipes_updated += 1
                 elif pipe_result.error and pipe_result.error not in result.errors:
-                    result.errors.append(
-                        f"{pipe_result.pipe_name}: {pipe_result.error}"
-                    )
+                    result.errors.append(f"{pipe_result.pipe_name}: {pipe_result.error}")
 
             except Exception as e:
                 error_msg = f"{pipe.name}: {str(e)}"

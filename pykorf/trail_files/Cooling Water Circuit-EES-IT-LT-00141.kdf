@@ -298,12 +298,12 @@
 "\PIPE",2,"OMEGA","",0
 "\PIPE",2,"RS",1
 "\PIPE",2,"YW",1
-"\PIPE",2,"MAT","Steel"
-"\PIPE",2,"DIA","36","36","inch"
-"\PIPE",2,"ID","",.89535,"m"
+"\PIPE",2,"MAT","PVC"
+"\PIPE",2,"DIA","","36","inch"
+"\PIPE",2,"ID",0.21059999999999998,0.21059999999999998,"m"
 "\PIPE",2,"IDH","",.89535,"m"
 "\PIPE",2,"ODF","",.9144,"m"
-"\PIPE",2,"SCH","STD"
+"\PIPE",2,"SCH","ID"
 "\PIPE",2,"LEN",50,"m"
 "\PIPE",2,"EQLEN",50,"m"
 "\PIPE",2,"FITK",0
@@ -325,8 +325,8 @@
 "\PIPE",2,"DPFRIC",3.16575397106553,"kPag"
 "\PIPE",2,"DPACCEL",0,"kPag"
 "\PIPE",2,"ELEV",0,0,"m"
-"\PIPE",2,"FAC",1
-"\PIPE",2,"EPS","9.99999999996E-05",9.99999999996E-05,"m"
+"\PIPE",2,"FAC",1.25
+"\PIPE",2,"EPS",4.6e-05,4.6e-05,"m"
 "\PIPE",2,"F",1.29850090928928E-02,1.22260222770471E-02
 "\PIPE",2,"RE",2048192.02523276
 "\PIPE",2,"SIZ","",22.6,"kPa/100m",100,.3,120,10,"m/s"
@@ -339,7 +339,7 @@
 "\PIPE",2,"DUK",0,0,"Ratio"
 "\PIPE",2,"LM",0,0,0,0,0,0,0
 "\PIPE",2,"EQN",1,"",0,"",0,0,0,0
-"\PIPE",2,"NOTES","3<CHR34>-CA112-N1-913-BC1A1B-FDA-N;<CHR34>S-101<CHR34>"
+"\PIPE",2,"NOTES","8<CHR34>-CA112-N1-913-AP7A0F-FX2-N;"
 "\PIPE",2,"FILES","","","","","","","","","",""
 "\PIPE",3,"NAME","L6","Pipe"
 "\PIPE",3,"BEND",1
@@ -523,7 +523,7 @@
 "\PIPE",4,"DUK",0,0,"Ratio"
 "\PIPE",4,"LM",0,0,0,0,0,0,0
 "\PIPE",4,"EQN",1,"",0,"",0,0,0,0
-"\PIPE",4,"NOTES","This is a note for L5"
+"\PIPE",4,"NOTES","error notes"
 "\PIPE",4,"FILES","","","","","","","","","",""
 "\PIPE",5,"NAME","L7","Pipe"
 "\PIPE",5,"BEND",1
@@ -666,12 +666,12 @@
 "\PIPE",6,"OMEGA","",0
 "\PIPE",6,"RS",1
 "\PIPE",6,"YW",1
-"\PIPE",6,"MAT","Steel"
+"\PIPE",6,"MAT","PVC"
 "\PIPE",6,"DIA","48","48","inch"
-"\PIPE",6,"ID","",1.20015,"m"
+"\PIPE",6,"ID",0.2626,0.2626,"m"
 "\PIPE",6,"IDH","",1.20015,"m"
 "\PIPE",6,"ODF","",1.2192,"m"
-"\PIPE",6,"SCH","STD"
+"\PIPE",6,"SCH","ID"
 "\PIPE",6,"LEN",1000,"m"
 "\PIPE",6,"EQLEN",1000,"m"
 "\PIPE",6,"FITK",0
@@ -693,8 +693,8 @@
 "\PIPE",6,"DPFRIC",55.0676184961275,"kPag"
 "\PIPE",6,"DPACCEL",0,"kPag"
 "\PIPE",6,"ELEV",0,0,"m"
-"\PIPE",6,"FAC",1
-"\PIPE",6,"EPS",".0001",.0001,"m"
+"\PIPE",6,"FAC",1.25
+"\PIPE",6,"EPS",4.6e-05,4.6e-05,"m"
 "\PIPE",6,"F",1.20831696740759E-02,1.15659642734536E-02
 "\PIPE",6,"RE",3969786.27671541
 "\PIPE",6,"SIZ","",22.6,"kPa/100m",100,.3,120,10,"m/s"
@@ -707,7 +707,7 @@
 "\PIPE",6,"DUK",0,0,"Ratio"
 "\PIPE",6,"LM",0,0,0,0,0,0,0
 "\PIPE",6,"EQN",1,"",0,"",0,0,0,0
-"\PIPE",6,"NOTES",""
+"\PIPE",6,"NOTES","10<CHR34>-CA112-N1-913-AP7A0F-FX2-N;"
 "\PIPE",6,"FILES","","","","","","","","","",""
 "\PIPE",7,"NAME","L9","Pipe"
 "\PIPE",7,"BEND",1

@@ -17,7 +17,6 @@ wheels/
 .cache/
 
 # ── IDE / editor ──────────────────────────────────────────
-.vscode/
 *.code-workspace
 
 # ── Generated docs site (rebuild with `mkdocs build`) ────

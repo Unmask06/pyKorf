@@ -69,10 +69,18 @@ class SaveConfirmScreen(Screen):
     def save(self) -> None:
         status = self.query_one("#save-status", Label)
         try:
+            save_path = self._model._parser.path
+            print(f"DEBUG: Saving model to: {save_path}")
+            print(f"DEBUG: Model has {self._model.num_pipes} pipes")
             self._model.save()
-            status.update(f"Saved successfully.")
+            print(f"DEBUG: Save completed")
+            status.update(f"Saved successfully to: {save_path}")
             self.set_timer(1.0, self._dismiss)
         except Exception as exc:
+            import traceback
+
+            print(f"DEBUG: Error saving: {exc}")
+            print(traceback.format_exc())
             status.update(f"Error saving: {exc}")
 
     @on(Button.Pressed, "#btn-discard")

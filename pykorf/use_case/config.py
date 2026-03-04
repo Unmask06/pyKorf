@@ -98,6 +98,31 @@ def set_last_kdf_path(path: str | Path) -> None:
     save_config(config)
 
 
+def get_last_interaction() -> dict[str, Any]:
+    """Get the last interaction data.
+
+    Returns:
+        Dictionary containing last interaction data, or empty dict if not set.
+    """
+    config = load_config()
+    return config.get("last_interaction", {})
+
+
+def set_last_interaction(screen_name: str, data: dict[str, Any]) -> None:
+    """Save the last interaction data.
+
+    Args:
+        screen_name: Name of the screen/interaction.
+        data: Dictionary of interaction data to save.
+    """
+    config = load_config()
+    if "last_interaction" not in config:
+        config["last_interaction"] = {}
+    config["last_interaction"]["screen"] = screen_name
+    config["last_interaction"]["data"] = data
+    save_config(config)
+
+
 # =============================================================================
 # PMS (Piping Material Specification) Data Files
 # =============================================================================
@@ -148,16 +173,14 @@ def save_pms_data(data: dict[str, Any], filename: str = "pms.json") -> None:
 def import_pms_from_excel(
     excel_path: str | Path,
     output_filename: str = "pms.json",
-    sheet_name: str = "Steel",
-    material: str = "Steel",
 ) -> Path:
     """Import PMS data from an Excel file and save as JSON.
+
+    Reads all sheets from the Excel file, using each sheet name as the material.
 
     Args:
         excel_path: Path to the Excel file containing PMS data.
         output_filename: Name for the output JSON file.
-        sheet_name: Worksheet name to read from Excel.
-        material: Material label to embed in the JSON.
 
     Returns:
         Path to the created JSON file.
@@ -174,7 +197,7 @@ def import_pms_from_excel(
 
     # Convert Excel to JSON using existing function
     output_path = get_pms_path(output_filename)
-    convert_pms_excel(excel_path, output_path, sheet_name=sheet_name, material=material)
+    convert_pms_excel(excel_path, output_path)
 
     return output_path
 

@@ -152,29 +152,29 @@ class TestPmsFunctions:
     """Tests for the simplified PMS function API."""
 
     def test_load_pms(self):
-        """load_pms() returns (material, pms_data dict)."""
-        material, pms_data = load_pms(PMS_JSON)
+        """load_pms() returns (material, pms_data, od_data)."""
+        material, pms_data, od_data = load_pms(PMS_JSON)
         assert material == "Steel"
         assert "BC1A1B-FDA" in pms_data
         # Check that 6.0 inch has schedule "STD"
-        assert pms_data["BC1A1B-FDA"][6.0] == "STD"
+        assert pms_data["BC1A1B-FDA"][6.0] == {"schedule": "STD"}
 
     def test_lookup_schedule_exact(self):
         """lookup_schedule() finds exact size matches."""
-        material, pms_data = load_pms(PMS_JSON)
-        schedule = lookup_schedule(pms_data, "BC1A1B-FDA", 6.0)
-        assert schedule == "STD"
+        material, pms_data, od_data = load_pms(PMS_JSON)
+        spec = lookup_schedule(pms_data, "BC1A1B-FDA", 6.0)
+        assert spec == {"schedule": "STD"}
 
     def test_lookup_schedule_closest(self):
         """lookup_schedule() falls back to closest size."""
-        material, pms_data = load_pms(PMS_JSON)
+        material, pms_data, od_data = load_pms(PMS_JSON)
         # 5.5 is not in the table, should return closest (6.0)
-        schedule = lookup_schedule(pms_data, "BC1A1B-FDA", 5.5)
-        assert schedule == "STD"
+        spec = lookup_schedule(pms_data, "BC1A1B-FDA", 5.5)
+        assert spec == {"schedule": "STD"}
 
     def test_lookup_schedule_unknown_class(self):
         """lookup_schedule() raises for unknown PMS class."""
-        material, pms_data = load_pms(PMS_JSON)
+        material, pms_data, od_data = load_pms(PMS_JSON)
         from pykorf.use_case.exceptions import PmsLookupError
 
         with pytest.raises(PmsLookupError, match="PMS class not found"):
@@ -484,9 +484,7 @@ class TestPipedataProcessor:
         # Should not raise — no save attempted on the read-only sample file
         assert result.pipes_processed == model.num_pipes
 
-    def test_process_model_with_explicit_save(
-        self, processor: PipedataProcessor, tmp_path: Path
-    ):
+    def test_process_model_with_explicit_save(self, processor: PipedataProcessor, tmp_path: Path):
         """Passing save=True with save_path should write to disk."""
         model = Model(PUMP_KDF)
         model.pipes[1].notes = "6-10U01-WATR-001-BC1A1B-FDA;S-101;"

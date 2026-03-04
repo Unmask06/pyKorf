@@ -91,6 +91,22 @@ class ConfigMenuScreen(Screen):
                 yield Button("Back", variant="default", id="btn-back")
         yield Footer()
 
+    def on_mount(self) -> None:
+        """Load last interaction data when screen mounts."""
+        from pykorf.use_case.config import get_last_interaction
+
+        last_interaction = get_last_interaction()
+        if last_interaction.get("screen") == "config_menu":
+            data = last_interaction.get("data", {})
+            if "pms_excel_path" in data:
+                self.query_one("#pms-excel-input", Input).value = data["pms_excel_path"]
+            if "pms_output" in data:
+                self.query_one("#pms-output-input", Input).value = data["pms_output"]
+            if "stream_excel_path" in data:
+                self.query_one("#stream-excel-input", Input).value = data["stream_excel_path"]
+            if "stream_output" in data:
+                self.query_one("#stream-output-input", Input).value = data["stream_output"]
+
     def action_go_back(self) -> None:
         self.app.pop_screen()
 
@@ -101,13 +117,13 @@ class ConfigMenuScreen(Screen):
     @on(Button.Pressed, "#btn-import-pms")
     def import_pms(self) -> None:
         """Import PMS data from Excel file."""
-        from pykorf.use_case.config import import_pms_from_excel
+        from pykorf.use_case.config import import_pms_from_excel, set_last_interaction
 
         results = self.query_one("#config-results", RichLog)
         results.clear()
 
-        excel_path = self.query_one("#pms-excel-input", Input).value.strip()
-        output_name = self.query_one("#pms-output-input", Input).value.strip()
+        excel_path = self.query_one("#pms-excel-input", Input).value.strip().strip('"').strip("'")
+        output_name = self.query_one("#pms-output-input", Input).value.strip().strip('"').strip("'")
 
         if not excel_path:
             results.write("[red]Please enter the Excel file path.[/red]")
@@ -120,19 +136,26 @@ class ConfigMenuScreen(Screen):
             path = import_pms_from_excel(excel_path, output_name)
             results.write("[green]Imported PMS from Excel:[/green]")
             results.write(f"  {path}")
+            set_last_interaction(
+                "config_menu", {"pms_excel_path": excel_path, "pms_output": output_name}
+            )
         except Exception as exc:
             results.write(f"[red]Error importing PMS: {exc}[/red]")
 
     @on(Button.Pressed, "#btn-import-stream")
     def import_stream(self) -> None:
         """Import stream data from Excel file."""
-        from pykorf.use_case.config import import_stream_from_excel
+        from pykorf.use_case.config import import_stream_from_excel, set_last_interaction
 
         results = self.query_one("#config-results", RichLog)
         results.clear()
 
-        excel_path = self.query_one("#stream-excel-input", Input).value.strip()
-        output_name = self.query_one("#stream-output-input", Input).value.strip()
+        excel_path = (
+            self.query_one("#stream-excel-input", Input).value.strip().strip('"').strip("'")
+        )
+        output_name = (
+            self.query_one("#stream-output-input", Input).value.strip().strip('"').strip("'")
+        )
 
         if not excel_path:
             results.write("[red]Please enter the Excel file path.[/red]")
@@ -145,6 +168,9 @@ class ConfigMenuScreen(Screen):
             path = import_stream_from_excel(excel_path, output_name)
             results.write("[green]Imported Stream Data from Excel:[/green]")
             results.write(f"  {path}")
+            set_last_interaction(
+                "config_menu", {"stream_excel_path": excel_path, "stream_output": output_name}
+            )
         except Exception as exc:
             results.write(f"[red]Error importing Stream Data: {exc}[/red]")
 

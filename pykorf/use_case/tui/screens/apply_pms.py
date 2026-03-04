@@ -8,7 +8,9 @@ from textual import on, work
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import Button, Footer, Header, Input, Label, RichLog, Static
+from textual.widgets import Button, Footer, Header, Label, RichLog, Static
+
+from pykorf.use_case.config import get_pms_path
 
 
 class ApplyPmsScreen(Screen):
@@ -30,7 +32,7 @@ class ApplyPmsScreen(Screen):
     #pms-box Label {
         margin-bottom: 1;
     }
-    #pms-box Input {
+    #pms-box Static {
         margin-bottom: 1;
     }
     #pms-buttons {
@@ -52,11 +54,8 @@ class ApplyPmsScreen(Screen):
         with Vertical(id="pms-box"):
             yield Label("[bold]Apply PMS Specifications[/bold]")
             yield Static("---")
-            yield Label("PMS JSON file path:")
-            yield Input(
-                placeholder="C:\\path\\to\\pms.json",
-                id="pms-path-input",
-            )
+            pms_path = get_pms_path()
+            yield Label(f"PMS file: {pms_path}")
             yield RichLog(id="pms-results", wrap=True)
             with Horizontal(id="pms-buttons"):
                 yield Button("Apply", variant="primary", id="btn-apply")
@@ -80,20 +79,21 @@ class ApplyPmsScreen(Screen):
         from pykorf.use_case.tui.screens.save_confirm import SaveConfirmScreen
 
         results = self.query_one("#pms-results", RichLog)
-        raw_path = self.query_one("#pms-path-input", Input).value.strip().strip('"').strip("'")
 
         self.app.call_from_thread(results.clear)
 
-        if not raw_path:
-            self.app.call_from_thread(results.write, "[red]Please enter a PMS file path.[/red]")
+        # Get PMS path from configuration
+        pms_path = get_pms_path()
+
+        if not pms_path.exists():
+            self.app.call_from_thread(
+                results.write,
+                f"[red]PMS file not found: {pms_path}[/red]\n"
+                "Please import PMS data from Excel first (Configuration menu).",
+            )
             return
 
-        path = Path(raw_path)
-        if not path.exists():
-            self.app.call_from_thread(results.write, f"[red]File not found: {path}[/red]")
-            return
-
-        self.app.call_from_thread(results.write, "Applying PMS specifications...")
+        self.app.call_from_thread(results.write, f"Loading PMS from: {pms_path}")
 
         try:
             from pykorf.use_case import apply_pms
@@ -103,7 +103,7 @@ class ApplyPmsScreen(Screen):
             model = app.model
             assert model is not None
 
-            updated = apply_pms(str(path), model, save=False)
+            updated = apply_pms(str(pms_path), model, save=False)
             self.app.call_from_thread(
                 results.write,
                 f"[green]Applied PMS specs to {len(updated)} pipes.[/green]",
