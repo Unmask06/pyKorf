@@ -56,31 +56,19 @@ class Expander(BaseElement):
     @property
     def expand_type(self) -> int:
         """1 = expander (enlargement), 2 = reducer (contraction)."""
-        try:
-            return int(self._scalar(Expander.TYPE, 0, 1))
-        except (TypeError, ValueError):
-            return 1
+        return self._safe_int(Expander.TYPE, 0, 1)
 
     @property
     def dp_kPag(self) -> float:
-        try:
-            return float(self._scalar(Expander.DP, 1, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(Expander.DP, 1, 0.0)
 
     @property
     def k_factor(self) -> float:
-        try:
-            return float(self._scalar(Expander.K, 0, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(Expander.K, 0, 0.0)
 
     @property
     def angle_deg(self) -> float:
-        try:
-            return float(self._scalar(Expander.ANGLE, 0, 180.0))
-        except (TypeError, ValueError):
-            return 180.0
+        return self._safe_float(Expander.ANGLE, 0, 180.0)
 
     @property
     def connection(self) -> tuple[int, int]:

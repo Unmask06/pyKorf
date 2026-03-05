@@ -88,10 +88,7 @@ class FlowOrifice(BaseElement):
 
     @property
     def dp_kPag(self) -> float:
-        try:
-            return float(self._scalar(FlowOrifice.DP, 1, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(FlowOrifice.DP, 1, 0.0)
 
     def set_dp(self, value: str | float | list) -> None:
         if isinstance(value, (list, tuple)):
@@ -103,31 +100,19 @@ class FlowOrifice(BaseElement):
     @property
     def beta(self) -> float:
         """Beta ratio (bore/pipe ID)."""
-        try:
-            return float(self._scalar(FlowOrifice.BETA, 1, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(FlowOrifice.BETA, 1, 0.0)
 
     @property
     def bore_m(self) -> float:
-        try:
-            return float(self._scalar(FlowOrifice.BORE, 1, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(FlowOrifice.BORE, 1, 0.0)
 
     @property
     def discharge_coeff(self) -> float:
-        try:
-            return float(self._scalar(FlowOrifice.CD, 0, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(FlowOrifice.CD, 0, 0.0)
 
     @property
     def num_holes(self) -> int:
-        try:
-            return int(self._scalar(FlowOrifice.HOLES, 0, 1))
-        except (TypeError, ValueError):
-            return 1
+        return self._safe_int(FlowOrifice.HOLES, 0, 1)
 
     @property
     def connection(self) -> tuple[int, int]:

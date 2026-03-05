@@ -286,10 +286,7 @@ class Pipe(BaseElement):
 
     @property
     def length_m(self) -> float:
-        try:
-            return float(self._scalar(Pipe.LEN, 0, 0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(Pipe.LEN, 0, 0.0)
 
     @length_m.setter
     def length_m(self, value: float) -> None:
@@ -302,18 +299,12 @@ class Pipe(BaseElement):
     @property
     def roughness_m(self) -> float:
         """Pipe wall roughness in metres."""
-        try:
-            return float(self._scalar(Pipe.ROUGHNESS, 1, 0.0000457))
-        except (TypeError, ValueError):
-            return 0.0000457
+        return self._safe_float(Pipe.ROUGHNESS, 1, 0.0000457)
 
     @property
     def id_m(self) -> float:
         """Internal diameter in metres (calculated / set)."""
-        try:
-            return float(self._scalar(Pipe.ID, 1, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(Pipe.ID, 1, 0.0)
 
     # ------------------------------------------------------------------
     # Fluid properties (liquid)
@@ -354,17 +345,11 @@ class Pipe(BaseElement):
     @property
     def pressure_drop_per_100m(self) -> float:
         """Calculated ΔP/100 m [kPa/100m]."""
-        try:
-            return float(self._scalar(Pipe.DPL, 0, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(Pipe.DPL, 0, 0.0)
 
     @property
     def reynolds_number(self) -> float:
-        try:
-            return float(self._scalar(Pipe.RE, 0, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(Pipe.RE, 0, 0.0)
 
     @property
     def flow_regime(self) -> list[str]:
@@ -464,10 +449,7 @@ class Pipe(BaseElement):
 
     @property
     def equivalent_length_m(self) -> float:
-        try:
-            return float(self._scalar(Pipe.EQLEN, 0, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(Pipe.EQLEN, 0, 0.0)
 
     @property
     def fittings(self) -> list[dict]:

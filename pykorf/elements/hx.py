@@ -72,10 +72,7 @@ class HeatExchanger(BaseElement):
 
     @property
     def dp_kPag(self) -> float:
-        try:
-            return float(self._scalar(HeatExchanger.DP, 1, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(HeatExchanger.DP, 1, 0.0)
 
     def set_dp(self, value: str | float) -> None:
         rec = self._get(HeatExchanger.DP)
@@ -84,35 +81,20 @@ class HeatExchanger(BaseElement):
 
     @property
     def inlet_pressure_kPag(self) -> float:
-        try:
-            return float(self._scalar(HeatExchanger.PIN, 1, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(HeatExchanger.PIN, 1, 0.0)
 
     @property
     def outlet_pressure_kPag(self) -> float:
-        try:
-            return float(self._scalar(HeatExchanger.POUT, 1, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(HeatExchanger.POUT, 1, 0.0)
 
     @property
     def heat_duty_kJh(self) -> float:
-        try:
-            return float(self._scalar(HeatExchanger.Q, 1, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(HeatExchanger.Q, 1, 0.0)
 
     @property
     def nozzle_in(self) -> int:
-        try:
-            return int(self._scalar(self.NOZI, 0, 0))
-        except (TypeError, ValueError):
-            return 0
+        return self._safe_int(self.NOZI, 0, 0)
 
     @property
     def nozzle_out(self) -> int:
-        try:
-            return int(self._scalar(self.NOZO, 0, 0))
-        except (TypeError, ValueError):
-            return 0
+        return self._safe_int(self.NOZO, 0, 0)

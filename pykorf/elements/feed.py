@@ -60,10 +60,7 @@ class Feed(BaseElement):
 
     @property
     def elevation_m(self) -> float:
-        try:
-            return float(self._scalar(Feed.ELEV, 0, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(Feed.ELEV, 0, 0.0)
 
     # Pressure
     @property
@@ -73,10 +70,7 @@ class Feed(BaseElement):
     @property
     def pressure_kPag(self) -> float:
         """Calculated outlet pressure [kPag]."""
-        try:
-            return float(self._scalar(Feed.POUT, 1, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(Feed.POUT, 1, 0.0)
 
     def get_pressure(self) -> list[str]:
         return split_cases(self.pressure_string)
@@ -109,7 +103,4 @@ class Feed(BaseElement):
     @property
     def nozzle_pipe_index(self) -> int:
         """Index of the pipe connected at this feed."""
-        try:
-            return int(self._scalar(self.NOZ, 0, 0))
-        except (TypeError, ValueError):
-            return 0
+        return self._safe_int(self.NOZ, 0, 0)

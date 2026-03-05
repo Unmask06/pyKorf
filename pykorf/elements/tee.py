@@ -52,10 +52,7 @@ class Tee(BaseElement):
 
     @property
     def tee_type(self) -> int:
-        try:
-            return int(self._scalar(Tee.TYPE, 0, 0))
-        except (TypeError, ValueError):
-            return 0
+        return self._safe_int(Tee.TYPE, 0, 0)
 
     @property
     def pressures_kPag(self) -> list[float]:

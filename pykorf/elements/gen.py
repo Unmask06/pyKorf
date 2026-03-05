@@ -190,10 +190,7 @@ class General(BaseElement):
     @property
     def patm(self) -> float:
         """Atmospheric pressure (kPa)."""
-        try:
-            return float(self._scalar("PATM", 0, 101))
-        except (TypeError, ValueError):
-            return 101.0
+        return self._safe_float("PATM", 0, 101.0)
 
     # ------------------------------------------------------------------
     # Cases

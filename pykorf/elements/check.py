@@ -41,18 +41,12 @@ class CheckValve(BaseElement):
 
     @property
     def dp_kPag(self) -> float:
-        try:
-            return float(self._scalar(CheckValve.DP, 1, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(CheckValve.DP, 1, 0.0)
 
     @property
     def loss_diameter(self) -> float:
         """L/D equivalent loss."""
-        try:
-            return float(self._scalar(CheckValve.LD, 0, 100.0))
-        except (TypeError, ValueError):
-            return 100.0
+        return self._safe_float(CheckValve.LD, 0, 100.0)
 
     @loss_diameter.setter
     def loss_diameter(self, value: float) -> None:

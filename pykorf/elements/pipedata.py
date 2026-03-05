@@ -47,10 +47,7 @@ class PipeData(BaseElement):
 
     @property
     def roughness_m(self) -> float:
-        try:
-            return float(self._scalar(PipeData.E, 0, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(PipeData.E, 0, 0.0)
 
     @property
     def schedules(self) -> list[str]:

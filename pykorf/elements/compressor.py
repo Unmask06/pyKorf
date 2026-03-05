@@ -75,10 +75,7 @@ class Compressor(BaseElement):
 
     @property
     def efficiency(self) -> float:
-        try:
-            return float(self._scalar(Compressor.EFFC, 1, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(Compressor.EFFC, 1, 0.0)
 
     def set_efficiency(self, value: float) -> None:
         rec = self._get(Compressor.EFFC)
@@ -87,24 +84,15 @@ class Compressor(BaseElement):
 
     @property
     def power_kW(self) -> float:
-        try:
-            return float(self._scalar(Compressor.POW, 0, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(Compressor.POW, 0, 0.0)
 
     @property
     def head_m(self) -> float:
-        try:
-            return float(self._scalar(Compressor.HQACT, 0, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(Compressor.HQACT, 0, 0.0)
 
     @property
     def dp_kPag(self) -> float:
-        try:
-            return float(self._scalar(Compressor.DP, 1, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(Compressor.DP, 1, 0.0)
 
     @property
     def connection(self) -> tuple[int, int]:

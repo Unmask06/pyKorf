@@ -55,10 +55,7 @@ class MiscEquipment(BaseElement):
 
     @property
     def dp_kPag(self) -> float:
-        try:
-            return float(self._scalar(MiscEquipment.DP, 1, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(MiscEquipment.DP, 1, 0.0)
 
     def set_dp(self, value: str | float) -> None:
         rec = self._get(MiscEquipment.DP)
