@@ -65,10 +65,7 @@ class Vessel(BaseElement):
 
     @property
     def pressure_kPag(self) -> float:
-        try:
-            return float(self._scalar(Vessel.PRES, 1, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(Vessel.PRES, 1, 0.0)
 
     def set_pressure(self, value: str | float) -> None:
         rec = self._get(Vessel.PRES)
@@ -77,7 +74,4 @@ class Vessel(BaseElement):
 
     @property
     def elevation_m(self) -> float:
-        try:
-            return float(self._scalar(Vessel.ELEV, 0, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(Vessel.ELEV, 0, 0.0)

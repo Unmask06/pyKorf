@@ -74,6 +74,25 @@ _DEFAULT_TEMPLATE = Path(__file__).resolve().parent / "library" / "New.kdf"
 # Logger for model operations
 _logger = logging.getLogger(__name__)
 
+# Mapping from element type keyword → (attribute name, element class)
+_ETYPE_COLLECTION_MAP: list[tuple[str, str, type[BaseElement]]] = [
+    (Element.PIPE, "pipes", Pipe),
+    (Element.FEED, "feeds", Feed),
+    (Element.PROD, "products", Product),
+    (Element.PUMP, "pumps", Pump),
+    (Element.VALVE, "valves", Valve),
+    (Element.CHECK, "check_valves", CheckValve),
+    (Element.ORIFICE, "orifices", FlowOrifice),
+    (Element.HX, "exchangers", HeatExchanger),
+    (Element.COMP, "compressors", Compressor),
+    (Element.MISC, "misc_equipment", MiscEquipment),
+    (Element.EXPAND, "expanders", Expander),
+    (Element.JUNC, "junctions", Junction),
+    (Element.TEE, "tees", Tee),
+    (Element.VESSEL, "vessels", Vessel),
+    (Element.PIPEDATA, "pipedata", PipeData),
+]
+
 
 class Model:
     """In-memory representation of a KORF .kdf hydraulic model file.
@@ -114,22 +133,9 @@ class Model:
         # General (always index 0, single instance)
         self.general = General(self._parser)
 
-        # Build typed collections for element types that have instances
-        self.pipes: dict[int, Pipe] = self._build(Element.PIPE, Pipe)
-        self.feeds: dict[int, Feed] = self._build(Element.FEED, Feed)
-        self.products: dict[int, Product] = self._build(Element.PROD, Product)
-        self.pumps: dict[int, Pump] = self._build(Element.PUMP, Pump)
-        self.valves: dict[int, Valve] = self._build(Element.VALVE, Valve)
-        self.check_valves: dict[int, CheckValve] = self._build(Element.CHECK, CheckValve)
-        self.orifices: dict[int, FlowOrifice] = self._build(Element.ORIFICE, FlowOrifice)
-        self.exchangers: dict[int, HeatExchanger] = self._build(Element.HX, HeatExchanger)
-        self.compressors: dict[int, Compressor] = self._build(Element.COMP, Compressor)
-        self.misc_equipment: dict[int, MiscEquipment] = self._build(Element.MISC, MiscEquipment)
-        self.expanders: dict[int, Expander] = self._build(Element.EXPAND, Expander)
-        self.junctions: dict[int, Junction] = self._build(Element.JUNC, Junction)
-        self.tees: dict[int, Tee] = self._build(Element.TEE, Tee)
-        self.vessels: dict[int, Vessel] = self._build(Element.VESSEL, Vessel)
-        self.pipedata: dict[int, PipeData] = self._build(Element.PIPEDATA, PipeData)
+        # Build typed collections for all element types
+        for etype, attr_name, cls in _ETYPE_COLLECTION_MAP:
+            setattr(self, attr_name, self._build(etype, cls))
 
         # Name → element lookup
         self._rebuild_name_map()
@@ -202,57 +208,14 @@ class Model:
 
     def _all_collections(self) -> list[dict]:
         """Return all element collection dicts."""
-        return [
-            self.pipes,
-            self.feeds,
-            self.products,
-            self.pumps,
-            self.valves,
-            self.check_valves,
-            self.orifices,
-            self.exchangers,
-            self.compressors,
-            self.misc_equipment,
-            self.expanders,
-            self.junctions,
-            self.tees,
-            self.vessels,
-            self.pipedata,
-        ]
+        return [getattr(self, attr) for _, attr, _ in _ETYPE_COLLECTION_MAP]
 
     def _collection_for_etype(self, etype: str) -> Any:
         """Return the collection dict for a given element type keyword."""
         et = etype.upper()
-        if et == Element.PIPE:
-            return self.pipes
-        if et == Element.FEED:
-            return self.feeds
-        if et == Element.PROD:
-            return self.products
-        if et == Element.PUMP:
-            return self.pumps
-        if et == Element.VALVE:
-            return self.valves
-        if et == Element.CHECK:
-            return self.check_valves
-        if et == Element.ORIFICE:
-            return self.orifices
-        if et == Element.HX:
-            return self.exchangers
-        if et == Element.COMP:
-            return self.compressors
-        if et == Element.MISC:
-            return self.misc_equipment
-        if et == Element.EXPAND:
-            return self.expanders
-        if et == Element.JUNC:
-            return self.junctions
-        if et == Element.TEE:
-            return self.tees
-        if et == Element.VESSEL:
-            return self.vessels
-        if et == Element.PIPEDATA:
-            return self.pipedata
+        for etype_key, attr_name, _ in _ETYPE_COLLECTION_MAP:
+            if et == etype_key:
+                return getattr(self, attr_name)
         return None
 
     def get_element(self, name: str) -> BaseElement:

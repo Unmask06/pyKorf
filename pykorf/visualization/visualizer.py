@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from pykorf.elements import Common, Element, Vessel
-from pykorf.layout import _X_MAX, _X_MIN, _Y_MAX, _Y_MIN, _all_positions
+from pykorf.layout import X_MAX, X_MIN, Y_MAX, Y_MIN, _all_positions
 from pykorf.visualization.models import EdgeData, NetworkData, NodeData
 
 if TYPE_CHECKING:
@@ -57,12 +57,12 @@ _CANVAS_H = 700
 
 def _scale_x(x: float) -> float:
     """Scale a KDF X coordinate to PyVis canvas pixels."""
-    return (x - _X_MIN) / (_X_MAX - _X_MIN) * _CANVAS_W
+    return (x - X_MIN) / (X_MAX - X_MIN) * _CANVAS_W
 
 
 def _scale_y(y: float) -> float:
     """Scale a KDF Y coordinate to PyVis canvas pixels."""
-    return (y - _Y_MIN) / (_Y_MAX - _Y_MIN) * _CANVAS_H
+    return (y - Y_MIN) / (Y_MAX - Y_MIN) * _CANVAS_H
 
 
 def _legend_html() -> str:
@@ -399,10 +399,10 @@ class Visualizer:
 
     def _add_layout_boundary(self, net) -> None:
         """Draw the model coordinate bounds as a dashed rectangle."""
-        left = _scale_x(_X_MIN)
-        right = _scale_x(_X_MAX)
-        top = _scale_y(_Y_MIN)
-        bottom = _scale_y(_Y_MAX)
+        left = _scale_x(X_MIN)
+        right = _scale_x(X_MAX)
+        top = _scale_y(Y_MIN)
+        bottom = _scale_y(Y_MAX)
 
         corners = {
             "__layout_tl": (left, top),

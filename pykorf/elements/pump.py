@@ -106,17 +106,11 @@ class Pump(BaseElement):
 
     @property
     def inlet_pipe(self) -> int:
-        try:
-            return int(self._scalar(self.CON, 0, 0))
-        except (TypeError, ValueError):
-            return 0
+        return self._safe_int(self.CON, 0, 0)
 
     @property
     def outlet_pipe(self) -> int:
-        try:
-            return int(self._scalar(self.CON, 1, 0))
-        except (TypeError, ValueError):
-            return 0
+        return self._safe_int(self.CON, 1, 0)
 
     @property
     def pump_type(self) -> str:
@@ -133,10 +127,7 @@ class Pump(BaseElement):
     @property
     def dp_kPag(self) -> float:
         """Calculated differential pressure [kPag]."""
-        try:
-            return float(self._scalar(Pump.DP, 1, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(Pump.DP, 1, 0.0)
 
     def set_dp(self, value: str | float) -> None:
         """Override the pump differential pressure.
@@ -159,11 +150,7 @@ class Pump(BaseElement):
     @property
     def efficiency(self) -> float:
         """Pump hydraulic efficiency (fraction, 0–1)."""
-        try:
-            v = self._scalar(Pump.EFFP, 1, 0.0)
-            return float(v)
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(Pump.EFFP, 1, 0.0)
 
     def set_efficiency(self, value: float) -> None:
         """Override pump efficiency (friction).
@@ -185,33 +172,21 @@ class Pump(BaseElement):
     @property
     def power_kW(self) -> float:
         """Calculated absorbed power [kW]."""
-        try:
-            return float(self._scalar(Pump.POW, 0, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(Pump.POW, 0, 0.0)
 
     @property
     def head_m(self) -> float:
         """Calculated operating head [m]."""
-        try:
-            return float(self._scalar(Pump.HQACT, 0, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(Pump.HQACT, 0, 0.0)
 
     @property
     def flow_m3h(self) -> float:
         """Calculated operating flow [m³/h]."""
-        try:
-            return float(self._scalar(Pump.HQACT, 2, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(Pump.HQACT, 2, 0.0)
 
     @property
     def npsh_required_m(self) -> float:
-        try:
-            return float(self._scalar(Pump.NPSHR13, 1, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(Pump.NPSHR13, 1, 0.0)
 
     # ------------------------------------------------------------------
     # Performance curves

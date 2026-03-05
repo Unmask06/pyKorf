@@ -101,35 +101,27 @@ class SimpleLogger:
             return {**context, **kwargs}
         return kwargs
 
-    def debug(self, msg: str, **kwargs: Any) -> None:
+    def _log(self, level: str, msg: str, **kwargs: Any) -> None:
+        log_fn = getattr(self._logger, level)
         if kwargs:
-            self._logger.debug(f"{msg} | {kwargs}")
+            log_fn(f"{msg} | {kwargs}")
         else:
-            self._logger.debug(msg)
+            log_fn(msg)
+
+    def debug(self, msg: str, **kwargs: Any) -> None:
+        self._log("debug", msg, **kwargs)
 
     def info(self, msg: str, **kwargs: Any) -> None:
-        if kwargs:
-            self._logger.info(f"{msg} | {kwargs}")
-        else:
-            self._logger.info(msg)
+        self._log("info", msg, **kwargs)
 
     def warning(self, msg: str, **kwargs: Any) -> None:
-        if kwargs:
-            self._logger.warning(f"{msg} | {kwargs}")
-        else:
-            self._logger.warning(msg)
+        self._log("warning", msg, **kwargs)
 
     def error(self, msg: str, **kwargs: Any) -> None:
-        if kwargs:
-            self._logger.error(f"{msg} | {kwargs}")
-        else:
-            self._logger.error(msg)
+        self._log("error", msg, **kwargs)
 
     def exception(self, msg: str, **kwargs: Any) -> None:
-        if kwargs:
-            self._logger.exception(f"{msg} | {kwargs}")
-        else:
-            self._logger.exception(msg)
+        self._log("exception", msg, **kwargs)
 
     def bind(self, **kwargs: Any) -> SimpleLogger:
         """Create a new logger with additional bound context."""

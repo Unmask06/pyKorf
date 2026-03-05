@@ -95,10 +95,7 @@ class Valve(BaseElement):
 
     @property
     def cv(self) -> float:
-        try:
-            return float(self._scalar(Valve.CV, 1, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(Valve.CV, 1, 0.0)
 
     @property
     def dp_string(self) -> str:
@@ -106,10 +103,7 @@ class Valve(BaseElement):
 
     @property
     def dp_kPag(self) -> float:
-        try:
-            return float(self._scalar(Valve.DP, 1, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(Valve.DP, 1, 0.0)
 
     def set_dp(self, value: str | float | list) -> None:
         if isinstance(value, (list, tuple)):
@@ -132,17 +126,11 @@ class Valve(BaseElement):
 
     @property
     def inlet_pressure_kPag(self) -> float:
-        try:
-            return float(self._scalar(Valve.PIN, 1, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(Valve.PIN, 1, 0.0)
 
     @property
     def outlet_pressure_kPag(self) -> float:
-        try:
-            return float(self._scalar(Valve.POUT, 1, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        return self._safe_float(Valve.POUT, 1, 0.0)
 
     @property
     def connection(self) -> tuple[int, int]:

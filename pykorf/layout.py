@@ -34,15 +34,6 @@ MIN_SPACING = 1000.0
 COMFORT_SPACING_X = 1500.0
 COMFORT_SPACING_Y = 1500.0
 
-# Backward compatibility aliases
-_X_MIN = X_MIN
-_Y_MIN = Y_MIN
-_X_MAX = X_MAX
-_Y_MAX = Y_MAX
-_MIN_SPACING = MIN_SPACING
-_COMFORT_SPACING_X = COMFORT_SPACING_X
-_COMFORT_SPACING_Y = COMFORT_SPACING_Y
-
 
 def get_position(elem: BaseElement) -> tuple[float, float] | None:
     """Extract the primary (x, y) position from an element's XY record.

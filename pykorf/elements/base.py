@@ -246,6 +246,20 @@ class BaseElement:
         v = self._values(param)
         return v[pos] if len(v) > pos else default
 
+    def _safe_float(self, param: str, pos: int = 0, default: float = 0.0) -> float:
+        """Return a float from a record value, returning *default* on failure."""
+        try:
+            return float(self._scalar(param, pos, default))
+        except (TypeError, ValueError):
+            return default
+
+    def _safe_int(self, param: str, pos: int = 0, default: int = 0) -> int:
+        """Return an int from a record value, returning *default* on failure."""
+        try:
+            return int(self._scalar(param, pos, default))
+        except (TypeError, ValueError):
+            return default
+
     # ------------------------------------------------------------------
     # Raw record list
     # ------------------------------------------------------------------

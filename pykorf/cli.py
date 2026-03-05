@@ -16,6 +16,7 @@ Example:
 
 from __future__ import annotations
 
+import fnmatch
 import sys
 from pathlib import Path
 from typing import Any
@@ -227,53 +228,23 @@ if HAS_CLI_DEPS:
     ) -> None:
         """Query elements in a KDF file."""
         from pykorf import Model
-        from pykorf.query import Query, attr
 
         try:
             model = Model(input_file)
 
-            # Build query
-            q = Query(model)
-
+            # Get elements by type or name pattern
             if element_type:
-                elements = q.by_type(element_type.upper())
+                results = list(model.get_elements_by_type(element_type.upper()))
             elif name:
-                elements = q.by_name(name)
+                results = [
+                    e for e in model.get_elements()
+                    if fnmatch.fnmatch(e.name, name)
+                ]
             else:
-                elements = q.elements
-
-            # Apply simple where condition
-            if where:
-                # Parse simple conditions like "length_m > 100"
-                parts = where.split()
-                if len(parts) == 3:
-                    field, op, value = parts
-                    try:
-                        value = float(value)
-                    except ValueError:
-                        pass
-
-                    condition = None
-                    if op == "==":
-                        condition = attr(field) == value
-                    elif op == "!=":
-                        condition = attr(field) != value
-                    elif op == ">":
-                        condition = attr(field) > value
-                    elif op == ">=":
-                        condition = attr(field) >= value
-                    elif op == "<":
-                        condition = attr(field) < value
-                    elif op == "<=":
-                        condition = attr(field) <= value
-
-                    if condition:
-                        elements = elements.where(condition)
+                results = list(model.get_elements())
 
             if limit:
-                elements = elements.limit(limit)
-
-            results = elements.all()
+                results = results[:limit]
 
             if not results:
                 console.print("[yellow]No elements found[/yellow]")
