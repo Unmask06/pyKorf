@@ -17,6 +17,7 @@ class MainMenuScreen(Screen):
         ("2", "apply_pms", "Apply PMS"),
         ("3", "apply_hmb", "Apply HMB"),
         ("4", "model_info", "Model Info"),
+        ("g", "global_settings", "Global Settings"),
         ("c", "config_menu", "Config Menu"),
         ("l", "load_file", "Load File"),
         ("q", "quit_app", "Quit"),
@@ -75,8 +76,8 @@ class MainMenuScreen(Screen):
             pipe_count = len(real_elements(model.pipes))
 
         with Vertical(id="menu-box"):
-            yield Label(f"[bold]File:[/bold] {file_name}", id="file-label")
-            yield Label(f"[bold]Pipes:[/bold] {pipe_count}")
+            yield Label(f"File: {file_name}", id="file-label")
+            yield Label(f"Pipes: {pipe_count}")
             yield Static("---")
             with Vertical(id="menu-buttons"):
                 yield Button(
@@ -98,6 +99,11 @@ class MainMenuScreen(Screen):
                     "[4] View Model Info",
                     variant="primary",
                     id="btn-model-info",
+                )
+                yield Button(
+                    "[G] Global Settings",
+                    variant="primary",
+                    id="btn-global-settings",
                 )
                 yield Button(
                     "[C] Configuration",
@@ -137,6 +143,12 @@ class MainMenuScreen(Screen):
         from pykorf.use_case.tui.screens.model_info import ModelInfoScreen
 
         self.app.push_screen(ModelInfoScreen())
+
+    @on(Button.Pressed, "#btn-global-settings")
+    def action_global_settings(self) -> None:
+        from pykorf.use_case.tui.screens.global_settings import GlobalSettingsScreen
+
+        self.app.push_screen(GlobalSettingsScreen())
 
     @on(Button.Pressed, "#btn-config")
     def action_config_menu(self) -> None:

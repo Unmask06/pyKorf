@@ -10,6 +10,8 @@ from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
 from textual.widgets import Button, Footer, Header, Label, RichLog, Static
 
+from pykorf.use_case.tui.logging import log_info, log_error, log_success
+
 from pykorf.use_case.config import get_pms_path
 
 
@@ -52,7 +54,7 @@ class ApplyPmsScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Header()
         with Vertical(id="pms-box"):
-            yield Label("[bold]Apply PMS Specifications[/bold]")
+            yield Label("Apply PMS Specifications")
             yield Static("---")
             pms_path = get_pms_path()
             yield Label(f"PMS file: {pms_path}")
@@ -87,13 +89,15 @@ class ApplyPmsScreen(Screen):
 
         if not pms_path.exists():
             self.app.call_from_thread(
-                results.write,
-                f"[red]PMS file not found: {pms_path}[/red]\n"
-                "Please import PMS data from Excel first (Configuration menu).",
+                lambda: log_error(
+                    results,
+                    f"PMS file not found: {pms_path}\n"
+                    "Please import PMS data from Excel first (Configuration menu).",
+                )
             )
             return
 
-        self.app.call_from_thread(results.write, f"Loading PMS from: {pms_path}")
+        self.app.call_from_thread(lambda: log_info(results, f"Loading PMS from: {pms_path}"))
 
         try:
             from pykorf.use_case import apply_pms
@@ -105,11 +109,10 @@ class ApplyPmsScreen(Screen):
 
             updated = apply_pms(str(pms_path), model, save=False)
             self.app.call_from_thread(
-                results.write,
-                f"[green]Applied PMS specs to {len(updated)} pipes.[/green]",
+                lambda: log_success(results, f"Applied PMS specs to {len(updated)} pipes."),
             )
             for name in updated:
-                self.app.call_from_thread(results.write, f"  - {name}")
+                self.app.call_from_thread(lambda n=name: log_info(results, f"  - {n}"))
             self.app.call_from_thread(self.app.push_screen, SaveConfirmScreen(model))
         except Exception as exc:
-            self.app.call_from_thread(results.write, f"[red]Error: {exc}[/red]")
+            self.app.call_from_thread(lambda: log_error(results, f"Error: {exc}"))

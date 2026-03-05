@@ -282,6 +282,32 @@ def import_stream_from_excel(
 
 
 # =============================================================================
+# Global Settings Preferences
+# =============================================================================
+
+
+def get_global_settings_selected() -> list[str]:
+    """Get the list of selected global settings IDs.
+
+    Returns:
+        List of setting IDs that were last selected.
+    """
+    config = load_config()
+    return config.get("global_settings_selected", [])
+
+
+def set_global_settings_selected(setting_ids: list[str]) -> None:
+    """Save the selected global settings IDs.
+
+    Args:
+        setting_ids: List of setting IDs to save as selected.
+    """
+    config = load_config()
+    config["global_settings_selected"] = setting_ids
+    save_config(config)
+
+
+# =============================================================================
 # TUI Helper Functions
 # =============================================================================
 

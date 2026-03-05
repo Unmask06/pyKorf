@@ -64,8 +64,8 @@ class ModelInfoScreen(Screen):
         valves = real_elements(model.valves)
 
         with Vertical(id="info-box"):
-            yield Label(f"[bold]Model Information[/bold]")
-            yield Label(f"[bold]File:[/bold] {model._parser.path}")
+            yield Label("Model Information")
+            yield Label(f"File: {model._parser.path}")
             yield Static("---")
 
             table = DataTable(id="info-table")
@@ -81,7 +81,7 @@ class ModelInfoScreen(Screen):
             )
             yield table
 
-            yield Label("[bold]Pipe Names:[/bold]")
+            yield Label("Pipe Names:")
             log = RichLog(id="pipe-list", wrap=True)
             yield log
 

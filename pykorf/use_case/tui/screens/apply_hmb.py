@@ -10,6 +10,8 @@ from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
 from textual.widgets import Button, Footer, Header, Input, Label, RichLog, Static
 
+from pykorf.use_case.tui.logging import log_info, log_error, log_success
+
 
 class ApplyHmbScreen(Screen):
     """Screen for applying HMB fluid properties to pipes."""
@@ -50,7 +52,7 @@ class ApplyHmbScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Header()
         with Vertical(id="hmb-box"):
-            yield Label("[bold]Apply HMB Fluid Properties[/bold]")
+            yield Label("Apply HMB Fluid Properties")
             yield Static("---")
             yield Label("HMB JSON file path:")
             yield Input(
@@ -85,15 +87,15 @@ class ApplyHmbScreen(Screen):
         self.app.call_from_thread(results.clear)
 
         if not raw_path:
-            self.app.call_from_thread(results.write, "[red]Please enter an HMB file path.[/red]")
+            self.app.call_from_thread(lambda: log_error(results, "Please enter an HMB file path."))
             return
 
         path = Path(raw_path)
         if not path.exists():
-            self.app.call_from_thread(results.write, f"[red]File not found: {path}[/red]")
+            self.app.call_from_thread(lambda: log_error(results, f"File not found: {path}"))
             return
 
-        self.app.call_from_thread(results.write, "Applying HMB fluid properties...")
+        self.app.call_from_thread(lambda: log_info(results, "Applying HMB fluid properties..."))
 
         try:
             from pykorf.use_case import apply_hmb
@@ -105,11 +107,10 @@ class ApplyHmbScreen(Screen):
 
             updated = apply_hmb(str(path), model, save=False)
             self.app.call_from_thread(
-                results.write,
-                f"[green]Applied HMB properties to {len(updated)} pipes.[/green]",
+                lambda: log_success(results, f"Applied HMB properties to {len(updated)} pipes."),
             )
             for name in updated:
-                self.app.call_from_thread(results.write, f"  - {name}")
+                self.app.call_from_thread(lambda n=name: log_info(results, f"  - {n}"))
             self.app.call_from_thread(self.app.push_screen, SaveConfirmScreen(model))
         except Exception as exc:
-            self.app.call_from_thread(results.write, f"[red]Error: {exc}[/red]")
+            self.app.call_from_thread(lambda: log_error(results, f"Error: {exc}"))

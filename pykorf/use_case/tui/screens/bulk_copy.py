@@ -17,6 +17,8 @@ from textual.widgets import (
     Static,
 )
 
+from pykorf.use_case.tui.logging import log_info, log_error, log_success
+
 
 class BulkCopyFluidsScreen(Screen):
     """Screen for copying fluid properties from one pipe to others."""
@@ -57,7 +59,7 @@ class BulkCopyFluidsScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Header()
         with Vertical(id="copy-box"):
-            yield Label("[bold]Bulk Copy Fluids[/bold]")
+            yield Label("Bulk Copy Fluids")
             yield Static("---")
             yield Label("Reference pipe (copy FROM):")
             yield Input(placeholder="e.g. L1", id="ref-pipe-input")
@@ -95,7 +97,7 @@ class BulkCopyFluidsScreen(Screen):
             lines.append(str(line))
         text = "\n".join(lines)
         pyperclip.copy(text)
-        results.write("[dim]Log copied to clipboard.[/dim]")
+        log_info(results, "Log copied to clipboard.")
 
     @on(Button.Pressed, "#btn-execute")
     def execute(self) -> None:
@@ -103,7 +105,6 @@ class BulkCopyFluidsScreen(Screen):
 
     @work(thread=True)
     def _run_copy(self) -> None:
-        from rich.text import Text
         from pykorf.use_case.tui.app import UseCaseTUI
         from pykorf.use_case.tui.screens.save_confirm import SaveConfirmScreen
 
@@ -116,7 +117,7 @@ class BulkCopyFluidsScreen(Screen):
 
         if not ref_input:
             self.app.call_from_thread(
-                lambda: results.write(Text.from_markup("[red]Please enter a reference pipe.[/red]"))
+                lambda: log_error(results, "Please enter a reference pipe.")
             )
             return
 
@@ -124,7 +125,7 @@ class BulkCopyFluidsScreen(Screen):
         if target_input:
             target_lines = [t.strip() for t in target_input.split(",") if t.strip()]
 
-        self.app.call_from_thread(lambda: results.write("Copying fluids..."))
+        self.app.call_from_thread(lambda: log_info(results, "Copying fluids..."))
 
         try:
             from pykorf.use_case import copy_fluids
@@ -137,16 +138,14 @@ class BulkCopyFluidsScreen(Screen):
             updated = copy_fluids(model, ref_input, target_lines, exclude)
 
             self.app.call_from_thread(
-                lambda: results.write(
-                    Text.from_markup(f"[green]Updated {len(updated)} pipes.[/green]")
-                )
+                lambda: log_success(results, f"Updated {len(updated)} pipes.")
             )
             if updated:
                 for name in updated:
-                    self.app.call_from_thread(lambda n=name: results.write(f"  - {n}"))
+                    self.app.call_from_thread(lambda n=name: log_info(results, f"  - {n}"))
 
             self.app.call_from_thread(self.app.push_screen, SaveConfirmScreen(model))
         except Exception as exc:
             self.app.call_from_thread(
-                lambda: results.write(Text.from_markup(f"[red]Error: {exc}[/red]"))
+                lambda: log_error(results, f"Error: {exc}")
             )

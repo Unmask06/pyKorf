@@ -8,6 +8,8 @@ from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
 from textual.widgets import Button, Footer, Header, Input, Label, RichLog, Static
 
+from pykorf.use_case.tui.logging import log_info, log_error, log_success, log_warning
+
 
 class ConfigMenuScreen(Screen):
     """Screen for managing configuration files."""
@@ -49,7 +51,7 @@ class ConfigMenuScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Header()
         with Vertical(id="config-box"):
-            yield Label("[bold]Configuration Management[/bold]")
+            yield Label("Configuration Management")
             yield Static("---")
             yield Label("Import PMS from Excel:")
             yield Input(
@@ -135,7 +137,7 @@ class ConfigMenuScreen(Screen):
         output_name = self.query_one("#pms-output-input", Input).value.strip().strip('"').strip("'")
 
         if not excel_path:
-            results.write("[red]Please enter the Excel file path.[/red]")
+            log_error(results, "Please enter the Excel file path.")
             return
 
         if not output_name:
@@ -143,8 +145,8 @@ class ConfigMenuScreen(Screen):
 
         try:
             path = import_pms_from_excel(excel_path, output_name)
-            results.write("[green]Imported PMS from Excel:[/green]")
-            results.write(f"  {path}")
+            log_success(results, "Imported PMS from Excel:")
+            log_info(results, f"  {path}")
             # Merge with existing data, only update non-empty values
             last_interaction = get_last_interaction()
             data = (
@@ -156,7 +158,7 @@ class ConfigMenuScreen(Screen):
             data["pms_output"] = output_name
             set_last_interaction("config_menu", data)
         except Exception as exc:
-            results.write(f"[red]Error importing PMS: {exc}[/red]")
+            log_error(results, f"Error importing PMS: {exc}")
 
     @on(Button.Pressed, "#btn-import-stream")
     def import_stream(self) -> None:
@@ -178,7 +180,7 @@ class ConfigMenuScreen(Screen):
         )
 
         if not excel_path:
-            results.write("[red]Please enter the Excel file path.[/red]")
+            log_error(results, "Please enter the Excel file path.")
             return
 
         if not output_name:
@@ -186,8 +188,8 @@ class ConfigMenuScreen(Screen):
 
         try:
             path = import_stream_from_excel(excel_path, output_name)
-            results.write("[green]Imported Stream Data from Excel:[/green]")
-            results.write(f"  {path}")
+            log_success(results, "Imported Stream Data from Excel:")
+            log_info(results, f"  {path}")
             # Merge with existing data, only update non-empty values
             last_interaction = get_last_interaction()
             data = (
@@ -199,7 +201,7 @@ class ConfigMenuScreen(Screen):
             data["stream_output"] = output_name
             set_last_interaction("config_menu", data)
         except Exception as exc:
-            results.write(f"[red]Error importing Stream Data: {exc}[/red]")
+            log_error(results, f"Error importing Stream Data: {exc}")
 
     @on(Button.Pressed, "#btn-list-configs")
     def list_configs(self) -> None:
@@ -213,28 +215,25 @@ class ConfigMenuScreen(Screen):
             config_dir = ensure_config_dir()
             files = list_config_files()
 
-            results.write(f"[bold]Config Directory:[/bold] {config_dir}")
-            results.write("")
+            log_info(results, f"Config Directory: {config_dir}")
 
             if files["pms"]:
-                results.write("[bold]PMS Files:[/bold]")
+                log_info(results, "PMS Files:")
                 for f in files["pms"]:
-                    results.write(f"  - {f}")
-                results.write("")
+                    log_info(results, f"  - {f}")
 
             if files["streams"]:
-                results.write("[bold]Stream Files:[/bold]")
+                log_info(results, "Stream Files:")
                 for f in files["streams"]:
-                    results.write(f"  - {f}")
-                results.write("")
+                    log_info(results, f"  - {f}")
 
             if files["other"]:
-                results.write("[bold]Other Files:[/bold]")
+                log_info(results, "Other Files:")
                 for f in files["other"]:
-                    results.write(f"  - {f}")
+                    log_info(results, f"  - {f}")
 
             if not any(files.values()):
-                results.write("[dim]No configuration files found.[/dim]")
+                log_warning(results, "No configuration files found.")
 
         except Exception as exc:
-            results.write(f"[red]Error listing configs: {exc}[/red]")
+            log_error(results, f"Error listing configs: {exc}")

@@ -56,7 +56,7 @@ class SaveConfirmScreen(Screen):
 
     def compose(self) -> ComposeResult:
         with Vertical(id="save-box"):
-            yield Label("[bold]Save Changes?[/bold]")
+            yield Label("Save Changes?")
             log = RichLog(id="file-path", wrap=True)
             log.write(f"File: {self._model._parser.path}")
             yield log
