@@ -154,74 +154,54 @@ with log_operation("validate_model", path="model.kdf"):
 
 ---
 
-## Advanced Querying
+## Querying Elements
 
-The Query DSL provides powerful filtering capabilities:
+Use the Model's built-in methods for querying elements:
 
 ```python
-from pykorf import Model, Query, attr
+from pykorf import Model
 
 model = Model("Pumpcases.kdf")
-q = Query(model)
 
-# Simple queries
-pipes = q.pipes.all()
-pumps = q.pumps.limit(10).all()
+# Get elements by type
+pipes = model.get_elements(etype="PIPE")
+pumps = model.get_elements(etype="PUMP")
 
-# Attribute-based filtering
-large_pipes = (
-    q.pipes
-    .where(attr("diameter_inch").in_(["8", "10", "12"]))
-    .where(attr("length_m") > 100)
-    .all()
-)
+# Get by name pattern
+feed_lines = model.get_elements(name="F*")
+cv_valves = [e for e in model.elements if "CV" in e.name]
 
-# String matching
-feed_lines = q.by_name("F*").all()
-cv_valves = q.valves.where(attr("name").contains("CV")).all()
+# List slicing for limits
+first_10_pipes = pipes[:10]
 
-# Pattern matching
-process_lines = q.pipes.where(attr("name").matches("L*[0-9]")).all()
+# Get parameters
+len_value = model.get_params("L1", param="LEN")
+all_params = model.get_params("L1")
 
-# Range queries
-medium_pipes = q.pipes.where(attr("length_m").between(50, 200)).all()
-
-# Chaining conditions
-results = (
-    q.elements
-    .where(attr("etype") == "PIPE")
-    .where(attr("name").startswith("L"))
-    .order_by("name")
-    .limit(20)
-    .all()
-)
-
-# Check existence
-has_large_pipes = q.pipes.where(attr("diameter_inch") == "12").exists()
-
-# Get single result
-try:
-    main_pump = q.pumps.where(attr("name") == "P1").one()
-except ValueError as e:
-    print("Not found or multiple matches")
+# Set parameters
+model.set_params("L1", {"LEN": 200, "DIAM": 50})
 ```
 
-### Query Result Methods
+### Working with Element Lists
 
 ```python
-results = q.pipes.all()
+# Get all elements
+all_elements = model.elements
 
-# Aggregation
-first_pipe = results.first()
-last_pipe = results.last()
-count = results.count()
+# Filter with list comprehensions
+pipes = [e for e in model.elements if e.etype == "PIPE"]
+large_pipes = [e for e in pipes if hasattr(e, "diameter")]
 
-# Extraction
-names = results.pluck("name")
-by_type = results.group_by("etype")
+# Count elements
+pipe_count = len(model.get_elements(etype="PIPE"))
 
-# Transformation
-summaries = results.map(lambda p: p.summary())
+# Extract attributes
+pipe_names = [e.name for e in model.get_elements(etype="PIPE")]
+
+# Group by type
+by_type = {}
+for e in model.elements:
+    by_type.setdefault(e.etype, []).append(e)
 ```
 
 ---

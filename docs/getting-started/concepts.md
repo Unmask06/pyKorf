@@ -142,16 +142,18 @@ Feed → Pipe → Pump → Pipe → Product
 Many pyKorf APIs support method chaining:
 
 ```python
-from pykorf import Query, attr
+from pykorf import Model
 
-results = (
-    Query(model)
-    .pipes
-    .where(attr("diameter_inch") == "6")
-    .where(attr("length_m") > 100)
-    .order_by("name")
-    .all()
-)
+model = Model("Pumpcases.kdf")
+
+# Get all pipes
+pipes = model.get_elements(etype="PIPE")
+
+# Filter by name pattern
+p_elements = model.get_elements(name="P*")
+
+# Get element parameters
+params = model.get_params("L1")
 ```
 
 ### Context Managers

@@ -99,13 +99,22 @@ cases.count                    # 2
 pipe.set_flow([50, 55])       # Set for all cases
 ```
 
-### Query
+### Querying Elements
 
 ```python
-from pykorf import Query, attr
+from pykorf import Model
 
-q = Query(model)
-pipes = q.pipes.where(attr("diameter_inch") == "6").all()
+model = Model("Pumpcases.kdf")
+
+# Get elements by type
+pipes = model.get_elements(etype="PIPE")
+
+# Filter by name pattern
+p_elements = model.get_elements(name="P*")
+
+# Get/set parameters
+params = model.get_params("L1")
+model.set_params("L1", {"LEN": 200})
 ```
 
 ## Type Hints
@@ -126,7 +135,6 @@ Coming soon:
 - Parser - Low-level file parsing
 - Cases - Multi-case utilities
 - Results - Results extraction
-- Query - Query DSL
 - Export - Export functions
 - Config - Configuration
 - Logging - Structured logging

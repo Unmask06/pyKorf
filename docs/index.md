@@ -91,7 +91,7 @@ pip install -e ".[dev]"
 ## Quick Example
 
 ```python
-from pykorf import Model, Query, attr
+from pykorf import Model
 
 # Load a model
 model = Model("Pumpcases.kdf")
@@ -104,8 +104,11 @@ print(f"Pipes: {model.num_pipes}")
 # Modify a pipe
 model.update_element("L1", {"LEN": 200, "TFLOW": "80;90;60"})
 
-# Query elements
-large_pipes = Query(model).pipes.where(attr("diameter_inch") == "8").all()
+# Query elements - get all pipes
+pipes = model.get_elements(etype="PIPE")
+
+# Filter by name pattern
+p_elements = model.get_elements(name="P*")
 
 # Save changes
 model.save("Pumpcases_modified.kdf")

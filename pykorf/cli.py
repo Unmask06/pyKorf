@@ -212,7 +212,6 @@ if HAS_CLI_DEPS:
     @click.argument("input_file", type=click.Path(exists=True, path_type=Path))
     @click.option("--type", "element_type", help="Filter by element type (e.g., PIPE, PUMP)")
     @click.option("--name", help="Filter by name pattern (glob)")
-    @click.option("--where", help="Complex filter condition (e.g., 'length_m > 100')")
     @click.option("--limit", "-n", type=int, help="Limit number of results")
     @click.option("--format", "fmt", type=click.Choice(["table", "json", "csv"]), default="table")
     @click.pass_context
@@ -221,59 +220,25 @@ if HAS_CLI_DEPS:
         input_file: Path,
         element_type: str | None,
         name: str | None,
-        where: str | None,
         limit: int | None,
         fmt: str,
     ) -> None:
         """Query elements in a KDF file."""
         from pykorf import Model
-        from pykorf.query import Query, attr
 
         try:
             model = Model(input_file)
 
-            # Build query
-            q = Query(model)
-
+            # Build query using Model.get_elements()
             if element_type:
-                elements = q.by_type(element_type.upper())
+                results = model.get_elements(etype=element_type.upper())
             elif name:
-                elements = q.by_name(name)
+                results = model.get_elements(name=name)
             else:
-                elements = q.elements
-
-            # Apply simple where condition
-            if where:
-                # Parse simple conditions like "length_m > 100"
-                parts = where.split()
-                if len(parts) == 3:
-                    field, op, value = parts
-                    try:
-                        value = float(value)
-                    except ValueError:
-                        pass
-
-                    condition = None
-                    if op == "==":
-                        condition = attr(field) == value
-                    elif op == "!=":
-                        condition = attr(field) != value
-                    elif op == ">":
-                        condition = attr(field) > value
-                    elif op == ">=":
-                        condition = attr(field) >= value
-                    elif op == "<":
-                        condition = attr(field) < value
-                    elif op == "<=":
-                        condition = attr(field) <= value
-
-                    if condition:
-                        elements = elements.where(condition)
+                results = model.elements
 
             if limit:
-                elements = elements.limit(limit)
-
-            results = elements.all()
+                results = results[:limit]
 
             if not results:
                 console.print("[yellow]No elements found[/yellow]")

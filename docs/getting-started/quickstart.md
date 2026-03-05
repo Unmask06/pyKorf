@@ -103,29 +103,22 @@ model.save()
 ## Querying Elements
 
 ```python
-from pykorf import Model, Query, attr
+from pykorf import Model
 
 model = Model("Pumpcases.kdf")
-q = Query(model)
 
 # Find all pipes
-pipes = q.pipes.all()
-
-# Filter by diameter
-large_pipes = q.pipes.where(attr("diameter_inch") == "8").all()
+pipes = model.get_elements(etype="PIPE")
 
 # Find by name pattern
-p_elements = q.by_name("P*").all()
+p_elements = model.get_elements(name="P*")
 
-# Complex queries
-results = (
-    q.elements
-    .where(attr("etype") == "PIPE")
-    .where(attr("name").startswith("L"))
-    .order_by("name")
-    .limit(10)
-    .all()
-)
+# Get element parameters
+params = model.get_params("L1")
+len_value = model.get_params("L1", param="LEN")
+
+# Set element parameters
+model.set_params("L1", {"LEN": 200, "DIAM": 50})
 ```
 
 ## Validation

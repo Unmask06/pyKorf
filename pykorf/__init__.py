@@ -25,7 +25,6 @@ layout         – Element positioning
 validation     – KDF format compliance
 visualization/ – PyVis network visualization
 export         – Export to JSON, YAML, Excel, CSV
-query          – Deprecated: use Model.get_elements(), get_params(), set_params()
 types          – Pydantic models for type safety
 config         – Configuration management
 log            – Structured logging
