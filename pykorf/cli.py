@@ -213,7 +213,6 @@ if HAS_CLI_DEPS:
     @click.argument("input_file", type=click.Path(exists=True, path_type=Path))
     @click.option("--type", "element_type", help="Filter by element type (e.g., PIPE, PUMP)")
     @click.option("--name", help="Filter by name pattern (glob)")
-    @click.option("--where", help="Complex filter condition (e.g., 'length_m > 100')")
     @click.option("--limit", "-n", type=int, help="Limit number of results")
     @click.option("--format", "fmt", type=click.Choice(["table", "json", "csv"]), default="table")
     @click.pass_context
@@ -222,7 +221,6 @@ if HAS_CLI_DEPS:
         input_file: Path,
         element_type: str | None,
         name: str | None,
-        where: str | None,
         limit: int | None,
         fmt: str,
     ) -> None:
