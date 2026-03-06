@@ -1,13 +1,14 @@
 """Structured logging for pyKorf.
 
 Provides a centralized logging system with support for:
-- Structured JSON logging
-- Console output with colors
+- File-based logging (all logs go to file)
+- Dynamic log file switching per model
 - Context binding
 - Performance timing
 
 Example:
-    >>> from pykorf.log import get_logger, bind_context
+    >>> from pykorf.log import get_logger, bind_context, set_log_file
+    >>> set_log_file("model.log")
     >>> logger = get_logger()
     >>> with bind_context(model="Pumpcases.kdf"):
     ...     logger.info("Loading model")
@@ -23,6 +24,7 @@ import time
 from collections.abc import Callable
 from contextlib import contextmanager
 from contextvars import ContextVar
+from pathlib import Path
 from typing import Any, TypeVar
 
 from pykorf.config import get_config
@@ -38,19 +40,96 @@ except ImportError:
 # Context variable for request/operation context
 _log_context: ContextVar[dict[str, Any]] = ContextVar("log_context", default={})
 
+# Module-level tracking of current log file
+_current_log_file: str | None = None
+_file_handler: logging.FileHandler | None = None
 
-def configure_logging() -> None:
-    """Configure logging with pyKorf settings."""
-    if not HAS_STRUCTLOG:
-        # Use standard logging configuration
-        config = get_config()
-        level = getattr(logging, config.logging.level, logging.INFO)
-        logging.basicConfig(
-            level=level,
-            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+
+def configure_logging(log_file: str = "pykorf.log") -> None:
+    """Configure logging with file output.
+
+    All logs are written to the specified file. This function sets up
+    the root "pykorf" logger with a file handler.
+
+    Args:
+        log_file: Path to the log file. Defaults to 'pykorf.log'.
+    """
+    global _current_log_file, _file_handler
+
+    config = get_config()
+
+    root_logger = logging.getLogger("pykorf")
+    root_logger.setLevel(logging.DEBUG)
+    root_logger.handlers = []
+
+    _file_handler = logging.FileHandler(log_file, mode="w", encoding="utf-8")
+    _file_handler.setLevel(logging.DEBUG)
+    file_formatter = logging.Formatter(
+        "%(asctime)s | %(name)-20s | %(levelname)-8s | %(message)s"
+    )
+    _file_handler.setFormatter(file_formatter)
+    root_logger.addHandler(_file_handler)
+
+    _current_log_file = log_file
+
+    if HAS_STRUCTLOG:
+        _configure_structlog()
+    else:
+        import logging as std_logging
+
+        std_logging.getLogger("pykorf").setLevel(
+            getattr(std_logging, config.logging.level)
         )
-        return
 
+
+def set_log_file(log_file: str | Path) -> None:
+    """Switch the log file to a new path.
+
+    This closes the current file handler and opens a new one,
+    effectively clearing the old log and starting fresh.
+
+    Args:
+        log_file: Path to the new log file.
+
+    Example:
+        >>> set_log_file("Cooling.log")
+        >>> # All subsequent logs go to Cooling.log
+    """
+    global _current_log_file, _file_handler
+
+    log_file_str = str(log_file)
+
+    root_logger = logging.getLogger("pykorf")
+
+    if _file_handler:
+        root_logger.removeHandler(_file_handler)
+        _file_handler.close()
+
+    _file_handler = logging.FileHandler(log_file_str, mode="w", encoding="utf-8")
+    _file_handler.setLevel(logging.DEBUG)
+    file_formatter = logging.Formatter(
+        "%(asctime)s | %(name)-20s | %(levelname)-8s | %(message)s"
+    )
+    _file_handler.setFormatter(file_formatter)
+    root_logger.addHandler(_file_handler)
+
+    _current_log_file = log_file_str
+
+    logger = logging.getLogger("pykorf.log")
+    logger.debug(f"Log file switched to: {log_file_str}")
+
+
+def get_log_file() -> str | None:
+    """Get the current log file path.
+
+    Returns:
+        Path to the current log file, or None if not configured.
+    """
+    return _current_log_file
+
+
+def _configure_structlog() -> None:
+    """Configure structlog to use standard library logging."""
     config = get_config()
 
     shared_processors = [
@@ -61,10 +140,10 @@ def configure_logging() -> None:
         structlog.processors.TimeStamper(fmt="iso"),
         structlog.processors.StackInfoRenderer(),
         structlog.processors.format_exc_info,
+        structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
     ]
 
     if config.logging.format == "structured":
-        # JSON output for production
         structlog.configure(
             processors=shared_processors + [structlog.processors.JSONRenderer()],
             context_class=dict,
@@ -73,7 +152,6 @@ def configure_logging() -> None:
             cache_logger_on_first_use=True,
         )
     else:
-        # Console output for development
         structlog.configure(
             processors=shared_processors + [structlog.dev.ConsoleRenderer(colors=True)],
             context_class=dict,
@@ -82,7 +160,6 @@ def configure_logging() -> None:
             cache_logger_on_first_use=True,
         )
 
-    # Set log level
     import logging as std_logging
 
     std_logging.getLogger("pykorf").setLevel(getattr(std_logging, config.logging.level))
@@ -200,12 +277,7 @@ def get_logger(name: str | None = None) -> BoundContextLogger | SimpleLogger:
 
 @contextmanager
 def bind_context(**kwargs: Any):
-    """Bind context variables for the duration of the context.
-
-    Example:
-        >>> with bind_context(model="Pumpcases.kdf", operation="load"):
-        ...     logger.info("Starting")  # Includes model and operation
-    """
+    """Bind context variables for the duration of the context."""
     token = None
     try:
         current = _log_context.get()
@@ -219,15 +291,9 @@ def bind_context(**kwargs: Any):
 
 @contextmanager
 def log_operation(operation: str, **context: Any):
-    """Log an operation with timing.
-
-    Example:
-        >>> with log_operation("load_model", path="model.kdf"):
-        ...     model = Model("model.kdf")
-    """
+    """Log an operation with timing."""
     logger = get_logger()
     start_time = time.time()
-
     with bind_context(operation=operation, **context):
         logger.info(f"{operation}_started")
         try:
@@ -249,14 +315,7 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 
 def timed(func: F) -> F:
-    """Decorator to time function execution.
-
-    Example:
-        >>> @timed
-        ... def heavy_operation():
-        ...     pass
-    """
-
+    """Decorator to time function execution."""
     @functools.wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         logger = get_logger(func.__module__)
@@ -264,20 +323,12 @@ def timed(func: F) -> F:
         try:
             result = func(*args, **kwargs)
             elapsed = time.time() - start
-            logger.debug(
-                f"{func.__name__}_completed",
-                duration_ms=elapsed * 1000,
-            )
+            logger.debug(f"{func.__name__}_completed", duration_ms=elapsed * 1000)
             return result
         except Exception as e:
             elapsed = time.time() - start
-            logger.error(
-                f"{func.__name__}_failed",
-                error=str(e),
-                duration_ms=elapsed * 1000,
-            )
+            logger.error(f"{func.__name__}_failed", error=str(e), duration_ms=elapsed * 1000)
             raise
-
     return wrapper  # type: ignore[return-value]
 
 
@@ -287,6 +338,8 @@ __all__ = [
     "bind_context",
     "log_operation",
     "timed",
+    "set_log_file",
+    "get_log_file",
 ]
 
 if HAS_STRUCTLOG:

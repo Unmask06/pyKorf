@@ -8,7 +8,14 @@ from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
 from textual.widgets import Button, Checkbox, Footer, Header, Label, RichLog, Static
 
-from pykorf.use_case.tui.logging import log_error, log_info, log_success
+from pykorf.log import get_log_file
+from pykorf.use_case.tui.logging import (
+    get_log_entries,
+    log_error,
+    log_info,
+    log_success,
+    log_warning,
+)
 
 
 class GlobalSettingsScreen(Screen):
@@ -71,6 +78,10 @@ class GlobalSettingsScreen(Screen):
         height: 12;
         border: round $surface;
         margin-top: 1;
+        overflow-x: hidden;
+    }
+    #settings-results RichLog {
+        overflow-x: hidden;
     }
     """
 
@@ -218,6 +229,30 @@ class GlobalSettingsScreen(Screen):
                     lambda e=error: self._log(results, f"ERROR: {e}", "error")
                 )
 
+            # Fetch WARNING/ERROR logs from use_case.global_settings and display them
+            log_file = get_log_file()
+            if log_file:
+                entries = get_log_entries(
+                    log_file,
+                    levels={"WARNING", "ERROR", "CRITICAL"},
+                    logger_filter="pykorf.use_case.global_settings",
+                )
+                if entries:
+                    self.app.call_from_thread(
+                        lambda: log_warning(
+                            results, "Warnings/Errors during global settings processing:"
+                        )
+                    )
+                    for _ts, _name, level, message in entries:
+                        if level == "WARNING":
+                            self.app.call_from_thread(
+                                lambda m=message: log_warning(results, f"  ⚠ {m}")
+                            )
+                        else:
+                            self.app.call_from_thread(
+                                lambda m=message: log_error(results, f"  ✗ {m}")
+                            )
+
             # Display results
             total_affected = 0
             for setting_id, pipes in apply_results.items():
@@ -254,7 +289,7 @@ class GlobalSettingsScreen(Screen):
                 self.app.call_from_thread(
                     lambda: self._log(
                         results,
-                        "\nWARNING: Some errors occurred during processing. Review logs before saving.",
+                        "\nWARNING: Some errors occurred. Review logs before saving.",
                         "error",
                     )
                 )
@@ -268,5 +303,5 @@ class GlobalSettingsScreen(Screen):
 
         except Exception as exc:
             self.app.call_from_thread(
-                lambda: self._log(results, f"Error applying settings: {exc}", "error")
+                lambda e=exc: self._log(results, f"Error applying settings: {e}", "error")
             )

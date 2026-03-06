@@ -53,6 +53,10 @@ class BulkCopyFluidsScreen(Screen):
         height: 12;
         border: round $surface;
         margin-top: 1;
+        overflow-x: hidden;
+    }
+    #copy-results RichLog {
+        overflow-x: hidden;
     }
     """
 
@@ -116,9 +120,7 @@ class BulkCopyFluidsScreen(Screen):
         self.app.call_from_thread(results.clear)
 
         if not ref_input:
-            self.app.call_from_thread(
-                lambda: log_error(results, "Please enter a reference pipe.")
-            )
+            self.app.call_from_thread(lambda: log_error(results, "Please enter a reference pipe."))
             return
 
         target_lines: list[str] | None = None
@@ -146,6 +148,4 @@ class BulkCopyFluidsScreen(Screen):
 
             self.app.call_from_thread(self.app.push_screen, SaveConfirmScreen(model))
         except Exception as exc:
-            self.app.call_from_thread(
-                lambda: log_error(results, f"Error: {exc}")
-            )
+            self.app.call_from_thread(lambda: log_error(results, f"Error: {exc}"))

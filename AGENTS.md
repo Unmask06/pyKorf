@@ -57,6 +57,12 @@ ruff check pykorf tests    # Lint
 mypy pykorf                # Type check
 ```
 
+## TUI Error/Warning Display Pattern
+
+See [README.md TUI Error/Warning Display Pattern section](./README.md#tui-errorwarning-display-pattern) for the full pattern.
+
+Briefly: Background operations log via `logger.warning/error()`, then read logs via `get_log_entries()` and display inline in RichLog (no popups).
+
 ## Skills (on-demand context)
 
 Detailed reference is in `.agents/skills/`. Agent loads these only when relevant:

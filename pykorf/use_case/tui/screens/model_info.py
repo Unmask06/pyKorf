@@ -38,6 +38,10 @@ class ModelInfoScreen(Screen):
         max-height: 20;
         border: round $surface;
         margin-bottom: 1;
+        overflow-x: hidden;
+    }
+    #pipe-list RichLog {
+        overflow-x: hidden;
     }
     #info-buttons {
         height: 3;

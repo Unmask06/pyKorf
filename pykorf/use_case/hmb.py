@@ -371,15 +371,20 @@ def apply_hmb(
         notes = pipe.notes
 
         if not notes or not notes.strip():
-            logger.debug("Pipe %s: empty NOTES, skipping HMB", pipe.name)
+            logger.warning("Pipe %s: empty NOTES, skipping HMB", pipe.name)
             continue
 
         stream_no = parse_stream_from_notes(notes, delimiter)
         if not stream_no:
-            logger.debug("Pipe %s: no stream number in NOTES, skipping HMB", pipe.name)
+            logger.warning("Pipe %s: no stream number in NOTES: %r, skipping HMB", pipe.name, notes)
             continue
 
-        props = lookup_stream(hmb_data, stream_no)
+        try:
+            props = lookup_stream(hmb_data, stream_no)
+        except StreamNotFoundError as exc:
+            logger.warning("Pipe %s: %s, skipping HMB", pipe.name, exc)
+            continue
+
         fluid = _create_fluid_from_props(props)
 
         # Apply fluid directly to the pipe

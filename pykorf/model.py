@@ -24,10 +24,12 @@ Basic workflow::
 
     # Edit by name
     from pykorf.elements import Pipe
+
     model.update_element("L1", {Pipe.LEN: 200, Pipe.TFLOW: "80;90;60"})
 
     # Add / delete / copy
     from pykorf.elements import Element
+
     model.add_element(Element.PIPE, "L10", {Pipe.LEN: 50})
     model.delete_element("L10")
     model.copy_element("L1", "L11")
@@ -95,6 +97,10 @@ class Model:
         self._parser = KdfParser(path)
         self._parser.load()
         self._build_collections()
+        # Set up log file in the same directory as the model file
+        from pykorf.log import set_log_file
+        log_file = self._parser.path.with_suffix(".log")
+        set_log_file(log_file)
 
     # ------------------------------------------------------------------
     # Class constructors (backward compatibility)
@@ -120,11 +126,19 @@ class Model:
         self.products: dict[int, Product] = self._build(Element.PROD, Product)
         self.pumps: dict[int, Pump] = self._build(Element.PUMP, Pump)
         self.valves: dict[int, Valve] = self._build(Element.VALVE, Valve)
-        self.check_valves: dict[int, CheckValve] = self._build(Element.CHECK, CheckValve)
-        self.orifices: dict[int, FlowOrifice] = self._build(Element.ORIFICE, FlowOrifice)
-        self.exchangers: dict[int, HeatExchanger] = self._build(Element.HX, HeatExchanger)
+        self.check_valves: dict[int, CheckValve] = self._build(
+            Element.CHECK, CheckValve
+        )
+        self.orifices: dict[int, FlowOrifice] = self._build(
+            Element.ORIFICE, FlowOrifice
+        )
+        self.exchangers: dict[int, HeatExchanger] = self._build(
+            Element.HX, HeatExchanger
+        )
         self.compressors: dict[int, Compressor] = self._build(Element.COMP, Compressor)
-        self.misc_equipment: dict[int, MiscEquipment] = self._build(Element.MISC, MiscEquipment)
+        self.misc_equipment: dict[int, MiscEquipment] = self._build(
+            Element.MISC, MiscEquipment
+        )
         self.expanders: dict[int, Expander] = self._build(Element.EXPAND, Expander)
         self.junctions: dict[int, Junction] = self._build(Element.JUNC, Junction)
         self.tees: dict[int, Tee] = self._build(Element.TEE, Tee)
@@ -165,15 +179,12 @@ class Model:
         """Return a unique name; if *name* already exists, append \"_1\", \"_2\", etc.
 
         Parameters
-        ----------
         name:
             Desired element name.
         current_name:
             Current name of element being renamed (for update scenarios).
 
         Returns:
-        -------
-        str
             The original *name* if unique, or a modified version with suffix if a duplicate.
         """
         if len(name) > 9:
@@ -689,14 +700,16 @@ class Model:
                 return candidate
             i += 1
 
-    def _position_pipe_between(self, pipe_name: str, elem1_name: str, elem2_name: str) -> None:
+    def _position_pipe_between(
+        self, pipe_name: str, elem1_name: str, elem2_name: str
+    ) -> None:
         """Position a pipe between two elements with proper spacing.
 
         Places the pipe at a position that visually connects elem1 and elem2,
         ensuring proper layout spacing and bounds. The pipe is aligned on the
         same Y-level as the equipment for a clean flow layout.
         """
-        from pykorf.layout import get_position, set_position, auto_place
+        from pykorf.layout import auto_place, get_position, set_position
 
         elem1 = self.get_element(elem1_name)
         elem2 = self.get_element(elem2_name)
@@ -718,7 +731,7 @@ class Model:
         pipe_y = pos1[1]
 
         # Apply bounds from layout module
-        from pykorf.layout import X_MIN, X_MAX, Y_MIN, Y_MAX, MIN_SPACING
+        from pykorf.layout import MIN_SPACING, X_MAX, X_MIN, Y_MAX, Y_MIN
 
         # Ensure within valid drawing bounds
         mid_x = max(X_MIN, min(X_MAX, mid_x))
@@ -1118,12 +1131,10 @@ class Model:
         ```
         """
         from pykorf.layout import (
-            auto_place,
-            get_position,
+            COMFORT_SPACING_X,
             X_MIN,
             Y_MIN,
-            COMFORT_SPACING_X,
-            COMFORT_SPACING_Y,
+            get_position,
         )
 
         spacing = spacing or COMFORT_SPACING_X
@@ -1229,7 +1240,9 @@ class Model:
     def path(self) -> Path:
         return self._parser.path
 
-    def save(self, path: str | Path | None = None, *, check_layout: bool = True) -> None:
+    def save(
+        self, path: str | Path | None = None, *, check_layout: bool = True
+    ) -> None:
         """Serialise the (possibly modified) model back to a .kdf file.
 
         Parameters
@@ -1291,7 +1304,7 @@ class Model:
         return model_to_dataframes(self)
 
     @classmethod
-    def from_dataframes(cls, dfs: dict) -> "Model":
+    def from_dataframes(cls, dfs: dict) -> Model:
         """Create a Model from a dict of DataFrames.
 
         This is the inverse of :meth:`to_dataframes`.
@@ -1337,7 +1350,7 @@ class Model:
         dataframes_to_excel(dfs, path)
 
     @classmethod
-    def from_excel(cls, path: str | Path) -> "Model":
+    def from_excel(cls, path: str | Path) -> Model:
         """Create a Model from an Excel workbook.
 
         This is the inverse of :meth:`to_excel`.

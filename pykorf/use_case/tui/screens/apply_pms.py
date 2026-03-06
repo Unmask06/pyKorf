@@ -2,17 +2,21 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from textual import on, work
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
 from textual.widgets import Button, Footer, Header, Label, RichLog, Static
 
-from pykorf.use_case.tui.logging import log_info, log_error, log_success
-
+from pykorf.log import get_log_file
 from pykorf.use_case.config import get_pms_path
+from pykorf.use_case.tui.logging import (
+    get_log_entries,
+    log_error,
+    log_info,
+    log_success,
+    log_warning,
+)
 
 
 class ApplyPmsScreen(Screen):
@@ -48,6 +52,10 @@ class ApplyPmsScreen(Screen):
         height: 12;
         border: round $surface;
         margin-top: 1;
+        overflow-x: hidden;
+    }
+    #pms-results RichLog {
+        overflow-x: hidden;
     }
     """
 
@@ -108,11 +116,35 @@ class ApplyPmsScreen(Screen):
             assert model is not None
 
             updated = apply_pms(str(pms_path), model, save=False)
+
+            # Fetch WARNING/ERROR logs from use_case.pms and display them
+            log_file = get_log_file()
+            if log_file:
+                entries = get_log_entries(
+                    log_file,
+                    levels={"WARNING", "ERROR", "CRITICAL"},
+                    logger_filter="pykorf.use_case.pms",
+                )
+                if entries:
+                    self.app.call_from_thread(
+                        lambda: log_warning(results, "Warnings/Errors during PMS processing:")
+                    )
+                    for _ts, _name, level, message in entries:
+                        if level == "WARNING":
+                            self.app.call_from_thread(
+                                lambda m=message: log_warning(results, f"  ⚠ {m}")
+                            )
+                        else:
+                            self.app.call_from_thread(
+                                lambda m=message: log_error(results, f"  ✗ {m}")
+                            )
+
             self.app.call_from_thread(
                 lambda: log_success(results, f"Applied PMS specs to {len(updated)} pipes."),
             )
+
             for name in updated:
                 self.app.call_from_thread(lambda n=name: log_info(results, f"  - {n}"))
             self.app.call_from_thread(self.app.push_screen, SaveConfirmScreen(model))
         except Exception as exc:
-            self.app.call_from_thread(lambda: log_error(results, f"Error: {exc}"))
+            self.app.call_from_thread(lambda e=exc: log_error(results, f"Error: {e}"))
