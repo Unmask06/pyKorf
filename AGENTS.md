@@ -16,7 +16,7 @@ Enterprise Python toolkit for KORF hydraulic model files (`.kdf`).
 from pykorf import Model
 from pykorf.elements import Element, Pipe, BaseElement
 
-model = Model("pykorf/trail_files/Cooling Water Circuit-EES-IT-LT-00141.kdf")
+model = Model("pykorf/trail_files/Cooling Water Circuit.kdf")
 pipe = model.pipes[1]
 model.add_element(Element.PIPE, "L1", {Pipe.LEN: 100, Pipe.DIA: 50})
 model.save()
@@ -24,7 +24,7 @@ model.save()
 
 ## Test File
 For testing any use cases, use:
-`pykorf/trail_files/Cooling Water Circuit-EES-IT-LT-00141.kdf`
+`pykorf/trail_files/Cooling Water Circuit.kdf`
 
 ## Architecture
 

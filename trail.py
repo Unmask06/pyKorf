@@ -24,7 +24,7 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 
-KORF_FILE = r"pykorf/trail_files/Cooling Water Circuit-EES-IT-LT-00141.kdf"
+KORF_FILE = r"pykorf/trail_files/Cooling Water Circuit.kdf"
 
 # Try to get PMS path from config (like TUI does), fallback to hardcoded
 pms_path = get_pms_path()

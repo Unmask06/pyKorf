@@ -40,10 +40,10 @@ def demo_basic_usage():
     # Create a single-phase liquid fluid
     # These are METRIC units - KORF will convert to your preferred display units
     water = Fluid.single_phase_liquid(
-        temp=25.0,           # degC -> KORF shows 77F if using imperial
-        pres=100.0,          # kPag -> KORF shows 1 barg or 14.5 psig
-        density=1000.0,      # kg/m³
-        viscosity=1.0,       # cP
+        temp=25.0,  # degC -> KORF shows 77F if using imperial
+        pres=100.0,  # kPag -> KORF shows 1 barg or 14.5 psig
+        density=1000.0,  # kg/m³
+        viscosity=1.0,  # cP
         surface_tension=62.4,  # dyne/cm
     )
 
@@ -54,7 +54,7 @@ def demo_basic_usage():
     # Create fluid from HYSYS export
     oil = Fluid.from_hysys_export(
         temp=52.25,
-        pres=3.987,      # barg -> converted to kPag internally
+        pres=3.987,  # barg -> converted to kPag internally
         liqden=570.24,
         liqvisc=0.153,
         liqsur=20.0,
@@ -71,7 +71,7 @@ def demo_load_and_apply():
     print("=" * 70)
 
     # Load the model
-    model = Model("pykorf/trail_files/Cooling Water Circuit-EES-IT-LT-00141.kdf")
+    model = Model("pykorf/trail_files/Cooling Water Circuit.kdf")
     print(f"Loaded model: {model.version}")
     print(f"Pipes: {len(model.pipes) - 1}")  # Exclude template (index 0)
     print()
@@ -206,8 +206,8 @@ You don't need to do any conversion - KORF handles it!
 
     # Create fluid with metric units
     Fluid(
-        temp_inlet=52.25,    # degC
-        pres_inlet=398.7,    # kPag
+        temp_inlet=52.25,  # degC
+        pres_inlet=398.7,  # kPag
         liquid_density=570.24,  # kg/m³
     )
 
@@ -324,8 +324,7 @@ def demo_batch_update():
             density=data["density"],
             viscosity=data["viscosity"],
         )
-        print(f"  {line_name}: T={data['temp']}C, P={data['pres']}kPag, "
-              f"rho={data['density']}kg/m3")
+        print(f"  {line_name}: T={data['temp']}C, P={data['pres']}kPag, rho={data['density']}kg/m3")
 
     print("\nCode to apply:")
     print("-" * 40)
