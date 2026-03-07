@@ -8,7 +8,7 @@ Supports exporting model data to various formats:
 
 Example:
     >>> from pykorf import Model
-    >>> from pykorf.export import export_to_json, export_to_excel
+    >>> from pykorf.model.export import export_to_json, export_to_excel
     >>>
     >>> model = Model("Pumpcases.kdf")
     >>> export_to_json(model, "output.json", include_results=True)
@@ -46,7 +46,7 @@ def _element_to_dict(elem: Any, options: ExportOptions) -> dict[str, Any]:
 
     if options.include_geometry:
         try:
-            from pykorf.layout import get_position
+            from pykorf.model.layout import get_position
 
             pos = get_position(elem)
             if pos:
@@ -401,7 +401,7 @@ def _extract_connectivity(model: Model) -> list[dict[str, Any]]:
             continue
 
         try:
-            from pykorf.connectivity import get_connections
+            from pykorf.model.connectivity import get_connections
 
             conns = get_connections(model, elem.name)
             if conns:
@@ -439,36 +439,36 @@ _HEADER_COLUMNS = [_LINE_NO_COL, _RAW_LINE_COL]
 def model_to_dataframes(model: Model) -> dict[str, pd.DataFrame]:
     """Convert a Model to a dict of DataFrames, one per element type.
 
-    Each DataFrame preserves the raw KDF record lines so that the model can
-    be perfectly reconstructed via :func:`dataframes_to_kdf`.
+        Each DataFrame preserves the raw KDF record lines so that the model can
+        be perfectly reconstructed via :func:`dataframes_to_kdf`.
 
-    Verbatim/header lines (version string, blank lines) are stored in a
-    special ``"_HEADER"`` DataFrame.  All other records are grouped by their
-    element type (``"GEN"``, ``"PIPE"``, ``"PUMP"``, etc.).
+        Verbatim/header lines (version string, blank lines) are stored in a
+        special ``"_HEADER"`` DataFrame.  All other records are grouped by their
+        element type (``"GEN"``, ``"PIPE"``, ``"PUMP"``, etc.).
 
-    Every DataFrame contains a ``line_no`` column that records the original
-    line position.  This is used during reconstruction to restore the exact
-    file ordering.
+        Every DataFrame contains a ``line_no`` column that records the original
+        line position.  This is used during reconstruction to restore the exact
+        file ordering.
 
-    Args:
-        model: The model to convert.
+        Args:
+            model: The model to convert.
 
-    Returns:
-        A dict mapping sheet name → DataFrame.
+        Returns:
+            A dict mapping sheet name → DataFrame.
 
-    Raises:
-        ExportError: If pandas is not installed.
+        Raises:
+            ExportError: If pandas is not installed.
 
-    Example:
-        ```python
-        from pykorf import Model
-        from pykorf.export import model_to_dataframes
+        Example:
+            ```python
+            from pykorf import Model
+    from pykorf.model.export import model_to_dataframes
 
-        model = Model("Pumpcases.kdf")
-        dfs = model_to_dataframes(model)
-        for name, df in dfs.items():
-            print(name, len(df))
-        ```
+            model = Model("Pumpcases.kdf")
+            dfs = model_to_dataframes(model)
+            for name, df in dfs.items():
+                print(name, len(df))
+            ```
     """
     try:
         import pandas as pd
@@ -558,7 +558,7 @@ def dataframes_to_kdf(
 
     Example:
         ```python
-        from pykorf.export import model_to_dataframes, dataframes_to_kdf
+        from pykorf.model.export import model_to_dataframes, dataframes_to_kdf
 
         dfs = model_to_dataframes(model)
         dataframes_to_kdf(dfs, "reconstructed.kdf")
@@ -742,7 +742,7 @@ def model_from_dataframes(dfs: dict[str, pd.DataFrame]) -> Model:
 
     Example:
         ```python
-        from pykorf.export import model_to_dataframes, model_from_dataframes
+        from pykorf.model.export import model_to_dataframes, model_from_dataframes
 
         dfs = model_to_dataframes(model)
         reconstructed = model_from_dataframes(dfs)
@@ -783,7 +783,7 @@ def dataframes_to_excel(
 
     Example:
         ```python
-        from pykorf.export import model_to_dataframes, dataframes_to_excel
+        from pykorf.model.export import model_to_dataframes, dataframes_to_excel
 
         dfs = model_to_dataframes(model)
         dataframes_to_excel(dfs, "model.xlsx")
@@ -822,7 +822,7 @@ def excel_to_dataframes(path: str | Path) -> dict[str, pd.DataFrame]:
 
     Example:
         ```python
-        from pykorf.export import excel_to_dataframes, model_from_dataframes
+        from pykorf.model.export import excel_to_dataframes, model_from_dataframes
 
         dfs = excel_to_dataframes("model.xlsx")
         model = model_from_dataframes(dfs)
@@ -836,12 +836,15 @@ def excel_to_dataframes(path: str | Path) -> dict[str, pd.DataFrame]:
             "Install with: pip install pandas openpyxl",
         ) from exc
 
+    from pykorf.utils import read_excel_safe
+
     path = Path(path)
+    sheets = read_excel_safe(path, sheet_name=None, dtype=str)
+    if not isinstance(sheets, dict):
+        sheets = {path.stem: sheets}
+
     result: dict[str, pd.DataFrame] = {}
-    xls = pd.ExcelFile(path, engine="openpyxl")
-    for sheet_name in xls.sheet_names:
-        df = pd.read_excel(xls, sheet_name=sheet_name, dtype=str)
-        # Ensure line_no is integer (read back as string from dtype=str)
+    for sheet_name, df in sheets.items():
         if _LINE_NO_COL in df.columns:
             df[_LINE_NO_COL] = df[_LINE_NO_COL].astype(int)
         result[sheet_name] = df

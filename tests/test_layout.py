@@ -5,7 +5,7 @@ Run with:  PYTHONPATH=. python -m pytest tests/test_layout.py -v
 
 from pathlib import Path
 
-from pykorf.layout import auto_place, check_layout, get_position, set_position
+from pykorf.model.layout import auto_place, check_layout, get_position, set_position
 from pykorf.model import Model
 
 SAMPLES_DIR = Path(__file__).parent.parent / "pykorf" / "library"

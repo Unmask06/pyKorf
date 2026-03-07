@@ -122,7 +122,7 @@ if HAS_CLI_DEPS:
     ) -> None:
         """Convert a KDF file to JSON or YAML."""
         from pykorf import Model
-        from pykorf.export import export_to_json, export_to_yaml
+        from pykorf.model.export import export_to_json, export_to_yaml
         from pykorf.types import ExportOptions
 
         try:
@@ -287,7 +287,7 @@ if HAS_CLI_DEPS:
     ) -> None:
         """Export model data to various formats."""
         from pykorf import Model
-        from pykorf.export import (
+        from pykorf.model.export import (
             export_to_csv,
             export_to_excel,
             export_to_json,

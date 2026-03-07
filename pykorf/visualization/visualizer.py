@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from pykorf.elements import Common, Element, Vessel
-from pykorf.layout import _X_MAX, _X_MIN, _Y_MAX, _Y_MIN, _all_positions
+from pykorf.model.layout import _X_MAX, _X_MIN, _Y_MAX, _Y_MIN, _all_positions
 from pykorf.visualization.models import EdgeData, NetworkData, NodeData
 
 if TYPE_CHECKING:
@@ -139,7 +139,7 @@ class Visualizer:
         and their connection parameters (NOZI/NOZO for equipment, CON for
         TEE, NOZL for FEED/PROD). Create directed edges accordingly.
         """
-        from pykorf.connectivity import _is_element_connected_to_pipe
+        from pykorf.model.connectivity import _is_element_connected_to_pipe
 
         edges: list[EdgeData] = []
         positions = _all_positions(self._model)

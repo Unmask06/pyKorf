@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from pykorf.model import Model
-from pykorf.validation import validate
+from pykorf.model.validation import validate
 
 SAMPLES_DIR = Path(__file__).parent.parent / "pykorf" / "library"
 PUMP_KDF = SAMPLES_DIR / "Pumpcases.kdf"

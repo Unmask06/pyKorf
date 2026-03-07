@@ -201,7 +201,7 @@ class ElementCRUDMixin:
                 key.upper() in {Common.X, Common.Y} for key in params
             )
             if not x_or_y_provided:
-                from pykorf.layout import auto_place
+                from pykorf.model.layout import auto_place
 
                 auto_place(self, self.get_element(name))
 
@@ -255,7 +255,7 @@ class ElementCRUDMixin:
         ensuring proper layout spacing and bounds. The pipe is aligned on the
         same Y-level as the equipment for a clean flow layout.
         """
-        from pykorf.layout import auto_place, get_position, set_position
+        from pykorf.model.layout import auto_place, get_position, set_position
 
         elem1 = self.get_element(elem1_name)
         elem2 = self.get_element(elem2_name)
@@ -272,7 +272,7 @@ class ElementCRUDMixin:
 
         pipe_y = pos1[1]
 
-        from pykorf.layout import MIN_SPACING, X_MAX, X_MIN, Y_MAX, Y_MIN
+        from pykorf.model.layout import MIN_SPACING, X_MAX, X_MIN, Y_MAX, Y_MIN
 
         mid_x = max(X_MIN, min(X_MAX, mid_x))
         pipe_y = max(Y_MIN, min(Y_MAX, pipe_y))
@@ -340,7 +340,7 @@ class ElementCRUDMixin:
         idx = elem.index
 
         if et == Element.PIPE:
-            from pykorf.connectivity import update_pipe_references
+            from pykorf.model.connectivity import update_pipe_references
 
             update_pipe_references(self, idx, 0)
 
@@ -457,7 +457,7 @@ class ElementCRUDMixin:
         self._parser.reindex(et, old_index, new_index)
 
         if et == Element.PIPE:
-            from pykorf.connectivity import update_pipe_references
+            from pykorf.model.connectivity import update_pipe_references
 
             update_pipe_references(self, old_index, new_index)
 

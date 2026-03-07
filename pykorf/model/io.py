@@ -40,7 +40,7 @@ class IOMixin:
             overlapping elements or elements outside bounds.
         """
         if check_layout:
-            from pykorf.layout import check_layout as _check_layout
+            from pykorf.model.layout import check_layout as _check_layout
 
             issues = _check_layout(self)  # type: ignore[arg-type]
             if issues:
@@ -79,9 +79,9 @@ class IOMixin:
                 print(name, len(df))
             ```
         """
-        from pykorf.export import model_to_dataframes
+        from pykorf.model.export import model_to_dataframes
 
-        return model_to_dataframes(self)  # type: ignore[arg-type]
+        return model_to_dataframes(self)
 
     @classmethod
     def from_dataframes(cls, dfs: dict) -> Model:
@@ -101,7 +101,7 @@ class IOMixin:
             reconstructed = Model.from_dataframes(dfs)
             ```
         """
-        from pykorf.export import model_from_dataframes
+        from .export import model_from_dataframes
 
         return model_from_dataframes(dfs)
 
@@ -124,7 +124,7 @@ class IOMixin:
             model.to_excel("Pumpcases.xlsx")
             ```
         """
-        from pykorf.export import dataframes_to_excel, model_to_dataframes
+        from pykorf.model.export import dataframes_to_excel, model_to_dataframes
 
         dfs = model_to_dataframes(self)  # type: ignore[arg-type]
         dataframes_to_excel(dfs, path)
@@ -147,7 +147,7 @@ class IOMixin:
             model.save("Pumpcases_roundtrip.kdf")
             ```
         """
-        from pykorf.export import excel_to_dataframes, model_from_dataframes
+        from pykorf.model.export import excel_to_dataframes, model_from_dataframes
 
         dfs = excel_to_dataframes(path)
         return model_from_dataframes(dfs)

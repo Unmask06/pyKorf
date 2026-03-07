@@ -44,9 +44,9 @@ class SummaryMixin:
 
         Returns a list of validation issues (empty = valid model).
         """
-        from pykorf.validation import validate
+        from pykorf.model.validation import validate
 
-        return validate(self)  # type: ignore[arg-type]
+        return validate(self)
 
     def pipe(self, index: int) -> Pipe:
         """Return pipe *index*, raise :exc:`ElementNotFound` if absent."""
