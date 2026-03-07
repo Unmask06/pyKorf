@@ -90,19 +90,11 @@ class _ModelBase:
         self.products: dict[int, Product] = self._build(Element.PROD, Product)
         self.pumps: dict[int, Pump] = self._build(Element.PUMP, Pump)
         self.valves: dict[int, Valve] = self._build(Element.VALVE, Valve)
-        self.check_valves: dict[int, CheckValve] = self._build(
-            Element.CHECK, CheckValve
-        )
-        self.orifices: dict[int, FlowOrifice] = self._build(
-            Element.ORIFICE, FlowOrifice
-        )
-        self.exchangers: dict[int, HeatExchanger] = self._build(
-            Element.HX, HeatExchanger
-        )
+        self.check_valves: dict[int, CheckValve] = self._build(Element.CHECK, CheckValve)
+        self.orifices: dict[int, FlowOrifice] = self._build(Element.ORIFICE, FlowOrifice)
+        self.exchangers: dict[int, HeatExchanger] = self._build(Element.HX, HeatExchanger)
         self.compressors: dict[int, Compressor] = self._build(Element.COMP, Compressor)
-        self.misc_equipment: dict[int, MiscEquipment] = self._build(
-            Element.MISC, MiscEquipment
-        )
+        self.misc_equipment: dict[int, MiscEquipment] = self._build(Element.MISC, MiscEquipment)
         self.expanders: dict[int, Expander] = self._build(Element.EXPAND, Expander)
         self.junctions: dict[int, Junction] = self._build(Element.JUNC, Junction)
         self.tees: dict[int, Tee] = self._build(Element.TEE, Tee)
@@ -260,3 +252,13 @@ class _ModelBase:
     @property
     def num_cases(self) -> int:
         return self.general.num_cases
+
+    @property
+    def elements(self) -> list[BaseElement]:
+        """Return all real element instances (index >= 1) across all types."""
+        result: list[BaseElement] = []
+        for collection in self._all_collections():
+            for idx, elem in sorted(collection.items()):
+                if idx >= 1:
+                    result.append(elem)
+        return result

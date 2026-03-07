@@ -57,9 +57,8 @@ Example Usage
 
 ### Exporting
 
-    >>> from pykorf.model.export import export_to_json, export_to_excel
-    >>> export_to_json(model, "model.json")
-    >>> export_to_excel(model, "model.xlsx")
+    >>> model.to_excel("model.xlsx")
+    >>> model.io.export_to_json("model.json")
 
 ### Querying
 

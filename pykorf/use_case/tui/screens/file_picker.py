@@ -98,7 +98,9 @@ class FilePickerScreen(Screen):
             return
 
         if path.suffix.lower() != ".kdf":
-            error_label.update(f"Warning: '{path.suffix}' is not .kdf — loading anyway...")
+            error_label.update(
+                f"Warning: '{path.suffix}' is not .kdf — loading anyway..."
+            )
 
         try:
             from pykorf import Model

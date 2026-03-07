@@ -1,19 +1,12 @@
-"""Element CRUD (Create, Read, Update, Delete) operations for KORF models.
+"""Element service for CRUD operations on KORF model elements.
 
-This module provides the :class:`ElementCRUDMixin` which adds element CRUD
-capabilities to a model class. It assumes the following attributes/methods exist
-in the class that uses this mixin:
-
-- ``self._parser``: A KdfParser instance
-- ``self._name_map``: A dict mapping element names to elements
-- ``self._build_collections()``: Method to rebuild element collections
-- ``self._ensure_unique_name(name, current_name)``: Method to ensure unique names
-- ``self.get_element(name)``: Method to get an element by name
-- ``self.elements``: Property returning all elements
+This module provides the :class:`ElementService` which encapsulates element CRUD
+(Create, Read, Update, Delete) operations for a KORF model.
 """
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from pykorf.elements import (
@@ -26,20 +19,21 @@ from pykorf.elements import (
 from pykorf.exceptions import ParameterError
 
 if TYPE_CHECKING:
-    pass
+    from pykorf.model import Model
 
 
-class ElementCRUDMixin:
-    """Mixin providing element CRUD (Create, Read, Update, Delete) operations.
+@dataclass(frozen=True, slots=True)
+class ElementService:
+    """Service providing element CRUD operations for a KORF model.
 
-    This mixin assumes the host class provides:
-    - ``_parser``: KdfParser instance
-    - ``_name_map``: Dict mapping element names to elements
-    - ``_build_collections()``: Method to rebuild element collections
-    - ``_ensure_unique_name(name, current_name)``: Method to ensure unique names
-    - ``get_element(name)``: Method to get an element by name
-    - ``elements``: Property returning all elements
+    This service encapsulates all element manipulation operations including
+    creation, updating, deletion, copying, and reindexing of model elements.
+
+    Attributes:
+        model: The Model instance this service operates on.
     """
+
+    model: Model
 
     def update_element(self, name: str, params: dict[str, Any]) -> None:
         """Update parameters of the named element.
@@ -52,16 +46,16 @@ class ElementCRUDMixin:
 
         Example:
             ```python
-            model.update_element("L1", {"LEN": 200, "TFLOW": "80;90;60"})
+            service.update_element("L1", {"LEN": 200, "TFLOW": "80;90;60"})
             ```
         """
-        elem = self.get_element(name)
+        elem = self.model.get_element(name)
         valid_params = type(elem).ALL
         rebuild_collections = False
         if Common.NAME in {key.upper() for key in params}:
             name_key = next(k for k in params if k.upper() == Common.NAME)
             new_name = str(params[name_key])
-            new_name = self._ensure_unique_name(new_name, current_name=elem.name)
+            new_name = self.model._ensure_unique_name(new_name, current_name=elem.name)
             params[name_key] = new_name
             rebuild_collections = True
         xy_update: dict[str, float] = {}
@@ -80,13 +74,13 @@ class ElementCRUDMixin:
                 rec.values[0] = str(value)
                 rec.raw_line = ""
             else:
-                self._parser.set_value(elem.etype, elem.index, key, [str(value)])
+                self.model._parser.set_value(elem.etype, elem.index, key, [str(value)])
 
         if xy_update:
             self._update_xy(elem, xy_update)
 
         if rebuild_collections:
-            self._build_collections()
+            self.model._build_collections()
 
     def update_elements(self, updates: dict[str, dict[str, Any]]) -> None:
         """Batch-update multiple elements.
@@ -96,7 +90,7 @@ class ElementCRUDMixin:
 
         Example:
             ```python
-            model.update_elements(
+            service.update_elements(
                 {
                     "L1": {"LEN": 200},
                     "P1": {"EFFP": 0.75},
@@ -178,20 +172,20 @@ class ElementCRUDMixin:
         et = etype.upper()
         if et not in ELEMENT_REGISTRY:
             raise ValueError(f"Unknown element type: {etype!r}")
-        name = self._ensure_unique_name(name)
+        name = self.model._ensure_unique_name(name)
 
-        new_idx = self._parser.next_index(et)
-        self._parser.clone_records(et, 0, new_idx)
+        new_idx = self.model._parser.next_index(et)
+        self.model._parser.clone_records(et, 0, new_idx)
 
-        current_count = self._parser.num_instances(et)
-        self._parser.set_num_instances(et, current_count + 1)
+        current_count = self.model._parser.num_instances(et)
+        self.model._parser.set_num_instances(et, current_count + 1)
 
-        name_rec = self._parser.get(et, new_idx, Common.NAME)
+        name_rec = self.model._parser.get(et, new_idx, Common.NAME)
         if name_rec:
             name_rec.values[0] = name
             name_rec.raw_line = ""
 
-        self._build_collections()
+        self.model._build_collections()
 
         if params:
             self.update_element(name, params)
@@ -201,11 +195,9 @@ class ElementCRUDMixin:
                 key.upper() in {Common.X, Common.Y} for key in params
             )
             if not x_or_y_provided:
-                from pykorf.model.layout import auto_place
+                self.model.auto_place(self.model.get_element(name))
 
-                auto_place(self, self.get_element(name))
-
-        return self.get_element(name)
+        return self.model.get_element(name)
 
     def _add_pipedata_internal(
         self,
@@ -218,13 +210,13 @@ class ElementCRUDMixin:
         to handle them specially - they can't be looked up by name.
         """
         et = Element.PIPEDATA
-        new_idx = self._parser.next_index(et)
+        new_idx = self.model._parser.next_index(et)
 
-        src_idx = 1 if self._parser.num_instances(et) > 0 else 0
-        self._parser.clone_records(et, src_idx, new_idx)
+        src_idx = 1 if self.model._parser.num_instances(et) > 0 else 0
+        self.model._parser.clone_records(et, src_idx, new_idx)
 
-        current_count = self._parser.num_instances(et)
-        self._parser.set_num_instances(et, current_count + 1)
+        current_count = self.model._parser.num_instances(et)
+        self.model._parser.set_num_instances(et, current_count + 1)
 
         if params:
             for param, value in params.items():
@@ -233,18 +225,18 @@ class ElementCRUDMixin:
                     val_list = [str(v) for v in value]
                 else:
                     val_list = [str(value)]
-                self._parser.set_value(et, new_idx, key, val_list)
+                self.model._parser.set_value(et, new_idx, key, val_list)
 
-        self._build_collections()
+        self.model._build_collections()
 
-        return self.pipedata[new_idx]
+        return self.model.pipedata[new_idx]
 
     def _next_auto_pipe_name(self) -> str:
         """Return the next available auto-generated pipe name."""
         i = 1
         while True:
             candidate = f"L_AUTO_{i}"
-            if candidate not in self._name_map:
+            if candidate not in self.model._name_map:
                 return candidate
             i += 1
 
@@ -255,24 +247,22 @@ class ElementCRUDMixin:
         ensuring proper layout spacing and bounds. The pipe is aligned on the
         same Y-level as the equipment for a clean flow layout.
         """
-        from pykorf.model.layout import auto_place, get_position, set_position
+        elem1 = self.model.get_element(elem1_name)
+        elem2 = self.model.get_element(elem2_name)
+        pipe = self.model.get_element(pipe_name)
 
-        elem1 = self.get_element(elem1_name)
-        elem2 = self.get_element(elem2_name)
-        pipe = self.get_element(pipe_name)
-
-        pos1 = get_position(elem1)
-        pos2 = get_position(elem2)
+        pos1 = self.model._layout_service.get_position(elem1)
+        pos2 = self.model._layout_service.get_position(elem2)
 
         if pos1 is None or pos2 is None or pos1 == (0.0, 0.0) or pos2 == (0.0, 0.0):
-            auto_place(self, pipe)
+            self.model.auto_place(pipe)
             return
 
         mid_x = (pos1[0] + pos2[0]) / 2
 
         pipe_y = pos1[1]
 
-        from pykorf.model.layout import MIN_SPACING, X_MAX, X_MIN, Y_MAX, Y_MIN
+        from pykorf.model.services.layout import MIN_SPACING, X_MAX, X_MIN, Y_MAX, Y_MIN
 
         mid_x = max(X_MIN, min(X_MAX, mid_x))
         pipe_y = max(Y_MIN, min(Y_MAX, pipe_y))
@@ -283,10 +273,10 @@ class ElementCRUDMixin:
 
         for _ in range(max_attempts):
             clash = False
-            for elem in self.elements:
+            for elem in self.model.elements:
                 if elem.name == pipe_name:
                     continue
-                other_pos = get_position(elem)
+                other_pos = self.model._layout_service.get_position(elem)
                 if other_pos is None or other_pos == (0.0, 0.0):
                     continue
                 dx = candidate[0] - other_pos[0]
@@ -305,7 +295,7 @@ class ElementCRUDMixin:
 
         mid_x, pipe_y = candidate
 
-        set_position(self, pipe_name, mid_x, pipe_y)
+        self.model._layout_service.set_position(self.model, pipe_name, mid_x, pipe_y)
 
     def add_elements(
         self,
@@ -335,16 +325,14 @@ class ElementCRUDMixin:
 
         Removes all records and reindexes remaining elements to be continuous.
         """
-        elem = self.get_element(name)
+        elem = self.model.get_element(name)
         et = elem.etype
         idx = elem.index
 
         if et == Element.PIPE:
-            from pykorf.model.connectivity import update_pipe_references
+            self.model._connectivity_service._update_pipe_references(idx, 0)
 
-            update_pipe_references(self, idx, 0)
-
-        self._parser.delete_records(et, idx)
+        self.model._parser.delete_records(et, idx)
         self.compact_indices(et)
 
     def delete_elements(self, names: list[str]) -> None:
@@ -368,17 +356,17 @@ class ElementCRUDMixin:
         -------
         The newly created copy.
         """
-        dst_name = self._ensure_unique_name(dst_name)
-        src = self.get_element(src_name)
+        dst_name = self.model._ensure_unique_name(dst_name)
+        src = self.model.get_element(src_name)
         et = src.etype
-        new_idx = self._parser.next_index(et)
+        new_idx = self.model._parser.next_index(et)
 
-        self._parser.clone_records(et, src.index, new_idx)
+        self.model._parser.clone_records(et, src.index, new_idx)
 
-        current_count = self._parser.num_instances(et)
-        self._parser.set_num_instances(et, current_count + 1)
+        current_count = self.model._parser.num_instances(et)
+        self.model._parser.set_num_instances(et, current_count + 1)
 
-        name_rec = self._parser.get(et, new_idx, Common.NAME)
+        name_rec = self.model._parser.get(et, new_idx, Common.NAME)
         if name_rec:
             name_rec.values[0] = dst_name
             name_rec.raw_line = ""
@@ -390,13 +378,13 @@ class ElementCRUDMixin:
             Common.NOZL,
             Common.NOZ,
         ):
-            rec = self._parser.get(et, new_idx, con_param)
+            rec = self.model._parser.get(et, new_idx, con_param)
             if rec is not None:
                 rec.values = ["0"] * len(rec.values)
                 rec.raw_line = ""
 
-        self._build_collections()
-        return self.get_element(dst_name)
+        self.model._build_collections()
+        return self.model.get_element(dst_name)
 
     def copy_elements(
         self,
@@ -408,6 +396,10 @@ class ElementCRUDMixin:
         ----------
         pairs:
             List of ``(src_name, dst_name)`` tuples.
+
+        Returns:
+        -------
+        List of newly created copies.
         """
         return [self.copy_element(src, dst) for src, dst in pairs]
 
@@ -425,7 +417,7 @@ class ElementCRUDMixin:
         target_index:
             Desired new index (must be >= 1).
         """
-        elem = self.get_element(name)
+        elem = self.model.get_element(name)
         et = elem.etype
         src_idx = elem.index
 
@@ -434,37 +426,43 @@ class ElementCRUDMixin:
         if target_index == src_idx:
             return
 
-        target_recs = self._parser.get_all(et, target_index)
+        target_recs = self.model._parser.get_all(et, target_index)
         if target_recs:
-            temp_idx = self._parser.next_index(et) + 1000
+            temp_idx = self.model._parser.next_index(et) + 1000
             self.reindex_element(et, target_index, temp_idx)
             self.reindex_element(et, src_idx, target_index)
             self.reindex_element(et, temp_idx, src_idx)
         else:
             self.reindex_element(et, src_idx, target_index)
 
-        self._build_collections()
+        self.model._build_collections()
 
     def reindex_element(self, etype: str, old_index: int, new_index: int) -> None:
         """Update the index of an element and all its external references.
 
         This is a low-level operation. Use with caution.
+
+        Args:
+            etype: Element type (e.g., 'PIPE', 'PUMP').
+            old_index: Current index of the element.
+            new_index: New index for the element.
         """
         et = etype.upper()
         if old_index == new_index:
             return
 
-        self._parser.reindex(et, old_index, new_index)
+        self.model._parser.reindex(et, old_index, new_index)
 
         if et == Element.PIPE:
-            from pykorf.model.connectivity import update_pipe_references
-
-            update_pipe_references(self, old_index, new_index)
+            self.model._connectivity_service._update_pipe_references(old_index, new_index)
 
     def compact_indices(self, etype: str | None = None) -> None:
         """Reorder element indices to be continuous (1..N) and update NUM.
 
         If *etype* is None, compacts all element types.
+
+        Args:
+            etype: Element type to compact, or None for all types.
         """
         etypes = [etype.upper()] if etype else Element.ALL
         for et in etypes:
@@ -474,21 +472,21 @@ class ElementCRUDMixin:
             indices = sorted(
                 {
                     r.index
-                    for r in self._parser.records
+                    for r in self.model._parser.records
                     if r.element_type == et and r.index and r.index >= 1
                 }
             )
             if not indices:
-                self._parser.set_num_instances(et, 0)
+                self.model._parser.set_num_instances(et, 0)
                 continue
 
             for i, old_idx in enumerate(indices, 1):
                 if old_idx != i:
                     self.reindex_element(et, old_idx, i)
 
-            self._parser.set_num_instances(et, len(indices))
+            self.model._parser.set_num_instances(et, len(indices))
 
-        self._build_collections()
+        self.model._build_collections()
 
     def move_elements(self, moves: list[tuple[str, int]]) -> None:
         """Move multiple elements to new indices.

@@ -205,10 +205,10 @@ class TestAddElement:
 
     def test_connect_auto_created_pipe_does_not_clone_num_record(self):
         m = Model(PUMP_KDF)
-        m.add_element("PUMP", "P_NUM_CHECK")
-        m.add_element("VALVE", "V_NUM_CHECK")
-        m.connect_elements("P_NUM_CHECK", "V_NUM_CHECK", pipe_name="L_NUM_CHECK")
-        new_pipe = m["L_NUM_CHECK"]
+        m.add_element("PUMP", "P_NUMCHK")
+        m.add_element("VALVE", "V_NUMCHK")
+        m.connect_elements("P_NUMCHK", "V_NUMCHK", pipe_name="L_NUMCHK")
+        new_pipe = m["L_NUMCHK"]
         assert m._parser.get("PIPE", new_pipe.index, "NUM") is None
 
     def test_add_elements_batch(self):

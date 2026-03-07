@@ -89,13 +89,15 @@ def convert_pms_excel(
     except ImportError:
         raise ExcelConversionError("pandas is required for Excel conversion")
 
+    from pykorf.utils import read_excel_safe
+
     excel_path = Path(excel_path)
     if json_path is None:
         json_path = excel_path.with_suffix(".json")
     else:
         json_path = Path(json_path)
 
-    sheets = pd.read_excel(excel_path, sheet_name=None, header=None)
+    sheets = read_excel_safe(excel_path, sheet_name=None, header=None)
     all_materials_data: dict[str, Any] = {}
 
     for sheet_name, df in sheets.items():

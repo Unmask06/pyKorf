@@ -123,13 +123,15 @@ class HmbReader:
         except ImportError as e:
             raise ExcelConversionError("pandas is required for Excel conversion") from e
 
+        from pykorf.utils import read_excel_safe
+
         excel_path = Path(excel_path)
         if json_path is None:
             json_path = excel_path.with_suffix(".json")
         else:
             json_path = Path(json_path)
 
-        df = pd.read_excel(excel_path, header=None)
+        df = read_excel_safe(excel_path, header=None)
 
         stream_numbers: list[str] = []
         stream_data: dict[str, dict[str, float]] = {}

@@ -38,18 +38,16 @@ class TestConnectDisconnect:
         m.add_element("PUMP", "P_A")
         m.add_element("PUMP", "P_B")
         m.connect_elements("P_A", "P_B", pipe_name="L_A")
-        with pytest.raises(
-            ConnectivityError, match="Cannot directly connect two pipes"
-        ):
+        with pytest.raises(ConnectivityError, match="Cannot directly connect two pipes"):
             m.connect_elements("L_A", "L1")
 
     def test_connect_no_pipe_auto_creates_pipe(self):
         m = Model(PUMP_KDF)
         m.add_element("PUMP", "P_A")
         m.add_element("VALVE", "V_A")
-        m.connect_elements("P_A", "V_A", pipe_name="L_AUTO_CON")
-        assert "L_AUTO_CON" in m
-        assert m["L_AUTO_CON"].etype == "PIPE"
+        m.connect_elements("P_A", "V_A", pipe_name="L_AUTOCON")
+        assert "L_AUTOCON" in m
+        assert m["L_AUTOCON"].etype == "PIPE"
 
     def test_connect_no_pipe_auto_creates_pipe_for_hx(self):
         m = Model(PUMP_KDF)
@@ -76,10 +74,7 @@ class TestConnectDisconnect:
 
         hx = m["HX_D"]
         nozzles = [hx._get("NOZI"), hx._get("NOZO")]
-        assert all(
-            not rec or not rec.values or str(rec.values[0]) != pipe_idx
-            for rec in nozzles
-        )
+        assert all(not rec or not rec.values or str(rec.values[0]) != pipe_idx for rec in nozzles)
         assert any(rec and str(rec.values[0]) == "0" for rec in nozzles)
 
     def test_disconnect_not_connected_raises(self):
@@ -117,8 +112,10 @@ class TestCheckConnectivity:
             try:
                 pipe_idx = int(con_rec.values[0])
                 if pipe_idx > 0 and pipe_idx in m.pipes:
-                    pipe_name = m.pipes[pipe_idx].name
-                    m.delete_element(pipe_name)
+                    # Manually delete records instead of using m.delete_element
+                    # to avoid updating references to 0
+                    m._parser.delete_records("PIPE", pipe_idx)
+                    m._build_collections()
                     issues = m.check_connectivity()
                     # Should find at least one issue (pump referencing deleted pipe)
                     assert any("does not exist" in i for i in issues)
