@@ -9,9 +9,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from pykorf.elements import Element, Feed, General, Pipe, Product, Pump
+from pykorf.elements import Element, Feed, Pipe, Product, Pump
 from pykorf.exceptions import ElementNotFound
-from pykorf.parser import KdfParser
 
 if TYPE_CHECKING:
     from pykorf.model import Model
@@ -27,7 +26,7 @@ _REQUIRED_PARAMS: dict[str, tuple[str, ...]] = {
     "FO": ("NUM", "NAME", "TYPE", "CON"),
     "HX": ("NUM", "NAME", "TYPE"),
     "COMP": ("NUM", "NAME", "TYPE", "CON"),
-    "MISC": ("NUM", "NAME", "CON"),
+    "MISC": ("NUM", "NAME"),
     "EXPAND": ("NUM", "NAME", "TYPE", "CON"),
     "JUNC": ("NUM", "NAME"),
     "TEE": ("NUM", "NAME", "TYPE"),
@@ -67,7 +66,9 @@ class SummaryService:
         Returns:
             List of validation issue descriptions.
         """
-        return self._validate(check_connectivity=check_connectivity, check_layout=check_layout)
+        return self._validate(
+            check_connectivity=check_connectivity, check_layout=check_layout
+        )
 
     def _validate(
         self, *, check_connectivity: bool = True, check_layout: bool = True
@@ -102,7 +103,10 @@ class SummaryService:
         # 7. Check for empty or invalid parameter values
         self._check_empty_values(issues)
 
-        # 8. Check pipe references in connectivity fields
+        # 8. Check pipe line numbers in NOTES
+        self._check_pipe_line_numbers(issues)
+
+        # 9. Check pipe references in connectivity fields
         self._check_pipe_references(issues)
 
         # 9. Check connectivity consistency
@@ -152,7 +156,9 @@ class SummaryService:
             existing_params = {r.param for r in template_recs}
             for param in required:
                 if param not in existing_params:
-                    issues.append(f"{etype} template (index 0): missing required param {param!r}")
+                    issues.append(
+                        f"{etype} template (index 0): missing required param {param!r}"
+                    )
 
     def _check_instance_names(self, issues: list[str]) -> None:
         """Check that every real instance (index >= 1) has a NAME record."""
@@ -172,12 +178,12 @@ class SummaryService:
                 if not rec.values or len(rec.values) < 2:
                     if not rec.raw_line:
                         issues.append(
-                            f"{rec.element_type} index {rec.index}: NOTES record has no values"
+                            f"{rec.element_type} idx {rec.index}: NOTES has no values"
                         )
 
     def _check_empty_values(self, issues: list[str]) -> None:
         """Check for empty or whitespace-only critical parameter values."""
-        critical_params = {"NAME", "TYPE", "LEN", "DIA", "MAT", "PRES", "TFLOW"}
+        critical_params = {"NAME", "TYPE", "LEN", "DIA", "MAT", "PRES"}
 
         for elem in self.model.elements:
             for param_name in critical_params:
@@ -189,6 +195,24 @@ class SummaryService:
                             f"{elem.etype} {elem.name} (index {elem.index}): "
                             f"{param_name} has empty or whitespace value"
                         )
+
+    def _check_pipe_line_numbers(self, issues: list[str]) -> None:
+        """Check that all pipes have line numbers in NOTES field.
+
+        Pipes with names starting with 'd' (dummy lines) are exempt.
+        """
+        for pipe in self.model.pipes.values():
+            if pipe.index == 0:
+                continue
+
+            if pipe.name.lower().startswith("d"):
+                continue
+
+            notes_rec = pipe._get("NOTES")
+            if notes_rec is None or not notes_rec.values or not notes_rec.values[0]:
+                issues.append(
+                    f"PIPE {pipe.name} (idx {pipe.index}): missing line number in NOTES"
+                )
 
     def _check_pipe_references(self, issues: list[str]) -> None:
         """Check pipe references in CON/NOZL/NOZ fields."""
@@ -203,8 +227,8 @@ class SummaryService:
                         if pipe_idx > 0 and pipe_idx not in pipe_indices:
                             port_name = "inlet" if i == 0 else "outlet"
                             issues.append(
-                                f"{elem.etype} {elem.name} (index {elem.index}): "
-                                f"CON {port_name} references non-existent pipe {pipe_idx}"
+                                f"{elem.etype} {elem.name} (idx {elem.index}): "
+                                f"CON {port_name} -> pipe {pipe_idx} not found"
                             )
                     except (ValueError, TypeError):
                         pass
@@ -217,8 +241,8 @@ class SummaryService:
                             pipe_idx = int(val)
                             if pipe_idx > 0 and pipe_idx not in pipe_indices:
                                 issues.append(
-                                    f"{elem.etype} {elem.name} (index {elem.index}): "
-                                    f"{nozzle_param} references non-existent pipe {pipe_idx}"
+                                    f"{elem.etype} {elem.name} (idx {elem.index}): "
+                                    f"{nozzle_param} -> pipe {pipe_idx} not found"
                                 )
                         except (ValueError, TypeError):
                             pass

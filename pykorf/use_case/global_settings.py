@@ -9,6 +9,8 @@ Global Settings:
        - Set ID = 1500 mm (converted to meters: 1.5 m)
        - Set SCH = "ID"
     2. 25% margin in dP/dL - Apply DP_DES_FAC = 1.25 to all pipes
+    3. Rename Line from NOTES - Extract fluid code and serial number from NOTES
+       and update pipe name (e.g., "L4" -> "VCL17-806")
 
 Usage:
     >>> from pykorf import Model
@@ -24,7 +26,10 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 if TYPE_CHECKING:
     from pykorf.model import Model
@@ -40,16 +45,16 @@ class GlobalSetting:
         id: Unique identifier for the setting (e.g., "dummy_pipe", "dp_margin")
         name: Display name for the setting
         description: Detailed description of what the setting does
-        apply_func: Function that applies the setting to a model and returns list of affected pipe names
+        apply_func: Function that applies setting to model, returns affected pipe names
     """
 
     id: str
     name: str
     description: str
-    apply_func: Callable[["Model"], list[str]]
+    apply_func: Callable[[Model], list[str]]
 
 
-def apply_dummy_pipe_settings(model: "Model") -> list[str]:
+def apply_dummy_pipe_settings(model: Model) -> list[str]:
     """Apply dummy pipe settings to all pipes with names starting with "d".
 
     For each pipe whose name starts with lowercase "d":
@@ -110,7 +115,7 @@ def apply_dummy_pipe_settings(model: "Model") -> list[str]:
     return affected_pipes
 
 
-def apply_dp_margin_settings(model: "Model") -> list[str]:
+def apply_dp_margin_settings(model: Model) -> list[str]:
     """Apply 25% margin to pressure drop design factor for all pipes.
 
     Sets DP_DES_FAC = 1.25 on all pipes, providing a 25% margin
@@ -128,7 +133,6 @@ def apply_dp_margin_settings(model: "Model") -> list[str]:
     affected_pipes: list[str] = []
     errors: list[str] = []
 
-    # Apply to all pipes (index >= 1 are real instances)
     for idx in range(1, model.num_pipes + 1):
         pipe = model.pipes[idx]
         pipe_name = pipe.name
@@ -141,6 +145,105 @@ def apply_dp_margin_settings(model: "Model") -> list[str]:
             model.set_params(pipe_name, params)
             affected_pipes.append(pipe_name)
             logger.info("Pipe %s: DP_DES_FAC=1.25 (25%% margin)", pipe_name)
+        except ParameterError as e:
+            error_msg = f"Validation error on {pipe_name}: {e}"
+            logger.error(error_msg)
+            errors.append(error_msg)
+        except Exception as e:
+            error_msg = f"Error setting params on {pipe_name}: {e}"
+            logger.error(error_msg)
+            errors.append(error_msg)
+
+    return affected_pipes
+
+
+def apply_rename_line_settings(model: Model) -> list[str]:
+    """Rename pipes using fluid code and serial number from NOTES field.
+
+    For all pipes with valid NOTES line numbers:
+    - Extract fluid code and serial number from NOTES (e.g., "VCL17-806")
+    - Update first element of NAME with extracted value
+    - Retain second element (description) unchanged
+    - Add suffix (_1, _2, etc.) if name already exists
+
+    Args:
+        model: Loaded KDF model.
+
+    Returns:
+        List of pipe names that were modified.
+    """
+    from pykorf.elements import Pipe
+    from pykorf.exceptions import ParameterError
+    from pykorf.use_case.line_number import extract_fluid_seq_from_notes
+
+    affected_pipes: list[str] = []
+    errors: list[str] = []
+    used_names: set[str] = set()
+
+    for idx in range(1, model.num_pipes + 1):
+        pipe = model.pipes[idx]
+        pipe_name = pipe.name
+
+        notes_rec = pipe._get("NOTES")
+        if notes_rec is None or not notes_rec.values or not notes_rec.values[0]:
+            logger.debug("Pipe %s: skipping, NOTES is empty", pipe_name)
+            continue
+
+        notes_value = notes_rec.values[0]
+        extracted = extract_fluid_seq_from_notes(notes_value)
+
+        if extracted is None:
+            logger.debug(
+                "Pipe %s: skipping, cannot parse NOTES: %s", pipe_name, notes_value
+            )
+            continue
+
+        name_rec = pipe._get("NAME")
+        if name_rec is None or not name_rec.values:
+            logger.warning("Pipe %s: skipping, NAME record not found", pipe_name)
+            continue
+
+        if len(name_rec.values) < 1:
+            logger.warning("Pipe %s: skipping, NAME has no values", pipe_name)
+            continue
+
+        second_element = name_rec.values[1] if len(name_rec.values) > 1 else "Pipe"
+
+        new_name = extracted
+        if len(new_name) > 12:
+            logger.warning(
+                "Pipe %s: extracted name %s exceeds 12 char limit, skipping",
+                pipe_name,
+                extracted,
+            )
+            continue
+
+        if new_name in used_names:
+            suffix_num = 1
+            while True:
+                new_name = f"{extracted}_{suffix_num}"
+                if len(new_name) > 12:
+                    logger.warning(
+                        "Pipe %s: generated name %s exceeds 12 char limit, skipping",
+                        pipe_name,
+                        new_name,
+                    )
+                    new_name = None
+                    break
+                if new_name not in used_names:
+                    break
+                suffix_num += 1
+
+            if new_name is None:
+                continue
+
+        used_names.add(new_name)
+
+        try:
+            new_name_values = [new_name, second_element]
+            model.set_params(pipe_name, {Pipe.NAME: new_name_values})
+            affected_pipes.append(pipe_name)
+            logger.info("Pipe %s: renamed to %s", pipe_name, new_name)
         except ParameterError as e:
             error_msg = f"Validation error on {pipe_name}: {e}"
             logger.error(error_msg)
@@ -167,6 +270,12 @@ _GLOBAL_SETTINGS: dict[str, GlobalSetting] = {
         description="Set DP_DES_FAC=1.25 on all pipes for 25% pressure drop margin",
         apply_func=apply_dp_margin_settings,
     ),
+    "rename_line": GlobalSetting(
+        id="rename_line",
+        name="Rename Line from NOTES",
+        description="Extract fluid code + serial number from NOTES, update pipe name",
+        apply_func=apply_rename_line_settings,
+    ),
 }
 
 
@@ -192,7 +301,7 @@ def get_global_setting(setting_id: str) -> GlobalSetting | None:
 
 
 def apply_global_settings(
-    model: "Model",
+    model: Model,
     setting_ids: list[str],
     *,
     save: bool = True,

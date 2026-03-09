@@ -171,3 +171,35 @@ def parse_stream_from_notes(notes_value: str, delimiter: str = ";") -> str | Non
             return stream
 
     return None
+
+
+def extract_fluid_seq_from_notes(notes_value: str, delimiter: str = ";") -> str | None:
+    r"""Extract fluid code and serial number from NOTES field.
+
+    Args:
+        notes_value: The NOTES string (e.g., "3\"-EV170-VCL17-806-BC1A1B-FMB-P;")
+        delimiter: Delimiter separating line number from stream number
+
+    Returns:
+        Fluid code and serial number (e.g., "VCL17-806") if present, None otherwise
+    """
+    if not notes_value or not notes_value.strip():
+        return None
+
+    notes_value = notes_value.strip()
+    if delimiter in notes_value:
+        line_part = notes_value.split(delimiter)[0]
+    else:
+        line_part = notes_value
+
+    line_part = line_part.replace('"', "").replace(" ", "")
+
+    match = LineNumber.LINE_NUMBER_PATTERN.match(line_part)
+    if not match:
+        return None
+
+    groups = match.groups()
+    fluid_code = groups[2]
+    serial_number = groups[3]
+
+    return f"{fluid_code}-{serial_number}"
