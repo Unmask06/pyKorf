@@ -28,7 +28,6 @@ pykorf/
 ├── types.py             # Pydantic models
 ├── config.py            # Configuration
 ├── log.py               # Logging
-├── cli.py               # CLI
 └── exceptions.py        # Exceptions
 ```
 

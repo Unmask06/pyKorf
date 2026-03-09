@@ -96,18 +96,6 @@ This document summarizes the comprehensive enhancements made to pyKorf to transf
   - `order_by()`, `limit()`
 - **Utility function**: `find()` for quick searches
 
-### 8. Command-Line Interface (`pykorf/cli.py`)
-
-- **Commands**:
-  - `validate`: Validate KDF files
-  - `convert`: Convert to JSON/YAML
-  - `query`: Query elements with filters
-  - `export`: Export to various formats
-  - `summary`: Display model summary
-- **Rich output**: Colored tables with rich library
-- **Progress indicators**: Status spinners for long operations
-- **Optional dependencies**: Graceful handling when CLI deps not installed
-
 ### 9. Enhanced Main Module (`pykorf/__init__.py`)
 
 - **Comprehensive exports**: All public APIs exposed

@@ -1,9 +1,0 @@
-{
-  "case_name": "EMERGENCY",
-  "case_number": 4,
-  "parameters": {
-    "SUCT_L1_flow": "150",
-    "DISC_L2_flow": "100",
-    "RETURN_L3_flow": "120"
-  }
-}

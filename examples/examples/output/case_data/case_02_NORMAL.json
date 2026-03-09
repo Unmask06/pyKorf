@@ -1,9 +1,0 @@
-{
-  "case_name": "NORMAL",
-  "case_number": 2,
-  "parameters": {
-    "SUCT_L1_flow": "80",
-    "DISC_L2_flow": "100",
-    "RETURN_L3_flow": "60"
-  }
-}

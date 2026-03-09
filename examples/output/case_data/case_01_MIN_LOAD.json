@@ -1,9 +1,0 @@
-{
-  "case_name": "MIN_LOAD",
-  "case_number": 1,
-  "parameters": {
-    "SUCT_L1_flow": "40",
-    "DISC_L2_flow": "50",
-    "RETURN_L3_flow": "30"
-  }
-}
