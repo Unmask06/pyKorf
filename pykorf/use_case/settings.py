@@ -80,13 +80,15 @@ class SettingsReader:
                 "pandas is required for Excel conversion. Install with: pip install pandas openpyxl"
             )
 
+        from pykorf.utils import read_excel_safe
+
         excel_path = Path(excel_path)
         if json_path is None:
             json_path = excel_path.with_suffix(".json")
         else:
             json_path = Path(json_path)
 
-        df = pd.read_excel(excel_path, header=None)
+        df = read_excel_safe(excel_path, header=None)
 
         settings_data: dict[str, Any] = {}
 
@@ -117,7 +119,7 @@ class SettingsReader:
         """
         json_path = Path(json_path)
 
-        with open(json_path, "r", encoding="utf-8") as f:
+        with open(json_path, encoding="utf-8") as f:
             data = json.load(f)
 
         self._settings = UseCaseSettings(

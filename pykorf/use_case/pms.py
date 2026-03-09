@@ -89,13 +89,15 @@ def convert_pms_excel(
     except ImportError:
         raise ExcelConversionError("pandas is required for Excel conversion")
 
+    from pykorf.utils import read_excel_safe
+
     excel_path = Path(excel_path)
     if json_path is None:
         json_path = excel_path.with_suffix(".json")
     else:
         json_path = Path(json_path)
 
-    sheets = pd.read_excel(excel_path, sheet_name=None, header=None)
+    sheets = read_excel_safe(excel_path, sheet_name=None, header=None)
     all_materials_data: dict[str, Any] = {}
 
     for sheet_name, df in sheets.items():
@@ -459,7 +461,6 @@ def apply_pms(
                 params: dict[str, Any] = {
                     Pipe.MAT: material,
                     Pipe.ROUGHNESS: [str(roughness_m), str(roughness_m), "m"],
-                    Pipe.DP_DES_FAC: 1.25,
                     Pipe.SCH: "ID",
                     Pipe.ID: [str(id_meters), str(id_meters), "m"],
                 }
@@ -477,7 +478,6 @@ def apply_pms(
                     Pipe.DIA: [nps_str, nps_str, "inch"],
                     Pipe.MAT: material,
                     Pipe.ROUGHNESS: [str(roughness_m), str(roughness_m), "m"],
-                    Pipe.DP_DES_FAC: 1.25,
                     Pipe.SCH: value,
                 }
                 logger.info(

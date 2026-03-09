@@ -123,13 +123,15 @@ class HmbReader:
         except ImportError as e:
             raise ExcelConversionError("pandas is required for Excel conversion") from e
 
+        from pykorf.utils import read_excel_safe
+
         excel_path = Path(excel_path)
         if json_path is None:
             json_path = excel_path.with_suffix(".json")
         else:
             json_path = Path(json_path)
 
-        df = pd.read_excel(excel_path, header=None)
+        df = read_excel_safe(excel_path, header=None)
 
         stream_numbers: list[str] = []
         stream_data: dict[str, dict[str, float]] = {}
@@ -371,15 +373,20 @@ def apply_hmb(
         notes = pipe.notes
 
         if not notes or not notes.strip():
-            logger.debug("Pipe %s: empty NOTES, skipping HMB", pipe.name)
+            logger.warning("Pipe %s: empty NOTES, skipping HMB", pipe.name)
             continue
 
         stream_no = parse_stream_from_notes(notes, delimiter)
         if not stream_no:
-            logger.debug("Pipe %s: no stream number in NOTES, skipping HMB", pipe.name)
+            logger.warning("Pipe %s: no stream number in NOTES: %r, skipping HMB", pipe.name, notes)
             continue
 
-        props = lookup_stream(hmb_data, stream_no)
+        try:
+            props = lookup_stream(hmb_data, stream_no)
+        except StreamNotFoundError as exc:
+            logger.warning("Pipe %s: %s, skipping HMB", pipe.name, exc)
+            continue
+
         fluid = _create_fluid_from_props(props)
 
         # Apply fluid directly to the pipe

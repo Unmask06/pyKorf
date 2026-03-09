@@ -57,9 +57,8 @@ Example Usage
 
 ### Exporting
 
-    >>> from pykorf.export import export_to_json, export_to_excel
-    >>> export_to_json(model, "model.json")
-    >>> export_to_excel(model, "model.xlsx")
+    >>> model.to_excel("model.xlsx")
+    >>> model.io.export_to_json("model.json")
 
 ### Querying
 
@@ -97,8 +96,6 @@ from pykorf.exceptions import (
 )
 from pykorf.fluid import Fluid
 
-# Configure logging on import
-from pykorf.log import configure_logging
 from pykorf.model import KorfModel, Model
 from pykorf.results import Results
 from pykorf.types import (
@@ -126,8 +123,6 @@ from pykorf.types import (
     VesselData,
     VesselOrientation,
 )
-
-configure_logging()
 
 # Version information
 __version__ = "0.2.0-dev"

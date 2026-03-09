@@ -51,3 +51,4 @@ pykorf/library/*.kdf
 pykorf/library/*.lib
 pykorf/library/*.org
 pykorf/library/*.csv
+pykorf/library/*.log

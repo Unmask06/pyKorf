@@ -18,6 +18,11 @@ from __future__ import annotations
 
 import csv
 import io
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 # ---------------------------------------------------------------------------
 # CSV tokenisation
@@ -153,3 +158,53 @@ def is_calculated(value: str) -> bool:
 def element_key(element_type: str, index: int, param: str) -> tuple[str, int, str]:
     """Canonical (etype, idx, param) key used in the raw record store."""
     return (element_type.upper(), int(index), param.upper())
+
+
+# ---------------------------------------------------------------------------
+# Excel utilities
+# ---------------------------------------------------------------------------
+
+
+def read_excel_safe(
+    excel_path: Path | str,
+    **kwargs: Any,
+) -> pd.DataFrame | dict[str, pd.DataFrame]:
+    """Read an Excel file with user-friendly error handling.
+
+    Catches PermissionError (e.g., file open in Excel) and raises
+    ExcelConversionError with a clear message telling the user to close
+    the file.
+
+    Args:
+        excel_path: Path to the Excel file
+        **kwargs: Additional arguments passed to pd.read_excel()
+
+    Returns:
+        DataFrame if sheet_name is a single sheet or not specified,
+        or dict of DataFrames if sheet_name=None (all sheets)
+
+    Raises:
+        ExcelConversionError: If file is open in another application
+        FileNotFoundError: If the Excel file doesn't exist
+    """
+    import pandas as pd
+    from pykorf.use_case.exceptions import ExcelConversionError
+
+    excel_path = Path(excel_path)
+    if not excel_path.exists():
+        raise FileNotFoundError(f"Excel file not found: {excel_path}")
+
+    try:
+        return pd.read_excel(excel_path, **kwargs)
+    except PermissionError as e:
+        raise ExcelConversionError(
+            f"Cannot read Excel file '{excel_path.name}' because it is open in "
+            f"another application. Please close the file and try again."
+        ) from e
+    except OSError as e:
+        if "permission" in str(e).lower() or "locked" in str(e).lower():
+            raise ExcelConversionError(
+                f"Cannot read Excel file '{excel_path.name}' because it is open in "
+                f"another application. Please close the file and try again."
+            ) from e
+        raise

@@ -244,6 +244,40 @@ pyKorf/
 
 ---
 
+## TUI Error/Warning Display Pattern
+
+When building TUI screens that perform background operations, follow this pattern for displaying errors and warnings inline (avoiding popup screens):
+
+1. **Background operations** use `logger.warning()` and `logger.error()` for issues
+2. **After processing**, read the log file using `get_log_entries()` from `pykorf.use_case.tui.logging`
+3. **Display inline** in the RichLog widget (yellow for warnings, red for errors)
+
+Example:
+```python
+from pykorf.log import get_log_file
+from pykorf.use_case.tui.logging import get_log_entries, log_warning, log_error
+
+# After processing completes
+log_file = get_log_file()
+if log_file:
+    entries = get_log_entries(
+        log_file,
+        levels={"WARNING", "ERROR", "CRITICAL"},
+        logger_filter="pykorf.use_case.pms",
+    )
+    if entries:
+        log_warning(results, "Warnings/Errors during processing:")
+        for _ts, _name, level, message in entries:
+            if level == "WARNING":
+                log_warning(results, f"  ⚠ {message}")
+            else:
+                log_error(results, f"  ✗ {message}")
+```
+
+This keeps all feedback visible in the terminal output without blocking popups.
+
+---
+
 ## KORF Automation Safety Note
 
 KORF limits the number of times a file may be opened to **5**.

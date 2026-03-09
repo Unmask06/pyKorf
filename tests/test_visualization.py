@@ -16,26 +16,17 @@ from pykorf.visualization.models import EdgeData, NetworkData, NodeData
 SAMPLES_DIR = Path(__file__).parent.parent / "pykorf" / "library"
 CWC_KDF = SAMPLES_DIR / "Cooling Water Circuit.kdf"
 PUMP_KDF = SAMPLES_DIR / "Pumpcases.kdf"
-TRAIL_KDF = (
-    Path(__file__).parent.parent
-    / "pykorf"
-    / "trail_files"
-    / "Cooling Water Circuit-EES-IT-LT-00141.kdf"
-)
+TRAIL_KDF = Path(__file__).parent.parent / "pykorf" / "trail_files" / "Cooling Water Circuit.kdf"
 
 
 class TestNodeData:
     def test_create(self):
-        node = NodeData(
-            id="P1", label="P1", x=100.0, y=200.0, element_type="PUMP"
-        )
+        node = NodeData(id="P1", label="P1", x=100.0, y=200.0, element_type="PUMP")
         assert node.id == "P1"
         assert node.element_type == "PUMP"
 
     def test_serialization(self):
-        node = NodeData(
-            id="L1", label="L1", x=50.0, y=75.0, element_type="PIPE"
-        )
+        node = NodeData(id="L1", label="L1", x=50.0, y=75.0, element_type="PIPE")
         data = node.model_dump()
         assert data["id"] == "L1"
         assert data["x"] == 50.0

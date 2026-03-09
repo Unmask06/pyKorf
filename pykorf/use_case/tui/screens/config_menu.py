@@ -45,6 +45,10 @@ class ConfigMenuScreen(Screen):
         height: 10;
         border: round $surface;
         margin-top: 1;
+        overflow-x: hidden;
+    }
+    #config-results RichLog {
+        overflow-x: hidden;
     }
     """
 
@@ -97,10 +101,11 @@ class ConfigMenuScreen(Screen):
         """Load last interaction data when screen mounts."""
         from pykorf.use_case.config import get_last_interaction
 
+        results_log = self.query_one("#config-results", RichLog)
+
         last_interaction = get_last_interaction()
         if last_interaction.get("screen") == "config_menu":
             data = last_interaction.get("data", {})
-            # Only set values if they exist and are not empty
             pms_excel_path = data.get("pms_excel_path", "")
             if pms_excel_path:
                 self.query_one("#pms-excel-input", Input).value = pms_excel_path

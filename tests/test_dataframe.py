@@ -123,9 +123,7 @@ class TestDataframeRoundTrip:
         reconstructed = Model.from_dataframes(dfs)
         reconstructed_bytes = _save_model_bytes(reconstructed)
 
-        assert original_bytes == reconstructed_bytes, (
-            f"Round-trip mismatch for {kdf_path.name}"
-        )
+        assert original_bytes == reconstructed_bytes, f"Round-trip mismatch for {kdf_path.name}"
 
 
 # ---- to_excel / from_excel ------------------------------------------------
@@ -183,7 +181,7 @@ class TestExportFunctions:
     """Tests for the standalone export functions."""
 
     def test_model_to_dataframes_function(self):
-        from pykorf.export import model_to_dataframes
+        from pykorf.model.services.io import model_to_dataframes
 
         model = Model(PUMP_KDF)
         dfs = model_to_dataframes(model)
@@ -191,7 +189,7 @@ class TestExportFunctions:
         assert "_HEADER" in dfs
 
     def test_dataframes_to_kdf_function(self):
-        from pykorf.export import dataframes_to_kdf, model_to_dataframes
+        from pykorf.model.services.io import dataframes_to_kdf, model_to_dataframes
 
         model = Model(PUMP_KDF)
         original_bytes = _save_model_bytes(model)
@@ -207,7 +205,7 @@ class TestExportFunctions:
             Path(tmp_path).unlink(missing_ok=True)
 
     def test_dataframes_to_excel_and_back(self):
-        from pykorf.export import (
+        from pykorf.model.services.io import (
             dataframes_to_excel,
             excel_to_dataframes,
             model_to_dataframes,
@@ -224,9 +222,7 @@ class TestExportFunctions:
             dfs_back = excel_to_dataframes(xlsx_path)
             assert set(dfs_back.keys()) == set(dfs.keys())
             for key in dfs:
-                assert len(dfs_back[key]) == len(dfs[key]), (
-                    f"Row count mismatch for sheet {key!r}"
-                )
+                assert len(dfs_back[key]) == len(dfs[key]), f"Row count mismatch for sheet {key!r}"
         finally:
             Path(xlsx_path).unlink(missing_ok=True)
 

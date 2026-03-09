@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from pykorf.elements import Common, Element, Vessel
-from pykorf.layout import _X_MAX, _X_MIN, _Y_MAX, _Y_MIN, _all_positions
+from pykorf.model.services.layout import X_MAX, X_MIN, Y_MAX, Y_MIN
 from pykorf.visualization.models import EdgeData, NetworkData, NodeData
 
 if TYPE_CHECKING:
@@ -57,12 +57,12 @@ _CANVAS_H = 700
 
 def _scale_x(x: float) -> float:
     """Scale a KDF X coordinate to PyVis canvas pixels."""
-    return (x - _X_MIN) / (_X_MAX - _X_MIN) * _CANVAS_W
+    return (x - X_MIN) / (X_MAX - X_MIN) * _CANVAS_W
 
 
 def _scale_y(y: float) -> float:
     """Scale a KDF Y coordinate to PyVis canvas pixels."""
-    return (y - _Y_MIN) / (_Y_MAX - _Y_MIN) * _CANVAS_H
+    return (y - Y_MIN) / (Y_MAX - Y_MIN) * _CANVAS_H
 
 
 def _legend_html() -> str:
@@ -115,10 +115,9 @@ class Visualizer:
 
     def _extract_nodes(self) -> list[NodeData]:
         """Build the node list from model elements with positions."""
-        positions = _all_positions(self._model)
         nodes: list[NodeData] = []
         for elem in self._model.elements:
-            pos = positions.get(elem.name)
+            pos = self._model.get_position(elem)
             if pos is None or pos == (0.0, 0.0):
                 continue
             nodes.append(
@@ -139,11 +138,13 @@ class Visualizer:
         and their connection parameters (NOZI/NOZO for equipment, CON for
         TEE, NOZL for FEED/PROD). Create directed edges accordingly.
         """
-        from pykorf.connectivity import _is_element_connected_to_pipe
-
         edges: list[EdgeData] = []
-        positions = _all_positions(self._model)
-        node_ids = {name for name, pos in positions.items() if pos != (0.0, 0.0)}
+        
+        def _get_pos(e):
+            return self._model.get_position(e)
+
+        positions = {elem.name: _get_pos(elem) for elem in self._model.elements}
+        node_ids = {name for name, pos in positions.items() if pos is not None and pos != (0.0, 0.0)}
 
         # Build a mapping of pipe index -> connected elements with direction info
         for idx, _pipe_elem in self._model.pipes.items():
@@ -155,7 +156,7 @@ class Visualizer:
             for elem in self._model.elements:
                 if elem.etype == Element.PIPE:
                     continue
-                if not _is_element_connected_to_pipe(elem, idx):
+                if not self._model._connectivity_service._is_element_connected_to_pipe(elem, idx):
                     continue
                 if elem.name not in node_ids:
                     continue
