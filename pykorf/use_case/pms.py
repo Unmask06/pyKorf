@@ -461,7 +461,6 @@ def apply_pms(
                 params: dict[str, Any] = {
                     Pipe.MAT: material,
                     Pipe.ROUGHNESS: [str(roughness_m), str(roughness_m), "m"],
-                    Pipe.DP_DES_FAC: 1.25,
                     Pipe.SCH: "ID",
                     Pipe.ID: [str(id_meters), str(id_meters), "m"],
                 }
@@ -479,7 +478,6 @@ def apply_pms(
                     Pipe.DIA: [nps_str, nps_str, "inch"],
                     Pipe.MAT: material,
                     Pipe.ROUGHNESS: [str(roughness_m), str(roughness_m), "m"],
-                    Pipe.DP_DES_FAC: 1.25,
                     Pipe.SCH: value,
                 }
                 logger.info(
