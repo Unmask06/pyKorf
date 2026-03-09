@@ -19,7 +19,7 @@ from __future__ import annotations
 import csv
 import io
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Sequence
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -132,7 +132,7 @@ def split_cases(value: str) -> list[str]:
     return value.split(";")
 
 
-def join_cases(values: list[str | float | int]) -> str:
+def join_cases(values: Sequence[str | float | int]) -> str:
     """Join individual case values into a semicolon-delimited string.
 
     Example::
