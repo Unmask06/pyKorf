@@ -1,0 +1,86 @@
+name: Create Issue on Workflow Failure
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+
+jobs:
+  create-issue:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      actions: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download workflow run logs
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Get failed job details
+        id: details
+        run: |
+          echo "WORKFLOW_NAME=${{ github.event.workflow_run.name }}" >> $GITHUB_OUTPUT
+          echo "WORKFLOW_URL=${{ github.event.workflow_run.html_url }}" >> $GITHUB_OUTPUT
+          echo "HEAD_BRANCH=${{ github.event.workflow_run.head_branch }}" >> $GITHUB_OUTPUT
+          echo "HEAD_SHA=${{ github.event.workflow_run.head_sha }}" >> $GITHUB_OUTPUT
+          echo "RUN_ATTEMPT=${{ github.event.workflow_run.run_attempt }}" >> $GITHUB_OUTPUT
+
+      - name: Create issue on failure
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const workflowName = process.env.WORKFLOW_NAME;
+            const workflowUrl = process.env.WORKFLOW_URL;
+            const headBranch = process.env.HEAD_BRANCH;
+            const headSha = process.env.HEAD_SHA;
+            const runAttempt = process.env.RUN_ATTEMPT;
+
+            const issueTitle = `Workflow Failed: ${workflowName}`;
+            
+            const issueBody = `## Workflow Failure Report
+
+            **Workflow:** [${workflowName}](${workflowUrl})
+            **Branch:** \`${headBranch}\`
+            **Commit:** \`${headSha}\`
+            **Run Attempt:** ${runAttempt}
+            **Conclusion:** FAILED
+
+            ### Failure Details
+
+            The GitHub Actions workflow has failed. Please review the logs and fix the issues.
+
+            #### Action Required
+
+            1. Review the [workflow logs](${workflowUrl})
+            2. Identify the failed job(s)
+            3. Fix the underlying issues
+            4. Re-run the workflow
+
+            ---
+
+            *This issue was automatically created by the issue-on-failure workflow.*
+            `;
+
+            const { data: issue } = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: issueTitle,
+              body: issueBody,
+              labels: ['bug', 'ci-failure', 'automated']
+            });
+
+            console.log(`Created issue #${issue.number}: ${issueTitle}`);
+        env:
+          WORKFLOW_NAME: ${{ steps.details.outputs.WORKFLOW_NAME }}
+          WORKFLOW_URL: ${{ steps.details.outputs.WORKFLOW_URL }}
+          HEAD_BRANCH: ${{ steps.details.outputs.HEAD_BRANCH }}
+          HEAD_SHA: ${{ steps.details.outputs.HEAD_SHA }}
+          RUN_ATTEMPT: ${{ steps.details.outputs.RUN_ATTEMPT }}

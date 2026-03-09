@@ -76,6 +76,7 @@ Changelog = "https://github.com/pykorf/pykorf/blob/main/CHANGELOG.md"
 
 [tool.uv]
 default-groups = ["dev", "docs"]
+required-environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
 
 [dependency-groups]
 dev = [
