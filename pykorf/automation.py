@@ -29,9 +29,14 @@ from __future__ import annotations
 
 import time
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from pykorf.exceptions import AutomationError
 
+
+if TYPE_CHECKING:
+    from pywinauto.application import Application  # noqa: F401
+    from pywinauto.timings import TimeoutError as WinTimeout  # noqa: F401
 try:
     from pywinauto.application import Application
     from pywinauto.timings import TimeoutError as WinTimeout
