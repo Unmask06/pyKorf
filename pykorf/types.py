@@ -217,7 +217,7 @@ if HAS_PYDANTIC:
 else:
 
     @dataclass
-    class Position(KdfBaseModel):  # type: ignore[no-redef]  # type: ignore
+    class Position(KdfBaseModel):  # type: ignore[no-redef]
         """2D position coordinates."""
 
         x: float
@@ -274,7 +274,7 @@ if HAS_PYDANTIC:
 else:
 
     @dataclass
-    class FlowParameters(KdfBaseModel):  # type: ignore[no-redef]  # type: ignore
+    class FlowParameters(KdfBaseModel):  # type: ignore[no-redef]
         """Flow-related parameters."""
 
         mass_flow_t_h: list[float] | None = None
@@ -301,7 +301,7 @@ if HAS_PYDANTIC:
 else:
 
     @dataclass
-    class FluidProperties(KdfBaseModel):  # type: ignore[no-redef]  # type: ignore
+    class FluidProperties(KdfBaseModel):  # type: ignore[no-redef]
         """Fluid properties per phase."""
 
         liquid_density_kg_m3: list[float] | None = None
@@ -331,7 +331,7 @@ if HAS_PYDANTIC:
 else:
 
     @dataclass
-    class ElementBase(KdfBaseModel):  # type: ignore[no-redef]  # type: ignore
+    class ElementBase(KdfBaseModel):  # type: ignore[no-redef]
         """Base class for all element data models."""
 
         name: str
@@ -354,7 +354,7 @@ if HAS_PYDANTIC:
 else:
 
     @dataclass
-    class FittingData(KdfBaseModel):  # type: ignore[no-redef]  # type: ignore
+    class FittingData(KdfBaseModel):  # type: ignore[no-redef]
         """Pipe fitting data."""
 
         name: str
@@ -632,7 +632,7 @@ if HAS_PYDANTIC:
 else:
 
     @dataclass
-    class ModelMetadata(KdfBaseModel):  # type: ignore[no-redef]  # type: ignore
+    class ModelMetadata(KdfBaseModel):  # type: ignore[no-redef]
         """Metadata for a KDF model."""
 
         version: KdfVersion = KdfVersion.V3_6
@@ -659,7 +659,7 @@ if HAS_PYDANTIC:
 else:
 
     @dataclass
-    class CaseInfo(KdfBaseModel):  # type: ignore[no-redef]  # type: ignore
+    class CaseInfo(KdfBaseModel):  # type: ignore[no-redef]
         """Information about a simulation case."""
 
         number: int = 1
@@ -693,7 +693,7 @@ if HAS_PYDANTIC:
 else:
 
     @dataclass
-    class UnitConfiguration(KdfBaseModel):  # type: ignore[no-redef]  # type: ignore
+    class UnitConfiguration(KdfBaseModel):  # type: ignore[no-redef]
         """Unit system configuration."""
 
         system: UnitSystem = UnitSystem.METRIC
@@ -732,7 +732,7 @@ if HAS_PYDANTIC:
 else:
 
     @dataclass
-    class ExportOptions(KdfBaseModel):  # type: ignore[no-redef]  # type: ignore
+    class ExportOptions(KdfBaseModel):  # type: ignore[no-redef]
         """Options for exporting model data."""
 
         include_results: bool = True
@@ -756,7 +756,7 @@ if HAS_PYDANTIC:
 else:
 
     @dataclass
-    class ValidationIssue(KdfBaseModel):  # type: ignore[no-redef]  # type: ignore
+    class ValidationIssue(KdfBaseModel):  # type: ignore[no-redef]
         """A single validation issue."""
 
         severity: str = "error"
