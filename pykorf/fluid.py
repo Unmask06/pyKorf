@@ -355,15 +355,15 @@ class Fluid:
         """
         result: dict[str, Any] = {"num_cases": self.num_cases}
 
-        if self.temp is not None:
+        if self.temp is not None and isinstance(self.temp, list):
             result["temp_range"] = (min(self.temp), max(self.temp))
-        if self.pres is not None:
+        if self.pres is not None and isinstance(self.pres, list):
             result["pres_range"] = (min(self.pres), max(self.pres))
-        if self.liqden is not None:
+        if self.liqden is not None and isinstance(self.liqden, list):
             result["liqden_avg"] = sum(self.liqden) / len(self.liqden)
-        if self.liqvisc is not None:
+        if self.liqvisc is not None and isinstance(self.liqvisc, list):
             result["liqvisc_avg"] = sum(self.liqvisc) / len(self.liqvisc)
-        if self.lf is not None:
+        if self.lf is not None and isinstance(self.lf, list):
             result["is_two_phase"] = any(lf < 1.0 for lf in self.lf)
 
         return result
