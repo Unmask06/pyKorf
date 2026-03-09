@@ -17,7 +17,7 @@ PUMP_KDF = SAMPLES_DIR / "Pumpcases.kdf"
 
 class TestCaseSet:
     def _cs(self):
-        return CaseSet(KorfModel.load(PUMP_KDF))
+        return CaseSet(KorfModel.load(PUMP_KDF))  # type: ignore[arg-type]
 
     def test_names(self):
         cs = self._cs()

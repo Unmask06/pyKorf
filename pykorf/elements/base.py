@@ -144,6 +144,9 @@ class BaseElement:
     FLIP = "FLIP"
     LBL = "LBL"
     COLOR = "COLOR"
+    
+    #: Tuple of all parameter constants (to be overridden by subclasses)
+    ALL: tuple[str, ...] = ()
 
     def __init__(self, parser: "KdfParser", etype: str, index: int):
         self._parser = parser

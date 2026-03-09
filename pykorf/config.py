@@ -20,6 +20,10 @@ import os
 from dataclasses import dataclass, field, fields
 from pathlib import Path
 from typing import Any
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import tomli_w  # noqa: F401
 
 
 @dataclass

@@ -139,12 +139,16 @@ class Visualizer:
         TEE, NOZL for FEED/PROD). Create directed edges accordingly.
         """
         edges: list[EdgeData] = []
-        
+
         def _get_pos(e):
             return self._model.get_position(e)
 
         positions = {elem.name: _get_pos(elem) for elem in self._model.elements}
-        node_ids = {name for name, pos in positions.items() if pos is not None and pos != (0.0, 0.0)}
+        node_ids = {
+            name
+            for name, pos in positions.items()
+            if pos is not None and pos != (0.0, 0.0)
+        }
 
         # Build a mapping of pipe index -> connected elements with direction info
         for idx, _pipe_elem in self._model.pipes.items():
@@ -156,7 +160,9 @@ class Visualizer:
             for elem in self._model.elements:
                 if elem.etype == Element.PIPE:
                     continue
-                if not self._model._connectivity_service._is_element_connected_to_pipe(elem, idx):
+                if not self._model._connectivity_service._is_element_connected_to_pipe(
+                    elem, idx
+                ):
                     continue
                 if elem.name not in node_ids:
                     continue
@@ -185,9 +191,17 @@ class Visualizer:
         if et in {Element.HX, Element.MISC}:
             nozi_rec = elem._get(Common.NOZI)
             nozo_rec = elem._get(Common.NOZO)
-            if nozi_rec and len(nozi_rec.values) > 0 and str(nozi_rec.values[0]) == pipe_idx_str:
+            if (
+                nozi_rec
+                and len(nozi_rec.values) > 0
+                and str(nozi_rec.values[0]) == pipe_idx_str
+            ):
                 return "inlet"
-            if nozo_rec and len(nozo_rec.values) > 0 and str(nozo_rec.values[0]) == pipe_idx_str:
+            if (
+                nozo_rec
+                and len(nozo_rec.values) > 0
+                and str(nozo_rec.values[0]) == pipe_idx_str
+            ):
                 return "outlet"
             return "unknown"
 
@@ -246,7 +260,9 @@ class Visualizer:
 
         return "unknown"
 
-    def _create_directed_edges(self, connected: list[tuple[str, str, str]]) -> list[EdgeData]:
+    def _create_directed_edges(
+        self, connected: list[tuple[str, str, str]]
+    ) -> list[EdgeData]:
         """Create directed edges based on connection roles.
 
         Args:
@@ -277,7 +293,9 @@ class Visualizer:
                 for j in range(i + 1, len(connected)):
                     name1, _, role1 = connected[i]
                     name2, _, role2 = connected[j]
-                    source, target = self._determine_flow_direction(name1, role1, name2, role2)
+                    source, target = self._determine_flow_direction(
+                        name1, role1, name2, role2
+                    )
                     if source and target:
                         edges.append(EdgeData(source=source, target=target))
 
@@ -400,10 +418,10 @@ class Visualizer:
 
     def _add_layout_boundary(self, net) -> None:
         """Draw the model coordinate bounds as a dashed rectangle."""
-        left = _scale_x(_X_MIN)
-        right = _scale_x(_X_MAX)
-        top = _scale_y(_Y_MIN)
-        bottom = _scale_y(_Y_MAX)
+        left = _scale_x(X_MIN)
+        right = _scale_x(X_MAX)
+        top = _scale_y(Y_MIN)
+        bottom = _scale_y(Y_MAX)
 
         corners = {
             "__layout_tl": (left, top),

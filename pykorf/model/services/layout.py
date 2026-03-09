@@ -99,7 +99,9 @@ class LayoutService:
         if hasattr(target, "get_element"):
             if not isinstance(name_or_x, str) or y is None:
                 raise ValueError("Use set_position(model, element_name, x, y)")
-            elem = target.get_element(name_or_x)
+            from pykorf.model import Model as KorfModel
+            if isinstance(target, KorfModel):
+                elem = target.get_element(name_or_x)
             self.__set_position_on_element(elem, float(x_or_y), float(y))
             return
 
@@ -122,7 +124,7 @@ class LayoutService:
         # Case 3: set_position(element, x, y)
         if y is not None:
             raise ValueError("Use set_position(element, x, y) for element objects")
-        self.__set_position_on_element(target, float(name_or_x), float(x_or_y))
+        self.__set_position_on_element(cast(BaseElement, target), float(name_or_x), float(x_or_y))
 
     def __all_positions(self) -> dict[str, tuple[float, float]]:
         """Collect all element positions as ``{name: (x, y)}``."""

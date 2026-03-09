@@ -655,7 +655,7 @@ class ConnectivityService:
                         indices.append(int(nozzle_rec.values[0]))
         elif et in _NOZ_ELEMENTS:
             noz_param = self._get_nozzle_param(elem)
-            rec = elem._get(nozz_param)
+            rec = elem._get(noz_param)
             if rec and rec.values:
                 if self._is_valid_idx(rec.values[0]):
                     indices.append(int(rec.values[0]))

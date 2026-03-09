@@ -25,7 +25,7 @@ from collections.abc import Callable
 from contextlib import contextmanager
 from contextvars import ContextVar
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from pykorf.config import get_config
 
@@ -36,6 +36,10 @@ try:
     HAS_STRUCTLOG = True
 except ImportError:
     HAS_STRUCTLOG = False
+
+
+if TYPE_CHECKING:
+    import structlog  # noqa: F401
 
 # Context variable for request/operation context
 _log_context: ContextVar[dict[str, Any]] = ContextVar("log_context", default={})
