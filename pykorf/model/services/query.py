@@ -200,8 +200,14 @@ class QueryService:
             param_key = param_name.upper()
 
             if param_key in (Common.X, Common.Y):
-                xy_update = {param_key: float(value)}  # type: ignore[assignment]
-                self.model._update_xy(elem, xy_update)
+                # Get current position and update the specific coordinate
+                xy_rec = elem._get(Common.XY)
+                if xy_rec and len(xy_rec.values) >= 2:
+                    if param_key == Common.X:
+                        xy_rec.values[0] = str(value)
+                    else:
+                        xy_rec.values[1] = str(value)
+                    xy_rec.raw_line = ""
                 continue
 
             if isinstance(value, (list, tuple)):
