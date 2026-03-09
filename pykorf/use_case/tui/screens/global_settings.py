@@ -49,33 +49,37 @@ class GlobalSettingsScreen(Screen):
     GlobalSettingsScreen {
         align: center middle;
     }
-    #global-settings-box {
-        width: 80;
-        height: auto;
-        max-height: 50;
-        border: round $accent;
-        padding: 1 2;
-    }
-    #global-settings-box Label {
-        margin-bottom: 1;
+    #global-settings-container {
+        width: 100%;
+        height: 100%;
     }
     #settings-list {
-        height: auto;
-        margin: 1 0;
+        padding: 0 1;
     }
     #settings-list Checkbox {
-        margin-bottom: 1;
+        margin-bottom: 0;
+        height: 1;
+    }
+    .setting-desc {
+        height: auto;
+        color: $text-muted;
+        text-style: dim;
+        margin-bottom: 0;
+        padding: 0 0 0 3;
     }
     #settings-buttons {
-        height: 3;
-        align: center middle;
+        height: auto;
         margin-top: 1;
+        padding: 0 1;
     }
     #settings-buttons Button {
-        margin: 0 1;
+        margin-right: 1;
+        height: 3;
+        padding: 0 1;
     }
     #settings-results {
-        height: 12;
+        width: 100%;
+        height: 1fr;
         border: round $surface;
         margin-top: 1;
         overflow-x: hidden;
@@ -83,44 +87,72 @@ class GlobalSettingsScreen(Screen):
     #settings-results RichLog {
         overflow-x: hidden;
     }
+    #right-panel-content {
+        padding: 0 1;
+    }
+    .info-section {
+        margin-bottom: 1;
+    }
+    .info-section Label {
+        text-style: bold;
+        color: $accent;
+    }
     """
 
     def compose(self) -> ComposeResult:
-        yield Header()
-        with Vertical(id="global-settings-box"):
-            yield Label("Apply Global Settings")
-            yield Static("Select settings to apply:")
-            yield Static("---")
+        from pykorf.use_case.config import get_global_settings_selected
+        from pykorf.use_case.global_settings import get_global_settings
 
-            # Load settings and their saved selections
-            from pykorf.use_case.config import get_global_settings_selected
-            from pykorf.use_case.global_settings import get_global_settings
+        settings = get_global_settings()
+        saved_selections = get_global_settings_selected()
 
-            settings = get_global_settings()
-            saved_selections = get_global_settings_selected()
+        with Vertical(id="global-settings-container"):
+            with Horizontal():
+                with Vertical(id="left-panel"):
+                    with Vertical(id="settings-list"):
+                        yield Label("Apply Global Settings", classes="info-section")
+                        yield Static("─" * 30)
+                        for setting in settings:
+                            is_selected = setting.id in saved_selections
+                            yield Checkbox(
+                                setting.name,
+                                value=is_selected,
+                                id=f"checkbox-{setting.id}",
+                            )
+                            yield Static(
+                                f"  {setting.description}",
+                                id=f"desc-{setting.id}",
+                                classes="setting-desc",
+                            )
 
-            with Vertical(id="settings-list"):
-                for setting in settings:
-                    # Default to selected if saved selection contains this setting ID
-                    is_selected = setting.id in saved_selections
-                    yield Checkbox(
-                        setting.name,
-                        value=is_selected,
-                        id=f"checkbox-{setting.id}",
-                    )
-                    # Add description as a smaller static text
-                    yield Static(
-                        f"  {setting.description}",
-                        id=f"desc-{setting.id}",
-                        classes="setting-desc",
-                    )
-
-            yield Static("---")
-            with Horizontal(id="settings-buttons"):
-                yield Button("Select All", variant="default", id="btn-select-all")
-                yield Button("Apply Selected", variant="primary", id="btn-apply")
-                yield Button("Back", variant="default", id="btn-back")
-            yield RichLog(id="settings-results", wrap=True)
+                    with Horizontal(id="settings-buttons"):
+                        yield Button("Select All", variant="default", id="btn-select-all")
+                        yield Button("Apply Selected", variant="primary", id="btn-apply")
+                        yield Button("Back", variant="default", id="btn-back")
+                    yield RichLog(id="settings-results", wrap=True)
+                
+                with Vertical(id="right-panel"):
+                    with Vertical(classes="info-section"):
+                        yield Label("About")
+                        yield Static("─" * 15)
+                        yield Static("Global settings apply")
+                        yield Static("bulk modifications to")
+                        yield Static("all pipes in the model.")
+                    
+                    with Vertical(classes="info-section"):
+                        yield Label("Common Settings")
+                        yield Static("─" * 15)
+                        yield Static("• Heat Loss Options")
+                        yield Static("• Fluid Properties")
+                        yield Static("• Insulation Defaults")
+                        yield Static("• Layout Parameters")
+                    
+                    with Vertical(classes="info-section"):
+                        yield Label("Tip")
+                        yield Static("─" * 15)
+                        yield Static("Select multiple settings")
+                        yield Static("and apply together for")
+                        yield Static("efficient updates.")
         yield Footer()
 
     def action_go_back(self) -> None:

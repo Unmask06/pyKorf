@@ -29,28 +29,33 @@ class ApplyHmbScreen(Screen):
     ApplyHmbScreen {
         align: center middle;
     }
-    #hmb-box {
-        width: 80;
-        height: auto;
-        max-height: 40;
-        border: round $accent;
-        padding: 1 2;
+    #hmb-container {
+        width: 100%;
+        height: 100%;
     }
-    #hmb-box Label {
-        margin-bottom: 1;
+    #hmb-form {
+        padding: 0 1;
     }
-    #hmb-box Input {
-        margin-bottom: 1;
+    #hmb-form Label {
+        margin-bottom: 0;
+        height: 1;
+    }
+    #hmb-form Input {
+        margin-bottom: 0;
+        height: 3;
     }
     #hmb-buttons {
-        height: 3;
-        align: center middle;
+        height: auto;
+        margin-top: 1;
     }
     #hmb-buttons Button {
-        margin: 0 1;
+        margin-right: 1;
+        height: 3;
+        padding: 0 1;
     }
     #hmb-results {
-        height: 12;
+        width: 100%;
+        height: 1fr;
         border: round $surface;
         margin-top: 1;
         overflow-x: hidden;
@@ -58,22 +63,54 @@ class ApplyHmbScreen(Screen):
     #hmb-results RichLog {
         overflow-x: hidden;
     }
+    #right-panel-content {
+        padding: 0 1;
+    }
+    .info-section {
+        margin-bottom: 1;
+    }
+    .info-section Label {
+        text-style: bold;
+        color: $accent;
+    }
     """
 
     def compose(self) -> ComposeResult:
-        yield Header()
-        with Vertical(id="hmb-box"):
-            yield Label("Apply HMB Fluid Properties")
-            yield Static("---")
-            yield Label("HMB JSON file path:")
-            yield Input(
-                placeholder="C:\\path\\to\\hmb.json",
-                id="hmb-path-input",
-            )
-            yield RichLog(id="hmb-results", wrap=True)
-            with Horizontal(id="hmb-buttons"):
-                yield Button("Apply", variant="primary", id="btn-apply")
-                yield Button("Back", variant="default", id="btn-back")
+        with Vertical(id="hmb-container"):
+            with Horizontal():
+                with Vertical(id="left-panel"):
+                    with Vertical(id="hmb-form"):
+                        yield Label("Apply HMB Fluid Properties", classes="info-section")
+                        yield Static("─" * 30)
+                        yield Label("HMB JSON file path:")
+                        yield Input(
+                            placeholder="C:\\path\\to\\hmb.json",
+                            id="hmb-path-input",
+                        )
+                        yield RichLog(id="hmb-results", wrap=True)
+                        with Horizontal(id="hmb-buttons"):
+                            yield Button("Apply", variant="primary", id="btn-apply")
+                            yield Button("Back", variant="default", id="btn-back")
+                
+                with Vertical(id="right-panel"):
+                    with Vertical(classes="info-section"):
+                        yield Label("About HMB")
+                        yield Static("─" * 15)
+                        yield Static("HMB contains fluid")
+                        yield Static("properties for streams.")
+                        yield Static("")
+                        yield Static("Applies fluid data to")
+                        yield Static("pipes based on stream")
+                        yield Static("assignments.")
+                    
+                    with Vertical(classes="info-section"):
+                        yield Label("Format")
+                        yield Static("─" * 15)
+                        yield Static("JSON file with stream")
+                        yield Static("names and fluid props:")
+                        yield Static("  - Density")
+                        yield Static("  - Viscosity")
+                        yield Static("  - Temperature")
         yield Footer()
 
     def action_go_back(self) -> None:

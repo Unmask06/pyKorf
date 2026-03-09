@@ -6,7 +6,7 @@ from textual import on
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import Button, Footer, Header, Label, Static
+from textual.widgets import Button, Footer, Label, Static
 
 
 class MainMenuScreen(Screen):
@@ -28,46 +28,55 @@ class MainMenuScreen(Screen):
     MainMenuScreen {
         align: center middle;
     }
-    #menu-box {
-        width: 80;
-        height: auto;
-        border: thick $accent;
-        padding: 1 3;
-        background: $surface;
+    #menu-container {
+        width: 100%;
+        height: 100%;
     }
     #file-label {
         width: 100%;
         height: auto;
         color: $text-muted;
+        padding: 0 1;
     }
     #modified-indicator {
         width: 100%;
         height: auto;
         color: $warning;
         text-style: bold;
-    }
-    #menu-box Label {
-        margin-bottom: 1;
+        padding: 0 1;
     }
     #menu-buttons {
-        margin: 1 0;
+        padding: 1 1;
     }
     #menu-buttons Button {
         width: 100%;
-        margin-bottom: 1;
-    }
-    #menu-footer {
+        margin-bottom: 0;
         height: 3;
-        align: center middle;
-        margin-top: 1;
+        padding: 0 1;
     }
-    #menu-footer Button {
-        margin: 0 1;
+    #right-panel-content {
+        padding: 0 1;
+    }
+    .stat-row {
+        height: 1;
+        margin-bottom: 0;
+    }
+    .stat-label {
+        color: $text-muted;
+        width: 12;
+    }
+    .stat-value {
+        color: $text;
+        text-style: bold;
+    }
+    .quick-action-btn {
+        width: 100%;
+        margin-bottom: 0;
+        height: 3;
     }
     """
 
     def compose(self) -> ComposeResult:
-        yield Header()
         app = self.app
         from pykorf.use_case.tui.app import UseCaseTUI
 
@@ -76,62 +85,102 @@ class MainMenuScreen(Screen):
 
         file_name = "No file loaded"
         pipe_count = 0
+        feed_count = 0
+        product_count = 0
+        pump_count = 0
         modified_indicator = ""
         if model is not None:
             file_name = str(model._parser.path)
             from pykorf.use_case.tui.screens import real_elements
 
             pipe_count = len(real_elements(model.pipes))
-            # Check if file has been modified externally
+            feed_count = len(real_elements(model.feeds))
+            product_count = len(real_elements(model.products))
+            pump_count = len(real_elements(model.pumps))
             if model.is_file_modified():
-                modified_indicator = "⚠️ File modified externally"
+                modified_indicator = "⚠ File modified externally"
 
-        with Vertical(id="menu-box"):
-            yield Label(f"File: {file_name}", id="file-label")
+        with Vertical(id="menu-container"):
+            yield Label(f"📄 {file_name}", id="file-label")
             if modified_indicator:
                 yield Label(modified_indicator, id="modified-indicator")
-            yield Label(f"Pipes: {pipe_count}")
-            yield Static("---")
-            with Vertical(id="menu-buttons"):
-                yield Button(
-                    "[1] Bulk Copy Fluids",
-                    variant="primary",
-                    id="btn-bulk-copy",
-                )
-                yield Button(
-                    "[2] Apply PMS Specifications",
-                    variant="primary",
-                    id="btn-apply-pms",
-                )
-                yield Button(
-                    "[3] Apply HMB Fluid Properties",
-                    variant="primary",
-                    id="btn-apply-hmb",
-                )
-                yield Button(
-                    "[4] View Model Info",
-                    variant="primary",
-                    id="btn-model-info",
-                )
-                yield Button(
-                    "[G] Global Settings",
-                    variant="primary",
-                    id="btn-global-settings",
-                )
-                yield Button(
-                    "[C] Configuration",
-                    variant="default",
-                    id="btn-config",
-                )
-            yield Static("---")
-            with Horizontal(id="menu-footer"):
-                yield Button(
-                    "[L] Load Different File",
-                    variant="warning",
-                    id="btn-load-file",
-                )
-                yield Button("[Q] Quit", variant="error", id="btn-quit")
+            
+            with Horizontal():
+                with Vertical(id="left-panel"):
+                    with Vertical(id="menu-buttons"):
+                        yield Button(
+                            "Bulk Copy Fluids",
+                            variant="primary",
+                            id="btn-bulk-copy",
+                        )
+                        yield Button(
+                            "Apply PMS",
+                            variant="primary",
+                            id="btn-apply-pms",
+                        )
+                        yield Button(
+                            "Apply HMB",
+                            variant="primary",
+                            id="btn-apply-hmb",
+                        )
+                        yield Button(
+                            "Model Info",
+                            variant="primary",
+                            id="btn-model-info",
+                        )
+                        yield Button(
+                            "Global Settings",
+                            variant="primary",
+                            id="btn-global-settings",
+                        )
+                        yield Button(
+                            "Configuration",
+                            variant="default",
+                            id="btn-config",
+                        )
+                    with Horizontal(id="menu-footer"):
+                        yield Button(
+                            "Load File",
+                            variant="warning",
+                            id="btn-load-file",
+                        )
+                        yield Button("Quit", variant="error", id="btn-quit")
+                
+                with Vertical(id="right-panel"):
+                    with Vertical(classes="side-panel-section"):
+                        yield Label("Model Statistics")
+                        yield Static("─" * 20)
+                        yield self._stat_row("Pipes", pipe_count)
+                        yield self._stat_row("Feeds", feed_count)
+                        yield self._stat_row("Products", product_count)
+                        yield self._stat_row("Pumps", pump_count)
+                    
+                    with Vertical(classes="side-panel-section"):
+                        yield Label("Quick Actions")
+                        yield Static("─" * 20)
+                        yield Button("Reload", variant="default", id="btn-reload", classes="quick-action-btn")
+                        yield Button("Save", variant="default", id="btn-save", classes="quick-action-btn")
+                        yield Button("Validate", variant="default", id="btn-validate", classes="quick-action-btn")
+                    
+                    with Vertical(classes="side-panel-section"):
+                        yield Label("Tips")
+                        yield Static("─" * 20)
+                        yield Static("• Use semicolons for multi-case values")
+                        yield Static("• Press Q to quit anytime")
+                        yield Static("• Esc to go back")
         yield Footer()
+    
+    def _stat_row(self, label: str, value: int) -> Static:
+        """Create a statistics row."""
+        return Static(f"{label:<12}{value}", classes="stat-row")
+
+    def on_mount(self) -> None:
+        """Update bindings display."""
+        self.set_interval(0.5, self._update_bindings)
+    
+    def _update_bindings(self) -> None:
+        """Keep footer bindings updated."""
+        pass
 
     @on(Button.Pressed, "#btn-bulk-copy")
     def action_bulk_copy(self) -> None:
@@ -172,6 +221,36 @@ class MainMenuScreen(Screen):
     @on(Button.Pressed, "#btn-load-file")
     def action_load_file(self) -> None:
         self.app.pop_screen()
+
+    @on(Button.Pressed, "#btn-reload")
+    def action_reload_button(self) -> None:
+        """Reload the current KDF file from disk."""
+        self.action_reload_file()
+
+    @on(Button.Pressed, "#btn-save")
+    def action_save_button(self) -> None:
+        """Save the current model."""
+        from pykorf.use_case.tui.app import UseCaseTUI
+
+        app = self.app
+        assert isinstance(app, UseCaseTUI)
+        model = app.model
+
+        if model is None:
+            return
+
+        try:
+            model.save()
+            app.show_notification("File saved successfully")
+        except Exception as exc:
+            app.show_notification(f"Error saving file: {exc}")
+
+    @on(Button.Pressed, "#btn-validate")
+    def action_validate_button(self) -> None:
+        """Show validation info."""
+        from pykorf.use_case.tui.screens.model_info import ModelInfoScreen
+
+        self.app.push_screen(ModelInfoScreen())
 
     def action_reload_file(self) -> None:
         """Reload the current KDF file from disk."""
