@@ -24,17 +24,8 @@ pyKorf lets you programmatically work with [KORF](https://www.korf.co.uk/) hydra
 ## Installation
 
 ```bash
-# Core library (no dependencies)
-pip install -e .
-
-# With GUI automation support
-pip install -e ".[automation]"
-
-# With pandas DataFrame export
-pip install -e ".[dataframe]"
-
-# Full dev environment
-pip install -e ".[dev]"
+# Install with dev dependencies (includes all extras)
+uv pip install -e ".[dev]"
 ```
 
 ---

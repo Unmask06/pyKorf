@@ -175,9 +175,6 @@ nav:
     - Overview: api/overview.md
     - Model: api/model.md
     - Elements: api/elements.md
-  - CLI Reference:
-    - Overview: cli/overview.md
-    - Commands: cli/commands.md
   - Development:
     - Contributing: development/contributing.md
     - Changelog: development/changelog.md

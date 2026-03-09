@@ -10,16 +10,16 @@ This guide covers all installation options for pyKorf.
 
 ## Basic Installation
 
-Install pyKorf with pip:
-
-```bash
-pip install pykorf
-```
-
-Or with [uv](https://github.com/astral-sh/uv) (recommended):
+Install pyKorf with uv (recommended):
 
 ```bash
 uv pip install pykorf
+```
+
+Or with pip:
+
+```bash
+pip install pykorf
 ```
 
 ## Installation Options
@@ -29,7 +29,7 @@ pyKorf has optional dependencies for specific features.
 ### With All Features
 
 ```bash
-pip install pykorf[all]
+uv pip install pykorf[all]
 ```
 
 ### Feature-Specific Installation
@@ -39,7 +39,7 @@ pip install pykorf[all]
     For network visualization with PyVis:
 
     ```bash
-    pip install pykorf[visualization]
+    uv pip install pykorf[visualization]
     ```
 
     Includes: `pyvis`, `networkx`
@@ -49,7 +49,7 @@ pip install pykorf[all]
     For pandas DataFrame export:
 
     ```bash
-    pip install pykorf[dataframe]
+    uv pip install pykorf[dataframe]
     ```
 
     Includes: `pandas`, `openpyxl`
@@ -59,7 +59,7 @@ pip install pykorf[all]
     For command-line interface:
 
     ```bash
-    pip install pykorf[cli]
+    uv pip install pykorf[cli]
     ```
 
     Includes: `click`, `rich`
@@ -69,7 +69,7 @@ pip install pykorf[all]
     For additional export formats:
 
     ```bash
-    pip install pykorf[export]
+    uv pip install pykorf[export]
     ```
 
     Includes: `pyyaml`, `orjson`
@@ -79,7 +79,7 @@ pip install pykorf[all]
     For GUI automation (Windows only):
 
     ```bash
-    pip install pykorf[automation]
+    uv pip install pykorf[automation]
     ```
 
     Includes: `pywinauto`, `pywin32`
@@ -89,7 +89,7 @@ pip install pykorf[all]
     For contributing to pyKorf:
 
     ```bash
-    pip install pykorf[dev]
+    uv pip install pykorf[dev]
     ```
 
     Includes: `pytest`, `mypy`, `ruff`, `pre-commit`, `mkdocs`
@@ -115,13 +115,13 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 3. Install in editable mode with all dependencies:
 
 ```bash
-pip install -e ".[dev]"
+uv pip install -e ".[dev]"
 ```
 
-Or with uv:
+Or with pip:
 
 ```bash
-uv pip install -e ".[dev]"
+pip install -e ".[dev]"
 ```
 
 ## Verify Installation
@@ -148,7 +148,7 @@ If you see errors about missing modules:
 ```python
 # Error: "No module named 'pandas'"
 # Solution: Install the dataframe extra
-pip install pykorf[dataframe]
+uv pip install pykorf[dataframe]
 ```
 
 ### Windows GUI automation not working
@@ -156,7 +156,7 @@ pip install pykorf[dataframe]
 The automation module requires Windows and pywinauto:
 
 ```bash
-pip install pykorf[automation]
+uv pip install pykorf[automation]
 ```
 
 ### Encoding issues on Windows

@@ -75,15 +75,15 @@ pyKorf is a comprehensive Python library that enables programmatic manipulation 
 
 ```bash
 # Basic installation
-pip install pykorf
+uv pip install pykorf
 
 # With all features
-pip install pykorf[all]
+uv pip install pykorf[all]
 
 # Development installation
 git clone https://github.com/pykorf/pykorf.git
 cd pykorf
-pip install -e ".[dev]"
+uv pip install -e ".[dev]"
 ```
 
 ---

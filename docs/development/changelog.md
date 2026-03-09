@@ -9,15 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- TUI application for PMS and HMB workflows
+- Bulk calculation utilities
+- Enhanced visualization with network diagrams
+- Line number management
+
+### Changed
+
+- Refactored model architecture with service layer pattern
+- Improved connectivity and layout services
+
+## [0.2.0] - 2025-03-09
+
+### Added
+
 - Enterprise API features
   - Type-safe Pydantic models (`pykorf.types`)
   - Configuration management system (`pykorf.config`)
   - Structured logging (`pykorf.log`)
   - Export functionality (`pykorf.export`)
-  - Query DSL (`pykorf.query`)
   - Enhanced exceptions with context
-- CLI interface with rich output
 - MkDocs documentation
+- Use case processors for PMS and HMB workflows
 
 ### Changed
 
@@ -25,23 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced error messages with suggestions
 - Better validation with detailed issue reporting
 
-## [0.2.0] - 2024-01-XX
-
-### Added
-
-- Query DSL for filtering elements
-- Export to JSON, YAML, Excel, CSV
-- Configuration management
-- Structured logging
-- Type-safe data models
-
-### Changed
-
-- Refactored definitions into subpackage
-- Improved element wrapper classes
-- Better error handling with context
-
-## [0.1.0] - 2024-01-XX
+## [0.1.0] - 2024-01-15
 
 ### Added
 
