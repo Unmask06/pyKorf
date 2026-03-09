@@ -598,6 +598,20 @@ class Model(_ModelBase):
         """Return product *index*, raise :exc:`ElementNotFound` if absent."""
         return self._summary_service.product(index)
 
+    def reload(self) -> None:
+        """Reload the model from disk.
+
+        This method re-reads the .kdf file from disk and rebuilds all
+        in-memory collections. Useful when the file has been modified
+        externally (e.g., via KORF GUI) while the model is loaded in TUI.
+
+        Raises:
+            ParseError: If the file cannot be read or parsed.
+        """
+        self._parser.load()
+        self._build_collections()
+        self._loaded_mtime = self._parser.path.stat().st_mtime
+
     def summary(self) -> dict:
         """Return a high-level dict describing the model."""
         return self._summary_service.summary()

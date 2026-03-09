@@ -223,6 +223,13 @@ class GlobalSettingsScreen(Screen):
         self.app.call_from_thread(lambda: self._log(results, ""))
 
         try:
+            # Check if file has been modified externally and reload if needed
+            if model.is_file_modified():
+                self.app.call_from_thread(
+                    lambda: log_info(results, "File modified externally, reloading...")
+                )
+                model.reload()
+
             # Apply the settings
             apply_results = apply_global_settings(model, selected_ids, save=False)
 
