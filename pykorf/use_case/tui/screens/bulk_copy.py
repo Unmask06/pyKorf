@@ -137,6 +137,13 @@ class BulkCopyFluidsScreen(Screen):
             model = app.model
             assert model is not None
 
+            # Check if file has been modified externally and reload if needed
+            if model.is_file_modified():
+                self.app.call_from_thread(
+                    lambda: log_info(results, "File modified externally, reloading...")
+                )
+                model.reload()
+
             updated = copy_fluids(model, ref_input, target_lines, exclude)
 
             self.app.call_from_thread(

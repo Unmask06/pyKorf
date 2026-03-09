@@ -75,6 +75,7 @@ class _ModelBase:
 
         log_file = self._parser.path.with_suffix(".log")
         set_log_file(log_file)
+        self._loaded_mtime = self._parser.path.stat().st_mtime
 
     @classmethod
     def load(cls, path: str | Path) -> _ModelBase:
@@ -261,4 +262,30 @@ class _ModelBase:
             for idx, elem in sorted(collection.items()):
                 if idx >= 1:
                     result.append(elem)
-        return result
+
+    def is_file_modified(self) -> bool:
+        """Check if the file has been modified since it was loaded.
+
+        Returns:
+            True if the file's modification time has changed since loading,
+            False otherwise.
+        """
+        try:
+            current_mtime = self._parser.path.stat().st_mtime
+            return current_mtime != self._loaded_mtime
+        except FileNotFoundError:
+            return False
+
+    def reload(self) -> None:
+        """Reload the model from disk.
+
+        This method re-reads the .kdf file from disk and rebuilds all
+        in-memory collections. Useful when the file has been modified
+        externally (e.g., via KORF GUI) while the model is loaded in TUI.
+
+        Raises:
+            ParseError: If the file cannot be read or parsed.
+        """
+        self._parser.load()
+        self._build_collections()
+        self._loaded_mtime = self._parser.path.stat().st_mtime

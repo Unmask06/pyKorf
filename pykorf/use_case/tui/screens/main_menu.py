@@ -20,6 +20,7 @@ class MainMenuScreen(Screen):
         ("g", "global_settings", "Global Settings"),
         ("c", "config_menu", "Config Menu"),
         ("l", "load_file", "Load File"),
+        ("r", "reload_file", "Reload File"),
         ("q", "quit_app", "Quit"),
     ]
 
@@ -38,6 +39,12 @@ class MainMenuScreen(Screen):
         width: 100%;
         height: auto;
         color: $text-muted;
+    }
+    #modified-indicator {
+        width: 100%;
+        height: auto;
+        color: $warning;
+        text-style: bold;
     }
     #menu-box Label {
         margin-bottom: 1;
@@ -69,14 +76,20 @@ class MainMenuScreen(Screen):
 
         file_name = "No file loaded"
         pipe_count = 0
+        modified_indicator = ""
         if model is not None:
             file_name = str(model._parser.path)
             from pykorf.use_case.tui.screens import real_elements
 
             pipe_count = len(real_elements(model.pipes))
+            # Check if file has been modified externally
+            if model.is_file_modified():
+                modified_indicator = "⚠️ File modified externally"
 
         with Vertical(id="menu-box"):
             yield Label(f"File: {file_name}", id="file-label")
+            if modified_indicator:
+                yield Label(modified_indicator, id="modified-indicator")
             yield Label(f"Pipes: {pipe_count}")
             yield Static("---")
             with Vertical(id="menu-buttons"):
@@ -159,6 +172,26 @@ class MainMenuScreen(Screen):
     @on(Button.Pressed, "#btn-load-file")
     def action_load_file(self) -> None:
         self.app.pop_screen()
+
+    def action_reload_file(self) -> None:
+        """Reload the current KDF file from disk."""
+        from pykorf.use_case.tui.app import UseCaseTUI
+        from pykorf.use_case.tui.logging import log_info
+
+        app = self.app
+        assert isinstance(app, UseCaseTUI)
+        model = app.model
+
+        if model is None:
+            return
+
+        try:
+            model.reload()
+            # Refresh the display
+            self.app.pop_screen()
+            self.app.push_screen(MainMenuScreen())
+        except Exception as exc:
+            app.show_notification(f"Error reloading file: {exc}")
 
     @on(Button.Pressed, "#btn-quit")
     def action_quit_app(self) -> None:
