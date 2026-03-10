@@ -4,8 +4,9 @@ REM Auto-installs Python 3.13 and uv if needed, then runs the pyKorf TUI
 
 setlocal enabledelayedexpansion
 
-REM Get the directory where this bat file is located
+REM Get the directory where this bat file is located (remove trailing backslash)
 set SCRIPT_DIR=%~dp0
+if "%SCRIPT_DIR:~-1%"=="\" set SCRIPT_DIR=%SCRIPT_DIR:~0,-1%
 set APPDATA_DIR=%APPDATA%\pyKorf
 
 echo ========================================
@@ -16,12 +17,12 @@ echo.
 REM ============================================
 REM STEP 1: Check and Install Python 3.13
 REM ============================================
-echo Step 1 of 3: Checking Python...
+echo Step 1 of 4: Checking Python...
 echo.
 
-py -3.13 --version >nul 2>&1
+python --version >nul 2>&1
 if errorlevel 1 (
-    echo [NOT FOUND] Python 3.13 is not installed.
+    echo [NOT FOUND] Python is not installed.
     echo.
     echo Installing Python 3.13 via winget...
     echo This may take a few minutes. Please wait...
@@ -52,30 +53,29 @@ if errorlevel 1 (
     exit /b
 )
 
-REM Get Python 3.13 version
-for /f "tokens=2" %%i in ('py -3.13 --version 2^>^&1') do set PYVER=%%i
+for /f "tokens=2" %%i in ('python --version 2^>^&1') do set PYVER=%%i
 echo [OK] Found Python %PYVER%
 echo.
 
 REM ============================================
 REM STEP 2: Check and Install uv
 REM ============================================
-echo Step 2 of 3: Checking uv package manager...
+echo Step 2 of 4: Checking uv package manager...
 echo.
 
-py -3.13 -m pip show uv >nul 2>&1
+python -m pip show uv >nul 2>&1
 if errorlevel 1 (
     echo [NOT FOUND] uv is not installed.
     echo.
     echo Installing uv via pip...
     echo This will only take a moment...
     echo.
-    py -3.13 -m pip install uv
+    python -m pip install uv
     
     if errorlevel 1 (
         echo.
         echo [ERROR] uv installation failed.
-        echo Please install uv manually: py -3.13 -m pip install uv
+        echo Please install uv manually: python -m pip install uv
         pause
         exit /b 1
     )
@@ -93,7 +93,7 @@ cls
 REM ============================================
 REM STEP 3: Setup Application Directory
 REM ============================================
-echo Step 3 of 3: Setting up application...
+echo Step 3 of 4: Setting up application...
 echo.
 
 REM Create APPDATA directory if it doesn't exist
@@ -113,14 +113,25 @@ REM Clear screen before launching
 cls
 
 REM ============================================
-REM Launch pyKorf TUI
+REM STEP 4: Install dependencies
 REM ============================================
+echo Step 4 of 4: Installing dependencies...
+echo.
+
+cd /d "%APPDATA_DIR%"
+python -m uv sync --no-dev
+
+if errorlevel 1 (
+    echo [WARNING] Dependency sync had issues, trying pip install...
+    python -m pip install -e .
+)
+
+echo.
 echo ========================================
 echo        Starting pyKorf TUI
 echo ========================================
 echo.
 
-cd /d "%APPDATA_DIR%"
-py -3.13 -m uv run --no-editable python -m pykorf
+python -m uv run --no-dev python -m pykorf
 
 endlocal
