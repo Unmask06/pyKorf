@@ -189,12 +189,16 @@ class SummaryService:
             for param_name in critical_params:
                 rec = elem._get(param_name)
                 if rec is not None and rec.values:
-                    val = rec.values[0].strip() if rec.values[0] else ""
-                    if not val:
-                        issues.append(
-                            f"{elem.etype} {elem.name} (index {elem.index}): "
-                            f"{param_name} has empty or whitespace value"
-                        )
+                    first_val = rec.values[0]
+                    # Handle non-string values (e.g., floats) - they are considered valid
+                    if isinstance(first_val, str):
+                        val = first_val.strip() if first_val else ""
+                        if not val:
+                            issues.append(
+                                f"{elem.etype} {elem.name} (index {elem.index}): "
+                                f"{param_name} has empty or whitespace value"
+                            )
+                    # Non-string values (int, float) are considered valid/non-empty
 
     def _check_pipe_line_numbers(self, issues: list[str]) -> None:
         """Check that all pipes have line numbers in NOTES field.

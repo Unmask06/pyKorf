@@ -27,8 +27,9 @@ class UseCaseTUI(App):
         height: 1;
         background: $surface-darken-1;
         color: $text-muted;
-        content-align: center middle;
+        content-align: right middle;
         text-style: dim;
+        padding: 0 2;
     }
     #notification-banner {
         dock: top;
@@ -43,6 +44,31 @@ class UseCaseTUI(App):
     }
     #notification-banner.visible {
         display: block;
+    }
+    #left-panel {
+        width: 70%;
+        height: 100%;
+        border-right: solid $surface-darken-2;
+    }
+    #right-panel {
+        width: 30%;
+        height: 100%;
+        padding: 0 1;
+    }
+    .side-panel-section {
+        margin-bottom: 1;
+    }
+    .side-panel-section Label {
+        text-style: bold;
+        color: $accent;
+    }
+    .side-panel-section Static {
+        color: $text-muted;
+        text-style: dim;
+    }
+    .compact-button {
+        height: 3;
+        padding: 0 1;
     }
     """
 
