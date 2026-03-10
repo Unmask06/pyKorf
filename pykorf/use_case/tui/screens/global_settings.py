@@ -53,12 +53,27 @@ class GlobalSettingsScreen(Screen):
         width: 100%;
         height: 100%;
     }
+    #main-content {
+        width: 100%;
+        height: 100%;
+    }
+    #left-panel {
+        width: 70%;
+        height: 100%;
+    }
+    #right-panel {
+        width: 30%;
+        height: 100%;
+    }
     #settings-list {
         padding: 0 1;
+        height: 1fr;
+        overflow-y: auto;
     }
     #settings-list Checkbox {
         margin-bottom: 0;
-        height: 1;
+        height: auto;
+        min-height: 1;
     }
     .setting-desc {
         height: auto;
@@ -107,7 +122,7 @@ class GlobalSettingsScreen(Screen):
         saved_selections = get_global_settings_selected()
 
         with Vertical(id="global-settings-container"):
-            with Horizontal():
+            with Horizontal(id="main-content"):
                 with Vertical(id="left-panel"):
                     with Vertical(id="settings-list"):
                         yield Label("Apply Global Settings", classes="info-section")
@@ -130,7 +145,7 @@ class GlobalSettingsScreen(Screen):
                         yield Button("Apply Selected", variant="primary", id="btn-apply")
                         yield Button("Back", variant="default", id="btn-back")
                     yield RichLog(id="settings-results", wrap=True)
-                
+
                 with Vertical(id="right-panel"):
                     with Vertical(classes="info-section"):
                         yield Label("About")
@@ -138,15 +153,14 @@ class GlobalSettingsScreen(Screen):
                         yield Static("Global settings apply")
                         yield Static("bulk modifications to")
                         yield Static("all pipes in the model.")
-                    
+
                     with Vertical(classes="info-section"):
                         yield Label("Common Settings")
                         yield Static("─" * 15)
-                        yield Static("• Heat Loss Options")
-                        yield Static("• Fluid Properties")
-                        yield Static("• Insulation Defaults")
-                        yield Static("• Layout Parameters")
-                    
+                        yield Static("• Handling dummy pipe")
+                        yield Static("• Friction drop design margin")
+                        yield Static("• Bulk Rename Pipes")
+
                     with Vertical(classes="info-section"):
                         yield Label("Tip")
                         yield Static("─" * 15)
@@ -244,9 +258,7 @@ class GlobalSettingsScreen(Screen):
             return
 
         # Show preview of what will be changed
-        self.app.call_from_thread(
-            lambda: self._log(results, "Applying Global Settings:")
-        )
+        self.app.call_from_thread(lambda: self._log(results, "Applying Global Settings:"))
         for setting_id in selected_ids:
             setting = next(s for s in settings if s.id == setting_id)
             self.app.call_from_thread(
@@ -317,9 +329,7 @@ class GlobalSettingsScreen(Screen):
                         )
                 elif count > 10:
                     self.app.call_from_thread(
-                        lambda c=count: self._log(
-                            results, f"    - (showing first 10 of {c})"
-                        )
+                        lambda c=count: self._log(results, f"    - (showing first 10 of {c})")
                     )
                     for pipe_name in pipes[:10]:
                         self.app.call_from_thread(
@@ -327,9 +337,7 @@ class GlobalSettingsScreen(Screen):
                         )
 
             self.app.call_from_thread(
-                lambda: self._log(
-                    results, f"\nTotal: {total_affected} pipe(s) modified", "success"
-                )
+                lambda: self._log(results, f"\nTotal: {total_affected} pipe(s) modified", "success")
             )
 
             # Check if errors occurred
@@ -343,9 +351,7 @@ class GlobalSettingsScreen(Screen):
                 )
             else:
                 self.app.call_from_thread(
-                    lambda: self._log(
-                        results, "Model updated in memory. Save to persist changes."
-                    )
+                    lambda: self._log(results, "Model updated in memory. Save to persist changes.")
                 )
 
             # Push save confirm screen (user can view logs there)
@@ -353,7 +359,5 @@ class GlobalSettingsScreen(Screen):
 
         except Exception as exc:
             self.app.call_from_thread(
-                lambda e=exc: self._log(
-                    results, f"Error applying settings: {e}", "error"
-                )
+                lambda e=exc: self._log(results, f"Error applying settings: {e}", "error")
             )

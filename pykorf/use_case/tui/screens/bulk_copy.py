@@ -10,14 +10,13 @@ from textual.widgets import (
     Button,
     Checkbox,
     Footer,
-    Header,
     Input,
     Label,
     RichLog,
     Static,
 )
 
-from pykorf.use_case.tui.logging import log_info, log_error, log_success
+from pykorf.use_case.tui.logging import log_error, log_info, log_success
 
 
 class BulkCopyFluidsScreen(Screen):
@@ -33,6 +32,19 @@ class BulkCopyFluidsScreen(Screen):
         width: 100%;
         height: 100%;
     }
+    #main-content {
+        width: 100%;
+        height: 100%;
+    }
+    #left-panel {
+        width: 70%;
+        height: 100%;
+        overflow-y: auto;
+    }
+    #right-panel {
+        width: 30%;
+        height: 100%;
+    }
     #copy-form {
         padding: 0 1;
     }
@@ -45,12 +57,13 @@ class BulkCopyFluidsScreen(Screen):
         height: 3;
     }
     #copy-form Checkbox {
-        margin-bottom: 0;
-        height: 1;
+        margin-bottom: 1;
+        height: 3;
     }
     #copy-buttons {
         height: auto;
         margin-top: 1;
+        dock: bottom;
     }
     #copy-buttons Button {
         margin-right: 1;
@@ -81,7 +94,7 @@ class BulkCopyFluidsScreen(Screen):
 
     def compose(self) -> ComposeResult:
         with Vertical(id="copy-container"):
-            with Horizontal():
+            with Horizontal(id="main-content"):
                 with Vertical(id="left-panel"):
                     with Vertical(id="copy-form"):
                         yield Label("Bulk Copy Fluids", classes="info-section")
@@ -102,7 +115,7 @@ class BulkCopyFluidsScreen(Screen):
                             yield Button("Copy Log", variant="default", id="btn-copy-log")
                             yield Button("Back", variant="default", id="btn-back")
                         yield RichLog(id="copy-results", wrap=True)
-                
+
                 with Vertical(id="right-panel"):
                     with Vertical(classes="info-section"):
                         yield Label("How to Use")
@@ -111,7 +124,7 @@ class BulkCopyFluidsScreen(Screen):
                         yield Static("2. Enter target pipes (optional)")
                         yield Static("3. Check exclude for inverse")
                         yield Static("4. Click Execute")
-                    
+
                     with Vertical(classes="info-section"):
                         yield Label("Examples")
                         yield Static("─" * 15)
@@ -197,4 +210,4 @@ class BulkCopyFluidsScreen(Screen):
 
             self.app.call_from_thread(self.app.push_screen, SaveConfirmScreen(model))
         except Exception as exc:
-            self.app.call_from_thread(lambda: log_error(results, f"Error: {exc}"))
+            self.app.call_from_thread(lambda err=exc: log_error(results, f"Error: {err}"))

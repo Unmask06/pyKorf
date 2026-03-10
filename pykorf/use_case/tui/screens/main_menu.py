@@ -45,14 +45,52 @@ class MainMenuScreen(Screen):
         text-style: bold;
         padding: 0 1;
     }
+    #main-content {
+        width: 100%;
+        height: 1fr;
+    }
+    #left-panel {
+        width: 70%;
+        height: 100%;
+        overflow-y: auto;
+    }
+    #right-panel {
+        width: 30%;
+        height: 100%;
+        padding: 0 1;
+    }
     #menu-buttons {
+        width: 100%;
+        height: auto;
         padding: 1 1;
     }
-    #menu-buttons Button {
+    .menu-item {
         width: 100%;
-        margin-bottom: 0;
+        height: 3;
+        margin-bottom: 1;
+    }
+    .menu-item Button {
+        width: 20;
         height: 3;
         padding: 0 1;
+        margin-right: 2;
+    }
+    .menu-item Label {
+        width: 1fr;
+        content-align: left middle;
+        color: $text-muted;
+        padding: 0 1;
+    }
+    #menu-footer {
+        width: 100%;
+        height: auto;
+        padding: 1 0 0 0;
+        dock: bottom;
+    }
+    #menu-footer Button {
+        width: 14;
+        height: 3;
+        margin-right: 1;
     }
     #right-panel-content {
         padding: 0 1;
@@ -73,6 +111,17 @@ class MainMenuScreen(Screen):
         width: 100%;
         margin-bottom: 0;
         height: 3;
+    }
+    .side-panel-section {
+        margin-bottom: 1;
+    }
+    .side-panel-section Label {
+        text-style: bold;
+        color: $accent;
+    }
+    .side-panel-section Static {
+        color: $text-muted;
+        text-style: dim;
     }
     """
 
@@ -104,48 +153,34 @@ class MainMenuScreen(Screen):
             yield Label(f"📄 {file_name}", id="file-label")
             if modified_indicator:
                 yield Label(modified_indicator, id="modified-indicator")
-            
-            with Horizontal():
+
+            with Horizontal(id="main-content"):
                 with Vertical(id="left-panel"):
                     with Vertical(id="menu-buttons"):
-                        yield Button(
-                            "Bulk Copy Fluids",
-                            variant="primary",
-                            id="btn-bulk-copy",
-                        )
-                        yield Button(
-                            "Apply PMS",
-                            variant="primary",
-                            id="btn-apply-pms",
-                        )
-                        yield Button(
-                            "Apply HMB",
-                            variant="primary",
-                            id="btn-apply-hmb",
-                        )
-                        yield Button(
-                            "Model Info",
-                            variant="primary",
-                            id="btn-model-info",
-                        )
-                        yield Button(
-                            "Global Settings",
-                            variant="primary",
-                            id="btn-global-settings",
-                        )
-                        yield Button(
-                            "Configuration",
-                            variant="default",
-                            id="btn-config",
-                        )
+                        with Horizontal(classes="menu-item"):
+                            yield Button("Bulk Copy", variant="primary", id="btn-bulk-copy")
+                            yield Label("Copy fluids between elements")
+                        with Horizontal(classes="menu-item"):
+                            yield Button("Apply PMS", variant="primary", id="btn-apply-pms")
+                            yield Label("Apply pressure management system")
+                        with Horizontal(classes="menu-item"):
+                            yield Button("Apply HMB", variant="primary", id="btn-apply-hmb")
+                            yield Label("Apply heat and mass balance")
+                        with Horizontal(classes="menu-item"):
+                            yield Button("Model Info", variant="primary", id="btn-model-info")
+                            yield Label("View model statistics and validation")
+                        with Horizontal(classes="menu-item"):
+                            yield Button(
+                                "Global Settings", variant="primary", id="btn-global-settings"
+                            )
+                            yield Label("Configure global parameters")
+                        with Horizontal(classes="menu-item"):
+                            yield Button("Config", variant="default", id="btn-config")
+                            yield Label("Element configuration")
                     with Horizontal(id="menu-footer"):
-                        yield Button(
-                            "Load File",
-                            variant="warning",
-                            id="btn-load-file",
-                        )
+                        yield Button("Load File", variant="warning", id="btn-load-file")
                         yield Button("Quit", variant="error", id="btn-quit")
-                
+
                 with Vertical(id="right-panel"):
                     with Vertical(classes="side-panel-section"):
                         yield Label("Model Statistics")
@@ -154,14 +189,23 @@ class MainMenuScreen(Screen):
                         yield self._stat_row("Feeds", feed_count)
                         yield self._stat_row("Products", product_count)
                         yield self._stat_row("Pumps", pump_count)
-                    
+
                     with Vertical(classes="side-panel-section"):
                         yield Label("Quick Actions")
                         yield Static("─" * 20)
-                        yield Button("Reload", variant="default", id="btn-reload", classes="quick-action-btn")
-                        yield Button("Save", variant="default", id="btn-save", classes="quick-action-btn")
-                        yield Button("Validate", variant="default", id="btn-validate", classes="quick-action-btn")
-                    
+                        yield Button(
+                            "Reload", variant="default", id="btn-reload", classes="quick-action-btn"
+                        )
+                        yield Button(
+                            "Save", variant="default", id="btn-save", classes="quick-action-btn"
+                        )
+                        yield Button(
+                            "Validate",
+                            variant="default",
+                            id="btn-validate",
+                            classes="quick-action-btn",
+                        )
+
                     with Vertical(classes="side-panel-section"):
                         yield Label("Tips")
                         yield Static("─" * 20)
@@ -169,7 +213,7 @@ class MainMenuScreen(Screen):
                         yield Static("• Press Q to quit anytime")
                         yield Static("• Esc to go back")
         yield Footer()
-    
+
     def _stat_row(self, label: str, value: int) -> Static:
         """Create a statistics row."""
         return Static(f"{label:<12}{value}", classes="stat-row")
@@ -177,7 +221,7 @@ class MainMenuScreen(Screen):
     def on_mount(self) -> None:
         """Update bindings display."""
         self.set_interval(0.5, self._update_bindings)
-    
+
     def _update_bindings(self) -> None:
         """Keep footer bindings updated."""
         pass
@@ -255,7 +299,6 @@ class MainMenuScreen(Screen):
     def action_reload_file(self) -> None:
         """Reload the current KDF file from disk."""
         from pykorf.use_case.tui.app import UseCaseTUI
-        from pykorf.use_case.tui.logging import log_info
 
         app = self.app
         assert isinstance(app, UseCaseTUI)
