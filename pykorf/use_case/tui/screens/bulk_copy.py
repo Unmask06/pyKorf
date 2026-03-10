@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from textual import on, work
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
@@ -44,6 +46,17 @@ class BulkCopyFluidsScreen(Screen):
     #right-panel {
         width: 30%;
         height: 100%;
+    }
+    #pipe-list-section {
+        height: auto;
+        max-height: 40%;
+        border: round $surface;
+        padding: 0 1;
+        margin-bottom: 1;
+    }
+    #pipe-list-content {
+        height: auto;
+        overflow-y: auto;
     }
     #copy-form {
         padding: 0 1;
@@ -96,6 +109,11 @@ class BulkCopyFluidsScreen(Screen):
         with Vertical(id="copy-container"):
             with Horizontal(id="main-content"):
                 with Vertical(id="left-panel"):
+                    # Pipe list section - shows all available pipes
+                    with Vertical(id="pipe-list-section"):
+                        yield Label("Available Pipes (by index)", classes="info-section")
+                        yield Static(id="pipe-list-content")
+
                     with Vertical(id="copy-form"):
                         yield Label("Bulk Copy Fluids", classes="info-section")
                         yield Static("─" * 30)
@@ -137,6 +155,41 @@ class BulkCopyFluidsScreen(Screen):
                         yield Static("Ref: L1, Targets: L2, Exclude: ✓")
                         yield Static("  → Copy to all EXCEPT L2")
         yield Footer()
+
+    def on_mount(self) -> None:
+        """Populate the pipe list when screen mounts."""
+        self.call_after_refresh(self._populate_pipe_list)
+
+    def _populate_pipe_list(self) -> None:
+        """Load and display pipe names sorted by index."""
+        from typing import cast
+
+        from pykorf.use_case.tui.app import UseCaseTUI
+
+        app = self.app
+        if not isinstance(app, UseCaseTUI):
+            return
+        model = app.model
+        if model is None:
+            return
+
+        pipe_list = self.query_one("#pipe-list-content", Static)
+
+        # Get pipes sorted by index (skip index 0 which is template)
+        pipes_dict = cast(dict[int, Any], model.pipes)
+        pipes = sorted(
+            [(idx, pipe) for idx, pipe in pipes_dict.items() if idx > 0], key=lambda x: x[0]
+        )
+
+        if not pipes:
+            pipe_list.update("No pipes found in model.")
+            return
+
+        # Format pipe names only (no index), comma-separated for easy copy/paste
+        pipe_names = [pipe.name for _, pipe in pipes]
+        display_text = ", ".join(pipe_names)
+
+        pipe_list.update(display_text)
 
     def action_go_back(self) -> None:
         self.app.pop_screen()

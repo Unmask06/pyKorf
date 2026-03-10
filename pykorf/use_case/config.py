@@ -22,24 +22,26 @@ import appdirs
 APP_NAME = "pyKorf"
 CONFIG_FILENAME = "config.json"
 
+
 # Default paths - project config folder
-PROJECT_ROOT = Path(__file__).parent.parent.parent
-DEFAULT_CONFIG_DIR = PROJECT_ROOT / "config"
+# PROJECT_ROOT = Path(__file__).parent.parent
+# DEFAULT_CONFIG_DIR = PROJECT_ROOT / "config"
 
 
 def ensure_config_dir() -> Path:
-    """Ensure the config directory exists.
+    """Ensure the config directory exists in APPDATA.
 
     Returns:
-        Path to the config directory.
+        Path to the config directory in APPDATA.
     """
-    DEFAULT_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-    return DEFAULT_CONFIG_DIR
+    path = get_config_dir()
+    path.mkdir(parents=True, exist_ok=True)
+    return path
 
 
 def get_config_dir() -> Path:
     """Get the platform-specific config directory for user preferences."""
-    dirs = appdirs.user_config_dir(APP_NAME)
+    dirs = appdirs.user_config_dir(APP_NAME, appauthor=False)
     path = Path(dirs)
     path.mkdir(parents=True, exist_ok=True)
     return path
@@ -318,13 +320,13 @@ def list_config_files() -> dict[str, list[str]]:
     Returns:
         Dictionary with keys 'pms', 'streams', 'other' containing lists of filenames.
     """
-    ensure_config_dir()
+    config_dir = ensure_config_dir()
 
     pms_files = []
     stream_files = []
     other_files = []
 
-    for f in DEFAULT_CONFIG_DIR.iterdir():
+    for f in config_dir.iterdir():
         if f.is_file() and f.suffix == ".json":
             name = f.name.lower()
             if "pms" in name:

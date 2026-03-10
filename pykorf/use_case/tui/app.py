@@ -10,7 +10,7 @@ from textual.widgets import Label, Static
 class UseCaseTUI(App):
     """pyKorf Use Case TUI - Textual application."""
 
-    TITLE = "pyKorf Use Case Tool"
+    TITLE = "pyKorf Use Case Tool V0.1.0"
     SUB_TITLE = "Bulk operations on KDF files"
 
     CSS = """

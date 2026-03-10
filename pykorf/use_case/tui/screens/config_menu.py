@@ -70,7 +70,7 @@ class ConfigMenuScreen(Screen):
                     with Vertical(id="config-form"):
                         yield Label("Configuration Management", classes="info-section")
                         yield Static("─" * 30)
-                        
+
                         yield Label("Import PMS from Excel:")
                         yield Input(
                             placeholder="Path to PMS Excel file",
@@ -85,9 +85,9 @@ class ConfigMenuScreen(Screen):
                             variant="primary",
                             id="btn-import-pms",
                         )
-                        
+
                         yield Static("---")
-                        
+
                         yield Label("Import Stream Data from Excel:")
                         yield Input(
                             placeholder="Path to Stream Data Excel file",
@@ -102,7 +102,7 @@ class ConfigMenuScreen(Screen):
                             variant="primary",
                             id="btn-import-stream",
                         )
-                        
+
                         yield Static("---")
                         yield Button(
                             "List Config Files",
@@ -110,10 +110,10 @@ class ConfigMenuScreen(Screen):
                             id="btn-list-configs",
                         )
                         yield RichLog(id="config-results", wrap=True)
-                        
+
                         with Horizontal(id="config-footer"):
                             yield Button("Back", variant="default", id="btn-back")
-                
+
                 with Vertical(id="right-panel"):
                     with Vertical(classes="info-section"):
                         yield Label("PMS Config")
@@ -121,24 +121,17 @@ class ConfigMenuScreen(Screen):
                         yield Static("PMS defines pipe")
                         yield Static("specifications.")
                         yield Static("")
-                        yield Static("Stored in:")
-                        yield Static("  pykorf/definitions/pms.json")
-                    
+                        yield Static("Defines materials,")
+                        yield Static("sizes, and properties.")
+
                     with Vertical(classes="info-section"):
                         yield Label("Stream Config")
                         yield Static("─" * 15)
                         yield Static("Stream data contains")
                         yield Static("fluid properties.")
                         yield Static("")
-                        yield Static("Stored in:")
-                        yield Static("  pykorf/definitions/stream_data.json")
-                    
-                    with Vertical(classes="info-section"):
-                        yield Label("Tip")
-                        yield Static("─" * 15)
-                        yield Static("Import from Excel once,")
-                        yield Static("then reuse the JSON files")
-                        yield Static("for future sessions.")
+                        yield Static("Imports from Excel")
+                        yield Static("or use existing JSON.")
         yield Footer()
 
     def on_mount(self) -> None:
@@ -255,16 +248,13 @@ class ConfigMenuScreen(Screen):
     @on(Button.Pressed, "#btn-list-configs")
     def list_configs(self) -> None:
         """List all configuration files."""
-        from pykorf.use_case.config import ensure_config_dir, list_config_files
+        from pykorf.use_case.config import list_config_files
 
         results = self.query_one("#config-results", RichLog)
         results.clear()
 
         try:
-            config_dir = ensure_config_dir()
             files = list_config_files()
-
-            log_info(results, f"Config Directory: {config_dir}")
 
             if files["pms"]:
                 log_info(results, "PMS Files:")
