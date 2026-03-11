@@ -1,4 +1,4 @@
-"""Configuration and data files management for pyKorf.
+r"""Configuration and data files management for pyKorf.
 
 Handles:
 - User preferences (last used KDF file path)
@@ -6,47 +6,138 @@ Handles:
 - Stream data JSON files
 - Default configuration directory structure
 
-All data files are stored in the project /config folder by default.
+All configuration files are stored in:
+- Windows: %APPDATA%\\pyKorf\\config.json (user preferences)
+- Windows: %APPDATA%\\pyKorf\\data\\ (PMS, stream data files)
+- macOS: ~/Library/Application Support/pyKorf/
+- Linux: ~/.config/pyKorf/
 """
 
 from __future__ import annotations
 
 import json
+import logging
+import shutil
 from pathlib import Path
 from typing import Any
 
 import appdirs
 
+logger = logging.getLogger(__name__)
+
 # App configuration
 APP_NAME = "pyKorf"
 CONFIG_FILENAME = "config.json"
+DATA_SUBDIR = "data"
 
-# Default paths - project config folder
+# Legacy project config folder (for migration)
 PROJECT_ROOT = Path(__file__).parent.parent.parent
-DEFAULT_CONFIG_DIR = PROJECT_ROOT / "config"
+LEGACY_CONFIG_DIR = PROJECT_ROOT / "config"
+
+# Migration marker file
+MIGRATION_MARKER = ".migrated"
 
 
-def ensure_config_dir() -> Path:
-    """Ensure the config directory exists.
+def _get_roaming_config_dir() -> Path:
+    r"""Get the platform-specific roaming config directory.
 
     Returns:
-        Path to the config directory.
+        Path to %APPDATA%\\pyKorf\\ on Windows or equivalent on other platforms.
     """
-    DEFAULT_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-    return DEFAULT_CONFIG_DIR
+    dirs = appdirs.user_config_dir(APP_NAME, appauthor=False, roaming=True)
+    return Path(dirs)
 
 
 def get_config_dir() -> Path:
-    """Get the platform-specific config directory for user preferences."""
-    dirs = appdirs.user_config_dir(APP_NAME)
-    path = Path(dirs)
+    r"""Get the main config directory for user preferences.
+
+    Returns:
+        Path to the config directory (e.g., %APPDATA%\\pyKorf\\).
+    """
+    path = _get_roaming_config_dir()
     path.mkdir(parents=True, exist_ok=True)
     return path
 
 
 def get_config_path() -> Path:
-    """Get the path to the user config file."""
+    """Get the path to the user config file.
+
+    Returns:
+        Path to config.json in the config directory.
+    """
     return get_config_dir() / CONFIG_FILENAME
+
+
+def get_data_dir() -> Path:
+    r"""Get the data directory for PMS and stream files.
+
+    Returns:
+        Path to the data subdirectory (e.g., %APPDATA%\\pyKorf\\data\\).
+    """
+    path = get_config_dir() / DATA_SUBDIR
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def _needs_migration() -> bool:
+    """Check if migration from legacy config folder is needed.
+
+    Returns:
+        True if legacy folder exists and migration hasn't been done.
+    """
+    if not LEGACY_CONFIG_DIR.exists():
+        return False
+
+    marker = get_config_dir() / MIGRATION_MARKER
+    return not marker.exists()
+
+
+def _migrate_from_legacy() -> None:
+    """Migrate configuration files from project config folder to roaming directory."""
+    if not _needs_migration():
+        return
+
+    logger.info("Migrating config files from %s to %s", LEGACY_CONFIG_DIR, get_config_dir())
+
+    data_dir = get_data_dir()
+    migrated_files = []
+
+    try:
+        for item in LEGACY_CONFIG_DIR.iterdir():
+            if item.is_file() and item.suffix == ".json":
+                dest = data_dir / item.name
+                if not dest.exists():
+                    shutil.copy2(item, dest)
+                    migrated_files.append(item.name)
+                    logger.info("Migrated: %s", item.name)
+
+        # Create migration marker
+        marker = get_config_dir() / MIGRATION_MARKER
+        marker.write_text(" ".join(migrated_files), encoding="utf-8")
+
+        if migrated_files:
+            logger.info("Migration complete. Migrated %d files.", len(migrated_files))
+    except Exception as e:
+        logger.warning("Migration failed: %s", e)
+
+
+def ensure_data_dir() -> Path:
+    """Ensure the data directory exists and perform migration if needed.
+
+    Returns:
+        Path to the data directory.
+    """
+    data_dir = get_data_dir()
+    data_dir.mkdir(parents=True, exist_ok=True)
+
+    # Perform migration from legacy folder if needed
+    _migrate_from_legacy()
+
+    return data_dir
+
+
+# Backward compatibility alias
+ensure_config_dir = ensure_data_dir
 
 
 def load_config() -> dict[str, Any]:
@@ -134,9 +225,9 @@ def get_pms_path(filename: str = "pms.json") -> Path:
         filename: Name of the PMS file (default: pms.json)
 
     Returns:
-        Path to the PMS file in the config directory.
+        Path to the PMS file in the data directory.
     """
-    return ensure_config_dir() / filename
+    return ensure_data_dir() / filename
 
 
 def load_pms_data(filename: str = "pms.json") -> dict[str, Any]:
@@ -194,7 +285,6 @@ def import_pms_from_excel(
     if not excel_path.exists():
         raise FileNotFoundError(f"Excel file not found: {excel_path}")
 
-    # Convert Excel to JSON using existing function
     output_path = get_pms_path(output_filename)
     convert_pms_excel(excel_path, output_path)
 
@@ -213,9 +303,9 @@ def get_stream_path(filename: str = "stream_data.json") -> Path:
         filename: Name of the stream data file (default: stream_data.json)
 
     Returns:
-        Path to the stream data file in the config directory.
+        Path to the stream data file in the data directory.
     """
-    return ensure_config_dir() / filename
+    return ensure_data_dir() / filename
 
 
 def load_stream_data(filename: str = "stream_data.json") -> dict[str, Any]:
@@ -254,7 +344,7 @@ def import_stream_from_excel(
 ) -> Path:
     """Import stream data from an Excel file and save as JSON.
 
-    Uses the same logic as convert_hmb_excel() but saves to the config directory.
+    Uses the same logic as convert_hmb_excel() but saves to the data directory.
 
     Args:
         excel_path: Path to the Excel file containing stream data.
@@ -273,7 +363,6 @@ def import_stream_from_excel(
     if not excel_path.exists():
         raise FileNotFoundError(f"Excel file not found: {excel_path}")
 
-    # Convert Excel to JSON using existing HMB converter
     output_path = get_stream_path(output_filename)
     convert_hmb_excel(excel_path, output_path)
 
@@ -312,18 +401,18 @@ def set_global_settings_selected(setting_ids: list[str]) -> None:
 
 
 def list_config_files() -> dict[str, list[str]]:
-    """List all configuration files in the config directory.
+    """List all configuration files in the data directory.
 
     Returns:
         Dictionary with keys 'pms', 'streams', 'other' containing lists of filenames.
     """
-    ensure_config_dir()
+    data_dir = ensure_data_dir()
 
     pms_files = []
     stream_files = []
     other_files = []
 
-    for f in DEFAULT_CONFIG_DIR.iterdir():
+    for f in data_dir.iterdir():
         if f.is_file() and f.suffix == ".json":
             name = f.name.lower()
             if "pms" in name:
