@@ -30,6 +30,7 @@ from typing import TYPE_CHECKING, Any
 
 from pykorf.use_case.exceptions import ExcelConversionError, StreamNotFoundError
 from pykorf.use_case.line_number import parse_stream_from_notes
+from pykorf.fluid import Fluid
 
 if TYPE_CHECKING:
     from pykorf.model import Model
@@ -308,8 +309,6 @@ def lookup_stream(
 
 def _create_fluid_from_props(props: dict[str, Any]) -> Fluid:
     """Create a Fluid object from HMB properties dict."""
-    from pykorf.fluid import Fluid
-
     return Fluid(
         temp=props.get("temp"),
         pres=props.get("pres"),
