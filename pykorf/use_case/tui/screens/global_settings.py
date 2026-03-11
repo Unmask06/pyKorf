@@ -6,7 +6,7 @@ from textual import on, work
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import Button, Checkbox, Footer, Header, Label, RichLog, Static
+from textual.widgets import Button, Checkbox, Footer, Label, RichLog, Static
 
 from pykorf.log import get_log_file
 from pykorf.use_case.tui.logging import (
@@ -121,52 +121,51 @@ class GlobalSettingsScreen(Screen):
         settings = get_global_settings()
         saved_selections = get_global_settings_selected()
 
-        with Vertical(id="global-settings-container"):
-            with Horizontal(id="main-content"):
-                with Vertical(id="left-panel"):
-                    with Vertical(id="settings-list"):
-                        yield Label("Apply Global Settings", classes="info-section")
-                        yield Static("─" * 30)
-                        for setting in settings:
-                            is_selected = setting.id in saved_selections
-                            yield Checkbox(
-                                setting.name,
-                                value=is_selected,
-                                id=f"checkbox-{setting.id}",
-                            )
-                            yield Static(
-                                f"  {setting.description}",
-                                id=f"desc-{setting.id}",
-                                classes="setting-desc",
-                            )
+        with Vertical(id="global-settings-container"), Horizontal(id="main-content"):
+            with Vertical(id="left-panel"):
+                with Vertical(id="settings-list"):
+                    yield Label("Apply Global Settings", classes="info-section")
+                    yield Static("─" * 30)
+                    for setting in settings:
+                        is_selected = setting.id in saved_selections
+                        yield Checkbox(
+                            setting.name,
+                            value=is_selected,
+                            id=f"checkbox-{setting.id}",
+                        )
+                        yield Static(
+                            f"  {setting.description}",
+                            id=f"desc-{setting.id}",
+                            classes="setting-desc",
+                        )
 
-                    with Horizontal(id="settings-buttons"):
-                        yield Button("Select All", variant="default", id="btn-select-all")
-                        yield Button("Apply Selected", variant="primary", id="btn-apply")
-                        yield Button("Back", variant="default", id="btn-back")
-                    yield RichLog(id="settings-results", wrap=True)
+                with Horizontal(id="settings-buttons"):
+                    yield Button("Select All", variant="default", id="btn-select-all")
+                    yield Button("Apply Selected", variant="primary", id="btn-apply")
+                    yield Button("Back", variant="default", id="btn-back")
+                yield RichLog(id="settings-results", wrap=True)
 
-                with Vertical(id="right-panel"):
-                    with Vertical(classes="info-section"):
-                        yield Label("About")
-                        yield Static("─" * 15)
-                        yield Static("Global settings apply")
-                        yield Static("bulk modifications to")
-                        yield Static("all pipes in the model.")
+            with Vertical(id="right-panel"):
+                with Vertical(classes="info-section"):
+                    yield Label("About")
+                    yield Static("─" * 15)
+                    yield Static("Global settings apply")
+                    yield Static("bulk modifications to")
+                    yield Static("all pipes in the model.")
 
-                    with Vertical(classes="info-section"):
-                        yield Label("Common Settings")
-                        yield Static("─" * 15)
-                        yield Static("• Handling dummy pipe")
-                        yield Static("• Friction drop design margin")
-                        yield Static("• Bulk Rename Pipes")
+                with Vertical(classes="info-section"):
+                    yield Label("Common Settings")
+                    yield Static("─" * 15)
+                    yield Static("• Handling dummy pipe")
+                    yield Static("• Friction drop design margin")
+                    yield Static("• Bulk Rename Pipes")
 
-                    with Vertical(classes="info-section"):
-                        yield Label("Tip")
-                        yield Static("─" * 15)
-                        yield Static("Select multiple settings")
-                        yield Static("and apply together for")
-                        yield Static("efficient updates.")
+                with Vertical(classes="info-section"):
+                    yield Label("Tip")
+                    yield Static("─" * 15)
+                    yield Static("Select multiple settings")
+                    yield Static("and apply together for")
+                    yield Static("efficient updates.")
         yield Footer()
 
     def action_go_back(self) -> None:

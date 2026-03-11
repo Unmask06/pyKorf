@@ -6,7 +6,7 @@ from textual import on
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import Button, DataTable, Footer, Header, Label, RichLog, Static
+from textual.widgets import Button, DataTable, Footer, Label, RichLog, Static
 
 
 class ModelInfoScreen(Screen):
@@ -120,16 +120,18 @@ class ModelInfoScreen(Screen):
 
                     with Horizontal(id="info-buttons"):
                         yield Button("Back", variant="default", id="btn-back")
-                
+
                 with Vertical(id="right-panel"):
                     with Vertical(classes="info-section"):
                         yield Label("Quick Stats")
                         yield Static("─" * 15)
-                        yield Static(f"Total Elements: {len(pipes) + len(feeds) + len(products) + len(pumps) + len(valves)}")
+                        yield Static(
+                            f"Total Elements: {len(pipes) + len(feeds) + len(products) + len(pumps) + len(valves)}"
+                        )
                         yield Static(f"Pipes: {len(pipes)}")
                         yield Static(f"Feeds: {len(feeds)}")
                         yield Static(f"Products: {len(products)}")
-                    
+
                     with Vertical(classes="info-section"):
                         yield Label("Validation")
                         yield Static("─" * 15)
@@ -141,7 +143,7 @@ class ModelInfoScreen(Screen):
                         else:
                             yield Static("✓ No issues")
                             yield Static("Model is valid.")
-                    
+
                     with Vertical(classes="info-section"):
                         yield Label("Tips")
                         yield Static("─" * 15)

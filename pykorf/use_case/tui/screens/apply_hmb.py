@@ -8,7 +8,7 @@ from textual import on, work
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import Button, Footer, Header, Input, Label, RichLog, Static
+from textual.widgets import Button, Footer, Input, Label, RichLog, Static
 
 from pykorf.log import get_log_file
 from pykorf.use_case.tui.logging import (
@@ -76,41 +76,39 @@ class ApplyHmbScreen(Screen):
     """
 
     def compose(self) -> ComposeResult:
-        with Vertical(id="hmb-container"):
-            with Horizontal():
-                with Vertical(id="left-panel"):
-                    with Vertical(id="hmb-form"):
-                        yield Label("Apply HMB Fluid Properties", classes="info-section")
-                        yield Static("─" * 30)
-                        yield Label("HMB JSON file path:")
-                        yield Input(
-                            placeholder="C:\\path\\to\\hmb.json",
-                            id="hmb-path-input",
-                        )
-                        yield RichLog(id="hmb-results", wrap=True)
-                        with Horizontal(id="hmb-buttons"):
-                            yield Button("Apply", variant="primary", id="btn-apply")
-                            yield Button("Back", variant="default", id="btn-back")
-                
-                with Vertical(id="right-panel"):
-                    with Vertical(classes="info-section"):
-                        yield Label("About HMB")
-                        yield Static("─" * 15)
-                        yield Static("HMB contains fluid")
-                        yield Static("properties for streams.")
-                        yield Static("")
-                        yield Static("Applies fluid data to")
-                        yield Static("pipes based on stream")
-                        yield Static("assignments.")
-                    
-                    with Vertical(classes="info-section"):
-                        yield Label("Format")
-                        yield Static("─" * 15)
-                        yield Static("JSON file with stream")
-                        yield Static("names and fluid props:")
-                        yield Static("  - Density")
-                        yield Static("  - Viscosity")
-                        yield Static("  - Temperature")
+        with Vertical(id="hmb-container"), Horizontal():
+            with Vertical(id="left-panel"), Vertical(id="hmb-form"):
+                yield Label("Apply HMB Fluid Properties", classes="info-section")
+                yield Static("─" * 30)
+                yield Label("HMB JSON file path:")
+                yield Input(
+                    placeholder="C:\\path\\to\\hmb.json",
+                    id="hmb-path-input",
+                )
+                yield RichLog(id="hmb-results", wrap=True)
+                with Horizontal(id="hmb-buttons"):
+                    yield Button("Apply", variant="primary", id="btn-apply")
+                    yield Button("Back", variant="default", id="btn-back")
+
+            with Vertical(id="right-panel"):
+                with Vertical(classes="info-section"):
+                    yield Label("About HMB")
+                    yield Static("─" * 15)
+                    yield Static("HMB contains fluid")
+                    yield Static("properties for streams.")
+                    yield Static("")
+                    yield Static("Applies fluid data to")
+                    yield Static("pipes based on stream")
+                    yield Static("assignments.")
+
+                with Vertical(classes="info-section"):
+                    yield Label("Format")
+                    yield Static("─" * 15)
+                    yield Static("JSON file with stream")
+                    yield Static("names and fluid props:")
+                    yield Static("  - Density")
+                    yield Static("  - Viscosity")
+                    yield Static("  - Temperature")
         yield Footer()
 
     def action_go_back(self) -> None:

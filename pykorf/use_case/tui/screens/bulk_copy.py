@@ -93,49 +93,47 @@ class BulkCopyFluidsScreen(Screen):
     """
 
     def compose(self) -> ComposeResult:
-        with Vertical(id="copy-container"):
-            with Horizontal(id="main-content"):
-                with Vertical(id="left-panel"):
-                    with Vertical(id="copy-form"):
-                        yield Label("Bulk Copy Fluids", classes="info-section")
-                        yield Static("─" * 30)
-                        yield Label("Reference pipe (copy FROM):")
-                        yield Input(placeholder="e.g. L1", id="ref-pipe-input")
-                        yield Label("Target pipes (comma-sep, empty for ALL):")
-                        yield Input(
-                            placeholder="e.g. L2, L3, L4",
-                            id="target-pipes-input",
-                        )
-                        yield Checkbox(
-                            "Exclude mode",
-                            id="exclude-checkbox",
-                        )
-                        with Horizontal(id="copy-buttons"):
-                            yield Button("Execute", variant="primary", id="btn-execute")
-                            yield Button("Copy Log", variant="default", id="btn-copy-log")
-                            yield Button("Back", variant="default", id="btn-back")
-                        yield RichLog(id="copy-results", wrap=True)
+        with Vertical(id="copy-container"), Horizontal(id="main-content"):
+            with Vertical(id="left-panel"), Vertical(id="copy-form"):
+                yield Label("Bulk Copy Fluids", classes="info-section")
+                yield Static("─" * 30)
+                yield Label("Reference pipe (copy FROM):")
+                yield Input(placeholder="e.g. L1", id="ref-pipe-input")
+                yield Label("Target pipes (comma-sep, empty for ALL):")
+                yield Input(
+                    placeholder="e.g. L2, L3, L4",
+                    id="target-pipes-input",
+                )
+                yield Checkbox(
+                    "Exclude mode",
+                    id="exclude-checkbox",
+                )
+                with Horizontal(id="copy-buttons"):
+                    yield Button("Execute", variant="primary", id="btn-execute")
+                    yield Button("Copy Log", variant="default", id="btn-copy-log")
+                    yield Button("Back", variant="default", id="btn-back")
+                yield RichLog(id="copy-results", wrap=True)
 
-                with Vertical(id="right-panel"):
-                    with Vertical(classes="info-section"):
-                        yield Label("How to Use")
-                        yield Static("─" * 15)
-                        yield Static("1. Enter reference pipe name")
-                        yield Static("2. Enter target pipes (optional)")
-                        yield Static("3. Check exclude for inverse")
-                        yield Static("4. Click Execute")
+            with Vertical(id="right-panel"):
+                with Vertical(classes="info-section"):
+                    yield Label("How to Use")
+                    yield Static("─" * 15)
+                    yield Static("1. Enter reference pipe name")
+                    yield Static("2. Enter target pipes (optional)")
+                    yield Static("3. Check exclude for inverse")
+                    yield Static("4. Click Execute")
 
-                    with Vertical(classes="info-section"):
-                        yield Label("Examples")
-                        yield Static("─" * 15)
-                        yield Static("Ref: L1, Targets: L2,L3")
-                        yield Static("  → Copy L1 fluid to L2,L3")
-                        yield Static("")
-                        yield Static("Ref: L1, Targets: (empty)")
-                        yield Static("  → Copy L1 fluid to ALL")
-                        yield Static("")
-                        yield Static("Ref: L1, Targets: L2, Exclude: ✓")
-                        yield Static("  → Copy to all EXCEPT L2")
+                with Vertical(classes="info-section"):
+                    yield Label("Examples")
+                    yield Static("─" * 15)
+                    yield Static("Ref: L1, Targets: L2,L3")
+                    yield Static("  → Copy L1 fluid to L2,L3")
+                    yield Static("")
+                    yield Static("Ref: L1, Targets: (empty)")
+                    yield Static("  → Copy L1 fluid to ALL")
+                    yield Static("")
+                    yield Static("Ref: L1, Targets: L2, Exclude: ✓")
+                    yield Static("  → Copy to all EXCEPT L2")
         yield Footer()
 
     def action_go_back(self) -> None:

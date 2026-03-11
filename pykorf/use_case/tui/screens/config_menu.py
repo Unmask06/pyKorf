@@ -6,7 +6,7 @@ from textual import on
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import Button, Footer, Header, Input, Label, RichLog, Static
+from textual.widgets import Button, Footer, Input, Label, RichLog, Static
 
 from pykorf.use_case.tui.logging import log_error, log_info, log_success, log_warning
 
@@ -64,81 +64,79 @@ class ConfigMenuScreen(Screen):
     """
 
     def compose(self) -> ComposeResult:
-        with Vertical(id="config-container"):
-            with Horizontal():
-                with Vertical(id="left-panel"):
-                    with Vertical(id="config-form"):
-                        yield Label("Configuration Management", classes="info-section")
-                        yield Static("─" * 30)
-                        
-                        yield Label("Import PMS from Excel:")
-                        yield Input(
-                            placeholder="Path to PMS Excel file",
-                            id="pms-excel-input",
-                        )
-                        yield Input(
-                            placeholder="Output filename (default: pms.json)",
-                            id="pms-output-input",
-                        )
-                        yield Button(
-                            "Import PMS from Excel",
-                            variant="primary",
-                            id="btn-import-pms",
-                        )
-                        
-                        yield Static("---")
-                        
-                        yield Label("Import Stream Data from Excel:")
-                        yield Input(
-                            placeholder="Path to Stream Data Excel file",
-                            id="stream-excel-input",
-                        )
-                        yield Input(
-                            placeholder="Output filename (default: stream_data.json)",
-                            id="stream-output-input",
-                        )
-                        yield Button(
-                            "Import Stream Data from Excel",
-                            variant="primary",
-                            id="btn-import-stream",
-                        )
-                        
-                        yield Static("---")
-                        yield Button(
-                            "List Config Files",
-                            variant="default",
-                            id="btn-list-configs",
-                        )
-                        yield RichLog(id="config-results", wrap=True)
-                        
-                        with Horizontal(id="config-footer"):
-                            yield Button("Back", variant="default", id="btn-back")
-                
-                with Vertical(id="right-panel"):
-                    with Vertical(classes="info-section"):
-                        yield Label("PMS Config")
-                        yield Static("─" * 15)
-                        yield Static("PMS defines pipe")
-                        yield Static("specifications.")
-                        yield Static("")
-                        yield Static("Stored in:")
-                        yield Static("  pykorf/definitions/pms.json")
-                    
-                    with Vertical(classes="info-section"):
-                        yield Label("Stream Config")
-                        yield Static("─" * 15)
-                        yield Static("Stream data contains")
-                        yield Static("fluid properties.")
-                        yield Static("")
-                        yield Static("Stored in:")
-                        yield Static("  pykorf/definitions/stream_data.json")
-                    
-                    with Vertical(classes="info-section"):
-                        yield Label("Tip")
-                        yield Static("─" * 15)
-                        yield Static("Import from Excel once,")
-                        yield Static("then reuse the JSON files")
-                        yield Static("for future sessions.")
+        with Vertical(id="config-container"), Horizontal():
+            with Vertical(id="left-panel"), Vertical(id="config-form"):
+                yield Label("Configuration Management", classes="info-section")
+                yield Static("─" * 30)
+
+                yield Label("Import PMS from Excel:")
+                yield Input(
+                    placeholder="Path to PMS Excel file",
+                    id="pms-excel-input",
+                )
+                yield Input(
+                    placeholder="Output filename (default: pms.json)",
+                    id="pms-output-input",
+                )
+                yield Button(
+                    "Import PMS from Excel",
+                    variant="primary",
+                    id="btn-import-pms",
+                )
+
+                yield Static("---")
+
+                yield Label("Import Stream Data from Excel:")
+                yield Input(
+                    placeholder="Path to Stream Data Excel file",
+                    id="stream-excel-input",
+                )
+                yield Input(
+                    placeholder="Output filename (default: stream_data.json)",
+                    id="stream-output-input",
+                )
+                yield Button(
+                    "Import Stream Data from Excel",
+                    variant="primary",
+                    id="btn-import-stream",
+                )
+
+                yield Static("---")
+                yield Button(
+                    "List Config Files",
+                    variant="default",
+                    id="btn-list-configs",
+                )
+                yield RichLog(id="config-results", wrap=True)
+
+                with Horizontal(id="config-footer"):
+                    yield Button("Back", variant="default", id="btn-back")
+
+            with Vertical(id="right-panel"):
+                with Vertical(classes="info-section"):
+                    yield Label("PMS Config")
+                    yield Static("─" * 15)
+                    yield Static("PMS defines pipe")
+                    yield Static("specifications.")
+                    yield Static("")
+                    yield Static("Stored in:")
+                    yield Static("  pykorf/definitions/pms.json")
+
+                with Vertical(classes="info-section"):
+                    yield Label("Stream Config")
+                    yield Static("─" * 15)
+                    yield Static("Stream data contains")
+                    yield Static("fluid properties.")
+                    yield Static("")
+                    yield Static("Stored in:")
+                    yield Static("  pykorf/definitions/stream_data.json")
+
+                with Vertical(classes="info-section"):
+                    yield Label("Tip")
+                    yield Static("─" * 15)
+                    yield Static("Import from Excel once,")
+                    yield Static("then reuse the JSON files")
+                    yield Static("for future sessions.")
         yield Footer()
 
     def on_mount(self) -> None:
