@@ -18,15 +18,9 @@ class ModelInfoScreen(Screen):
     ModelInfoScreen {
         align: center middle;
     }
-    #info-box {
-        width: 90;
-        height: auto;
-        max-height: 45;
-        border: round $accent;
-        padding: 1 2;
-    }
-    #info-box Label {
-        margin-bottom: 1;
+    #info-container {
+        width: 100%;
+        height: 100%;
     }
     #info-table {
         height: auto;
@@ -34,10 +28,8 @@ class ModelInfoScreen(Screen):
         margin-bottom: 1;
     }
     #pipe-list, #validation-list {
-        height: auto;
-        max-height: 15;
+        height: 1fr;
         border: round $surface;
-        margin-bottom: 1;
         overflow-x: hidden;
     }
     #pipe-list RichLog, #validation-list RichLog {
@@ -60,11 +52,23 @@ class ModelInfoScreen(Screen):
         height: 3;
         align: center middle;
     }
+    #right-panel-content {
+        padding: 0 1;
+    }
+    .info-section {
+        margin-bottom: 1;
+    }
+    .info-section Label {
+        text-style: bold;
+        color: $accent;
+    }
+    .stat-row {
+        height: 1;
+        margin-bottom: 0;
+    }
     """
 
     def compose(self) -> ComposeResult:
-        yield Header()
-
         app = self.app
         from pykorf.use_case.tui.app import UseCaseTUI
 
@@ -80,47 +84,69 @@ class ModelInfoScreen(Screen):
         pumps = real_elements(model.pumps)
         valves = real_elements(model.valves)
 
-        # Get validation issues
         validation_issues = model.validate()
 
-        with Vertical(id="info-box"):
-            yield Label("Model Information")
-            yield Label(f"File: {model._parser.path}")
-            yield Static("---")
+        with Vertical(id="info-container"):
+            with Horizontal():
+                with Vertical(id="left-panel"):
+                    table = DataTable(id="info-table")
+                    table.add_columns("Element Type", "Count")
+                    table.add_rows(
+                        [
+                            ("Pipes", str(len(pipes))),
+                            ("Feeds", str(len(feeds))),
+                            ("Products", str(len(products))),
+                            ("Pumps", str(len(pumps))),
+                            ("Valves", str(len(valves))),
+                        ]
+                    )
+                    yield table
 
-            table = DataTable(id="info-table")
-            table.add_columns("Element Type", "Count")
-            table.add_rows(
-                [
-                    ("Pipes", str(len(pipes))),
-                    ("Feeds", str(len(feeds))),
-                    ("Products", str(len(products))),
-                    ("Pumps", str(len(pumps))),
-                    ("Valves", str(len(valves))),
-                ]
-            )
-            yield table
+                    yield Label("Pipe Names:", classes="info-section")
+                    log = RichLog(id="pipe-list", wrap=True, highlight=True)
+                    yield log
 
-            yield Label("Pipe Names:")
-            log = RichLog(id="pipe-list", wrap=True, highlight=True)
-            yield log
+                    yield Static("---")
+                    validation_header = (
+                        f"PASSED ({len(validation_issues)} issues)"
+                        if not validation_issues
+                        else f"FAILED ({len(validation_issues)} issues)"
+                    )
+                    yield Label(f"Validation: {validation_header}", id="validation-header")
 
-            # Validation section
-            yield Static("---")
-            validation_header = (
-                f"Validation: PASSED ({len(validation_issues)} issues)"
-                if not validation_issues
-                else f"Validation: FAILED ({len(validation_issues)} issues)"
-            )
-            yield Label(validation_header, id="validation-header")
+                    if validation_issues:
+                        val_log = RichLog(id="validation-list", wrap=True, highlight=True)
+                        yield val_log
 
-            if validation_issues:
-                val_log = RichLog(id="validation-list", wrap=True, highlight=True)
-                yield val_log
-
-            with Horizontal(id="info-buttons"):
-                yield Button("Back", variant="default", id="btn-back")
-
+                    with Horizontal(id="info-buttons"):
+                        yield Button("Back", variant="default", id="btn-back")
+                
+                with Vertical(id="right-panel"):
+                    with Vertical(classes="info-section"):
+                        yield Label("Quick Stats")
+                        yield Static("─" * 15)
+                        yield Static(f"Total Elements: {len(pipes) + len(feeds) + len(products) + len(pumps) + len(valves)}")
+                        yield Static(f"Pipes: {len(pipes)}")
+                        yield Static(f"Feeds: {len(feeds)}")
+                        yield Static(f"Products: {len(products)}")
+                    
+                    with Vertical(classes="info-section"):
+                        yield Label("Validation")
+                        yield Static("─" * 15)
+                        if validation_issues:
+                            yield Static(f"⚠ {len(validation_issues)} issues found")
+                            yield Static("")
+                            yield Static("Review issues in")
+                            yield Static("left panel.")
+                        else:
+                            yield Static("✓ No issues")
+                            yield Static("Model is valid.")
+                    
+                    with Vertical(classes="info-section"):
+                        yield Label("Tips")
+                        yield Static("─" * 15)
+                        yield Static("Fix validation issues")
+                        yield Static("before saving changes.")
         yield Footer()
 
     def on_mount(self) -> None:

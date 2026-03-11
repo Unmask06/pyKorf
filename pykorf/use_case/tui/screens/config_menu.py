@@ -20,29 +20,30 @@ class ConfigMenuScreen(Screen):
     ConfigMenuScreen {
         align: center middle;
     }
-    #config-box {
-        width: 80;
-        height: auto;
-        max-height: 50;
-        border: round $accent;
-        padding: 1 2;
-    }
-    #config-box Label {
-        margin-bottom: 1;
-    }
-    #config-box Input {
-        margin-bottom: 1;
-    }
-    #config-buttons {
-        height: auto;
-        margin: 1 0;
-    }
-    #config-buttons Button {
+    #config-container {
         width: 100%;
-        margin-bottom: 1;
+        height: 100%;
+    }
+    #config-form {
+        padding: 0 1;
+    }
+    #config-form Label {
+        margin-bottom: 0;
+        height: 1;
+    }
+    #config-form Input {
+        margin-bottom: 0;
+        height: 3;
+    }
+    #config-form Button {
+        width: 100%;
+        margin-bottom: 0;
+        height: 3;
+        padding: 0 1;
     }
     #config-results {
-        height: 10;
+        width: 100%;
+        height: 1fr;
         border: round $surface;
         margin-top: 1;
         overflow-x: hidden;
@@ -50,51 +51,94 @@ class ConfigMenuScreen(Screen):
     #config-results RichLog {
         overflow-x: hidden;
     }
+    #right-panel-content {
+        padding: 0 1;
+    }
+    .info-section {
+        margin-bottom: 1;
+    }
+    .info-section Label {
+        text-style: bold;
+        color: $accent;
+    }
     """
 
     def compose(self) -> ComposeResult:
-        yield Header()
-        with Vertical(id="config-box"):
-            yield Label("Configuration Management")
-            yield Static("---")
-            yield Label("Import PMS from Excel:")
-            yield Input(
-                placeholder="Path to PMS Excel file",
-                id="pms-excel-input",
-            )
-            yield Input(
-                placeholder="Output filename (default: pms.json)",
-                id="pms-output-input",
-            )
-            yield Button(
-                "Import PMS from Excel",
-                variant="primary",
-                id="btn-import-pms",
-            )
-            yield Static("---")
-            yield Label("Import Stream Data from Excel:")
-            yield Input(
-                placeholder="Path to Stream Data Excel file",
-                id="stream-excel-input",
-            )
-            yield Input(
-                placeholder="Output filename (default: stream_data.json)",
-                id="stream-output-input",
-            )
-            yield Button(
-                "Import Stream Data from Excel",
-                variant="primary",
-                id="btn-import-stream",
-            )
-            yield Static("---")
-            yield Button(
-                "List Config Files",
-                variant="default",
-                id="btn-list-configs",
-            )
-            yield RichLog(id="config-results", wrap=True)
-            with Horizontal(id="config-footer"):
-                yield Button("Back", variant="default", id="btn-back")
+        with Vertical(id="config-container"):
+            with Horizontal():
+                with Vertical(id="left-panel"):
+                    with Vertical(id="config-form"):
+                        yield Label("Configuration Management", classes="info-section")
+                        yield Static("─" * 30)
+                        
+                        yield Label("Import PMS from Excel:")
+                        yield Input(
+                            placeholder="Path to PMS Excel file",
+                            id="pms-excel-input",
+                        )
+                        yield Input(
+                            placeholder="Output filename (default: pms.json)",
+                            id="pms-output-input",
+                        )
+                        yield Button(
+                            "Import PMS from Excel",
+                            variant="primary",
+                            id="btn-import-pms",
+                        )
+                        
+                        yield Static("---")
+                        
+                        yield Label("Import Stream Data from Excel:")
+                        yield Input(
+                            placeholder="Path to Stream Data Excel file",
+                            id="stream-excel-input",
+                        )
+                        yield Input(
+                            placeholder="Output filename (default: stream_data.json)",
+                            id="stream-output-input",
+                        )
+                        yield Button(
+                            "Import Stream Data from Excel",
+                            variant="primary",
+                            id="btn-import-stream",
+                        )
+                        
+                        yield Static("---")
+                        yield Button(
+                            "List Config Files",
+                            variant="default",
+                            id="btn-list-configs",
+                        )
+                        yield RichLog(id="config-results", wrap=True)
+                        
+                        with Horizontal(id="config-footer"):
+                            yield Button("Back", variant="default", id="btn-back")
+                
+                with Vertical(id="right-panel"):
+                    with Vertical(classes="info-section"):
+                        yield Label("PMS Config")
+                        yield Static("─" * 15)
+                        yield Static("PMS defines pipe")
+                        yield Static("specifications.")
+                        yield Static("")
+                        yield Static("Stored in:")
+                        yield Static("  pykorf/definitions/pms.json")
+                    
+                    with Vertical(classes="info-section"):
+                        yield Label("Stream Config")
+                        yield Static("─" * 15)
+                        yield Static("Stream data contains")
+                        yield Static("fluid properties.")
+                        yield Static("")
+                        yield Static("Stored in:")
+                        yield Static("  pykorf/definitions/stream_data.json")
+                    
+                    with Vertical(classes="info-section"):
+                        yield Label("Tip")
+                        yield Static("─" * 15)
+                        yield Static("Import from Excel once,")
+                        yield Static("then reuse the JSON files")
+                        yield Static("for future sessions.")
         yield Footer()
 
     def on_mount(self) -> None:

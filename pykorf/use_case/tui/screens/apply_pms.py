@@ -28,28 +28,29 @@ class ApplyPmsScreen(Screen):
     ApplyPmsScreen {
         align: center middle;
     }
-    #pms-box {
-        width: 80;
-        height: auto;
-        max-height: 40;
-        border: round $accent;
-        padding: 1 2;
+    #pms-container {
+        width: 100%;
+        height: 100%;
     }
-    #pms-box Label {
-        margin-bottom: 1;
+    #pms-form {
+        padding: 0 1;
     }
-    #pms-box Static {
-        margin-bottom: 1;
+    #pms-form Label {
+        margin-bottom: 0;
+        height: 1;
     }
     #pms-buttons {
-        height: 3;
-        align: center middle;
+        height: auto;
+        margin-top: 1;
     }
     #pms-buttons Button {
-        margin: 0 1;
+        margin-right: 1;
+        height: 3;
+        padding: 0 1;
     }
     #pms-results {
-        height: 12;
+        width: 100%;
+        height: 1fr;
         border: round $surface;
         margin-top: 1;
         overflow-x: hidden;
@@ -57,19 +58,50 @@ class ApplyPmsScreen(Screen):
     #pms-results RichLog {
         overflow-x: hidden;
     }
+    #right-panel-content {
+        padding: 0 1;
+    }
+    .info-section {
+        margin-bottom: 1;
+    }
+    .info-section Label {
+        text-style: bold;
+        color: $accent;
+    }
     """
 
     def compose(self) -> ComposeResult:
-        yield Header()
-        with Vertical(id="pms-box"):
-            yield Label("Apply PMS Specifications")
-            yield Static("---")
-            pms_path = get_pms_path()
-            yield Label(f"PMS file: {pms_path}")
-            yield RichLog(id="pms-results", wrap=True)
-            with Horizontal(id="pms-buttons"):
-                yield Button("Apply", variant="primary", id="btn-apply")
-                yield Button("Back", variant="default", id="btn-back")
+        pms_path = get_pms_path()
+        
+        with Vertical(id="pms-container"):
+            with Horizontal():
+                with Vertical(id="left-panel"):
+                    with Vertical(id="pms-form"):
+                        yield Label("Apply PMS Specifications", classes="info-section")
+                        yield Static("─" * 30)
+                        yield Label(f"PMS file: {pms_path}")
+                        yield RichLog(id="pms-results", wrap=True)
+                        with Horizontal(id="pms-buttons"):
+                            yield Button("Apply", variant="primary", id="btn-apply")
+                            yield Button("Back", variant="default", id="btn-back")
+                
+                with Vertical(id="right-panel"):
+                    with Vertical(classes="info-section"):
+                        yield Label("About PMS")
+                        yield Static("─" * 15)
+                        yield Static("PMS specifications")
+                        yield Static("define pipe properties")
+                        yield Static("based on pipe names.")
+                        yield Static("")
+                        yield Static("Matches pipes by NAME")
+                        yield Static("attribute.")
+                    
+                    with Vertical(classes="info-section"):
+                        yield Label("Note")
+                        yield Static("─" * 15)
+                        yield Static("Import PMS from Excel")
+                        yield Static("via Configuration menu")
+                        yield Static("if file not found.")
         yield Footer()
 
     def action_go_back(self) -> None:
