@@ -35,7 +35,6 @@ from pykorf.exceptions import AutomationError
 
 if TYPE_CHECKING:
     from pywinauto.application import Application
-    from pywinauto.timings import TimeoutError as WinTimeout
 try:
     from pywinauto.application import Application
 
