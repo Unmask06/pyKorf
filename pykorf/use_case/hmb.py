@@ -28,9 +28,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from pykorf.fluid import Fluid
 from pykorf.use_case.exceptions import ExcelConversionError, StreamNotFoundError
 from pykorf.use_case.line_number import parse_stream_from_notes
-from pykorf.fluid import Fluid
 
 if TYPE_CHECKING:
     from pykorf.model import Model

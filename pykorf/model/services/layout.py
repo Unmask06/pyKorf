@@ -129,7 +129,7 @@ class LayoutService:
         # Case 3: set_position(element, x, y)
         if y is not None:
             raise ValueError("Use set_position(element, x, y) for element objects")
-        self.__set_position_on_element(cast(BaseElement, target), float(name_or_x), float(x_or_y))
+        self.__set_position_on_element(cast("BaseElement", target), float(name_or_x), float(x_or_y))
 
     def __all_positions(self) -> dict[str, tuple[float, float]]:
         """Collect all element positions as ``{name: (x, y)}``."""
