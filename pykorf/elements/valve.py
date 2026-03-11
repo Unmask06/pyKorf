@@ -1,4 +1,4 @@
-"""Control valve element (``\\VALVE``)."""
+r"""Control valve element (``\\VALVE``)."""
 
 from __future__ import annotations
 
@@ -116,7 +116,7 @@ class Valve(BaseElement):
             value = join_cases(value)
         rec = self._get(Valve.DP)
         if rec:
-            self._set(Valve.DP, [str(value)] + rec.values[1:])
+            self._set(Valve.DP, [str(value), *rec.values[1:]])
 
     @property
     def opening_string(self) -> str:
@@ -128,7 +128,7 @@ class Valve(BaseElement):
             value = join_cases(value)
         rec = self._get(Valve.OPEN)
         if rec:
-            self._set(Valve.OPEN, [str(value)] + rec.values[1:])
+            self._set(Valve.OPEN, [str(value), *rec.values[1:]])
 
     @property
     def inlet_pressure_kPag(self) -> float:

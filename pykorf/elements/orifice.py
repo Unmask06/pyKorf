@@ -1,4 +1,4 @@
-"""Flow orifice element (``\\FO``)."""
+r"""Flow orifice element (``\\FO``)."""
 
 from __future__ import annotations
 
@@ -98,7 +98,7 @@ class FlowOrifice(BaseElement):
             value = join_cases(value)
         rec = self._get(FlowOrifice.DP)
         if rec:
-            self._set(FlowOrifice.DP, [str(value)] + rec.values[1:])
+            self._set(FlowOrifice.DP, [str(value), *rec.values[1:]])
 
     @property
     def beta(self) -> float:

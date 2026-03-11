@@ -122,9 +122,7 @@ class ElementNotFound(KorfError):
         if available_names:
             # Find similar names using simple substring matching
             similar = [
-                n
-                for n in available_names
-                if name.lower() in n.lower() or n.lower() in name.lower()
+                n for n in available_names if name.lower() in n.lower() or n.lower() in name.lower()
             ]
             if similar:
                 suggestion = f"Did you mean: {', '.join(similar[:3])}?"
@@ -237,18 +235,18 @@ class ImportError(KorfError):
 
 
 __all__ = [
-    "ErrorContext",
-    "KorfError",
-    "ParseError",
-    "ElementNotFound",
-    "ElementAlreadyExists",
-    "CaseError",
     "AutomationError",
-    "ValidationError",
+    "CaseError",
     "ConnectivityError",
-    "LayoutError",
-    "VersionError",
-    "ParameterError",
+    "ElementAlreadyExists",
+    "ElementNotFound",
+    "ErrorContext",
     "ExportError",
     "ImportError",
+    "KorfError",
+    "LayoutError",
+    "ParameterError",
+    "ParseError",
+    "ValidationError",
+    "VersionError",
 ]

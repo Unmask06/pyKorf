@@ -1,4 +1,4 @@
-"""Shared CSV / value utilities for pyKorf.
+r"""Shared CSV / value utilities for pyKorf.
 
 KDF format notes
 ----------------
@@ -8,7 +8,7 @@ KDF format notes
   such as ``2.22736E-02``).
 * Multi-case values are packed into a single quoted string with semicolons
   as the separator: ``"50;55;20"`` means case-1=50, case-2=55, case-3=20.
-* A value of ``";C"`` indicates *calculated* – KORF filled it in during a run.
+* A value of ``";C"`` indicates *calculated* - KORF filled it in during a run.
 * Index 0 of every element type is the *default template*; actual instances
   start at index 1.
 * ``"\\ELEMENT",0,"NUM",n`` stores the count of actual instances.
@@ -18,8 +18,9 @@ from __future__ import annotations
 
 import csv
 import io
+from collections.abc import Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Sequence
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -122,7 +123,7 @@ def split_cases(value: str) -> list[str]:
 
         >>> split_cases("50;55;20")
         ['50', '55', '20']
-        >>> split_cases(";C")          # calculated – treat as single item
+        >>> split_cases(";C")          # calculated - treat as single item
         [';C']
         >>> split_cases("100")
         ['100']
@@ -188,6 +189,7 @@ def read_excel_safe(
         FileNotFoundError: If the Excel file doesn't exist
     """
     import pandas as pd
+
     from pykorf.use_case.exceptions import ExcelConversionError
 
     excel_path = Path(excel_path)

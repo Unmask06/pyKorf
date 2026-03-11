@@ -1,4 +1,4 @@
-"""CaseSet – helpers for managing multi-case scenarios in a KORF model.
+"""CaseSet - helpers for managing multi-case scenarios in a KORF model.
 
 KORF supports running multiple scenarios (cases) in a single file.
 Each case is identified by its 1-based position in the semicolon-delimited
@@ -63,7 +63,7 @@ class CaseSet:
 
     def _validate_case(self, case_index: int) -> None:
         if case_index < 1 or case_index > self.count:
-            raise CaseError(f"Case index {case_index} out of range 1–{self.count}")
+            raise CaseError(f"Case index {case_index} out of range 1-{self.count}")
 
     # ------------------------------------------------------------------
     # Activate / deactivate cases
@@ -113,8 +113,9 @@ class CaseSet:
         self._model.product(prod_index).set_pressure(pressures)
 
     def get_case_value(self, raw_string: str, case_index: int) -> str:
-        """Extract the value for *case_index* (1-based) from a semicolon
-        string like ``'50;55;20'``.
+        """Extract the value for *case_index* (1-based) from a semicolon string.
+
+        ``'50;55;20'``.
 
         Parameters
         ----------
@@ -130,8 +131,9 @@ class CaseSet:
         return parts[case_index - 1]
 
     def set_case_value(self, raw_string: str, case_index: int, new_value: str) -> str:
-        """Replace the value for *case_index* in *raw_string* and return the
-        updated string.
+        """Replace the value for *case_index* in *raw_string*.
+
+        Returns the updated string.
 
         Parameters
         ----------
@@ -155,7 +157,7 @@ class CaseSet:
     # ------------------------------------------------------------------
 
     def pipe_flows_table(self) -> list[dict]:
-        """Return a list of dicts – one row per pipe – showing flow per case.
+        """Return a list of dicts - one row per pipe - showing flow per case.
 
         Useful for display::
 

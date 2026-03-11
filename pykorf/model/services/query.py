@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from pykorf.elements import BaseElement, Common
-from pykorf.exceptions import ElementNotFound, ErrorContext, ParameterError
+from pykorf.exceptions import ErrorContext, ParameterError
 from pykorf.parser import KdfRecord
 
 if TYPE_CHECKING:

@@ -1,4 +1,4 @@
-"""Heat exchanger element (``\\HX``)."""
+r"""Heat exchanger element (``\\HX``)."""
 
 from __future__ import annotations
 
@@ -80,7 +80,7 @@ class HeatExchanger(BaseElement):
     def set_dp(self, value: str | float) -> None:
         rec = self._get(HeatExchanger.DP)
         if rec:
-            self._set(HeatExchanger.DP, [str(value)] + rec.values[1:])
+            self._set(HeatExchanger.DP, [str(value), *rec.values[1:]])
 
     @property
     def inlet_pressure_kPag(self) -> float:

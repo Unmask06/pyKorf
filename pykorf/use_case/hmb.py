@@ -28,6 +28,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from pykorf.fluid import Fluid
 from pykorf.use_case.exceptions import ExcelConversionError, StreamNotFoundError
 from pykorf.use_case.line_number import parse_stream_from_notes
 
@@ -308,8 +309,6 @@ def lookup_stream(
 
 def _create_fluid_from_props(props: dict[str, Any]) -> Fluid:
     """Create a Fluid object from HMB properties dict."""
-    from pykorf.fluid import Fluid
-
     return Fluid(
         temp=props.get("temp"),
         pres=props.get("pres"),
@@ -363,8 +362,6 @@ def apply_hmb(
         print(f"Updated {len(updated_pipes)} pipes with fluid properties")
         ```
     """
-    from pykorf.fluid import Fluid
-
     hmb_data = load_hmb(hmb_source)
     updated_pipes: list[str] = []
 

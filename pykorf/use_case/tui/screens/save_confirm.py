@@ -58,7 +58,7 @@ class SaveConfirmScreen(Screen):
     }
     """
 
-    def __init__(self, model: "Model") -> None:
+    def __init__(self, model: Model) -> None:
         super().__init__()
         self._model = model
 
@@ -99,7 +99,7 @@ class SaveConfirmScreen(Screen):
                 if log_path.exists():
                     print(f"DEBUG: log file size = {log_path.stat().st_size} bytes")
                     # Read first few lines for debugging
-                    with open(log_path, "r") as f:
+                    with open(log_path) as f:
                         lines = f.readlines()[:5]
                         for i, line in enumerate(lines):
                             print(f"DEBUG: line {i}: {line.strip()[:80]}")

@@ -1,4 +1,4 @@
-"""Tee piece element (``\\TEE``)."""
+r"""Tee piece element (``\\TEE``)."""
 
 from __future__ import annotations
 

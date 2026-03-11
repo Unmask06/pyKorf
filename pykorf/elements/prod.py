@@ -1,4 +1,4 @@
-"""Product (sink / boundary condition) element (``\\PROD``)."""
+r"""Product (sink / boundary condition) element (``\\PROD``)."""
 
 from __future__ import annotations
 
@@ -91,7 +91,7 @@ class Product(BaseElement):
 
         rec = self._get(Product.PRES)
         if rec:
-            new_vals = [p_str] + rec.values[1:]
+            new_vals = [p_str, *rec.values[1:]]
             self._set(Product.PRES, new_vals)
 
     @property

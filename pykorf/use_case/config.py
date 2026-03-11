@@ -17,7 +17,6 @@ from typing import Any
 
 import appdirs
 
-
 # App configuration
 APP_NAME = "pyKorf"
 CONFIG_FILENAME = "config.json"
@@ -60,7 +59,7 @@ def load_config() -> dict[str, Any]:
     if not config_path.exists():
         return {}
     try:
-        with open(config_path, "r", encoding="utf-8") as f:
+        with open(config_path, encoding="utf-8") as f:
             return json.load(f)  # type: ignore[no-any-return]
     except (json.JSONDecodeError, OSError):
         return {}
@@ -154,7 +153,7 @@ def load_pms_data(filename: str = "pms.json") -> dict[str, Any]:
         json.JSONDecodeError: If the file contains invalid JSON.
     """
     pms_path = get_pms_path(filename)
-    with open(pms_path, "r", encoding="utf-8") as f:
+    with open(pms_path, encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -233,7 +232,7 @@ def load_stream_data(filename: str = "stream_data.json") -> dict[str, Any]:
         json.JSONDecodeError: If the file contains invalid JSON.
     """
     stream_path = get_stream_path(filename)
-    with open(stream_path, "r", encoding="utf-8") as f:
+    with open(stream_path, encoding="utf-8") as f:
         return json.load(f)
 
 

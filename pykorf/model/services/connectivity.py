@@ -323,7 +323,7 @@ class ConnectivityService:
             noz_param = self._get_nozzle_param(other_elem)
             rec = other_elem._get(noz_param)
             if rec is not None:
-                rec.values = [str(pipe_idx)] + rec.values[1:]
+                rec.values = [str(pipe_idx), *rec.values[1:]]
                 rec.raw_line = ""
             else:
                 self.model._parser.set_value(et, other_elem.index, noz_param, [str(pipe_idx)])
@@ -396,7 +396,7 @@ class ConnectivityService:
                 raise ConnectivityError(
                     f"{other_elem.name} is not connected to pipe {pipe_elem.name}"
                 )
-            rec.values = ["0"] + rec.values[1:]
+            rec.values = ["0", *rec.values[1:]]
             rec.raw_line = ""
 
         elif et == "TEE":
@@ -554,7 +554,7 @@ class ConnectivityService:
                 noz_param = self._get_nozzle_param(elem)
                 rec = elem._get(noz_param)
                 if rec and rec.values and rec.values[0] == old_s:
-                    rec.values = [new_s] + rec.values[1:]
+                    rec.values = [new_s, *rec.values[1:]]
                     rec.raw_line = ""
             elif et == "TEE":
                 rec = elem._get("CON")
@@ -614,7 +614,7 @@ class ConnectivityService:
         pipe_idx_s = str(pipe_idx)
         for _, rec in self._get_nozzle_records(elem):
             if rec.values and str(rec.values[0]) == "0":
-                rec.values = [pipe_idx_s] + rec.values[1:]
+                rec.values = [pipe_idx_s, *rec.values[1:]]
                 rec.raw_line = ""
                 return True
         return False
@@ -627,7 +627,7 @@ class ConnectivityService:
         """
         for _, rec in self._get_nozzle_records(elem):
             if rec.values and str(rec.values[0]) == pipe_idx:
-                rec.values = ["0"] + rec.values[1:]
+                rec.values = ["0", *rec.values[1:]]
                 rec.raw_line = ""
                 return True
         return False
@@ -636,7 +636,7 @@ class ConnectivityService:
         """Update nozzle pipe references from old_idx to new_idx."""
         for _, rec in self._get_nozzle_records(elem):
             if rec.values and rec.values[0] == old_idx:
-                rec.values = [new_idx] + rec.values[1:]
+                rec.values = [new_idx, *rec.values[1:]]
                 rec.raw_line = ""
 
     def _get_element_pipe_indices(self, elem) -> list[int]:

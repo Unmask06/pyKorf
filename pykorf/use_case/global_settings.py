@@ -193,9 +193,7 @@ def apply_rename_line_settings(model: Model) -> list[str]:
         extracted = extract_fluid_seq_from_notes(notes_value)
 
         if extracted is None:
-            logger.debug(
-                "Pipe %s: skipping, cannot parse NOTES: %s", pipe_name, notes_value
-            )
+            logger.debug("Pipe %s: skipping, cannot parse NOTES: %s", pipe_name, notes_value)
             continue
 
         name_rec = pipe._get("NAME")

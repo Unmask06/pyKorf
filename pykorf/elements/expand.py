@@ -1,4 +1,4 @@
-"""Expander / reducer element (``\\EXPAND``)."""
+r"""Expander / reducer element (``\\EXPAND``)."""
 
 from __future__ import annotations
 

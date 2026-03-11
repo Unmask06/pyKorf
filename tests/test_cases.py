@@ -3,12 +3,10 @@ Tests for CaseSet and Results helpers.
 Run with:  pytest tests/
 """
 
-import os
-import tempfile
 from pathlib import Path
 
-from pykorf.model import KorfModel
 from pykorf.cases import CaseSet
+from pykorf.model import KorfModel
 from pykorf.results import Results
 
 SAMPLES_DIR = Path(__file__).parent.parent / "pykorf" / "library"
@@ -39,7 +37,9 @@ class TestCaseSet:
 
     def test_invalid_case_raises(self):
         import pytest
+
         from pykorf.exceptions import CaseError
+
         cs = self._cs()
         with pytest.raises(CaseError):
             cs.get_case_value("50;55;20", 5)

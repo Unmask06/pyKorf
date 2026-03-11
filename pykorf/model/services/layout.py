@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from pykorf.exceptions import LayoutError
 
@@ -100,6 +100,7 @@ class LayoutService:
             if not isinstance(name_or_x, str) or y is None:
                 raise ValueError("Use set_position(model, element_name, x, y)")
             from pykorf.model import Model as KorfModel
+
             if isinstance(target, KorfModel):
                 elem = target.get_element(name_or_x)
             self.__set_position_on_element(elem, float(x_or_y), float(y))
@@ -113,18 +114,22 @@ class LayoutService:
                 # But if called via model.set_position("L1", x, y), it arrives here
                 # because model is not target.
                 # Wait, if called via model.set_position, target is "L1".
-                self.__set_position_on_element(self.model.get_element(target), float(name_or_x), float(x_or_y))
+                self.__set_position_on_element(
+                    self.model.get_element(target), float(name_or_x), float(x_or_y)
+                )
                 return
             # If y is None, then Case 2: set_position(name, x, y)
             # but wait, the signature is (self, target, name_or_x, x_or_y, y=None)
             # So name_or_x is x, x_or_y is y.
-            self.__set_position_on_element(self.model.get_element(target), float(name_or_x), float(x_or_y))
+            self.__set_position_on_element(
+                self.model.get_element(target), float(name_or_x), float(x_or_y)
+            )
             return
 
         # Case 3: set_position(element, x, y)
         if y is not None:
             raise ValueError("Use set_position(element, x, y) for element objects")
-        self.__set_position_on_element(cast(BaseElement, target), float(name_or_x), float(x_or_y))
+        self.__set_position_on_element(cast("BaseElement", target), float(name_or_x), float(x_or_y))
 
     def __all_positions(self) -> dict[str, tuple[float, float]]:
         """Collect all element positions as ``{name: (x, y)}``."""
@@ -152,7 +157,7 @@ class LayoutService:
             if not (X_MIN <= x <= X_MAX and Y_MIN <= y <= Y_MAX):
                 issues.append(
                     f"Element {name} at ({x:.1f}, {y:.1f}) is outside layout bounds "
-                    f"[{X_MIN:.0f},{Y_MIN:.0f}]–[{X_MAX:.0f},{Y_MAX:.0f}]"
+                    f"[{X_MIN:.0f},{Y_MIN:.0f}]-[{X_MAX:.0f},{Y_MAX:.0f}]"
                 )
 
             key = (round(x, 1), round(y, 1))
@@ -211,7 +216,7 @@ class LayoutService:
 
         raise LayoutError(
             "No available layout position within bounds "
-            f"[{X_MIN:.0f},{Y_MIN:.0f}]–[{X_MAX:.0f},{Y_MAX:.0f}] "
+            f"[{X_MIN:.0f},{Y_MIN:.0f}]-[{X_MAX:.0f},{Y_MAX:.0f}] "
             f"with minimum spacing {MIN_SPACING:.0f}."
         )
 
@@ -342,12 +347,12 @@ class LayoutService:
 
 
 __all__ = [
-    "LayoutService",
-    "X_MIN",
-    "Y_MIN",
-    "X_MAX",
-    "Y_MAX",
-    "MIN_SPACING",
     "COMFORT_SPACING_X",
     "COMFORT_SPACING_Y",
+    "MIN_SPACING",
+    "X_MAX",
+    "X_MIN",
+    "Y_MAX",
+    "Y_MIN",
+    "LayoutService",
 ]

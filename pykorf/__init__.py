@@ -1,4 +1,4 @@
-"""pyKorf – Enterprise Python toolkit for reading, editing and writing KORF hydraulic model files (.kdf).
+"""pyKorf - Enterprise Python toolkit for reading, editing and writing KORF hydraulic model files (.kdf).
 
 This package provides comprehensive support for working with KORF hydraulic simulation
 models, including loading, editing, validation, visualization, and export capabilities.
@@ -12,22 +12,22 @@ Quickstart
 
 Modules
 -------
-model          – Model : top-level container for a .kdf file
-parser         – KdfParser : low-level tokeniser / serialiser
-cases          – CaseSet : multi-case helpers
-results        – Results : extract calculated output values
-automation     – KorfApp : pywinauto wrapper (requires KORF to be open)
-exceptions     – Package-wide exception types
-utils          – Shared CSV / value helpers
-elements/      – One module per KORF element type
-connectivity   – Connection management
-layout         – Element positioning
-validation     – KDF format compliance
-visualization/ – PyVis network visualization
-export         – Export to JSON, YAML, Excel, CSV
-types          – Pydantic models for type safety
-config         – Configuration management
-log            – Structured logging
+model          - Model : top-level container for a .kdf file
+parser         - KdfParser : low-level tokeniser / serialiser
+cases          - CaseSet : multi-case helpers
+results        - Results : extract calculated output values
+automation     - KorfApp : pywinauto wrapper (requires KORF to be open)
+exceptions     - Package-wide exception types
+utils          - Shared CSV / value helpers
+elements/      - One module per KORF element type
+connectivity   - Connection management
+layout         - Element positioning
+validation     - KDF format compliance
+visualization/ - PyVis network visualization
+export         - Export to JSON, YAML, Excel, CSV
+types          - Pydantic models for type safety
+config         - Configuration management
+log            - Structured logging
 
 Example Usage
 -------------
@@ -95,7 +95,6 @@ from pykorf.exceptions import (
     VersionError,
 )
 from pykorf.fluid import Fluid
-
 from pykorf.model import KorfModel, Model
 from pykorf.results import Results
 from pykorf.types import (
@@ -138,62 +137,62 @@ except Exception:
 
 __author__ = "pyKorf Contributors"
 __all__ = [
+    # Exceptions
+    "AutomationError",
+    "CaseError",
+    # Types
+    "CaseInfo",
     # Core classes
-    "Model",
-    "KorfModel",
     "CaseSet",
-    "Results",
+    "CompressorData",
     # Configuration
     "Config",
-    "get_config",
-    "set_config",
-    "reset_config",
-    # Exceptions
-    "KorfError",
-    "ParseError",
-    "ElementNotFound",
-    "ElementAlreadyExists",
-    "CaseError",
-    "AutomationError",
-    "ValidationError",
     "ConnectivityError",
-    "LayoutError",
-    "VersionError",
-    "ParameterError",
-    "ExportError",
-    "ImportError",
-    "ErrorContext",
-    # Fluid
-    "Fluid",
-    # Types
-    "KdfVersion",
-    "UnitSystem",
-    "ElementType",
-    "PumpType",
-    "VesselOrientation",
-    "KdfBaseModel",
-    "Position",
-    "FlowParameters",
-    "FluidProperties",
-    "ElementBase",
-    "PipeData",
-    "PumpData",
-    "ValveData",
-    "FeedData",
-    "ProductData",
-    "CompressorData",
-    "HeatExchangerData",
-    "VesselData",
-    "ModelMetadata",
-    "CaseInfo",
-    "UnitConfiguration",
-    "ExportOptions",
-    "ValidationIssue",
     # Constants
     "Element",
+    "ElementAlreadyExists",
+    "ElementBase",
+    "ElementNotFound",
+    "ElementType",
+    "ErrorContext",
+    "ExportError",
+    "ExportOptions",
+    "FeedData",
+    "FlowParameters",
+    # Fluid
+    "Fluid",
+    "FluidProperties",
+    "HeatExchangerData",
+    "ImportError",
+    "KdfBaseModel",
+    "KdfVersion",
+    "KorfError",
+    "KorfModel",
+    "LayoutError",
+    "Model",
+    "ModelMetadata",
+    "ParameterError",
+    "ParseError",
+    "PipeData",
+    "Position",
+    "ProductData",
+    "PumpData",
+    "PumpType",
+    "Results",
+    "UnitConfiguration",
+    "UnitSystem",
+    "ValidationError",
+    "ValidationIssue",
+    "ValveData",
+    "VersionError",
+    "VesselData",
+    "VesselOrientation",
     # Version
-    "__version__",
     "__author__",
+    "__version__",
+    "get_config",
+    "reset_config",
+    "set_config",
 ]
 
 

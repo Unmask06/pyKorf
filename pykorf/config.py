@@ -19,8 +19,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field, fields
 from pathlib import Path
-from typing import Any
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     import tomli_w  # noqa: F401
@@ -163,9 +162,7 @@ class Config:
         result: dict[str, Any] = {}
         for f in fields(self):
             section = getattr(self, f.name)
-            result[f.name] = {
-                field.name: getattr(section, field.name) for field in fields(section)
-            }
+            result[f.name] = {field.name: getattr(section, field.name) for field in fields(section)}
         return result
 
     def save(self, path: str | Path) -> None:
@@ -235,13 +232,13 @@ def reset_config() -> None:
 
 
 __all__ = [
-    "IOConfig",
-    "ValidationConfig",
-    "PerformanceConfig",
-    "LoggingConfig",
-    "ExportConfig",
     "Config",
+    "ExportConfig",
+    "IOConfig",
+    "LoggingConfig",
+    "PerformanceConfig",
+    "ValidationConfig",
     "get_config",
-    "set_config",
     "reset_config",
+    "set_config",
 ]

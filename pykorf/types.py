@@ -18,15 +18,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 # Import constants from elements
 from pykorf.elements import (
     Element,
     Pipe,
 )
-
-from typing import TYPE_CHECKING
 
 # Try to import pydantic, fall back to dataclasses
 try:
@@ -52,8 +50,9 @@ except ImportError:
     def field_validator(*args, **kwargs):  # type: ignore[no-redef]
         return lambda f: f
 
+
 if TYPE_CHECKING:
-    from pydantic import BaseModel, ConfigDict, Field, field_validator  # noqa: F401
+    from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 # ============================================================================
 # Enums
@@ -768,40 +767,40 @@ else:
 
 
 __all__ = [
-    # Enums
-    "KdfVersion",
-    "UnitSystem",
-    "ElementType",
-    "PumpType",
-    "ValveType",
-    "ValveSubType",
-    "PipeMaterial",
-    "VesselOrientation",
-    "FlashModel",
-    "CompressibilityModel",
-    "TwoPhaseModel",
-    # Base models
-    "KdfBaseModel",
-    "Position",
-    "Range3Case",
-    "FlowParameters",
-    "FluidProperties",
-    # Element data
-    "ElementBase",
-    "FittingData",
-    "PipeData",
-    "PumpData",
-    "ValveData",
-    "FeedData",
-    "ProductData",
-    "CompressorData",
-    "HeatExchangerData",
-    "VesselData",
     # Metadata
-    "ModelMetadata",
     "CaseInfo",
-    "UnitConfiguration",
+    # Enums
+    "CompressibilityModel",
+    # Element data
+    "CompressorData",
+    "ElementBase",
+    "ElementType",
     # Export
     "ExportOptions",
+    "FeedData",
+    "FittingData",
+    "FlashModel",
+    # Base models
+    "FlowParameters",
+    "FluidProperties",
+    "HeatExchangerData",
+    "KdfBaseModel",
+    "KdfVersion",
+    "ModelMetadata",
+    "PipeData",
+    "PipeMaterial",
+    "Position",
+    "ProductData",
+    "PumpData",
+    "PumpType",
+    "Range3Case",
+    "TwoPhaseModel",
+    "UnitConfiguration",
+    "UnitSystem",
     "ValidationIssue",
+    "ValveData",
+    "ValveSubType",
+    "ValveType",
+    "VesselData",
+    "VesselOrientation",
 ]

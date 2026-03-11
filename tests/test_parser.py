@@ -58,7 +58,7 @@ class TestKdfParser:
         assert "60" in rec.values[0]
 
     def test_round_trip(self):
-        """Load, do nothing, save, reload – records count must match."""
+        """Load, do nothing, save, reload - records count must match."""
         p = KdfParser(PUMP_KDF)
         p.load()
         original_count = len(p.records)

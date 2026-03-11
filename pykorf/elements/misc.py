@@ -1,4 +1,4 @@
-"""Miscellaneous equipment element (``\\MISC``)."""
+r"""Miscellaneous equipment element (``\\MISC``)."""
 
 from __future__ import annotations
 
@@ -63,4 +63,4 @@ class MiscEquipment(BaseElement):
     def set_dp(self, value: str | float) -> None:
         rec = self._get(MiscEquipment.DP)
         if rec:
-            self._set(MiscEquipment.DP, [str(value)] + rec.values[1:])
+            self._set(MiscEquipment.DP, [str(value), *rec.values[1:]])

@@ -1,4 +1,4 @@
-"""PipeData element (``\\PIPEDATA``)."""
+r"""PipeData element (``\\PIPEDATA``)."""
 
 from __future__ import annotations
 

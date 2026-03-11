@@ -1,4 +1,4 @@
-"""Pump element (``\\PUMP``)."""
+r"""Pump element (``\\PUMP``)."""
 
 from __future__ import annotations
 
@@ -10,11 +10,11 @@ class Pump(BaseElement):
 
     Key parameters
     --------------
-    * ``dp_string``        – specified differential pressure
-    * ``efficiency``       – pump hydraulic efficiency (fraction)
-    * ``power_kW``         – absorbed shaft power (calculated)
-    * ``head_m``           – actual operating head (calculated)
-    * ``curve_q / curve_h / curve_eff / curve_npsh`` – performance curves
+    * ``dp_string``        - specified differential pressure
+    * ``efficiency``       - pump hydraulic efficiency (fraction)
+    * ``power_kW``         - absorbed shaft power (calculated)
+    * ``head_m``           - actual operating head (calculated)
+    * ``curve_q / curve_h / curve_eff / curve_npsh`` - performance curves
 
     Example::
 
@@ -145,7 +145,7 @@ class Pump(BaseElement):
         """
         rec = self._get(Pump.DP)
         if rec:
-            new_vals = [str(value)] + rec.values[1:]
+            new_vals = [str(value), *rec.values[1:]]
             self._set(Pump.DP, new_vals)
 
     # ------------------------------------------------------------------
@@ -158,7 +158,7 @@ class Pump(BaseElement):
 
     @property
     def efficiency(self) -> float:
-        """Pump hydraulic efficiency (fraction, 0–1)."""
+        """Pump hydraulic efficiency (fraction, 0-1)."""
         try:
             v = self._scalar(Pump.EFFP, 1, 0.0)
             return float(v)
@@ -176,7 +176,7 @@ class Pump(BaseElement):
         """
         rec = self._get(Pump.EFFP)
         if rec:
-            self._set(Pump.EFFP, [str(value)] + rec.values[1:])
+            self._set(Pump.EFFP, [str(value), *rec.values[1:]])
 
     # ------------------------------------------------------------------
     # Results

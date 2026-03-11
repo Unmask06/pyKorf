@@ -5,8 +5,6 @@ Run with:  PYTHONPATH=. python -m pytest tests/test_validation.py -v
 
 from pathlib import Path
 
-import pytest
-
 from pykorf.model import Model
 
 SAMPLES_DIR = Path(__file__).parent.parent / "pykorf" / "library"
