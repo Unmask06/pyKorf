@@ -1125,13 +1125,13 @@ def export_to_csv(
 __all__ = [
     "IOService",
     # Module-level functions for backward compatibility
-    "model_to_dataframes",
-    "model_from_dataframes",
-    "dataframes_to_kdf",
     "dataframes_to_excel",
+    "dataframes_to_kdf",
     "excel_to_dataframes",
+    "export_to_csv",
+    "export_to_excel",
     "export_to_json",
     "export_to_yaml",
-    "export_to_excel",
-    "export_to_csv",
+    "model_from_dataframes",
+    "model_to_dataframes",
 ]
