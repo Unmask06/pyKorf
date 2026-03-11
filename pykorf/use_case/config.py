@@ -17,22 +17,47 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+import platform
 import shutil
 from pathlib import Path
 from typing import Any
 
-import appdirs
-
 logger = logging.getLogger(__name__)
 
-# App configuration
 APP_NAME = "pyKorf"
 CONFIG_FILENAME = "config.json"
 DATA_SUBDIR = "data"
 
+
+def _get_platform_config_dir() -> Path:
+    """Get the platform-specific config directory for pyKorf.
+
+    Returns:
+        - Windows: %APPDATA%/pyKorf/
+        - macOS: ~/Library/Application Support/pyKorf/
+        - Linux: ~/.config/pyKorf/
+    """
+    system = platform.system()
+
+    if system == "Windows":
+        appdata = os.environ.get("APPDATA")
+        if appdata:
+            return Path(appdata) / APP_NAME
+        return Path.home() / "AppData" / "Roaming" / APP_NAME
+    elif system == "Darwin":
+        return Path.home() / "Library" / "Application Support" / APP_NAME
+    else:
+        return Path.home() / ".config" / APP_NAME
+
+
 # Default paths - project config folder
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 DEFAULT_CONFIG_DIR = PROJECT_ROOT / "config"
+
+# Legacy config folder for migration
+LEGACY_CONFIG_DIR = PROJECT_ROOT / "config"
+MIGRATION_MARKER = ".migration_complete"
 
 
 def ensure_config_dir() -> Path:
@@ -47,8 +72,7 @@ def ensure_config_dir() -> Path:
 
 def get_config_dir() -> Path:
     """Get the platform-specific config directory for user preferences."""
-    dirs = appdirs.user_config_dir(APP_NAME)
-    path = Path(dirs)
+    path = _get_platform_config_dir()
     path.mkdir(parents=True, exist_ok=True)
     return path
 
@@ -400,13 +424,13 @@ def list_config_files() -> dict[str, list[str]]:
     Returns:
         Dictionary with keys 'pms', 'streams', 'other' containing lists of filenames.
     """
-    ensure_config_dir()
+    data_dir = ensure_data_dir()
 
     pms_files = []
     stream_files = []
     other_files = []
 
-    for f in DEFAULT_CONFIG_DIR.iterdir():
+    for f in data_dir.iterdir():
         if f.is_file() and f.suffix == ".json":
             name = f.name.lower()
             if "pms" in name:

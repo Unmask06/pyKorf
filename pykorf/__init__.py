@@ -76,7 +76,6 @@ Example Usage
 """
 
 from pykorf.cases import CaseSet
-from pykorf.config import Config, get_config, reset_config, set_config
 from pykorf.elements import Element
 from pykorf.exceptions import (
     AutomationError,
@@ -145,8 +144,6 @@ __all__ = [
     # Core classes
     "CaseSet",
     "CompressorData",
-    # Configuration
-    "Config",
     "ConnectivityError",
     # Constants
     "Element",
@@ -190,9 +187,6 @@ __all__ = [
     # Version
     "__author__",
     "__version__",
-    "get_config",
-    "reset_config",
-    "set_config",
 ]
 
 

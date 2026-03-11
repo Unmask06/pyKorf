@@ -27,7 +27,7 @@ from contextvars import ContextVar
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeVar
 
-from pykorf.config import get_config
+import os
 
 # Try to import structlog, fall back to stdlib logging
 try:
@@ -60,8 +60,6 @@ def configure_logging(log_file: str = "pykorf.log") -> None:
     """
     global _current_log_file, _file_handler
 
-    config = get_config()
-
     root_logger = logging.getLogger("pykorf")
     root_logger.setLevel(logging.DEBUG)
     root_logger.handlers = []
@@ -79,7 +77,8 @@ def configure_logging(log_file: str = "pykorf.log") -> None:
     else:
         import logging as std_logging
 
-        std_logging.getLogger("pykorf").setLevel(getattr(std_logging, config.logging.level))
+        log_level = os.getenv("PYKORF_LOG_LEVEL", "INFO").upper()
+        std_logging.getLogger("pykorf").setLevel(getattr(std_logging, log_level))
 
 
 def set_log_file(log_file: str | Path) -> None:
@@ -128,8 +127,6 @@ def get_log_file() -> str | None:
 
 def _configure_structlog() -> None:
     """Configure structlog to use standard library logging."""
-    config = get_config()
-
     shared_processors = [
         structlog.stdlib.filter_by_level,
         structlog.stdlib.add_logger_name,
@@ -141,7 +138,8 @@ def _configure_structlog() -> None:
         structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
     ]
 
-    if config.logging.format == "structured":
+    log_format = os.getenv("PYKORF_LOG_FORMAT", "structured").lower()
+    if log_format == "structured":
         structlog.configure(
             processors=[*shared_processors, structlog.processors.JSONRenderer()],
             context_class=dict,
@@ -160,7 +158,8 @@ def _configure_structlog() -> None:
 
     import logging as std_logging
 
-    std_logging.getLogger("pykorf").setLevel(getattr(std_logging, config.logging.level))
+    log_level = os.getenv("PYKORF_LOG_LEVEL", "INFO").upper()
+    std_logging.getLogger("pykorf").setLevel(getattr(std_logging, log_level))
 
 
 class SimpleLogger:
