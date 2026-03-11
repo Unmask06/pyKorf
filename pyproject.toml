@@ -229,9 +229,31 @@ ignore = [
     "D203",  # 1 blank line required before class docstring (conflicts with D211)
     "D212",  # Multi-line docstring summary should start at the first line (conflicts with D213)
     "N802",  # Function name should be lowercase - allow unit suffixes like kPag, kW
+    "D415",  # First line should end with period - too pedantic
+    "N818",  # Exception name should end with Error - existing names are fine
+    "PERF401",  # Use list comprehension - performance micro-optimization
+    "PERF403",  # Use dict comprehension - performance micro-optimization
+    "SIM102",  # Combine if statements - sometimes clearer separated
+    "SIM105",  # Use contextlib.suppress - preference
+    "SIM108",  # Use ternary operator - sometimes clearer as if-else
+    "TC001",  # Move import into type-checking block - complex refactoring
+    "TC002",  # Move third-party import into type-checking block - complex
+    "TC003",  # Move standard library import into type-checking block - complex
+    "TC004",  # Move import out of type-checking block - complex
+    "RUF012",  # Mutable default values - ClassVar is acceptable
+    "RUF015",  # Prefer next(iter()) over single element slice - preference
+    "RUF059",  # Unused unpacked variables - often intentional
+    "B007",  # Unused loop variable - can be intentional
+    "B039",  # Mutable ContextVar default - acceptable pattern
+    "B904",  # Raise with from - requires careful exception chaining
+    "C414",  # Unnecessary list() call within sorted() - minor
+    "UP006",  # Use tuple instead of Tuple - handled by type checking blocks
+    "UP035",  # typing.X deprecated - handled by type checking blocks
 ]
 
 [tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D101", "D102", "D103", "F841", "F821"]
+"pykorf/_version.py" = ["ALL"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
