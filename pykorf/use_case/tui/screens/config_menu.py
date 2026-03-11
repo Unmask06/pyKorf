@@ -120,7 +120,8 @@ class ConfigMenuScreen(Screen):
                     yield Static("specifications.")
                     yield Static("")
                     yield Static("Stored in:")
-                    yield Static("  pykorf/definitions/pms.json")
+                    yield Static("  %APPDATA%\\pyKorf\\data\\")
+                    yield Static("  pms.json")
 
                 with Vertical(classes="info-section"):
                     yield Label("Stream Config")
@@ -129,14 +130,18 @@ class ConfigMenuScreen(Screen):
                     yield Static("fluid properties.")
                     yield Static("")
                     yield Static("Stored in:")
-                    yield Static("  pykorf/definitions/stream_data.json")
+                    yield Static("  %APPDATA%\\pyKorf\\data\\")
+                    yield Static("  stream_data.json")
 
                 with Vertical(classes="info-section"):
-                    yield Label("Tip")
+                    yield Label("Config File")
                     yield Static("─" * 15)
-                    yield Static("Import from Excel once,")
-                    yield Static("then reuse the JSON files")
-                    yield Static("for future sessions.")
+                    yield Static("User preferences")
+                    yield Static("(last file path, etc.)")
+                    yield Static("")
+                    yield Static("Stored in:")
+                    yield Static("  %APPDATA%\\pyKorf\\")
+                    yield Static("  config.json")
         yield Footer()
 
     def on_mount(self) -> None:
