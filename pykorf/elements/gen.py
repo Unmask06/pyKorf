@@ -202,6 +202,7 @@ class General(BaseElement):
     @property
     def case_numbers(self) -> list[str]:
         """List of active case numbers, e.g. ``['1', '2', '3']``.
+
         Parsed from the ``CASENO`` semicolon string.
         """
         raw = self._scalar("CASENO", 0, "")

@@ -113,8 +113,9 @@ class CaseSet:
         self._model.product(prod_index).set_pressure(pressures)
 
     def get_case_value(self, raw_string: str, case_index: int) -> str:
-        """Extract the value for *case_index* (1-based) from a semicolon
-        string like ``'50;55;20'``.
+        """Extract the value for *case_index* (1-based) from a semicolon string.
+
+        ``'50;55;20'``.
 
         Parameters
         ----------
@@ -130,8 +131,9 @@ class CaseSet:
         return parts[case_index - 1]
 
     def set_case_value(self, raw_string: str, case_index: int, new_value: str) -> str:
-        """Replace the value for *case_index* in *raw_string* and return the
-        updated string.
+        """Replace the value for *case_index* in *raw_string*.
+
+        Returns the updated string.
 
         Parameters
         ----------

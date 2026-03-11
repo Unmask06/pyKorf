@@ -1,5 +1,4 @@
-"""pyKorf - Enterprise Python toolkit for reading, editing and writing KORF hydraulic model files
-(.kdf).
+"""pyKorf - Enterprise Python toolkit for reading, editing and writing KORF hydraulic model files (.kdf).
 
 This package provides comprehensive support for working with KORF hydraulic simulation
 models, including loading, editing, validation, visualization, and export capabilities.
