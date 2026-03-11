@@ -35,6 +35,13 @@ class MainMenuScreen(Screen):
     #file-label {
         width: 100%;
         height: auto;
+        color: $accent;
+        text-style: bold;
+        padding: 0 1;
+    }
+    #file-path-label {
+        width: 100%;
+        height: auto;
         color: $text-muted;
         padding: 0 1;
     }
@@ -150,7 +157,8 @@ class MainMenuScreen(Screen):
                 modified_indicator = "⚠ File modified externally"
 
         with Vertical(id="menu-container"):
-            yield Label(f"📄 {file_name}", id="file-label")
+            yield Label("📄 pyKorf Use Case Tool V0.1.0", id="file-label")
+            yield Label(f"📄 {file_name}", id="file-path-label")
             if modified_indicator:
                 yield Label(modified_indicator, id="modified-indicator")
 

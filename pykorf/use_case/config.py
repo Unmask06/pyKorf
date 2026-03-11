@@ -30,31 +30,25 @@ APP_NAME = "pyKorf"
 CONFIG_FILENAME = "config.json"
 DATA_SUBDIR = "data"
 
-# Legacy project config folder (for migration)
+# Default paths - project config folder
 PROJECT_ROOT = Path(__file__).parent.parent.parent
-LEGACY_CONFIG_DIR = PROJECT_ROOT / "config"
-
-# Migration marker file
-MIGRATION_MARKER = ".migrated"
+DEFAULT_CONFIG_DIR = PROJECT_ROOT / "config"
 
 
-def _get_roaming_config_dir() -> Path:
-    r"""Get the platform-specific roaming config directory.
+def ensure_config_dir() -> Path:
+    """Ensure the config directory exists.
 
     Returns:
-        Path to %APPDATA%\\pyKorf\\ on Windows or equivalent on other platforms.
+        Path to the config directory.
     """
-    dirs = appdirs.user_config_dir(APP_NAME, appauthor=False, roaming=True)
-    return Path(dirs)
+    DEFAULT_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    return DEFAULT_CONFIG_DIR
 
 
 def get_config_dir() -> Path:
-    r"""Get the main config directory for user preferences.
-
-    Returns:
-        Path to the config directory (e.g., %APPDATA%\\pyKorf\\).
-    """
-    path = _get_roaming_config_dir()
+    """Get the platform-specific config directory for user preferences."""
+    dirs = appdirs.user_config_dir(APP_NAME)
+    path = Path(dirs)
     path.mkdir(parents=True, exist_ok=True)
     return path
 
@@ -406,13 +400,13 @@ def list_config_files() -> dict[str, list[str]]:
     Returns:
         Dictionary with keys 'pms', 'streams', 'other' containing lists of filenames.
     """
-    data_dir = ensure_data_dir()
+    ensure_config_dir()
 
     pms_files = []
     stream_files = []
     other_files = []
 
-    for f in data_dir.iterdir():
+    for f in DEFAULT_CONFIG_DIR.iterdir():
         if f.is_file() and f.suffix == ".json":
             name = f.name.lower()
             if "pms" in name:

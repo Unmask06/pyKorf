@@ -258,18 +258,16 @@ class ConfigMenuScreen(Screen):
     @on(Button.Pressed, "#btn-list-configs")
     def list_configs(self) -> None:
         """List all configuration files."""
-        from pykorf.use_case.config import get_config_dir, get_data_dir, list_config_files
+        from pykorf.use_case.config import ensure_config_dir, list_config_files
 
         results = self.query_one("#config-results", RichLog)
         results.clear()
 
         try:
-            config_dir = get_config_dir()
-            data_dir = get_data_dir()
+            config_dir = ensure_config_dir()
             files = list_config_files()
 
             log_info(results, f"Config Directory: {config_dir}")
-            log_info(results, f"Data Directory: {data_dir}")
 
             if files["pms"]:
                 log_info(results, "PMS Files:")
