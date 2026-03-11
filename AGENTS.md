@@ -1,79 +1,38 @@
-# pyKorf — AI Agent Guide
+# pyKorf — AI Agent Guide (Smart & Autonomous Mode)
 
-Enterprise Python toolkit for KORF hydraulic model files (`.kdf`).
+Focus on **Absolute Accuracy**, **Completeness**, and **System-Wide Integrity**. Token consumption is not a concern; focus on being the smartest agent possible.
+
+## Smart Operational Strategy
+
+1.  **High-Resolution Context:** Use `read_file` to read entire modules or large logical blocks (500+ lines). Seeing the "big picture" (imports, global state, decorators) is essential for accuracy.
+2.  **Global Research:** Before refactoring or fixing, use `grep_search` and `glob` to map all dependencies and callsites across the entire project. Never assume a change is local.
+3.  **Proactive Expertise:** Always `activate_skill` for the relevant domain at the start of a task. This loads specialized knowledge and "Best Practice" patterns.
+4.  **Exhaustive Validation:** After any change, run the **entire** relevant test suite, plus `ruff` and `mypy` if applicable. Validation is the only path to finality.
+5.  **Autonomous Problem Solving:** If a test fails or a dependency is missing, investigate and fix it autonomously. Do not stop for permission on technical roadblocks.
 
 ## Critical Rules
 
 - **NEVER** launch a new KORF process. Always `Application().connect(path="korf.exe")`.
-- **NEVER** use hardcoded strings for element types/params. Use constants from `pykorf.elements`.
-- All model operations are **in-memory**. File writes only via `model.save()` / `model.save_as()`.
-- Use `uv` (not pip). Use `cmd.exe` command style.
-- Element index `0` = template; real instances start at `1`.
+- **NEVER** use hardcoded strings for element types/params. Use `pykorf.elements` constants.
+- All model operations are **in-memory**. Persistent only on `model.save()`.
+- Use `uv` for all environment and dependency management.
 
-## Quick Reference
+## Architecture & Service Map
 
-```python
-from pykorf import Model
-from pykorf.elements import Element, Pipe, BaseElement
+| Module | Purpose |
+| :--- | :--- |
+| `model` | Facade & Services (CRUD, Connectivity, Layout, I/O, Summary) |
+| `parser` | `KdfParser`, low-level record handling and latin-1 encoding |
+| `elements` | Typed wrappers + parameter constants (e.g., `Pipe.LEN`) |
+| `use_case` | Workflows (PMS, HMB), Global Settings, and Textual TUI |
+| `cases`/`results` | Multi-case management and calculated output extraction |
+| `automation` | GUI automation via `KorfApp` (Win32 backend) |
 
-model = Model("pykorf/trail_files/Cooling Water Circuit.kdf")
-pipe = model.pipes[1]
-model.add_element(Element.PIPE, "L1", {Pipe.LEN: 100, Pipe.DIA: 50})
-model.save()
-```
+## Mandatory Skills (Load these first!)
 
-## Test File
-For testing any use cases, use:
-`pykorf/trail_files/Cooling Water Circuit.kdf`
-
-## Architecture
-
-| Module         | Purpose                               |
-| -------------- | ------------------------------------- |
-| `model`        | Facade & Services (CRUD, Connectivity, I/O) |
-| `parser`       | `KdfParser`, low-level record handling |
-| `elements`     | Typed wrappers + parameter constants  |
-| `use_case`     | Workflows (PMS, HMB) & Textual TUI    |
-| `cases`/`results`| Multi-case & calculated output helpers |
-| `automation`   | GUI automation via `KorfApp`          |
-
-## Code Style
-
-- Python 3.10+, full type hints, `from __future__ import annotations`.
-- Google-style docstrings. Import order: stdlib → third-party → local.
-- Add missing constants in `pykorf/elements/*.py` before using them.
-
-## Commands
-
-Do NOT run mypy / ruff if not explicitly asked.
-
-```
-uv sync                    # Install deps
-pytest -m "not automation" # Run tests
-ruff check pykorf tests    # Lint
-mypy pykorf                # Type check
-```
-
-## TUI Error/Warning Display Pattern
-
-See [README.md TUI Error/Warning Display Pattern section](./README.md#tui-errorwarning-display-pattern) for the full pattern.
-
-Briefly: Background operations log via `logger.warning/error()`, then read logs via `get_log_entries()` and display inline in RichLog (no popups).
-
-## Bug Fix Workflow
-
-When a bug is reported:
-1. **First**: Write a test that reproduces the bug (do NOT attempt to fix it yet)
-2. **Then**: Use subagents to fix the bug
-3. **Verify**: Ensure the test passes after the fix
-
-## Skills (on-demand context)
-
-Detailed reference is in `.agents/skills/`. Agent loads these only when relevant:
-
-- **kdf-format** — parser, KDF record structure, encoding, round-trip rules
-- **elements** — element types, constants, registry, adding new elements
-- **model-services** — `Model` facade and domain-specific services
-- **use-cases** — PMS/HMB workflows and Textual TUI patterns
-- **automation** — GUI automation, KorfApp, safety rules
-- **testing** — pytest markers, fixtures, test patterns, coverage
+- **model-services** — For any change to core model logic or service layers.
+- **use-cases** — For TUI, batch processing, or external data workflows.
+- **kdf-format** — For low-level parser or record-level changes.
+- **elements** — For anything involving element types or parameters.
+- **testing** — For test patterns, fixtures, and quality commands.
+- **automation** — For GUI automation or `KorfApp` logic.
