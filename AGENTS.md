@@ -28,23 +28,20 @@ For testing any use cases, use:
 
 ## Architecture
 
-| Module         | Purpose                             |
-| -------------- | ----------------------------------- |
-| `model`        | Primary `Model` API                 |
-| `parser`       | `KdfParser`, record-level load/save |
-| `elements`     | Typed wrappers + constants          |
-| `connectivity` | Connect/disconnect logic            |
-| `validation`   | KDF validation rules                |
-| `cases`        | Multi-case utilities                |
-| `results`      | Calculated-results extraction       |
-| `automation`   | GUI automation (`KorfApp`)          |
-| `export`       | JSON/YAML/Excel/CSV export          |
+| Module         | Purpose                               |
+| -------------- | ------------------------------------- |
+| `model`        | Facade & Services (CRUD, Connectivity, I/O) |
+| `parser`       | `KdfParser`, low-level record handling |
+| `elements`     | Typed wrappers + parameter constants  |
+| `use_case`     | Workflows (PMS, HMB) & Textual TUI    |
+| `cases`/`results`| Multi-case & calculated output helpers |
+| `automation`   | GUI automation via `KorfApp`          |
 
 ## Code Style
 
-- Python 3.10+, full type hints, `from __future__ import annotations`
+- Python 3.10+, full type hints, `from __future__ import annotations`.
 - Google-style docstrings. Import order: stdlib → third-party → local.
-- Add missing constants under `pykorf/definitions/` before using them.
+- Add missing constants in `pykorf/elements/*.py` before using them.
 
 ## Commands
 
@@ -76,6 +73,7 @@ Detailed reference is in `.agents/skills/`. Agent loads these only when relevant
 
 - **kdf-format** — parser, KDF record structure, encoding, round-trip rules
 - **elements** — element types, constants, registry, adding new elements
+- **model-services** — `Model` facade and domain-specific services
+- **use-cases** — PMS/HMB workflows and Textual TUI patterns
 - **automation** — GUI automation, KorfApp, safety rules
 - **testing** — pytest markers, fixtures, test patterns, coverage
-- **connectivity** — connect/disconnect, nozzles, pipe references

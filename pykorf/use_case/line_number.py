@@ -23,6 +23,8 @@ import re
 from dataclasses import dataclass
 from typing import NamedTuple
 
+MAX_LINE_NUMBER_LENGTH = 100
+
 
 class ValidationResult(NamedTuple):
     """Result of line number validation."""
@@ -84,13 +86,18 @@ class LineNumber:
             return None
 
         notes_value = notes_value.strip()
+        if len(notes_value) > MAX_LINE_NUMBER_LENGTH:
+            return None
+
         if delimiter in notes_value:
             line_part = notes_value.split(delimiter)[0]
         else:
             line_part = notes_value
 
-        # Remove quote character from NPS (e.g., "24"" becomes "24")
         line_part = line_part.replace('"', "").replace(" ", "")
+
+        if len(line_part) > MAX_LINE_NUMBER_LENGTH:
+            return None
 
         match = cls.LINE_NUMBER_PATTERN.match(line_part)
         if not match:
@@ -140,10 +147,20 @@ class LineNumber:
             return ValidationResult(False, "NOTES field is empty")
 
         notes_value = notes_value.strip()
+        if len(notes_value) > MAX_LINE_NUMBER_LENGTH:
+            return ValidationResult(
+                False, f"NOTES value exceeds maximum length ({MAX_LINE_NUMBER_LENGTH})"
+            )
+
         if delimiter in notes_value:
             line_part = notes_value.split(delimiter)[0]
         else:
             line_part = notes_value
+
+        if len(line_part) > MAX_LINE_NUMBER_LENGTH:
+            return ValidationResult(
+                False, f"Line number exceeds maximum length ({MAX_LINE_NUMBER_LENGTH})"
+            )
 
         if not cls.LINE_NUMBER_PATTERN.match(line_part):
             return ValidationResult(False, f"Invalid line number format: {line_part}")

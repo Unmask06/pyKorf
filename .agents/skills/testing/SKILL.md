@@ -37,12 +37,13 @@ pytest -x                            # stop on first failure
 
 | Source module     | Test file                                             |
 | ----------------- | ----------------------------------------------------- |
-| `model.py`        | `tests/test_model_api.py`                             |
+| `model/`          | `tests/test_model_api.py`                             |
 | `parser.py`       | `tests/test_parser.py`                                |
 | `elements/`       | `tests/test_elements.py`, `tests/test_definitions.py` |
-| `connectivity.py` | `tests/test_connectivity.py`                          |
-| `layout.py`       | `tests/test_layout.py`                                |
-| `validation.py`   | `tests/test_validation.py`                            |
+| `model/services/connectivity.py` | `tests/test_connectivity.py`           |
+| `model/services/layout.py`       | `tests/test_layout.py`                 |
+| `model/services/summary.py`      | `tests/test_validation.py`             |
+| `use_case/`       | `tests/test_use_case.py`                              |
 | `cases.py`        | `tests/test_cases.py`                                 |
 | `automation.py`   | `tests/test_automation.py`                            |
 | `utils.py`        | `tests/test_utils.py`                                 |

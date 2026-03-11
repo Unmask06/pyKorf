@@ -104,6 +104,37 @@ class Model(_ModelBase):
         self._io_service = IOService(model=self)
         self._summary_service = SummaryService(model=self)
 
+    # Service properties
+    @property
+    def elements_service(self) -> ElementService:
+        """Access the ElementService for CRUD operations."""
+        return self._element_service
+
+    @property
+    def query(self) -> QueryService:
+        """Access the QueryService for filtering and parameter access."""
+        return self._query_service
+
+    @property
+    def connectivity(self) -> ConnectivityService:
+        """Access the ConnectivityService for managing element connections."""
+        return self._connectivity_service
+
+    @property
+    def layout(self) -> LayoutService:
+        """Access the LayoutService for positioning and visualization."""
+        return self._layout_service
+
+    @property
+    def io(self) -> IOService:
+        """Access the IOService for file I/O and export operations."""
+        return self._io_service
+
+    @property
+    def summary_service(self) -> SummaryService:
+        """Access the SummaryService for validation and statistics."""
+        return self._summary_service
+
     # ELEMENT CRUD - delegate to ElementService
     def update_element(self, name: str, params: dict[str, Any]) -> None:
         """Update parameters of the named element.
@@ -524,7 +555,9 @@ class Model(_ModelBase):
         return self._layout_service.visualize_network(path)
 
     # I/O - delegate to IOService
-    def save(self, path: str | Path | None = None, *, check_layout: bool = True) -> None:
+    def save(
+        self, path: str | Path | None = None, *, check_layout: bool = True, overwrite: bool = True
+    ) -> None:
         """Serialize the (possibly modified) model back to a .kdf file.
 
         Parameters
@@ -534,12 +567,17 @@ class Model(_ModelBase):
         check_layout:
             If True (default), validate layout before saving and warn about
             overlapping elements or elements outside bounds.
+        overwrite:
+            If True (default), allow overwriting existing files. If False,
+            raise an error if the destination file already exists.
         """
-        return self._io_service.save(path, check_layout=check_layout)
+        return self._io_service.save(path, check_layout=check_layout, overwrite=overwrite)
 
-    def save_as(self, path: str | Path, *, check_layout: bool = True) -> None:
+    def save_as(
+        self, path: str | Path, *, check_layout: bool = True, overwrite: bool = False
+    ) -> None:
         """Save to a new path (alias for :meth:`save` with a path argument)."""
-        return self._io_service.save_as(path, check_layout=check_layout)
+        return self._io_service.save_as(path, check_layout=check_layout, overwrite=overwrite)
 
     def to_dataframes(self) -> dict:
         """Convert the model to a dict of DataFrames (one per element type).

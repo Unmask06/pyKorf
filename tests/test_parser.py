@@ -258,7 +258,7 @@ class TestKorfModel:
 
             m = KorfModel.load(src_tmp)
             m.pipes[1].set_flow("77;77;77")
-            m.save_as(dst_tmp)
+            m.save_as(dst_tmp, overwrite=True)
 
             # save_as() writes to destination, not source
             assert Path(src_tmp).read_bytes() == source_before

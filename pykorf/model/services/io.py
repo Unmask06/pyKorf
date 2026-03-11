@@ -63,7 +63,9 @@ class IOService:
 
     model: Model
 
-    def save(self, path: str | Path | None = None, *, check_layout: bool = True) -> None:
+    def save(
+        self, path: str | Path | None = None, *, check_layout: bool = True, overwrite: bool = True
+    ) -> None:
         """Serialize the (possibly modified) model back to a .kdf file.
 
         Parameters
@@ -73,6 +75,9 @@ class IOService:
         check_layout:
             If True (default), validate layout before saving and warn about
             overlapping elements or elements outside bounds.
+        overwrite:
+            If True (default), allow overwriting existing files. If False,
+            raise an error if the destination file already exists.
 
         Example:
             >>> model.io.save()  # Overwrite original
@@ -89,11 +94,20 @@ class IOService:
                 for issue in issues[:5]:  # Log first 5
                     _logger.warning(f"  - {issue}")
 
-        dest_path = path or self.model._parser.path
+        dest_path = Path(path) if path else self.model._parser.path
+
+        if not overwrite and dest_path.exists():
+            raise ExportError(
+                f"File already exists: {dest_path}. Use overwrite=True to replace.",
+                context=None,
+            )
+
         print(f"Saving model to {dest_path}...")
         self.model._parser.save(path)
 
-    def save_as(self, path: str | Path, *, check_layout: bool = True) -> None:
+    def save_as(
+        self, path: str | Path, *, check_layout: bool = True, overwrite: bool = False
+    ) -> None:
         """Save to a new path (alias for :meth:`save` with a path argument).
 
         Parameters
@@ -102,8 +116,11 @@ class IOService:
             Destination path for the saved file.
         check_layout:
             If True (default), validate layout before saving.
+        overwrite:
+            If False (default), raise an error if the file already exists.
+            Set to True to allow overwriting existing files.
         """
-        self.save(path, check_layout=check_layout)
+        self.save(path, check_layout=check_layout, overwrite=overwrite)
 
     def to_dataframes(self) -> dict[str, pd.DataFrame]:
         """Convert the model to a dict of DataFrames (one per element type).
@@ -125,7 +142,7 @@ class IOService:
         """
         return self._model_to_dataframes()
 
-    def to_excel(self, path: str | Path) -> None:
+    def to_excel(self, path: str | Path, *, overwrite: bool = True) -> None:
         """Export the model to an Excel workbook with lossless round-trip fidelity.
 
         Each element type is written to a separate sheet. The workbook
@@ -135,13 +152,24 @@ class IOService:
         ----------
         path:
             Destination ``.xlsx`` file path.
+        overwrite:
+            If True (default), allow overwriting existing files. If False,
+            raise an error if the destination file already exists.
 
         Raises:
-            ExportError: If *pandas* or *openpyxl* is not installed.
+            ExportError: If *pandas* or *openpyxl* is not installed, or if
+                the file exists and overwrite=False.
 
         Example:
             >>> model.io.to_excel("Pumpcases.xlsx")
         """
+        dest_path = Path(path)
+        if not overwrite and dest_path.exists():
+            raise ExportError(
+                f"File already exists: {dest_path}. Use overwrite=True to replace.",
+                context=None,
+            )
+
         dfs = self._model_to_dataframes()
         self._dataframes_to_excel(dfs, path)
 
@@ -150,6 +178,7 @@ class IOService:
         path: str | Path,
         *,
         options: ExportOptions | None = None,
+        overwrite: bool = True,
     ) -> None:
         """Export model data to JSON.
 
@@ -157,12 +186,19 @@ class IOService:
             model: The model to export
             path: Output file path
             options: Export options
+            overwrite: Whether to overwrite existing files
 
         Raises:
-            ExportError: If export fails
+            ExportError: If export fails or file exists and overwrite=False
         """
         options = options or ExportOptions()
         path = Path(path)
+
+        if not overwrite and path.exists():
+            raise ExportError(
+                f"File already exists: {path}. Use overwrite=True to replace.",
+                context=None,
+            )
 
         with log_operation("export_to_json", path=str(path)):
             try:
@@ -189,6 +225,8 @@ class IOService:
                 logger.info("export_to_json_success", path=str(path))
 
             except Exception as e:
+                if isinstance(e, ExportError):
+                    raise
                 raise ExportError(
                     f"Failed to export to JSON: {e}",
                     context=None,
@@ -199,6 +237,7 @@ class IOService:
         path: str | Path,
         *,
         options: ExportOptions | None = None,
+        overwrite: bool = True,
     ) -> None:
         """Export model data to YAML.
 
@@ -206,12 +245,19 @@ class IOService:
             model: The model to export
             path: Output file path
             options: Export options
+            overwrite: Whether to overwrite existing files
 
         Raises:
-            ExportError: If export fails
+            ExportError: If export fails or file exists and overwrite=False
         """
         options = options or ExportOptions()
         path = Path(path)
+
+        if not overwrite and path.exists():
+            raise ExportError(
+                f"File already exists: {path}. Use overwrite=True to replace.",
+                context=None,
+            )
 
         with log_operation("export_to_yaml", path=str(path)):
             try:
@@ -234,6 +280,8 @@ class IOService:
                     "PyYAML is required for YAML export. Install with: pip install pyyaml",
                 ) from e
             except Exception as e:
+                if isinstance(e, ExportError):
+                    raise
                 raise ExportError(f"Failed to export to YAML: {e}") from e
 
     def export_to_excel(
@@ -241,6 +289,7 @@ class IOService:
         path: str | Path,
         *,
         include_results: bool = True,
+        overwrite: bool = True,
     ) -> None:
         """Export model data to Excel workbook.
 
@@ -257,11 +306,18 @@ class IOService:
             model: The model to export
             path: Output file path
             include_results: Whether to include calculated results
+            overwrite: Whether to overwrite existing files
 
         Raises:
-            ExportError: If export fails
+            ExportError: If export fails or file exists and overwrite=False
         """
         path = Path(path)
+
+        if not overwrite and path.exists():
+            raise ExportError(
+                f"File already exists: {path}. Use overwrite=True to replace.",
+                context=None,
+            )
 
         with log_operation("export_to_excel", path=str(path)):
             try:
@@ -357,6 +413,8 @@ class IOService:
                     "Install with: pip install pandas openpyxl",
                 ) from e
             except Exception as e:
+                if isinstance(e, ExportError):
+                    raise
                 raise ExportError(f"Failed to export to Excel: {e}") from e
 
     def export_to_csv(
@@ -365,6 +423,7 @@ class IOService:
         *,
         element_type: Literal["all", "pipes", "pumps", "valves"] = "all",
         include_results: bool = True,
+        overwrite: bool = True,
     ) -> list[Path]:
         """Export model data to CSV files.
 
@@ -373,14 +432,83 @@ class IOService:
             directory: Output directory
             element_type: Which elements to export
             include_results: Whether to include calculated results
+            overwrite: Whether to overwrite existing files in the directory
 
         Returns:
             List of created file paths
 
         Raises:
-            ExportError: If export fails
+            ExportError: If export fails or a target file exists and overwrite=False
         """
         directory = Path(directory)
+        directory.mkdir(parents=True, exist_ok=True)
+
+        created_files: list[Path] = []
+
+        with log_operation("export_to_csv", directory=str(directory)):
+            try:
+                # Export pipes
+                if element_type in ("all", "pipes"):
+                    pipe_rows = []
+                    for idx, pipe in self.model.pipes.items():
+                        if idx == 0:
+                            continue
+                        row = {
+                            "index": idx,
+                            "name": pipe.name,
+                            "diameter_inch": pipe.diameter_inch,
+                            "schedule": pipe.schedule,
+                            "length_m": pipe.length_m,
+                            "material": pipe.material,
+                        }
+                        if include_results:
+                            row["pressure_drop_kpa_100m"] = pipe.pressure_drop_per_100m
+                            row["reynolds_number"] = pipe.reynolds_number
+                        pipe_rows.append(row)
+
+                    if pipe_rows:
+                        path = directory / "pipes.csv"
+                        if not overwrite and path.exists():
+                            raise ExportError(
+                                f"File already exists: {path}. Use overwrite=True to replace.",
+                                context=None,
+                            )
+                        pd.DataFrame(pipe_rows).to_csv(path, index=False)
+                        created_files.append(path)
+
+                # Export pumps
+                if element_type in ("all", "pumps"):
+                    pump_rows = []
+                    for idx, pump in self.model.pumps.items():
+                        if idx == 0:
+                            continue
+                        row = {"index": idx, "name": pump.name}
+                        if include_results:
+                            row["head_m"] = pump.head_m if hasattr(pump, "head_m") else None
+                            row["power_kw"] = pump.power_kW if hasattr(pump, "power_kW") else None
+                        pump_rows.append(row)
+
+                    if pump_rows:
+                        path = directory / "pumps.csv"
+                        if not overwrite and path.exists():
+                            raise ExportError(
+                                f"File already exists: {path}. Use overwrite=True to replace.",
+                                context=None,
+                            )
+                        pd.DataFrame(pump_rows).to_csv(path, index=False)
+                        created_files.append(path)
+
+                logger.info("export_to_csv_success", files=[str(f) for f in created_files])
+                return created_files
+
+            except ImportError as e:
+                raise ExportError(
+                    "pandas is required for CSV export. Install with: pip install pandas",
+                ) from e
+            except Exception as e:
+                if isinstance(e, ExportError):
+                    raise
+                raise ExportError(f"Failed to export to CSV: {e}") from e
         directory.mkdir(parents=True, exist_ok=True)
 
         created_files: list[Path] = []

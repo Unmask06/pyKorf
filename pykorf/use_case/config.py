@@ -245,7 +245,8 @@ def get_pms_path(filename: str = "pms.json") -> Path:
     Returns:
         Path to the PMS file in the data directory.
     """
-    return ensure_data_dir() / filename
+    safe_filename = Path(filename).name
+    return ensure_data_dir() / safe_filename
 
 
 def load_pms_data(filename: str = "pms.json") -> dict[str, Any]:
@@ -323,7 +324,8 @@ def get_stream_path(filename: str = "stream_data.json") -> Path:
     Returns:
         Path to the stream data file in the data directory.
     """
-    return ensure_data_dir() / filename
+    safe_filename = Path(filename).name
+    return ensure_data_dir() / safe_filename
 
 
 def load_stream_data(filename: str = "stream_data.json") -> dict[str, Any]:

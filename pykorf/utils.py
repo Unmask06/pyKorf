@@ -25,6 +25,10 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     import pandas as pd
 
+MAX_LINE_LENGTH = 10000
+MAX_FIELD_COUNT = 1000
+
+
 # ---------------------------------------------------------------------------
 # CSV tokenisation
 # ---------------------------------------------------------------------------
@@ -48,9 +52,17 @@ def parse_line(line: str) -> list[str]:
     stdlib :mod:`csv` reader handles it correctly.
 
     Also converts KORF HTML entity encoding (<CHR34>, etc.) back to normal characters.
+
+    Raises:
+        ValueError: If line exceeds MAX_LINE_LENGTH or field count exceeds MAX_FIELD_COUNT.
     """
+    if len(line) > MAX_LINE_LENGTH:
+        raise ValueError(f"Line exceeds maximum length ({MAX_LINE_LENGTH} characters)")
+
     reader = csv.reader(io.StringIO(line.strip()))
     for row in reader:
+        if len(row) > MAX_FIELD_COUNT:
+            raise ValueError(f"Line has too many fields ({len(row)} > {MAX_FIELD_COUNT})")
         return [_unescape_korf_chars(token) for token in row]
     return []
 

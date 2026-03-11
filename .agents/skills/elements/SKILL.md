@@ -75,7 +75,7 @@ Maps KDF keyword → tuple of ALL parameter constants for that type.
 1. Create `pykorf/elements/<name>.py` with class inheriting `BaseElement`
 2. Define `ETYPE`, `ENAME`, parameter constants, `ALL` tuple
 3. Register in `pykorf/elements/__init__.py` (imports, `ELEMENT_REGISTRY`, `PROPERTIES_BY_ELEMENT`)
-4. Add collection property to `Model` class in `pykorf/model.py`
+4. Add collection property to `_ModelBase` class in `pykorf/model/core.py`
 5. Add tests in `tests/test_elements.py`
 
 ## Key Files
@@ -83,4 +83,4 @@ Maps KDF keyword → tuple of ALL parameter constants for that type.
 - `pykorf/elements/__init__.py` — registry, `Element` class, exports
 - `pykorf/elements/base.py` — `BaseElement`, param validation
 - `pykorf/elements/pipe.py` — largest element (90+ constants)
-- `pykorf/elements/*.py` — one file per element type
+- `pykorf/model/core.py` — Element collections are built here

@@ -13,6 +13,8 @@ from textual.widgets import Button, Footer, Header, Input, Label
 from pykorf.use_case.config import get_last_kdf_path, set_last_kdf_path
 from pykorf.use_case.tui.screens import real_elements
 
+MAX_FILE_SIZE_MB = 100
+
 
 class FilePickerScreen(Screen):
     """Screen for selecting a KDF file to load."""
@@ -93,12 +95,35 @@ class FilePickerScreen(Screen):
             return
 
         path = Path(raw_path)
+
+        try:
+            path = path.resolve()
+        except (OSError, ValueError) as e:
+            error_label.update(f"Invalid path: {e}")
+            return
+
         if not path.exists():
             error_label.update(f"File not found: {path}")
             return
 
+        if not path.is_file():
+            error_label.update(f"Not a file: {path}")
+            return
+
+        try:
+            file_size_mb = path.stat().st_size / (1024 * 1024)
+            if file_size_mb > MAX_FILE_SIZE_MB:
+                error_label.update(
+                    f"File too large: {file_size_mb:.1f}MB (max: {MAX_FILE_SIZE_MB}MB)"
+                )
+                return
+        except OSError as e:
+            error_label.update(f"Cannot read file stats: {e}")
+            return
+
         if path.suffix.lower() != ".kdf":
-            error_label.update(f"Warning: '{path.suffix}' is not .kdf — loading anyway...")
+            error_label.update(f"Invalid file type: {path.suffix}. Please select a .kdf file.")
+            return
 
         try:
             from pykorf import Model

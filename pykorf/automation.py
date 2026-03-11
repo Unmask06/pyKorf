@@ -72,12 +72,12 @@ class KorfApp:
     def connect(cls, korf_path: str = KORF_PATH_DEFAULT) -> KorfApp:
         """Connect to the currently running KORF process.
 
-        This is the recommended entry-point.  KORF must already be open.
+                This is the recommended entry-point.  KORF must already be open.
 
         Raises:
-        ------
-        AutomationError
-            If KORF is not running or cannot be found.
+                ------
+                AutomationError
+        If KORF is not running or cannot be found.
         """
         instance = cls(korf_path)
         instance._connect()
@@ -90,6 +90,31 @@ class KorfApp:
             raise AutomationError(
                 f"Cannot connect to KORF at '{self._korf_path}'. Is KORF open?  Error: {exc}"
             ) from exc
+
+        self._verify_korf_window()
+
+    def _verify_korf_window(self) -> None:
+        """Verify the connected window is actually KORF.
+
+        Raises AutomationError if the window title doesn't match expected KORF patterns.
+        """
+        try:
+            dlg = self._app.top_window()
+            title = dlg.window_text()
+            if not title:
+                raise AutomationError("Connected window has no title. Cannot verify KORF identity.")
+
+            # Look for Korf or KORF in the title, case-insensitive
+            title_upper = title.upper()
+            if "KORF" not in title_upper:
+                raise AutomationError(
+                    f"Connected window '{title}' does not appear to be KORF. "
+                    "Expected window title to contain 'Korf' or 'KORF'."
+                )
+        except AutomationError:
+            raise
+        except Exception as exc:
+            raise AutomationError(f"Failed to verify KORF window identity: {exc}") from exc
 
     def disconnect(self) -> None:
         """Release the connection handle."""
