@@ -63,6 +63,13 @@ See [README.md TUI Error/Warning Display Pattern section](./README.md#tui-errorw
 
 Briefly: Background operations log via `logger.warning/error()`, then read logs via `get_log_entries()` and display inline in RichLog (no popups).
 
+## Bug Fix Workflow
+
+When a bug is reported:
+1. **First**: Write a test that reproduces the bug (do NOT attempt to fix it yet)
+2. **Then**: Use subagents to fix the bug
+3. **Verify**: Ensure the test passes after the fix
+
 ## Skills (on-demand context)
 
 Detailed reference is in `.agents/skills/`. Agent loads these only when relevant:
