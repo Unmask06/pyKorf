@@ -255,31 +255,31 @@ class Fluid:
         records: dict[str, list] = {}
 
         if self.temp is not None:
-            records[Pipe.TEMP] = _normalize_to_3(self.temp) + [self.temp_unit]
+            records[Pipe.TEMP] = [*_normalize_to_3(self.temp), self.temp_unit]
         if self.pres is not None:
-            records[Pipe.PRES] = _normalize_to_3(self.pres) + [self.pres_unit]
+            records[Pipe.PRES] = [*_normalize_to_3(self.pres), self.pres_unit]
         if self.lf is not None:
             records[Pipe.LF] = _normalize_to_3(self.lf)
         if self.liqden is not None:
-            records[Pipe.LIQDEN] = _normalize_to_3(self.liqden) + [self.liqden_unit]
+            records[Pipe.LIQDEN] = [*_normalize_to_3(self.liqden), self.liqden_unit]
         if self.liqvisc is not None:
-            records[Pipe.LIQVISC] = _normalize_to_3(self.liqvisc) + [self.liqvisc_unit]
+            records[Pipe.LIQVISC] = [*_normalize_to_3(self.liqvisc), self.liqvisc_unit]
         if self.liqsur is not None:
-            records[Pipe.LIQSUR] = _normalize_to_3(self.liqsur) + [self.liqsur_unit]
+            records[Pipe.LIQSUR] = [*_normalize_to_3(self.liqsur), self.liqsur_unit]
         if self.liqcon is not None:
-            records[Pipe.LIQCON] = _normalize_to_3(self.liqcon) + [self.liqcon_unit]
+            records[Pipe.LIQCON] = [*_normalize_to_3(self.liqcon), self.liqcon_unit]
         if self.liqcp is not None:
-            records[Pipe.LIQCP] = _normalize_to_3(self.liqcp) + [self.liqcp_unit]
+            records[Pipe.LIQCP] = [*_normalize_to_3(self.liqcp), self.liqcp_unit]
         if self.liqmw is not None:
             records[Pipe.LIQMW] = _normalize_to_3(self.liqmw)
         if self.vapden is not None:
-            records[Pipe.VAPDEN] = _normalize_to_3(self.vapden) + [self.vapden_unit]
+            records[Pipe.VAPDEN] = [*_normalize_to_3(self.vapden), self.vapden_unit]
         if self.vapvisc is not None:
-            records[Pipe.VAPVISC] = _normalize_to_3(self.vapvisc) + [self.vapvisc_unit]
+            records[Pipe.VAPVISC] = [*_normalize_to_3(self.vapvisc), self.vapvisc_unit]
         if self.vapcon is not None:
-            records[Pipe.VAPCON] = _normalize_to_3(self.vapcon) + [self.vapcon_unit]
+            records[Pipe.VAPCON] = [*_normalize_to_3(self.vapcon), self.vapcon_unit]
         if self.vapcp is not None:
-            records[Pipe.VAPCP] = _normalize_to_3(self.vapcp) + [self.vapcp_unit]
+            records[Pipe.VAPCP] = [*_normalize_to_3(self.vapcp), self.vapcp_unit]
         if self.vapmw is not None:
             records[Pipe.VAPMW] = _normalize_to_3(self.vapmw)
         if self.vapz is not None:

@@ -143,7 +143,7 @@ def _configure_structlog() -> None:
 
     if config.logging.format == "structured":
         structlog.configure(
-            processors=shared_processors + [structlog.processors.JSONRenderer()],
+            processors=[*shared_processors, structlog.processors.JSONRenderer()],
             context_class=dict,
             logger_factory=structlog.stdlib.LoggerFactory(),
             wrapper_class=structlog.stdlib.BoundLogger,
@@ -151,7 +151,7 @@ def _configure_structlog() -> None:
         )
     else:
         structlog.configure(
-            processors=shared_processors + [structlog.dev.ConsoleRenderer(colors=True)],
+            processors=[*shared_processors, structlog.dev.ConsoleRenderer(colors=True)],
             context_class=dict,
             logger_factory=structlog.stdlib.LoggerFactory(),
             wrapper_class=structlog.stdlib.BoundLogger,

@@ -268,7 +268,7 @@ class Pipe(BaseElement):
         if rec is None:
             return
         # values layout: [input_string, calc_numeric, unit]
-        new_vals = [flow_str] + rec.values[1:]
+        new_vals = [flow_str, *rec.values[1:]]
         self._set(Pipe.TFLOW, new_vals)
 
     # ------------------------------------------------------------------

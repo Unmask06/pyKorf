@@ -145,7 +145,7 @@ class Pump(BaseElement):
         """
         rec = self._get(Pump.DP)
         if rec:
-            new_vals = [str(value)] + rec.values[1:]
+            new_vals = [str(value), *rec.values[1:]]
             self._set(Pump.DP, new_vals)
 
     # ------------------------------------------------------------------
@@ -176,7 +176,7 @@ class Pump(BaseElement):
         """
         rec = self._get(Pump.EFFP)
         if rec:
-            self._set(Pump.EFFP, [str(value)] + rec.values[1:])
+            self._set(Pump.EFFP, [str(value), *rec.values[1:]])
 
     # ------------------------------------------------------------------
     # Results

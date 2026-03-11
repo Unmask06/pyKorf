@@ -38,7 +38,6 @@ if TYPE_CHECKING:
     from pywinauto.timings import TimeoutError as WinTimeout
 try:
     from pywinauto.application import Application
-    from pywinauto.timings import TimeoutError as WinTimeout
 
     _PYWINAUTO_AVAILABLE = True
 except ImportError:

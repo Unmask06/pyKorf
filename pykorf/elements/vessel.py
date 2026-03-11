@@ -73,7 +73,7 @@ class Vessel(BaseElement):
     def set_pressure(self, value: str | float) -> None:
         rec = self._get(Vessel.PRES)
         if rec:
-            self._set(Vessel.PRES, [str(value)] + rec.values[1:])
+            self._set(Vessel.PRES, [str(value), *rec.values[1:]])
 
     @property
     def elevation_m(self) -> float:

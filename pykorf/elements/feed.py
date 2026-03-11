@@ -99,7 +99,7 @@ class Feed(BaseElement):
 
         rec = self._get(Feed.PRES)
         if rec:
-            new_vals = [p_str] + rec.values[1:]
+            new_vals = [p_str, *rec.values[1:]]
             self._set(Feed.PRES, new_vals)
 
     @property

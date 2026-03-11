@@ -83,7 +83,7 @@ class Compressor(BaseElement):
     def set_efficiency(self, value: float) -> None:
         rec = self._get(Compressor.EFFC)
         if rec:
-            self._set(Compressor.EFFC, [str(value)] + rec.values[1:])
+            self._set(Compressor.EFFC, [str(value), *rec.values[1:]])
 
     @property
     def power_kW(self) -> float:

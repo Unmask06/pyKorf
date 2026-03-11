@@ -69,7 +69,7 @@ class KdfRecord:
         if self.element_type is None:
             return ""
         # Re-build: "\TYPE",idx,"PARAM",...
-        parts: list = [f"\\{self.element_type}", self.index, self.param] + self.values
+        parts: list = [f"\\{self.element_type}", self.index, self.param, *self.values]
         return format_line(parts)
 
     def update(self, values: list) -> KdfRecord:
