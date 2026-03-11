@@ -155,4 +155,5 @@ class BulkCopyFluidsScreen(Screen):
 
             self.app.call_from_thread(self.app.push_screen, SaveConfirmScreen(model))
         except Exception as exc:
-            self.app.call_from_thread(lambda: log_error(results, f"Error: {exc}"))
+            error_msg = str(exc)
+            self.app.call_from_thread(lambda: log_error(results, f"Error: {error_msg}"))
