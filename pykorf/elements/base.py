@@ -1,5 +1,5 @@
 """
-BaseElement – abstract foundation for all KORF element objects.
+BaseElement - abstract foundation for all KORF element objects.
 
 Every element holds a live reference to the :class:`KdfParser` so that
 get/set operations immediately affect the underlying record list that will
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 
 # ---------------------------------------------------------------------------
-# Parameter schema – expected value counts derived from New.kdf (index-0)
+# Parameter schema - expected value counts derived from New.kdf (index-0)
 # ---------------------------------------------------------------------------
 
 _ETYPE_RE = re.compile(r"^\\([A-Z]+)$", re.IGNORECASE)
@@ -85,7 +85,7 @@ def validate_param_values(etype: str, param: str, values: list) -> None:
     key = (etype.upper(), param.upper())
     schema_entry = schema.get(key)
     if schema_entry is None:
-        return  # unknown param – skip validation
+        return  # unknown param - skip validation
     expected_count, template_values = schema_entry
     actual = len(values)
     if actual != expected_count:

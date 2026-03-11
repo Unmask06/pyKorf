@@ -1,4 +1,4 @@
-"""Visualizer – PyVis-based interactive network visualization for KORF models.
+"""Visualizer - PyVis-based interactive network visualization for KORF models.
 
 Generates an interactive HTML file with nodes placed at their scaled XY
 coordinates (static layout, no physics) and a ``network_data.json`` for

@@ -1,4 +1,4 @@
-"""KorfApp – pywinauto-based automation wrapper for KORF.
+"""KorfApp - pywinauto-based automation wrapper for KORF.
 
 This module provides a safe, connect-only interface to a **running** KORF
 instance.  It **never** launches a new process, preserving your trial-use
@@ -215,7 +215,7 @@ class KorfApp:
         try:
             runlog = self._app.window(title_re=".*[Rr]unlog.*")
             runlog.wait("visible", timeout=timeout)
-            print(f"[KorfApp] Runlog: '{runlog.window_text()}' – clicking OK.")
+            print(f"[KorfApp] Runlog: '{runlog.window_text()}' - clicking OK.")
             runlog.OK.click()
             print("[KorfApp] Runlog dismissed.")
             return True

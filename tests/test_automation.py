@@ -1,5 +1,5 @@
 """
-Tests for pykorf.automation – open_ui and KorfApp.
+Tests for pykorf.automation - open_ui and KorfApp.
 
 Since pywinauto is a Windows-only dependency, all tests mock the
 underlying Application object so they can run on any platform.

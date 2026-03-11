@@ -1,4 +1,4 @@
-"""Results – extract calculated output values from a run KORF model.
+"""Results - extract calculated output values from a run KORF model.
 
 After KORF calculates a model and it is saved back to .kdf, the result
 values are embedded in the file.  This module provides convenient

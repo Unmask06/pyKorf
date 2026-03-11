@@ -1,4 +1,4 @@
-"""pyKorf – Enterprise Python toolkit for reading, editing and writing KORF hydraulic model files (.kdf).
+"""pyKorf - Enterprise Python toolkit for reading, editing and writing KORF hydraulic model files (.kdf).
 
 This package provides comprehensive support for working with KORF hydraulic simulation
 models, including loading, editing, validation, visualization, and export capabilities.
@@ -12,22 +12,22 @@ Quickstart
 
 Modules
 -------
-model          – Model : top-level container for a .kdf file
-parser         – KdfParser : low-level tokeniser / serialiser
-cases          – CaseSet : multi-case helpers
-results        – Results : extract calculated output values
-automation     – KorfApp : pywinauto wrapper (requires KORF to be open)
-exceptions     – Package-wide exception types
-utils          – Shared CSV / value helpers
-elements/      – One module per KORF element type
-connectivity   – Connection management
-layout         – Element positioning
-validation     – KDF format compliance
-visualization/ – PyVis network visualization
-export         – Export to JSON, YAML, Excel, CSV
-types          – Pydantic models for type safety
-config         – Configuration management
-log            – Structured logging
+model          - Model : top-level container for a .kdf file
+parser         - KdfParser : low-level tokeniser / serialiser
+cases          - CaseSet : multi-case helpers
+results        - Results : extract calculated output values
+automation     - KorfApp : pywinauto wrapper (requires KORF to be open)
+exceptions     - Package-wide exception types
+utils          - Shared CSV / value helpers
+elements/      - One module per KORF element type
+connectivity   - Connection management
+layout         - Element positioning
+validation     - KDF format compliance
+visualization/ - PyVis network visualization
+export         - Export to JSON, YAML, Excel, CSV
+types          - Pydantic models for type safety
+config         - Configuration management
+log            - Structured logging
 
 Example Usage
 -------------

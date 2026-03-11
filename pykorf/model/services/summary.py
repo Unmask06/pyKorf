@@ -1,4 +1,4 @@
-"""SummaryService – validation, convenience accessors, and summary methods.
+"""SummaryService - validation, convenience accessors, and summary methods.
 
 This service provides methods for validating models and accessing
 summary information about model contents.

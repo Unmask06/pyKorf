@@ -157,7 +157,7 @@ class LayoutService:
             if not (X_MIN <= x <= X_MAX and Y_MIN <= y <= Y_MAX):
                 issues.append(
                     f"Element {name} at ({x:.1f}, {y:.1f}) is outside layout bounds "
-                    f"[{X_MIN:.0f},{Y_MIN:.0f}]–[{X_MAX:.0f},{Y_MAX:.0f}]"
+                    f"[{X_MIN:.0f},{Y_MIN:.0f}]-[{X_MAX:.0f},{Y_MAX:.0f}]"
                 )
 
             key = (round(x, 1), round(y, 1))
@@ -216,7 +216,7 @@ class LayoutService:
 
         raise LayoutError(
             "No available layout position within bounds "
-            f"[{X_MIN:.0f},{Y_MIN:.0f}]–[{X_MAX:.0f},{Y_MAX:.0f}] "
+            f"[{X_MIN:.0f},{Y_MIN:.0f}]-[{X_MAX:.0f},{Y_MAX:.0f}] "
             f"with minimum spacing {MIN_SPACING:.0f}."
         )
 

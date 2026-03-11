@@ -10,11 +10,11 @@ class Pump(BaseElement):
 
     Key parameters
     --------------
-    * ``dp_string``        – specified differential pressure
-    * ``efficiency``       – pump hydraulic efficiency (fraction)
-    * ``power_kW``         – absorbed shaft power (calculated)
-    * ``head_m``           – actual operating head (calculated)
-    * ``curve_q / curve_h / curve_eff / curve_npsh`` – performance curves
+    * ``dp_string``        - specified differential pressure
+    * ``efficiency``       - pump hydraulic efficiency (fraction)
+    * ``power_kW``         - absorbed shaft power (calculated)
+    * ``head_m``           - actual operating head (calculated)
+    * ``curve_q / curve_h / curve_eff / curve_npsh`` - performance curves
 
     Example::
 
@@ -158,7 +158,7 @@ class Pump(BaseElement):
 
     @property
     def efficiency(self) -> float:
-        """Pump hydraulic efficiency (fraction, 0–1)."""
+        """Pump hydraulic efficiency (fraction, 0-1)."""
         try:
             v = self._scalar(Pump.EFFP, 1, 0.0)
             return float(v)

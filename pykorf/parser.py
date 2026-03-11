@@ -1,4 +1,4 @@
-"""KdfParser – low-level reader / writer for KORF .kdf files.
+"""KdfParser - low-level reader / writer for KORF .kdf files.
 
 The parser preserves the exact line order found in the file so that a
 round-trip ``load → save`` produces an identical file (modulo any values
@@ -151,7 +151,7 @@ class KdfParser:
             try:
                 idx = int(tokens[1])
             except (ValueError, IndexError):
-                # Not a structured line – store verbatim
+                # Not a structured line - store verbatim
                 return KdfRecord(None, None, None, [], raw_line=line)
             param = tokens[2].strip('"').upper()
             values = tokens[3:]
@@ -222,7 +222,7 @@ class KdfParser:
         if rec is None:
             return False
         rec.values = values
-        rec.raw_line = ""  # mark as dirty – will be re-serialised
+        rec.raw_line = ""  # mark as dirty - will be re-serialised
         return True
 
     def num_instances(self, element_type: str) -> int:

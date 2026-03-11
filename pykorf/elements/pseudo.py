@@ -6,7 +6,7 @@ from pykorf.elements.base import BaseElement
 
 
 class Pseudo(BaseElement):
-    """Wraps ``\\PSEUDO`` records – user-defined pseudo-component fluid data.
+    """Wraps ``\\PSEUDO`` records - user-defined pseudo-component fluid data.
 
     This is a lightweight stub carrying only the KDF parameter constants.
     """

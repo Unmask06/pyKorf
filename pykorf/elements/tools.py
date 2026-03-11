@@ -6,7 +6,7 @@ from pykorf.elements.base import BaseElement
 
 
 class Tools(BaseElement):
-    """Wraps ``\\TOOLS`` records – internal tool configuration data.
+    """Wraps ``\\TOOLS`` records - internal tool configuration data.
 
     This is a lightweight stub carrying only the KDF parameter constants.
     """
