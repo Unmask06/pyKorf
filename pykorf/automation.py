@@ -33,10 +33,9 @@ from typing import TYPE_CHECKING
 
 from pykorf.exceptions import AutomationError
 
-
 if TYPE_CHECKING:
-    from pywinauto.application import Application  # noqa: F401
-    from pywinauto.timings import TimeoutError as WinTimeout  # noqa: F401
+    from pywinauto.application import Application
+    from pywinauto.timings import TimeoutError as WinTimeout
 try:
     from pywinauto.application import Application
     from pywinauto.timings import TimeoutError as WinTimeout
@@ -91,8 +90,7 @@ class KorfApp:
             self._app = Application(backend="win32").connect(path=self._korf_path)
         except Exception as exc:
             raise AutomationError(
-                f"Cannot connect to KORF at '{self._korf_path}'. "
-                f"Is KORF open?  Error: {exc}"
+                f"Cannot connect to KORF at '{self._korf_path}'. Is KORF open?  Error: {exc}"
             ) from exc
 
     def disconnect(self) -> None:

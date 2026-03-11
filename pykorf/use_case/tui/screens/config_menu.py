@@ -8,7 +8,7 @@ from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
 from textual.widgets import Button, Footer, Header, Input, Label, RichLog, Static
 
-from pykorf.use_case.tui.logging import log_info, log_error, log_success, log_warning
+from pykorf.use_case.tui.logging import log_error, log_info, log_success, log_warning
 
 
 class ConfigMenuScreen(Screen):

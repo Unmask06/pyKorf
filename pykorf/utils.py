@@ -18,8 +18,9 @@ from __future__ import annotations
 
 import csv
 import io
+from collections.abc import Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Sequence
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -188,6 +189,7 @@ def read_excel_safe(
         FileNotFoundError: If the Excel file doesn't exist
     """
     import pandas as pd
+
     from pykorf.use_case.exceptions import ExcelConversionError
 
     excel_path = Path(excel_path)

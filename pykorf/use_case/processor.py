@@ -149,7 +149,7 @@ class PipedataProcessor:
         notes = pipe.notes
 
         logger.info(f"Processing pipe: {pipe_name}")
-        logger.debug(f"  NOTES field: {repr(notes)}")
+        logger.debug(f"  NOTES field: {notes!r}")
 
         if not notes or not notes.strip():
             logger.warning(f"  Pipe {pipe_name}: NOTES field is empty, skipping")
@@ -163,9 +163,7 @@ class PipedataProcessor:
 
         line_number = LineNumber.parse(notes, self._settings.notes_delimiter)
         if line_number is None:
-            logger.error(
-                f"  Pipe {pipe_name}: Failed to parse line number from NOTES: {repr(notes)}"
-            )
+            logger.error(f"  Pipe {pipe_name}: Failed to parse line number from NOTES: {notes!r}")
             result.error = "Failed to parse line number from NOTES"
             return result
 
@@ -314,7 +312,7 @@ class PipedataProcessor:
                     result.errors.append(f"{pipe_result.pipe_name}: {pipe_result.error}")
 
             except Exception as e:
-                error_msg = f"{pipe.name}: {str(e)}"
+                error_msg = f"{pipe.name}: {e!s}"
                 result.errors.append(error_msg)
                 result.pipe_results.append(
                     PipeUpdateResult(

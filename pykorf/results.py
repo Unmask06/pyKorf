@@ -73,21 +73,15 @@ class Results:
 
     def pipe_velocities(self) -> dict[int, list[float]]:
         """Return {pipe_index: [velocity_case1, …]} for all real pipes."""
-        return {
-            idx: pipe.velocity for idx, pipe in self._model.pipes.items() if idx > 0
-        }
+        return {idx: pipe.velocity for idx, pipe in self._model.pipes.items() if idx > 0}
 
     def pipe_pressures(self) -> dict[int, list[float]]:
         """Return {pipe_index: [pressure_case1, …]} for all real pipes."""
-        return {
-            idx: pipe.pressure for idx, pipe in self._model.pipes.items() if idx > 0
-        }
+        return {idx: pipe.pressure for idx, pipe in self._model.pipes.items() if idx > 0}
 
     def pipe_dp_per_100m(self) -> dict[int, float]:
         return {
-            idx: pipe.pressure_drop_per_100m
-            for idx, pipe in self._model.pipes.items()
-            if idx > 0
+            idx: pipe.pressure_drop_per_100m for idx, pipe in self._model.pipes.items() if idx > 0
         }
 
     # ------------------------------------------------------------------
@@ -133,8 +127,7 @@ class Results:
             import pandas as pd
         except ImportError as exc:
             raise ImportError(
-                "pandas is required for Results.to_dataframe(). "
-                "Install it with: pip install pandas"
+                "pandas is required for Results.to_dataframe(). Install it with: pip install pandas"
             ) from exc
 
         rows = []

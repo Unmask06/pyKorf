@@ -363,8 +363,6 @@ def apply_hmb(
         print(f"Updated {len(updated_pipes)} pipes with fluid properties")
         ```
     """
-    from pykorf.fluid import Fluid
-
     hmb_data = load_hmb(hmb_source)
     updated_pipes: list[str] = []
 

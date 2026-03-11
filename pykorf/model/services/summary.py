@@ -66,13 +66,9 @@ class SummaryService:
         Returns:
             List of validation issue descriptions.
         """
-        return self._validate(
-            check_connectivity=check_connectivity, check_layout=check_layout
-        )
+        return self._validate(check_connectivity=check_connectivity, check_layout=check_layout)
 
-    def _validate(
-        self, *, check_connectivity: bool = True, check_layout: bool = True
-    ) -> list[str]:
+    def _validate(self, *, check_connectivity: bool = True, check_layout: bool = True) -> list[str]:
         """Internal validation implementation."""
         issues: list[str] = []
 
@@ -156,9 +152,7 @@ class SummaryService:
             existing_params = {r.param for r in template_recs}
             for param in required:
                 if param not in existing_params:
-                    issues.append(
-                        f"{etype} template (index 0): missing required param {param!r}"
-                    )
+                    issues.append(f"{etype} template (index 0): missing required param {param!r}")
 
     def _check_instance_names(self, issues: list[str]) -> None:
         """Check that every real instance (index >= 1) has a NAME record."""
@@ -177,9 +171,7 @@ class SummaryService:
             if rec.param == "NOTES":
                 if not rec.values or len(rec.values) < 2:
                     if not rec.raw_line:
-                        issues.append(
-                            f"{rec.element_type} idx {rec.index}: NOTES has no values"
-                        )
+                        issues.append(f"{rec.element_type} idx {rec.index}: NOTES has no values")
 
     def _check_empty_values(self, issues: list[str]) -> None:
         """Check for empty or whitespace-only critical parameter values."""
@@ -210,9 +202,7 @@ class SummaryService:
 
             notes_rec = pipe._get("NOTES")
             if notes_rec is None or not notes_rec.values or not notes_rec.values[0]:
-                issues.append(
-                    f"PIPE {pipe.name} (idx {pipe.index}): missing line number in NOTES"
-                )
+                issues.append(f"PIPE {pipe.name} (idx {pipe.index}): missing line number in NOTES")
 
     def _check_pipe_references(self, issues: list[str]) -> None:
         """Check pipe references in CON/NOZL/NOZ fields."""

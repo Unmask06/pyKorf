@@ -39,7 +39,7 @@ except ImportError:
 
 
 if TYPE_CHECKING:
-    import structlog  # noqa: F401
+    import structlog
 
 # Context variable for request/operation context
 _log_context: ContextVar[dict[str, Any]] = ContextVar("log_context", default={})
@@ -68,9 +68,7 @@ def configure_logging(log_file: str = "pykorf.log") -> None:
 
     _file_handler = logging.FileHandler(log_file, mode="w", encoding="utf-8")
     _file_handler.setLevel(logging.DEBUG)
-    file_formatter = logging.Formatter(
-        "%(asctime)s | %(name)-20s | %(levelname)-8s | %(message)s"
-    )
+    file_formatter = logging.Formatter("%(asctime)s | %(name)-20s | %(levelname)-8s | %(message)s")
     _file_handler.setFormatter(file_formatter)
     root_logger.addHandler(_file_handler)
 
@@ -81,9 +79,7 @@ def configure_logging(log_file: str = "pykorf.log") -> None:
     else:
         import logging as std_logging
 
-        std_logging.getLogger("pykorf").setLevel(
-            getattr(std_logging, config.logging.level)
-        )
+        std_logging.getLogger("pykorf").setLevel(getattr(std_logging, config.logging.level))
 
 
 def set_log_file(log_file: str | Path) -> None:
@@ -111,9 +107,7 @@ def set_log_file(log_file: str | Path) -> None:
 
     _file_handler = logging.FileHandler(log_file_str, mode="w", encoding="utf-8")
     _file_handler.setLevel(logging.DEBUG)
-    file_formatter = logging.Formatter(
-        "%(asctime)s | %(name)-20s | %(levelname)-8s | %(message)s"
-    )
+    file_formatter = logging.Formatter("%(asctime)s | %(name)-20s | %(levelname)-8s | %(message)s")
     _file_handler.setFormatter(file_formatter)
     root_logger.addHandler(_file_handler)
 
@@ -320,6 +314,7 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 def timed(func: F) -> F:
     """Decorator to time function execution."""
+
     @functools.wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         logger = get_logger(func.__module__)
@@ -333,17 +328,18 @@ def timed(func: F) -> F:
             elapsed = time.time() - start
             logger.error(f"{func.__name__}_failed", error=str(e), duration_ms=elapsed * 1000)
             raise
+
     return wrapper  # type: ignore[return-value]
 
 
 __all__ = [
-    "configure_logging",
-    "get_logger",
     "bind_context",
-    "log_operation",
-    "timed",
-    "set_log_file",
+    "configure_logging",
     "get_log_file",
+    "get_logger",
+    "log_operation",
+    "set_log_file",
+    "timed",
 ]
 
 if HAS_STRUCTLOG:

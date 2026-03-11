@@ -176,7 +176,6 @@ class MainMenuScreen(Screen):
     def action_reload_file(self) -> None:
         """Reload the current KDF file from disk."""
         from pykorf.use_case.tui.app import UseCaseTUI
-        from pykorf.use_case.tui.logging import log_info
 
         app = self.app
         assert isinstance(app, UseCaseTUI)

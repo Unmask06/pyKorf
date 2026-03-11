@@ -149,9 +149,7 @@ class ModelInfoScreen(Screen):
         if validation_issues:
             # Show issues in red
             validation_header.add_class("error")
-            validation_header.update(
-                f"Validation: FAILED ({len(validation_issues)} issues)"
-            )
+            validation_header.update(f"Validation: FAILED ({len(validation_issues)} issues)")
 
             val_log = self.query_one("#validation-list", RichLog)
             for issue in validation_issues:

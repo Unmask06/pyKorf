@@ -17,7 +17,7 @@ from textual.widgets import (
     Static,
 )
 
-from pykorf.use_case.tui.logging import log_info, log_error, log_success
+from pykorf.use_case.tui.logging import log_error, log_info, log_success
 
 
 class BulkCopyFluidsScreen(Screen):
@@ -154,5 +154,5 @@ class BulkCopyFluidsScreen(Screen):
                     self.app.call_from_thread(lambda n=name: log_info(results, f"  - {n}"))
 
             self.app.call_from_thread(self.app.push_screen, SaveConfirmScreen(model))
-        except Exception as exc:
+        except Exception:
             self.app.call_from_thread(lambda: log_error(results, f"Error: {exc}"))

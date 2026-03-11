@@ -100,6 +100,7 @@ class LayoutService:
             if not isinstance(name_or_x, str) or y is None:
                 raise ValueError("Use set_position(model, element_name, x, y)")
             from pykorf.model import Model as KorfModel
+
             if isinstance(target, KorfModel):
                 elem = target.get_element(name_or_x)
             self.__set_position_on_element(elem, float(x_or_y), float(y))
@@ -113,12 +114,16 @@ class LayoutService:
                 # But if called via model.set_position("L1", x, y), it arrives here
                 # because model is not target.
                 # Wait, if called via model.set_position, target is "L1".
-                self.__set_position_on_element(self.model.get_element(target), float(name_or_x), float(x_or_y))
+                self.__set_position_on_element(
+                    self.model.get_element(target), float(name_or_x), float(x_or_y)
+                )
                 return
             # If y is None, then Case 2: set_position(name, x, y)
             # but wait, the signature is (self, target, name_or_x, x_or_y, y=None)
             # So name_or_x is x, x_or_y is y.
-            self.__set_position_on_element(self.model.get_element(target), float(name_or_x), float(x_or_y))
+            self.__set_position_on_element(
+                self.model.get_element(target), float(name_or_x), float(x_or_y)
+            )
             return
 
         # Case 3: set_position(element, x, y)
@@ -342,12 +347,12 @@ class LayoutService:
 
 
 __all__ = [
-    "LayoutService",
-    "X_MIN",
-    "Y_MIN",
-    "X_MAX",
-    "Y_MAX",
-    "MIN_SPACING",
     "COMFORT_SPACING_X",
     "COMFORT_SPACING_Y",
+    "MIN_SPACING",
+    "X_MAX",
+    "X_MIN",
+    "Y_MAX",
+    "Y_MIN",
+    "LayoutService",
 ]

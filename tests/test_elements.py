@@ -4,6 +4,7 @@ Run with:  pytest tests/
 """
 
 from pathlib import Path
+
 from pykorf.model import KorfModel
 
 SAMPLES_DIR = Path(__file__).parent.parent / "pykorf" / "library"

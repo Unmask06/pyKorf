@@ -212,9 +212,7 @@ class GlobalSettingsScreen(Screen):
             return
 
         # Show preview of what will be changed
-        self.app.call_from_thread(
-            lambda: self._log(results, "Applying Global Settings:")
-        )
+        self.app.call_from_thread(lambda: self._log(results, "Applying Global Settings:"))
         for setting_id in selected_ids:
             setting = next(s for s in settings if s.id == setting_id)
             self.app.call_from_thread(
@@ -285,9 +283,7 @@ class GlobalSettingsScreen(Screen):
                         )
                 elif count > 10:
                     self.app.call_from_thread(
-                        lambda c=count: self._log(
-                            results, f"    - (showing first 10 of {c})"
-                        )
+                        lambda c=count: self._log(results, f"    - (showing first 10 of {c})")
                     )
                     for pipe_name in pipes[:10]:
                         self.app.call_from_thread(
@@ -295,9 +291,7 @@ class GlobalSettingsScreen(Screen):
                         )
 
             self.app.call_from_thread(
-                lambda: self._log(
-                    results, f"\nTotal: {total_affected} pipe(s) modified", "success"
-                )
+                lambda: self._log(results, f"\nTotal: {total_affected} pipe(s) modified", "success")
             )
 
             # Check if errors occurred
@@ -311,9 +305,7 @@ class GlobalSettingsScreen(Screen):
                 )
             else:
                 self.app.call_from_thread(
-                    lambda: self._log(
-                        results, "Model updated in memory. Save to persist changes."
-                    )
+                    lambda: self._log(results, "Model updated in memory. Save to persist changes.")
                 )
 
             # Push save confirm screen (user can view logs there)
@@ -321,7 +313,5 @@ class GlobalSettingsScreen(Screen):
 
         except Exception as exc:
             self.app.call_from_thread(
-                lambda e=exc: self._log(
-                    results, f"Error applying settings: {e}", "error"
-                )
+                lambda e=exc: self._log(results, f"Error applying settings: {e}", "error")
             )

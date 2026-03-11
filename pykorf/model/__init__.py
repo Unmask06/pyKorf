@@ -582,19 +582,19 @@ class Model(_ModelBase):
         """
         return self._summary_service.validate()
 
-    def pipe(self, index: int) -> "Pipe":
+    def pipe(self, index: int) -> Pipe:
         """Return pipe *index*, raise :exc:`ElementNotFound` if absent."""
         return self._summary_service.pipe(index)
 
-    def pump(self, index: int) -> "Pump":
+    def pump(self, index: int) -> Pump:
         """Return pump *index*, raise :exc:`ElementNotFound` if absent."""
         return self._summary_service.pump(index)
 
-    def feed(self, index: int) -> "Feed":
+    def feed(self, index: int) -> Feed:
         """Return feed *index*, raise :exc:`ElementNotFound` if absent."""
         return self._summary_service.feed(index)
 
-    def product(self, index: int) -> "Product":
+    def product(self, index: int) -> Product:
         """Return product *index*, raise :exc:`ElementNotFound` if absent."""
         return self._summary_service.product(index)
 
@@ -621,7 +621,7 @@ class Model(_ModelBase):
 
     # classmethods that create Model instances
     @classmethod
-    def from_dataframes(cls, dfs: dict) -> "Model":
+    def from_dataframes(cls, dfs: dict) -> Model:
         """Create a Model from a dict of DataFrames.
 
         This is the inverse of :meth:`to_dataframes`.
@@ -641,7 +641,7 @@ class Model(_ModelBase):
         return IOService.model_from_dataframes(dfs)
 
     @classmethod
-    def from_excel(cls, path: str | Path) -> "Model":
+    def from_excel(cls, path: str | Path) -> Model:
         """Create a Model from an Excel workbook.
 
         This is the inverse of :meth:`to_excel`.
@@ -664,4 +664,4 @@ class Model(_ModelBase):
 
 KorfModel = Model
 
-__all__ = ["Model", "KorfModel"]
+__all__ = ["KorfModel", "Model"]

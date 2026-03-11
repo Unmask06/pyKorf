@@ -4,10 +4,7 @@ Run with:  set PYTHONPATH=. && python -m pytest tests/test_visualization.py -v
 """
 
 import json
-import os
 from pathlib import Path
-
-import pytest
 
 from pykorf.model import Model
 from pykorf.visualization import Visualizer

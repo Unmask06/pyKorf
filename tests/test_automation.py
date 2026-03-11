@@ -13,7 +13,6 @@ import pytest
 from pykorf.automation import KorfApp
 from pykorf.exceptions import AutomationError
 
-
 # ------------------------------------------------------------------
 # KorfApp tests (with pywinauto mocked)
 # ------------------------------------------------------------------

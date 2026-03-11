@@ -91,19 +91,11 @@ class _ModelBase:
         self.products: dict[int, Product] = self._build(Element.PROD, Product)
         self.pumps: dict[int, Pump] = self._build(Element.PUMP, Pump)
         self.valves: dict[int, Valve] = self._build(Element.VALVE, Valve)
-        self.check_valves: dict[int, CheckValve] = self._build(
-            Element.CHECK, CheckValve
-        )
-        self.orifices: dict[int, FlowOrifice] = self._build(
-            Element.ORIFICE, FlowOrifice
-        )
-        self.exchangers: dict[int, HeatExchanger] = self._build(
-            Element.HX, HeatExchanger
-        )
+        self.check_valves: dict[int, CheckValve] = self._build(Element.CHECK, CheckValve)
+        self.orifices: dict[int, FlowOrifice] = self._build(Element.ORIFICE, FlowOrifice)
+        self.exchangers: dict[int, HeatExchanger] = self._build(Element.HX, HeatExchanger)
         self.compressors: dict[int, Compressor] = self._build(Element.COMP, Compressor)
-        self.misc_equipment: dict[int, MiscEquipment] = self._build(
-            Element.MISC, MiscEquipment
-        )
+        self.misc_equipment: dict[int, MiscEquipment] = self._build(Element.MISC, MiscEquipment)
         self.expanders: dict[int, Expander] = self._build(Element.EXPAND, Expander)
         self.junctions: dict[int, Junction] = self._build(Element.JUNC, Junction)
         self.tees: dict[int, Tee] = self._build(Element.TEE, Tee)
@@ -216,9 +208,7 @@ class _ModelBase:
         while True:
             unique_name = f"{name}_{suffix_num}"
             if len(unique_name) > 12:
-                raise ValueError(
-                    f"Generated name {unique_name!r} for {name!r} exceeds 12 chars"
-                )
+                raise ValueError(f"Generated name {unique_name!r} for {name!r} exceeds 12 chars")
             if unique_name not in self._name_map:
                 _logger.info("Element name '%s' exists, using '%s'", name, unique_name)
                 return unique_name

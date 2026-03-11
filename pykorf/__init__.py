@@ -95,7 +95,6 @@ from pykorf.exceptions import (
     VersionError,
 )
 from pykorf.fluid import Fluid
-
 from pykorf.model import KorfModel, Model
 from pykorf.results import Results
 from pykorf.types import (

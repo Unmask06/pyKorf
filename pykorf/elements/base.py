@@ -11,7 +11,7 @@ from __future__ import annotations
 import re
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from pykorf.exceptions import ErrorContext, ParameterError
 
@@ -144,11 +144,11 @@ class BaseElement:
     FLIP = "FLIP"
     LBL = "LBL"
     COLOR = "COLOR"
-    
+
     #: Tuple of all parameter constants (to be overridden by subclasses)
     ALL: tuple[str, ...] = ()
 
-    def __init__(self, parser: "KdfParser", etype: str, index: int):
+    def __init__(self, parser: KdfParser, etype: str, index: int):
         self._parser = parser
         self._etype = etype.upper()
         self._index = index
@@ -200,10 +200,10 @@ class BaseElement:
     # Internal record access
     # ------------------------------------------------------------------
 
-    def _get(self, param: str) -> Optional["KdfRecord"]:
+    def _get(self, param: str) -> KdfRecord | None:
         return self._parser.get(self._etype, self._index, param)
 
-    def get_param(self, param: str) -> Optional["KdfRecord"]:
+    def get_param(self, param: str) -> KdfRecord | None:
         """Return the record for a given parameter, or *None* if missing.
 
         Example:
@@ -253,7 +253,7 @@ class BaseElement:
     # Raw record list
     # ------------------------------------------------------------------
 
-    def records(self) -> list["KdfRecord"]:
+    def records(self) -> list[KdfRecord]:
         """All KDF records belonging to this element instance."""
         return self._parser.get_all(self._etype, self._index)
 
