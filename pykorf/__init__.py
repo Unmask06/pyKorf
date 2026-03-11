@@ -138,62 +138,62 @@ except Exception:
 
 __author__ = "pyKorf Contributors"
 __all__ = [
-    # Core classes
-    "CaseSet",
-    "KorfModel",
-    "Model",
-    "Results",
-    # Configuration
-    "Config",
-    "get_config",
-    "reset_config",
-    "set_config",
     # Exceptions
     "AutomationError",
     "CaseError",
-    "ConnectivityError",
-    "ElementAlreadyExists",
-    "ElementNotFound",
-    "ErrorContext",
-    "ExportError",
-    "ImportError",
-    "KorfError",
-    "LayoutError",
-    "ParameterError",
-    "ParseError",
-    "ValidationError",
-    "VersionError",
-    # Fluid
-    "Fluid",
     # Types
     "CaseInfo",
+    # Core classes
+    "CaseSet",
     "CompressorData",
+    # Configuration
+    "Config",
+    "ConnectivityError",
+    # Constants
+    "Element",
+    "ElementAlreadyExists",
     "ElementBase",
+    "ElementNotFound",
     "ElementType",
+    "ErrorContext",
+    "ExportError",
     "ExportOptions",
     "FeedData",
     "FlowParameters",
+    # Fluid
+    "Fluid",
     "FluidProperties",
     "HeatExchangerData",
+    "ImportError",
     "KdfBaseModel",
     "KdfVersion",
+    "KorfError",
+    "KorfModel",
+    "LayoutError",
+    "Model",
     "ModelMetadata",
+    "ParameterError",
+    "ParseError",
     "PipeData",
     "Position",
     "ProductData",
     "PumpData",
     "PumpType",
+    "Results",
     "UnitConfiguration",
     "UnitSystem",
+    "ValidationError",
     "ValidationIssue",
     "ValveData",
+    "VersionError",
     "VesselData",
     "VesselOrientation",
-    # Constants
-    "Element",
     # Version
     "__author__",
     "__version__",
+    "get_config",
+    "reset_config",
+    "set_config",
 ]
 
 

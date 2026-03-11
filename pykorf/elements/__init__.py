@@ -151,18 +151,33 @@ PROPERTIES_BY_ELEMENT: dict[str, tuple[str, ...]] = {
 }
 
 __all__ = [
+    # Registries
+    "ELEMENT_REGISTRY",
+    "PROPERTIES_BY_ELEMENT",
     "BaseElement",
+    # Backward-compat aliases
+    "Check",
     "CheckValve",
+    "Common",
+    "Comp",
     "Compressor",
+    "Element",
+    "Expand",
     "Expander",
     "Feed",
     "FlowOrifice",
+    "Gen",
     "General",
     "HeatExchanger",
+    "Hx",
+    "Junc",
     "Junction",
+    "Misc",
     "MiscEquipment",
+    "Orifice",
     "Pipe",
     "PipeData",
+    "Prod",
     "Product",
     "Pseudo",
     "Pump",
@@ -171,19 +186,4 @@ __all__ = [
     "Tools",
     "Valve",
     "Vessel",
-    # Backward-compat aliases
-    "Check",
-    "Common",
-    "Comp",
-    "Element",
-    "Expand",
-    "Gen",
-    "Hx",
-    "Junc",
-    "Misc",
-    "Orifice",
-    "Prod",
-    # Registries
-    "ELEMENT_REGISTRY",
-    "PROPERTIES_BY_ELEMENT",
 ]
