@@ -199,6 +199,7 @@ ignore_missing_imports = true
 target-version = "py310"
 line-length = 100
 indent-width = 4
+exclude = ["pykorf/_version.py"]
 
 [tool.ruff.lint]
 select = [
