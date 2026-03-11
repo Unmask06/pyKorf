@@ -2587,8 +2587,6 @@ dependencies = [
     { name = "pydantic" },
     { name = "pyperclip" },
     { name = "pyvis" },
-    { name = "pywin32" },
-    { name = "pywinauto" },
     { name = "pyyaml" },
     { name = "rich" },
     { name = "structlog" },
@@ -2597,6 +2595,10 @@ dependencies = [
 ]
 
 [package.dev-dependencies]
+automation = [
+    { name = "pywin32" },
+    { name = "pywinauto" },
+]
 dev = [
     { name = "ipykernel" },
     { name = "jupyter" },
@@ -2632,8 +2634,6 @@ requires-dist = [
     { name = "pykorf", marker = "extra == 'all'" },
     { name = "pyperclip", specifier = ">=1.8" },
     { name = "pyvis", specifier = ">=0.3" },
-    { name = "pywin32", specifier = ">=311" },
-    { name = "pywinauto", specifier = ">=0.6.9" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "rich", specifier = ">=13.0" },
     { name = "structlog", specifier = ">=24.0" },
@@ -2643,6 +2643,10 @@ requires-dist = [
 provides-extras = ["all"]
 
 [package.metadata.requires-dev]
+automation = [
+    { name = "pywin32", specifier = ">=311" },
+    { name = "pywinauto", specifier = ">=0.6.9" },
+]
 dev = [
     { name = "ipykernel", specifier = ">=6.0" },
     { name = "jupyter", specifier = ">=1.0" },
