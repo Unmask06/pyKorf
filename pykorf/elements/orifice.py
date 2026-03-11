@@ -1,4 +1,4 @@
-"""Flow orifice element (``\\FO``)."""
+r"""Flow orifice element (``\\FO``)."""
 
 from __future__ import annotations
 

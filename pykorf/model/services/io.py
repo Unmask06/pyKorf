@@ -652,7 +652,7 @@ class IOService:
 
     @staticmethod
     def _build_kdf_line(etype: str, idx: int, param: str, values: list[str]) -> str:
-        """Build a KDF line from element type, index, param, and values.
+        r"""Build a KDF line from element type, index, param, and values.
 
         Format: \\ETYPE,idx,"PARAM",value1,value2,...
 
@@ -722,7 +722,7 @@ class IOService:
         path: str | Path,
         encoding: str = "latin-1",
     ) -> None:
-        """Write a dict of DataFrames (as produced by :meth:`_model_to_dataframes`) to a ``.kdf`` file.
+        r"""Write a dict of DataFrames (as produced by :meth:`_model_to_dataframes`) to a ``.kdf`` file.
 
         The raw lines are reassembled in their original order using the
         ``line_no`` column and written with ``latin-1`` encoding and ``\r\n``

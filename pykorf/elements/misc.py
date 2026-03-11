@@ -1,4 +1,4 @@
-"""Miscellaneous equipment element (``\\MISC``)."""
+r"""Miscellaneous equipment element (``\\MISC``)."""
 
 from __future__ import annotations
 

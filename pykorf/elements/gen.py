@@ -1,4 +1,4 @@
-"""General / project-wide settings element (``\\GEN``)."""
+r"""General / project-wide settings element (``\\GEN``)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from pykorf.elements.base import BaseElement
 
 
 class General(BaseElement):
-    """Wraps the ``\\GEN,0,...`` records (always index 0, only one instance).
+    r"""Wraps the ``\\GEN,0,...`` records (always index 0, only one instance).
 
     Also carries all GEN parameter string constants as class attributes
     so that callers can write ``General.CASENO`` instead of a bare string.

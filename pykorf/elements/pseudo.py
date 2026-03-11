@@ -1,4 +1,4 @@
-"""Pseudo-component element (``\\PSEUDO``)."""
+r"""Pseudo-component element (``\\PSEUDO``)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from pykorf.elements.base import BaseElement
 
 
 class Pseudo(BaseElement):
-    """Wraps ``\\PSEUDO`` records - user-defined pseudo-component fluid data.
+    r"""Wraps ``\\PSEUDO`` records - user-defined pseudo-component fluid data.
 
     This is a lightweight stub carrying only the KDF parameter constants.
     """

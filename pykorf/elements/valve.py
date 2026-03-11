@@ -1,4 +1,4 @@
-"""Control valve element (``\\VALVE``)."""
+r"""Control valve element (``\\VALVE``)."""
 
 from __future__ import annotations
 

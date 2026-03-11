@@ -1,4 +1,4 @@
-"""Check valve element (``\\CHECK``)."""
+r"""Check valve element (``\\CHECK``)."""
 
 from __future__ import annotations
 

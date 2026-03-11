@@ -1,4 +1,4 @@
-"""Vessel element (``\\VESSEL``)."""
+r"""Vessel element (``\\VESSEL``)."""
 
 from __future__ import annotations
 

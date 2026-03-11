@@ -1,4 +1,4 @@
-"""Pump element (``\\PUMP``)."""
+r"""Pump element (``\\PUMP``)."""
 
 from __future__ import annotations
 

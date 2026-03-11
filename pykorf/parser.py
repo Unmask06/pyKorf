@@ -1,4 +1,4 @@
-"""KdfParser - low-level reader / writer for KORF .kdf files.
+r"""KdfParser - low-level reader / writer for KORF .kdf files.
 
 The parser preserves the exact line order found in the file so that a
 round-trip ``load → save`` produces an identical file (modulo any values

@@ -1,4 +1,4 @@
-"""Product (sink / boundary condition) element (``\\PROD``)."""
+r"""Product (sink / boundary condition) element (``\\PROD``)."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Compressor element (``\\COMP``)."""
+r"""Compressor element (``\\COMP``)."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Feed (source / boundary condition) element (``\\FEED``)."""
+r"""Feed (source / boundary condition) element (``\\FEED``)."""
 
 from __future__ import annotations
 

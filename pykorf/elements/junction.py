@@ -1,4 +1,4 @@
-"""Junction element (``\\JUNC``)."""
+r"""Junction element (``\\JUNC``)."""
 
 from __future__ import annotations
 

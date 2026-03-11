@@ -1,4 +1,4 @@
-"""Shared CSV / value utilities for pyKorf.
+r"""Shared CSV / value utilities for pyKorf.
 
 KDF format notes
 ----------------

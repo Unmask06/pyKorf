@@ -1,4 +1,4 @@
-"""Heat exchanger element (``\\HX``)."""
+r"""Heat exchanger element (``\\HX``)."""
 
 from __future__ import annotations
 
