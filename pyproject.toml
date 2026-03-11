@@ -249,6 +249,8 @@ ignore = [
     "C414",  # Unnecessary list() call within sorted() - minor
     "UP006",  # Use tuple instead of Tuple - handled by type checking blocks
     "UP035",  # typing.X deprecated - handled by type checking blocks
+    "PERF203",  # try-except within a loop - acceptable pattern
+    "SIM118",  # Use key in dict instead of key in dict.keys() - preference
 ]
 
 [tool.ruff.lint.per-file-ignores]
