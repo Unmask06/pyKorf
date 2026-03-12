@@ -39,7 +39,7 @@ from pykorf.use_case.exceptions import (
     LineNumberParseError,
     PmsLookupError,
 )
-from pykorf.use_case.line_number import LineNumber
+from pykorf.use_case.line_number import LineNumber, format_nps
 
 if TYPE_CHECKING:
     from pykorf.model import Model
@@ -453,7 +453,7 @@ def apply_pms(
             # Use get_pms_data to process the value
             _, id_or_sch, value, _ = get_pms_data(od_mm, pms_value, material)
 
-            nps_str = str(nps)
+            nps_str = format_nps(nps)
 
             if id_or_sch == "ID":
                 # Wall thickness in mm - use calculated ID (convert mm to meters)

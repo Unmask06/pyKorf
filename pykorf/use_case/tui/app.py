@@ -77,6 +77,7 @@ class UseCaseTUI(App):
     ]
 
     model = None
+    debug_mode: bool = False
 
     def compose(self) -> ComposeResult:
         with Vertical(id="app-container"):
@@ -86,7 +87,7 @@ class UseCaseTUI(App):
     def on_mount(self) -> None:
         from pykorf.use_case.tui.screens.file_picker import FilePickerScreen
 
-        self.push_screen(FilePickerScreen())
+        self.push_screen(FilePickerScreen(debug_mode=self.debug_mode))
 
     def update_file_header(self, file_path: str) -> None:
         """Update the file header with the current KDF path."""
@@ -105,9 +106,23 @@ class UseCaseTUI(App):
         banner.remove_class("visible")
 
 
-def run_tui() -> None:
-    """Launch the Textual TUI application."""
+def run_tui(debug: bool = False) -> None:
+    """Launch the Textual TUI application.
+
+    Args:
+        debug: Enable debug mode logging.
+    """
+    from pykorf.log import configure_logging, enable_debug_mode
+
+    # Configure base logging first
+    configure_logging("pykorf.log")
+
+    # Enable debug mode if requested (sets DEBUG level)
+    if debug:
+        enable_debug_mode()
+
     app = UseCaseTUI()
+    app.debug_mode = debug
     app.run()
 
 

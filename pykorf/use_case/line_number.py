@@ -38,6 +38,53 @@ FRACTION_MAP = {
     "2/3": "0.667",
 }
 
+# Inverse map: decimal -> fraction (for DIA formatting)
+DECIMAL_TO_FRACTION_MAP = {
+    0.125: "1/8",
+    0.25: "1/4",
+    0.375: "3/8",
+    0.5: "1/2",
+    0.625: "5/8",
+    0.75: "3/4",
+    0.875: "7/8",
+}
+
+
+def format_nps(nps: float) -> str:
+    """Format NPS value for KDF DIA parameter.
+
+    Rules:
+    - Values <= 1 inch: Use fractional representation if available (e.g., "3/4")
+    - Whole numbers > 1: No decimal point (e.g., "2", "3")
+    - Non-whole numbers > 1: Decimal without trailing zeros (e.g., "1.5")
+
+    Args:
+        nps: Nominal pipe size in inches.
+
+    Returns:
+        Formatted string for DIA parameter.
+
+    Examples:
+        >>> format_nps(0.75)
+        '3/4'
+        >>> format_nps(1.0)
+        '1'
+        >>> format_nps(1.5)
+        '1.5'
+        >>> format_nps(2.0)
+        '2'
+    """
+    # Check for fractional representation (<= 1 inch)
+    if nps <= 1.0 and nps in DECIMAL_TO_FRACTION_MAP:
+        return DECIMAL_TO_FRACTION_MAP[nps]
+
+    # Whole number: no decimal
+    if nps == int(nps):
+        return str(int(nps))
+
+    # Non-whole number: decimal without trailing zeros
+    return str(nps).rstrip("0").rstrip(".")
+
 
 def _normalize_pipe_size(size_str: str) -> str:
     """Convert fractional pipe size to decimal.
@@ -260,6 +307,11 @@ def extract_fluid_seq_from_notes(notes_value: str, delimiter: str = ";") -> str 
         line_part = notes_value
 
     line_part = line_part.replace('"', "").replace(" ", "")
+
+    # Normalize fractional pipe sizes (e.g., "1-1/2-EV180..." -> "1.5-EV180...")
+    line_part = re.sub(
+        r"^(\d+)-(\d/\d)|^(\d/\d)", lambda m: _normalize_pipe_size(m.group(0)), line_part
+    )
 
     match = LineNumber.LINE_NUMBER_PATTERN.match(line_part)
     if not match:

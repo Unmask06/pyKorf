@@ -125,6 +125,38 @@ def get_log_file() -> str | None:
     return _current_log_file
 
 
+def enable_debug_mode(log_file: str | Path | None = None) -> None:
+    """Enable debug mode logging.
+
+    Sets the root logger level to DEBUG and ensures all handlers
+    capture DEBUG level messages. Optionally switches to a new
+    log file for debug output.
+
+    Args:
+        log_file: Optional path to a dedicated debug log file.
+                  If provided, switches logging to this file.
+
+    Example:
+        >>> enable_debug_mode()
+        >>> # All loggers now output DEBUG level
+        >>> enable_debug_mode("debug-session.log")
+        >>> # Logs go to debug-session.log at DEBUG level
+    """
+    root_logger = logging.getLogger("pykorf")
+    root_logger.setLevel(logging.DEBUG)
+
+    # Update existing handlers to DEBUG level
+    for handler in root_logger.handlers:
+        handler.setLevel(logging.DEBUG)
+
+    # Switch to debug log file if provided
+    if log_file is not None:
+        set_log_file(log_file)
+
+    logger = logging.getLogger("pykorf.log")
+    logger.debug(f"Debug mode enabled. Log file: {get_log_file() or 'default'}")
+
+
 def _configure_structlog() -> None:
     """Configure structlog to use standard library logging."""
     shared_processors = [
@@ -334,6 +366,7 @@ def timed(func: F) -> F:
 __all__ = [
     "bind_context",
     "configure_logging",
+    "enable_debug_mode",
     "get_log_file",
     "get_logger",
     "log_operation",

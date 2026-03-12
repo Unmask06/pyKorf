@@ -45,6 +45,11 @@ def main():
         action="store_true",
         help="Run in trial mode (time-limited access)",
     )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Enable debug mode (DEBUG log level, saves to {kdf-name}-debug.log)",
+    )
     args = parser.parse_args()
 
     if args.trial:
@@ -57,7 +62,7 @@ def main():
 
     from pykorf.use_case.tui import run_tui
 
-    run_tui()
+    run_tui(debug=args.debug)
 
 
 if __name__ == "__main__":

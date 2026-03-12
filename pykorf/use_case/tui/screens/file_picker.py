@@ -50,6 +50,15 @@ class FilePickerScreen(Screen):
     }
     """
 
+    def __init__(self, debug_mode: bool = False) -> None:
+        """Initialize the file picker screen.
+
+        Args:
+            debug_mode: Whether debug logging mode is enabled.
+        """
+        super().__init__()
+        self.debug_mode = debug_mode
+
     def compose(self) -> ComposeResult:
         yield Header()
         with Vertical(id="file-picker-box"):
@@ -127,12 +136,18 @@ class FilePickerScreen(Screen):
 
         try:
             from pykorf import Model
+            from pykorf.log import enable_debug_mode
 
             model = Model(str(path))
             pipe_count = len(real_elements(model.pipes))
             error_label.update(f"Loaded {pipe_count} pipes.")
 
             set_last_kdf_path(path)
+
+            # Set up debug log file if in debug mode
+            if self.debug_mode:
+                debug_log_path = path.parent / f"{path.stem}-debug.log"
+                enable_debug_mode(debug_log_path)
 
             app = self.app
             assert isinstance(app, UseCaseTUI)
