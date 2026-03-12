@@ -25,6 +25,50 @@ from typing import NamedTuple
 
 MAX_LINE_NUMBER_LENGTH = 100
 
+# Common fractions and their decimal equivalents
+FRACTION_MAP = {
+    "1/2": "0.5",
+    "3/4": "0.75",
+    "1/4": "0.25",
+    "1/8": "0.125",
+    "3/8": "0.375",
+    "5/8": "0.625",
+    "7/8": "0.875",
+    "1/3": "0.333",
+    "2/3": "0.667",
+}
+
+
+def _normalize_pipe_size(size_str: str) -> str:
+    """Convert fractional pipe size to decimal.
+
+    Examples:
+        "1-1/2" -> "1.5"
+        "3/4" -> "0.75"
+        "2-1/2" -> "2.5"
+        "6" -> "6"
+    """
+    if not size_str:
+        return size_str
+
+    # Check for whole-fraction combination (e.g., "1-1/2")
+    if "-" in size_str:
+        parts = size_str.split("-", 1)
+        whole = parts[0]
+        fraction = parts[1]
+        if fraction in FRACTION_MAP:
+            decimal_val = float(whole) + float(FRACTION_MAP[fraction])
+            # Format without trailing .0 if it's a whole number
+            if decimal_val == int(decimal_val):
+                return str(int(decimal_val))
+            return str(decimal_val).rstrip("0").rstrip(".")
+
+    # Check for standalone fraction
+    if size_str in FRACTION_MAP:
+        return FRACTION_MAP[size_str]
+
+    return size_str
+
 
 class ValidationResult(NamedTuple):
     """Result of line number validation."""
@@ -47,7 +91,7 @@ class LineNumber:
         tracing_temp: Tracing temperature in °C (XXX), None if not present
     """
 
-    nominal_pipe_size: int
+    nominal_pipe_size: float
     unit_number: str
     fluid_code: str
     serial_number: int
@@ -68,7 +112,7 @@ class LineNumber:
         return self.piping_class
 
     LINE_NUMBER_PATTERN = re.compile(
-        r"^(\d+)-([A-Z0-9]+)-([A-Z0-9]+)-(\d+)-([A-Z0-9]+)(?:-([A-Z0-9]+))?(?:-([A-Z0-9]+))?(?:-([A-Z0-9]+))?(?:-([A-Z0-9]+))?$"
+        r"^(\d+(?:\.\d+)?)-([A-Z0-9]+)-([A-Z0-9]+)-(\d+)-([A-Z0-9]+)(?:-([A-Z0-9]+))?(?:-([A-Z0-9]+))?(?:-([A-Z0-9]+))?(?:-([A-Z0-9]+))?$"
     )
 
     @classmethod
@@ -99,13 +143,19 @@ class LineNumber:
         if len(line_part) > MAX_LINE_NUMBER_LENGTH:
             return None
 
+        # Normalize fractional pipe sizes (e.g., "1-1/2-EV180..." -> "1.5-EV180...")
+        # Match patterns like "1-1/2" or "3/4" at the start of the line number
+        line_part = re.sub(
+            r"^(\d+)-(\d/\d)|^(\d/\d)", lambda m: _normalize_pipe_size(m.group(0)), line_part
+        )
+
         match = cls.LINE_NUMBER_PATTERN.match(line_part)
         if not match:
             return None
 
         groups = match.groups()
 
-        nominal_pipe_size = int(groups[0])
+        nominal_pipe_size = float(groups[0])
         unit_number = groups[1]
         fluid_code = groups[2]
         serial_number = int(groups[3])
