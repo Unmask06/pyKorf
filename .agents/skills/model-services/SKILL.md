@@ -1,6 +1,6 @@
 ---
 name: model-services
-description: Model class facade, service-oriented architecture, and delegation patterns
+description: Model class facade, service-oriented architecture, delegation patterns, and standalone helpers
 ---
 
 # Model Services Architecture
@@ -16,9 +16,18 @@ When adding new functionality to the `Model`, place the logic in the appropriate
 | `ElementService` | CRUD operations for elements | `add_element`, `update_element`, `delete_element`, `copy_element`, `move_element` |
 | `QueryService` | Element querying and parameter access | `get_elements`, `get_elements_by_type`, `get_params`, `set_params` |
 | `ConnectivityService` | Element connections and validation | `connect_elements`, `disconnect_elements`, `check_connectivity` |
-| `LayoutService` | Element positioning and visualization | `set_position`, `auto_place`, `auto_layout`, `check_layout` |
-| `IOService` | File I/O and export operations | `save`, `to_dataframes`, `to_excel`, `export_to_json` |
+| `LayoutService` | Element positioning and visualization | `set_position`, `auto_place`, `auto_layout`, `visualize_network` |
+| `IOService` | File I/O and export operations | `save`, `to_dataframes`, `to_excel` |
 | `SummaryService` | Validation and model statistics | `validate`, `summary`, `pipe()`, `pump()` |
+
+## Standalone Helpers
+Some advanced operations are handled by standalone helper classes that take a `Model` as an argument.
+
+| Class | Source | Purpose |
+| :--- | :--- | :--- |
+| `CaseSet` | `pykorf.cases` | Manage multi-case (scenarios) logic. |
+| `Results` | `pykorf.results` | Extract calculated results (power, head, velocity). |
+| `Visualizer` | `pykorf.visualization` | Generate interactive PyVis HTML networks. |
 
 ## Internal Access
 - Services have a `self.model` reference to the main `Model` instance.
@@ -44,6 +53,6 @@ Most KDF parameters are stored as lists containing raw input, calculated results
 | **Coordinate** | `[x, y]` | `Feed.XY: [1200, 4300]` |
 
 ### Best Practices
-1. **Prefer Scalar Overrides:** If you only want to set the first value (or a single value for all cases), `Model.update_element` allows passing a scalar which it will internally convert if simple, but for complex KDF records, always provide the full list.
-2. **Consult Template:** If unsure of the required length, check `pykorf/library/New.kdf` or use `model.get_params(name, param).values` to see the current structure.
-3. **Use Constants:** Always use parameter constants (e.g., `Pipe.TFLOW`) rather than strings to ensure correct lookup and validation.
+1. **Prefer Scalar Overrides:** `Model.update_element` allows passing a scalar which it will internally convert if simple.
+2. **Consult Template:** Use `model.get_params(name, param).values` to see the current structure.
+3. **Use Constants:** Always use parameter constants (e.g., `Pipe.TFLOW`) to ensure correct lookup and validation.

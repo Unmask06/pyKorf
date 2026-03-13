@@ -113,6 +113,9 @@ class SummaryService:
         if check_layout:
             issues.extend(self.model.check_layout())
 
+        # 11. Check pipe criteria (DPL and VEL against SIZ)
+        issues.extend(self._validate_pipe_criteria())
+
         return issues
 
     def _check_num_counts(self, issues: list[str]) -> None:
@@ -254,6 +257,73 @@ class SummaryService:
                             )
                     except (ValueError, TypeError):
                         pass
+
+    def _validate_pipe_criteria(self) -> list[str]:
+        """Validate pipe DPL and VEL against SIZ criteria.
+
+        For each pipe (index >= 1):
+        - Check if calculated DPL <= SIZ dP/dL criteria
+        - Check if all VEL values (V_avg, V_in, V_out) are within SIZ min/max bounds
+
+        Only validates first case for multi-case models.
+
+        Returns:
+            List of validation issue descriptions.
+        """
+        issues: list[str] = []
+
+        for idx in range(1, self.model.num_pipes + 1):
+            pipe = self.model.pipes[idx]
+
+            siz_rec = pipe._get(Pipe.SIZ)
+            dpl_rec = pipe._get(Pipe.DPL)
+            vel_rec = pipe._get(Pipe.VEL)
+
+            if siz_rec is None or not siz_rec.values:
+                continue
+
+            if len(siz_rec.values) < 8:
+                continue
+
+            try:
+                siz_dpdl = float(siz_rec.values[1])
+                siz_max_vel = float(siz_rec.values[3])
+                siz_min_vel = float(siz_rec.values[4])
+            except (ValueError, TypeError, IndexError):
+                continue
+
+            if dpl_rec and dpl_rec.values and len(dpl_rec.values) >= 1:
+                try:
+                    calc_dpl = float(dpl_rec.values[0])
+                    if calc_dpl > siz_dpdl:
+                        issues.append(
+                            f"PIPE {pipe.name} (idx {pipe.index}): "
+                            f"DPL {calc_dpl:.3f} exceeds criteria {siz_dpdl:.3f} kPa/100m"
+                        )
+                except (ValueError, TypeError):
+                    pass
+
+            if vel_rec and vel_rec.values and len(vel_rec.values) >= 3:
+                try:
+                    v_avg = float(vel_rec.values[0])
+                    v_in = float(vel_rec.values[1])
+                    v_out = float(vel_rec.values[2])
+
+                    for vel_name, vel_value in [("V_avg", v_avg), ("V_in", v_in), ("V_out", v_out)]:
+                        if vel_value > siz_max_vel:
+                            issues.append(
+                                f"PIPE {pipe.name} (idx {pipe.index}): "
+                                f"{vel_name} {vel_value:.3f} exceeds max criteria {siz_max_vel:.3f} m/s"
+                            )
+                        if vel_value < siz_min_vel:
+                            issues.append(
+                                f"PIPE {pipe.name} (idx {pipe.index}): "
+                                f"{vel_name} {vel_value:.3f} below min criteria {siz_min_vel:.3f} m/s"
+                            )
+                except (ValueError, TypeError):
+                    pass
+
+        return issues
 
     def pipe(self, index: int) -> Pipe:
         """Return pipe *index*, raise :exc:`ElementNotFound` if absent.

@@ -22,6 +22,8 @@ subprocess.Popen("korf.exe")
 
 ```python
 from pykorf.automation import KorfApp, open_ui
+# Also available as a top-level shortcut:
+# from pykorf import open_ui
 
 # Connect to running KORF
 app = KorfApp.connect()

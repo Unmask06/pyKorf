@@ -7,11 +7,11 @@ description: KDF file format, parser internals, record structure, encoding, and 
 
 ## File Structure
 
-- Encoding: `latin-1` (NOT UTF-8)
-- Line endings: `\r\n` (Windows CRLF)
-- Record format: `\ETYPE,index,PARAM,value1,value2,...`
-- Header lines: verbatim text (version string, comments)
-- Reference file : `pykorf/library/New.kdf` defines the template (index-0 records) for all element types and their parameters.
+- **Encoding:** `latin-1` (NOT UTF-8)
+- **Line endings:** `\r\n` (Windows CRLF)
+- **Record format:** `\ETYPE,index,PARAM,value1,value2,...`
+- **Header lines:** Verbatim text (version string, comments)
+- **Template:** `pykorf/library/New.kdf` defines index-0 records (schemas) for all types.
 
 ## KdfRecord
 
@@ -30,37 +30,34 @@ record.to_line()     # serialize back (uses raw_line if unmodified)
 record.update(vals)  # replace values + mark dirty (clears raw_line)
 ```
 
-## KdfParser
-
-```python
-parser = KdfParser("model.kdf")   # encoding defaults to latin-1
-records = parser.load()            # → list[KdfRecord]
-parser.save(records)               # write back, preserving order
-```
-
 ## Multi-case Values
-
-- Semicolon-delimited: `"50;55;20"` → 3 cases
-- Calculated marker: value ending with `";C"` means KORF-computed
-- Split/join helpers: `split_cases(val)`, `join_cases(vals)`
-
-## Version Awareness
-
-| Version    | Differences                            |
-| ---------- | -------------------------------------- |
-| `KORF_2.0` | `NOZ` nozzle parameter                 |
-| `KORF_3.0` | Transitional                           |
-| `KORF_3.6` | `NOZL` replaces `NOZ`, fitting changes |
+- Semicolon-delimited strings: `"50;55;20"` → 3 cases.
+- Calculated marker: Value ending with `";C"` means KORF-computed.
+- Use `split_cases(val)` and `join_cases(vals)` helpers in `pykorf.utils`.
 
 ## Round-trip Rules
+1. **Fidelity:** `raw_line` is preserved for unmodified records.
+2. **Dirty Marker:** Only `record.update()` clears `raw_line`.
+3. **Ordering:** Never sort or reorder records; KORF is sensitive to sequence.
 
-1. `raw_line` preserved on unmodified records → exact byte-for-byte fidelity
-2. Only `record.update()` clears `raw_line` (marks dirty)
-3. Dirty records rebuilt via `format_line()` in `pykorf.utils`
-4. Record ORDER must be preserved — never sort or reorder
+## PIPE Criteria Parameters (SIZ, DPL, VEL)
+
+### SIZ (Sizing Criteria)
+Format: `\PIPE,index,"SIZ","",dP_dL,unit,max_vel,min_vel,max_coeff,min_coeff,vel_unit`
+- `dP_dL`: Pressure drop per length criteria (e.g., `22.6`).
+- `max_vel`, `min_vel`: Velocity bounds.
+
+### DPL (Calculated Pressure Drop)
+Format: `\PIPE,index,"DPL",value,unit`
+- `value`: Calculated pressure drop per 100m.
+- **Validation:** Must be `<= SIZ.dP_dL`.
+
+### VEL (Calculated Velocities)
+Format: `\PIPE,index,"VEL",V_avg,V_in,V_out,V_sonic,unit`
+- `V_avg`, `V_in`, `V_out`: Calculated velocities.
+- **Validation:** Must be within `SIZ.min_vel` and `SIZ.max_vel`.
 
 ## Key Files
-
-- `pykorf/parser.py` — `KdfParser`, `KdfRecord`
-- `pykorf/utils.py` — `parse_line()`, `format_line()`, `split_cases()`, `join_cases()`
-- `pykorf/library/New.kdf` — default template (index-0 records define param schemas)
+- `pykorf/parser.py`: `KdfParser`, `KdfRecord`.
+- `pykorf/utils.py`: `parse_line()`, `format_line()`, `split_cases()`.
+- `pykorf/library/New.kdf`: Schema reference.

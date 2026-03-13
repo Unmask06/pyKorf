@@ -1,6 +1,6 @@
 ---
 name: elements
-description: Element types, parameter constants, registry, BaseElement API, and adding new elements
+description: Element types, parameter constants, registry, BaseElement API, type-safe Pydantic models, and adding new elements
 ---
 
 # Element Types, Constants & Registry
@@ -51,10 +51,29 @@ EXPAND, JUNC, TEE, VESSEL, GEN, SYMBOL, TOOLS, PSEUDO, PIPEDATA
 | `Junction`      | `"JUNC"`    | `NAME`                                            |
 | `Tee`           | `"TEE"`     | `NAME`                                            |
 | `Vessel`        | `"VESSEL"`  | `NAME, VOL`                                       |
+| `PipeData`      | `"PIPEDATA"`| `ID, DIA, SCH, MAT, ROUGH`                        |
+| `Symbol`        | `"SYMBOL"`  | `NAME, XY, SCALE`                                 |
+| `Tools`         | `"TOOLS"`   | `NAME`                                            |
+| `Pseudo`        | `"PSEUDO"`  | `NAME`                                            |
 
 ### Backward-compat Aliases
 
 `Gen=General, Hx=HeatExchanger, Comp=Compressor, Misc=MiscEquipment, Expand=Expander, Junc=Junction, Prod=Product, Check=CheckValve, Orifice=FlowOrifice, Common=BaseElement`
+
+## Type Safety with Pydantic Models
+
+For enterprise-grade type safety, use the models in `pykorf.types`. These are useful for validation and structured data exchange.
+
+```python
+from pykorf.types import PipeData, PumpData, FlowParameters
+
+pipe = PipeData(
+    name="L1",
+    diameter_inch="6",
+    length_m=100.0,
+    flow=FlowParameters(mass_flow_t_h=[50, 55, 20]),
+)
+```
 
 ## ELEMENT_REGISTRY
 
@@ -84,3 +103,4 @@ Maps KDF keyword → tuple of ALL parameter constants for that type.
 - `pykorf/elements/base.py` — `BaseElement`, param validation
 - `pykorf/elements/pipe.py` — largest element (90+ constants)
 - `pykorf/model/core.py` — Element collections are built here
+- `pykorf/types.py` — Pydantic models for all elements
