@@ -19,6 +19,8 @@ MAX_FILE_SIZE_MB = 100
 class FilePickerScreen(Screen):
     """Screen for selecting a KDF file to load."""
 
+    CSS_PATH = []
+
     CSS = """
     FilePickerScreen {
         align: center middle;

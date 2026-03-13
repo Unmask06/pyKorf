@@ -23,6 +23,8 @@ class GlobalSettingsScreen(Screen):
 
     BINDINGS = [("escape", "action_go_back", "Back")]
 
+    CSS_PATH = []
+
     def __init__(self):
         super().__init__()
         self.execution_logs: list[tuple[str, str]] = []

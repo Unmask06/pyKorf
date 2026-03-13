@@ -25,6 +25,8 @@ class ApplyHmbScreen(Screen):
 
     BINDINGS = [("escape", "go_back", "Back")]
 
+    CSS_PATH = []
+
     CSS = """
     ApplyHmbScreen {
         align: center middle;

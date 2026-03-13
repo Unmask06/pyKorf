@@ -24,6 +24,8 @@ class ApplyPmsScreen(Screen):
 
     BINDINGS = [("escape", "go_back", "Back")]
 
+    CSS_PATH = []
+
     CSS = """
     ApplyPmsScreen {
         align: center middle;

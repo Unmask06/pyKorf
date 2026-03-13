@@ -26,6 +26,8 @@ class BulkCopyFluidsScreen(Screen):
 
     BINDINGS = [("escape", "go_back", "Back")]
 
+    CSS_PATH = []
+
     CSS = """
     BulkCopyFluidsScreen {
         align: center middle;

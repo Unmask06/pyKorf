@@ -16,6 +16,8 @@ class ConfigMenuScreen(Screen):
 
     BINDINGS = [("escape", "go_back", "Back")]
 
+    CSS_PATH = []
+
     CSS = """
     ConfigMenuScreen {
         align: center middle;

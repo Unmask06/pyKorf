@@ -14,6 +14,8 @@ class ModelInfoScreen(Screen):
 
     BINDINGS = [("escape", "go_back", "Back")]
 
+    CSS_PATH = []
+
     CSS = """
     ModelInfoScreen {
         align: center middle;

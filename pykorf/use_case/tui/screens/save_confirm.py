@@ -21,6 +21,8 @@ if TYPE_CHECKING:
 class SaveConfirmScreen(Screen):
     """Modal screen asking the user whether to save changes."""
 
+    CSS_PATH = []
+
     CSS = """
     SaveConfirmScreen {
         align: center middle;

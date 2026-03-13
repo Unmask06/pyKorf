@@ -24,6 +24,8 @@ class MainMenuScreen(Screen):
         ("q", "quit_app", "Quit"),
     ]
 
+    CSS_PATH = []
+
     CSS = """
     MainMenuScreen {
         align: center middle;

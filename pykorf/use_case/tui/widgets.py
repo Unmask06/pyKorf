@@ -9,6 +9,8 @@ from textual.widgets import Label, Static
 class KdfFileHeader(Static):
     """Persistent header showing the current KDF file path."""
 
+    CSS_PATH = []
+
     CSS = """
     KdfFileHeader {
         width: 100%;
