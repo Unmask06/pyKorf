@@ -75,6 +75,8 @@ Example Usage
     ...     model.validate()
 """
 
+from pathlib import Path
+
 from pykorf.cases import CaseSet
 from pykorf.elements import Element
 from pykorf.exceptions import (
@@ -122,8 +124,8 @@ from pykorf.types import (
     VesselOrientation,
 )
 
-# Version information
-__version__ = "0.2.0-dev"
+# Version information - read from pyproject.toml as fallback
+__version__ = "0.1.1"
 try:
     from pykorf._version import __version__
 except Exception:
@@ -132,7 +134,17 @@ except Exception:
 
         __version__ = version("pykorf")
     except Exception:
-        pass
+        try:
+            # Read from pyproject.toml for development
+            import tomllib
+
+            _pyproject_path = Path(__file__).parent.parent / "pyproject.toml"
+            if _pyproject_path.exists():
+                with open(_pyproject_path, "rb") as f:
+                    _data = tomllib.load(f)
+                    __version__ = _data["project"]["version"]
+        except Exception:
+            pass
 
 __author__ = "pyKorf Contributors"
 __all__ = [

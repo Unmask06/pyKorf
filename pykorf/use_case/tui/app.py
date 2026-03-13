@@ -6,11 +6,13 @@ from textual.app import App, ComposeResult
 from textual.containers import Vertical
 from textual.widgets import Label, Static
 
+from pykorf import __version__
+
 
 class UseCaseTUI(App):
     """pyKorf Use Case TUI - Textual application."""
 
-    TITLE = "pyKorf Use Case Tool V0.1.0"
+    TITLE = f"pyKorf Use Case Tool V{__version__}"
     SUB_TITLE = "Bulk operations on KDF files"
     CSS_PATH = []
 
