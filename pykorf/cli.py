@@ -5,8 +5,8 @@ from __future__ import annotations
 import argparse
 from datetime import datetime, timedelta
 
-TRIAL_START_DATE = datetime(2026, 3, 10)
-TRIAL_DURATION_DAYS = 5
+TRIAL_START_DATE = datetime(2026, 3, 13)
+TRIAL_DURATION_DAYS = 7
 DEVELOPER_CONTACT = "Prasanna Palanivel"
 
 
