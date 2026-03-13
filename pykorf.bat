@@ -115,14 +115,16 @@ if "!CURRENT_VERSION!"=="!INSTALLED_VERSION!" (
 ) else (
     echo [UPDATE] New version detected. Updating...
 
-    REM Remove old installation completely (including .venv)
-    if exist "%APPDATA_DIR%" (
-        echo Removing old installation...
-        rmdir /s /q "%APPDATA_DIR%"
+    REM Remove only the old package code, keep user data (config.json, data/)
+    if exist "%APPDATA_DIR%\pykorf" (
+        echo Removing old package...
+        rmdir /s /q "%APPDATA_DIR%\pykorf"
     )
 
-    REM Create fresh APPDATA directory
-    mkdir "%APPDATA_DIR%"
+    REM Ensure APPDATA directory exists (preserve user data)
+    if not exist "%APPDATA_DIR%" (
+        mkdir "%APPDATA_DIR%"
+    )
 
     REM Copy application files using xcopy
     echo Copying application files...
