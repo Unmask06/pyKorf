@@ -125,7 +125,7 @@ from pykorf.types import (
 )
 
 # Version information - read from pyproject.toml as fallback
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 try:
     from pykorf._version import __version__ as _scm_version
 
