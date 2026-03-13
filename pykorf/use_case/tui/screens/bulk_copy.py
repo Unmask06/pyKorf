@@ -24,8 +24,6 @@ from pykorf.use_case.tui.logging import log_error, log_info, log_success
 class BulkCopyFluidsScreen(Screen):
     """Screen for copying fluid properties from one pipe to others."""
 
-    BINDINGS = [("escape", "go_back", "Back")]
-
     CSS_PATH = []
 
     CSS = """
@@ -130,6 +128,11 @@ class BulkCopyFluidsScreen(Screen):
                 yield RichLog(id="copy-results", wrap=True)
 
             with Vertical(id="right-panel"):
+                with Vertical(id="pipe-list-section"):
+                    yield Label("Available Pipes")
+                    yield Static("─" * 15)
+                    yield Static("Loading pipes...", id="pipe-list-content")
+
                 with Vertical(classes="info-section"):
                     yield Label("How to Use")
                     yield Static("─" * 15)
@@ -185,13 +188,6 @@ class BulkCopyFluidsScreen(Screen):
         display_text = ", ".join(pipe_names)
 
         pipe_list.update(display_text)
-
-    def action_go_back(self) -> None:
-        self.app.pop_screen()
-
-    @on(Button.Pressed, "#btn-back")
-    def go_back(self) -> None:
-        self.app.pop_screen()
 
     @on(Button.Pressed, "#btn-copy-log")
     def copy_log(self) -> None:

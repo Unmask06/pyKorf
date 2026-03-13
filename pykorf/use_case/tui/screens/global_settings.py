@@ -21,8 +21,6 @@ from pykorf.use_case.tui.logging import (
 class GlobalSettingsScreen(Screen):
     """Screen for applying global settings to the model."""
 
-    BINDINGS = [("escape", "action_go_back", "Back")]
-
     CSS_PATH = []
 
     def __init__(self):
@@ -169,13 +167,6 @@ class GlobalSettingsScreen(Screen):
                     yield Static("and apply together for")
                     yield Static("efficient updates.")
         yield Footer()
-
-    def action_go_back(self) -> None:
-        self.app.pop_screen()
-
-    @on(Button.Pressed, "#btn-back")
-    def go_back(self) -> None:
-        self.app.pop_screen()
 
     @on(Button.Pressed, "#btn-select-all")
     def select_all(self) -> None:

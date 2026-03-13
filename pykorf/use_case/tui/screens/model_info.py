@@ -12,8 +12,6 @@ from textual.widgets import Button, DataTable, Footer, Label, RichLog, Static
 class ModelInfoScreen(Screen):
     """Screen displaying model element counts, pipe names, and validation errors."""
 
-    BINDINGS = [("escape", "go_back", "Back")]
-
     CSS_PATH = []
 
     CSS = """
@@ -208,9 +206,6 @@ class ModelInfoScreen(Screen):
             # No issues - show green
             validation_header.add_class("success")
             validation_header.update("Validation: PASSED (no issues)")
-
-    def action_go_back(self) -> None:
-        self.app.pop_screen()
 
     @on(Button.Pressed, "#btn-back")
     def go_back(self) -> None:

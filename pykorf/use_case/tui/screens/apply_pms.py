@@ -22,8 +22,6 @@ from pykorf.use_case.tui.logging import (
 class ApplyPmsScreen(Screen):
     """Screen for applying PMS specifications to pipes."""
 
-    BINDINGS = [("escape", "go_back", "Back")]
-
     CSS_PATH = []
 
     CSS = """
@@ -103,13 +101,6 @@ class ApplyPmsScreen(Screen):
                     yield Static("via Configuration menu")
                     yield Static("if file not found.")
         yield Footer()
-
-    def action_go_back(self) -> None:
-        self.app.pop_screen()
-
-    @on(Button.Pressed, "#btn-back")
-    def go_back(self) -> None:
-        self.app.pop_screen()
 
     @on(Button.Pressed, "#btn-apply")
     def apply(self) -> None:
