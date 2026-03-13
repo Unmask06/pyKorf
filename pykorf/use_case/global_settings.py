@@ -8,9 +8,10 @@ Global Settings:
        - Set LEN = 0.1 m
        - Set ID = 1500 mm (converted to meters: 1.5 m)
        - Set SCH = "ID"
+       - Set LBL = [0, 0, 50] (turn off labels)
     2. 25% margin in dP/dL - Apply DP_DES_FAC = 1.25 to all pipes
     3. Rename Line from NOTES - Extract fluid code and serial number from NOTES
-       and update pipe name (e.g., "L4" -> "VCL17-806")
+        and update pipe name (e.g., "L4" -> "VCL17-806")
 
 Usage:
     >>> from pykorf import Model
@@ -61,6 +62,7 @@ def apply_dummy_pipe_settings(model: Model) -> list[str]:
     - Set LEN = 0.1 (meters)
     - Set ID = 1500 mm (converted to 1.5 meters)
     - Set SCH = "ID"
+    - Set LBL = [0, 0, 50] (turn off labels)
 
     Args:
         model: Loaded KDF model.
@@ -89,17 +91,19 @@ def apply_dummy_pipe_settings(model: Model) -> list[str]:
         # Apply the settings - format matches apply_pms pattern
         # LEN needs 2 values: [value, unit]
         # ID needs 3 values: [value1, value2, unit] based on template
+        # LBL needs 3 values: [on/off, x_offset, font_size] - 0=off, -1=on
         params: dict[str, Any] = {
             Pipe.LEN: [0.1, "m"],
             Pipe.SCH: "ID",
             Pipe.ID: [str(id_meters), str(id_meters), "m"],
+            Pipe.LBL: [0, 0, 50],  # Turn off labels (0=off, 0=x_offset, 50=font_size)
         }
 
         try:
             model.set_params(pipe_name, params)
             affected_pipes.append(pipe_name)
             logger.info(
-                "Dummy pipe %s: LEN=0.1m, ID=%sm (1500mm), SCH=ID",
+                "Dummy pipe %s: LEN=0.1m, ID=%sm (1500mm), SCH=ID, LBL=OFF",
                 pipe_name,
                 id_meters,
             )
@@ -259,7 +263,7 @@ _GLOBAL_SETTINGS: dict[str, GlobalSetting] = {
     "dummy_pipe": GlobalSetting(
         id="dummy_pipe",
         name="Set ID/Length for Dummy Pipe",
-        description='Pipes with names starting with "d": Set LEN=0.1m, ID=1500 mm, SCH="ID"',
+        description='Pipes with names starting with "d": Set LEN=0.1m, ID=1500mm, SCH="ID", LBL=OFF',
         apply_func=apply_dummy_pipe_settings,
     ),
     "dp_margin": GlobalSetting(

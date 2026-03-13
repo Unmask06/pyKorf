@@ -117,8 +117,14 @@ def run_tui(debug: bool = False) -> None:
     """
     from pykorf.log import configure_logging, enable_debug_mode
 
-    # Configure base logging first
-    configure_logging("pykorf.log")
+    # Configure logging with a temporary log file initially
+    # The actual log file will be set when a KDF file is loaded
+    import tempfile
+    import os
+
+    temp_log = tempfile.NamedTemporaryFile(mode="w", suffix=".log", delete=False)
+    temp_log.close()
+    configure_logging(temp_log.name)
 
     # Enable debug mode if requested (sets DEBUG level)
     if debug:

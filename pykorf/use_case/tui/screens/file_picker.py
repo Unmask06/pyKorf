@@ -138,7 +138,11 @@ class FilePickerScreen(Screen):
 
         try:
             from pykorf import Model
-            from pykorf.log import enable_debug_mode
+            from pykorf.log import enable_debug_mode, set_log_file
+
+            # Set log file to KDF file's directory with same name prefix
+            log_file_path = path.parent / f"{path.stem}.log"
+            set_log_file(log_file_path)
 
             model = Model(str(path))
             pipe_count = len(real_elements(model.pipes))
