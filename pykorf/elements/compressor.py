@@ -113,3 +113,28 @@ class Compressor(BaseElement):
             return (int(vals[0]), int(vals[1]))
         except (IndexError, TypeError, ValueError):
             return (0, 0)
+
+    # ------------------------------------------------------------------
+    # Convenience
+    # ------------------------------------------------------------------
+
+    def summary(self, export: bool = False) -> dict:
+        if export:
+            flow_val, flow_unit = self.get_value_and_unit(
+                Compressor.QACT, val_index=0, unit_index=-1
+            )
+            dp_val, dp_unit = self.get_value_and_unit(Compressor.DP, val_index=1, unit_index=-1)
+
+            return {
+                "Compressor Name": self.name,
+                self.format_export_header("Gas Volumetric Flow", "Result", flow_unit): flow_val,
+                self.format_export_header("Differential Pressure", "Result", dp_unit): dp_val,
+            }
+
+        return {
+            "name": self.name,
+            "type": self.comp_type,
+            "head_m": self.head_m,
+            "power_kW": self.power_kW,
+            "efficiency": self.efficiency,
+        }

@@ -511,8 +511,31 @@ class Pipe(BaseElement):
     # Convenience
     # ------------------------------------------------------------------
 
-    def summary(self) -> dict:
-        """Return a dict of key pipe properties (useful for display)."""
+    def summary(self, export: bool = False) -> dict:
+        """Return a dict of key pipe properties (useful for display or export)."""
+        if export:
+            dp_crit_val, dp_crit_unit = self.get_value_and_unit(Pipe.SIZ, val_index=1, unit_index=2)
+            vel_crit_val, vel_crit_unit = self.get_value_and_unit(
+                Pipe.SIZ, val_index=3, unit_index=-1
+            )
+
+            dp_calc_val, dp_calc_unit = self.get_value_and_unit(
+                Pipe.DPL, val_index=0, unit_index=-1
+            )
+            vel_calc_val, vel_calc_unit = self.get_value_and_unit(
+                Pipe.VEL, val_index=0, unit_index=-1
+            )
+
+            return {
+                "Pipe Name": self.name,
+                self.format_export_header("DP / DL Criteria", "Input", dp_crit_unit): dp_crit_val,
+                self.format_export_header(
+                    "Velocity Criteria", "Input", vel_crit_unit
+                ): vel_crit_val,
+                self.format_export_header("DP / DL", "Result", dp_calc_unit): dp_calc_val,
+                self.format_export_header("Velocity", "Result", vel_calc_unit): vel_calc_val,
+            }
+
         return {
             "name": self.name,
             "diameter_inch": self.diameter_inch,

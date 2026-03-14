@@ -154,10 +154,6 @@ def ensure_data_dir() -> Path:
     return data_dir
 
 
-# Backward compatibility alias
-ensure_config_dir = ensure_data_dir
-
-
 def load_config() -> dict[str, Any]:
     """Load user configuration from disk.
 

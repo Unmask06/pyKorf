@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from textual import on
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import Button, DataTable, Footer, Label, RichLog, Static
+from textual.widgets import DataTable, Footer, Label, RichLog, Static
 
 
 class ModelInfoScreen(Screen):

@@ -394,7 +394,53 @@ class Pump(BaseElement):
     # Convenience
     # ------------------------------------------------------------------
 
-    def summary(self) -> dict:
+    def summary(self, export: bool = False) -> dict:
+        if export:
+            suc_val, suc_unit = self.get_value_and_unit(Pump.PIN, val_index=1, unit_index=-1)
+            dis_val, dis_unit = self.get_value_and_unit(Pump.POUT, val_index=1, unit_index=-1)
+
+            flow_val, flow_unit = self.get_value_and_unit(Pump.HQACT, val_index=2, unit_index=-1)
+            head_val, head_unit = self.get_value_and_unit(Pump.HQACT, val_index=0, unit_index=1)
+            dp_val, dp_unit = self.get_value_and_unit(Pump.DP, val_index=1, unit_index=-1)
+
+            npsha_val, npsh_unit = self.get_value_and_unit(Pump.NPSHA13, val_index=1, unit_index=-1)
+            npshr_val, _ = self.get_value_and_unit(Pump.NPSHR13, val_index=1, unit_index=-1)
+
+            pow_val, pow_unit = self.get_value_and_unit(Pump.POW, val_index=0, unit_index=-1)
+
+            pz_dp_val, pz_unit = self.get_value_and_unit(Pump.PZPRES, val_index=0, unit_index=-1)
+            pz_suc_val, _ = self.get_value_and_unit(Pump.PZPRES, val_index=1, unit_index=-1)
+            pz_dis_val, _ = self.get_value_and_unit(Pump.PZPRES, val_index=2, unit_index=-1)
+
+            margin_val, _ = self.get_value_and_unit(Pump.PZRAT, val_index=1, unit_index=-1)
+
+            ves_pres_val, ves_p_unit = self.get_value_and_unit(
+                Pump.PZVES, val_index=0, unit_index=1
+            )
+            ves_lvl_val, ves_l_unit = self.get_value_and_unit(Pump.PZVES, val_index=2, unit_index=3)
+
+            return {
+                "Pump Name": self.name,
+                self.format_export_header("Suction Pressure", "Input", suc_unit): suc_val,
+                self.format_export_header("Discharge Pressure", "Input", dis_unit): dis_val,
+                self.format_export_header("Shut-Off Margin", "Input", ""): margin_val,
+                self.format_export_header(
+                    "Suc Vessel Max Pressure", "Input", ves_p_unit
+                ): ves_pres_val,
+                self.format_export_header("Suc Vessel Max Level", "Input", ves_l_unit): ves_lvl_val,
+                self.format_export_header("Volumetric Flow", "Result", flow_unit): flow_val,
+                self.format_export_header("Head", "Result", head_unit): head_val,
+                self.format_export_header("Differential Pressure", "Result", dp_unit): dp_val,
+                self.format_export_header("Hydraulic Power", "Result", pow_unit): pow_val,
+                self.format_export_header("NPSH Available", "Result", npsh_unit): npsha_val,
+                self.format_export_header("NPSH Required", "Result", npsh_unit): npshr_val,
+                self.format_export_header("Shut-Off DP", "Result", pz_unit): pz_dp_val,
+                self.format_export_header("Suction Max Pressure", "Result", pz_unit): pz_suc_val,
+                self.format_export_header(
+                    "Discharge Shut-Off Pressure", "Result", pz_unit
+                ): pz_dis_val,
+            }
+
         return {
             "name": self.name,
             "type": self.pump_type,

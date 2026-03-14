@@ -204,6 +204,7 @@ class BaseElement:
         Example:
             ```python
             from pykorf.elements import Feed
+
             rec = model.feeds[1].get_param(Feed.NAME)
             rec.update(["EXP DRUM", "FEED"])
             ```
@@ -243,6 +244,46 @@ class BaseElement:
     def records(self) -> list[KdfRecord]:
         """All KDF records belonging to this element instance."""
         return self._parser.get_all(self._etype, self._index)
+
+    # ------------------------------------------------------------------
+    # Export Helpers
+    # ------------------------------------------------------------------
+
+    def get_value_and_unit(
+        self, param: str, val_index: int = 0, unit_index: int = -1
+    ) -> tuple[float | str, str]:
+        """Dynamically fetches the value and the unit from a KDF record.
+
+        Returns:
+            (value, unit_string)
+        """
+        record = self.get_param(param)
+        val: float | str = "N/A"
+        unit = ""
+
+        if record and len(record.values) > val_index:
+            raw_val = record.values[val_index]
+            try:
+                # Store as float to allow math in excel/pandas
+                val = float(raw_val)
+            except (ValueError, TypeError):
+                val = str(raw_val)
+
+        if record and (len(record.values) > abs(unit_index) or unit_index == -1):
+            if len(record.values) > 0:
+                raw_unit = str(record.values[unit_index]).strip()
+                # Ensure it's a string, not a generic number that happens to be at the end
+                if not raw_unit.replace(".", "", 1).replace("-", "", 1).isdigit():
+                    unit = raw_unit
+
+        return val, unit
+
+    def format_export_header(self, base_name: str, prefix: str, unit: str) -> str:
+        """Creates a clean column header: '[Result] Velocity [m/s]'"""
+        header = f"[{prefix}] {base_name}"
+        if unit:
+            header += f" [{unit}]"
+        return header
 
     # ------------------------------------------------------------------
     # Dunder
