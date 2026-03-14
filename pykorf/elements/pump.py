@@ -150,10 +150,10 @@ class Pump(BaseElement):
 
         Pass an empty string ``""`` to let KORF calculate via the curve.
         """
-        rec = self._get(Pump.DP)
+        rec = self.get_param(Pump.DP)
         if rec:
             new_vals = [str(value), *rec.values[1:]]
-            self._set(Pump.DP, new_vals)
+            self.set_param(Pump.DP, new_vals)
 
     # ------------------------------------------------------------------
     # PIN / POUT - Pressures
@@ -209,9 +209,9 @@ class Pump(BaseElement):
             Fraction, e.g. ``0.72`` for 72 %.
             Pass ``""`` to restore curve-based calculation.
         """
-        rec = self._get(Pump.EFFP)
+        rec = self.get_param(Pump.EFFP)
         if rec:
-            self._set(Pump.EFFP, [str(value), *rec.values[1:]])
+            self.set_param(Pump.EFFP, [str(value), *rec.values[1:]])
 
     # ------------------------------------------------------------------
     # POW - Power
@@ -298,12 +298,12 @@ class Pump(BaseElement):
         q_unit:   Unit for flow (default ``'m3/h'``).
         h_unit:   Unit for head (default ``'m'``).
         """
-        self._set(Pump.CURQ, [str(v) for v in q] + [q_unit])
-        self._set(Pump.CURH, [str(v) for v in h] + [h_unit])
-        self._set(Pump.CUREFF, [str(v) for v in eff] + ["fraction"])
+        self.set_param(Pump.CURQ, [str(v) for v in q] + [q_unit])
+        self.set_param(Pump.CURH, [str(v) for v in h] + [h_unit])
+        self.set_param(Pump.CUREFF, [str(v) for v in eff] + ["fraction"])
         if npsh is not None:
-            self._set(Pump.CURNPSH, [str(v) for v in npsh] + ["m"])
-        self._set(Pump.CURNP, [len(q)])
+            self.set_param(Pump.CURNPSH, [str(v) for v in npsh] + ["m"])
+        self.set_param(Pump.CURNP, [len(q)])
 
     # ------------------------------------------------------------------
     # NPSHA13 / NPSHR13 - NPSH

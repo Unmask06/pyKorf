@@ -97,10 +97,10 @@ class Feed(BaseElement):
         else:
             p_str = str(pressure)
 
-        rec = self._get(Feed.PRES)
+        rec = self.get_param(Feed.PRES)
         if rec:
             new_vals = [p_str, *rec.values[1:]]
-            self._set(Feed.PRES, new_vals)
+            self.set_param(Feed.PRES, new_vals)
 
     @property
     def dp_string(self) -> str:

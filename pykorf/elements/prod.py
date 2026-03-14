@@ -89,10 +89,10 @@ class Product(BaseElement):
         else:
             p_str = str(pressure)
 
-        rec = self._get(Product.PRES)
+        rec = self.get_param(Product.PRES)
         if rec:
             new_vals = [p_str, *rec.values[1:]]
-            self._set(Product.PRES, new_vals)
+            self.set_param(Product.PRES, new_vals)
 
     @property
     def nozzle_pipe_index(self) -> int:

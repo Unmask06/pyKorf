@@ -96,9 +96,9 @@ class FlowOrifice(BaseElement):
     def set_dp(self, value: str | float | list) -> None:
         if isinstance(value, (list, tuple)):
             value = join_cases(value)
-        rec = self._get(FlowOrifice.DP)
+        rec = self.get_param(FlowOrifice.DP)
         if rec:
-            self._set(FlowOrifice.DP, [str(value), *rec.values[1:]])
+            self.set_param(FlowOrifice.DP, [str(value), *rec.values[1:]])
 
     @property
     def beta(self) -> float:

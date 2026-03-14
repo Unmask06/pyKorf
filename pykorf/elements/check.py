@@ -56,7 +56,7 @@ class CheckValve(BaseElement):
 
     @loss_diameter.setter
     def loss_diameter(self, value: float) -> None:
-        self._set(CheckValve.LD, [value])
+        self.set_param(CheckValve.LD, [value])
 
     @property
     def connection(self) -> tuple[int, int]:

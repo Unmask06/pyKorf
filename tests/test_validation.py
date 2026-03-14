@@ -90,7 +90,7 @@ class TestValidate:
 
         # Verify criteria was set on a pipe
         pipe1 = m.pipes[1]
-        siz_rec = pipe1._get("SIZ")
+        siz_rec = pipe1.get_param("SIZ")
         assert siz_rec is not None
         assert float(siz_rec.values[1]) == 30.0  # dP/dL
         assert float(siz_rec.values[3]) == 50  # max_vel

@@ -209,7 +209,7 @@ def apply_rename_line_settings(model: Model) -> list[str]:
         pipe = model.pipes[idx]
         pipe_name = pipe.name
 
-        notes_rec = pipe._get("NOTES")
+        notes_rec = pipe.get_param("NOTES")
         if notes_rec is None or not notes_rec.values or not notes_rec.values[0]:
             logger.debug("Pipe %s: skipping, NOTES is empty", pipe_name)
             continue
@@ -221,7 +221,7 @@ def apply_rename_line_settings(model: Model) -> list[str]:
             logger.debug("Pipe %s: skipping, cannot parse NOTES: %s", pipe_name, notes_value)
             continue
 
-        name_rec = pipe._get("NAME")
+        name_rec = pipe.get_param("NAME")
         if name_rec is None or not name_rec.values:
             logger.warning("Pipe %s: skipping, NAME record not found", pipe_name)
             continue

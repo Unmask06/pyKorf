@@ -233,10 +233,10 @@ class General(BaseElement):
             Optional matching list of descriptions.
         """
         no_str = ";".join(str(n) for n in numbers)
-        self._set("CASENO", [no_str])
+        self.set_param("CASENO", [no_str])
         if descriptions:
             desc_str = ";".join(descriptions)
-            self._set("CASEDSC", [desc_str])
+            self.set_param("CASEDSC", [desc_str])
 
     # ------------------------------------------------------------------
     # Modelling options

@@ -69,7 +69,7 @@ class ElementService:
                     f"Parameter '{key}' is not valid for {elem.etype} elements. "
                     f"Valid parameters: {valid_params}"
                 )
-            rec = elem._get(key)
+            rec = elem.get_param(key)
             if rec is not None:
                 rec.values[0] = str(value)
                 rec.raw_line = ""
@@ -103,7 +103,7 @@ class ElementService:
 
     def _update_xy(self, elem: BaseElement, xy: dict[str, float]) -> None:
         """Update the XY record of an element with X and/or Y values."""
-        rec = elem._get(Common.XY)
+        rec = elem.get_param(Common.XY)
         if rec is None:
             return
         vals = list(rec.values)

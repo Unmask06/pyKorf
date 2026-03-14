@@ -185,8 +185,8 @@ class Visualizer:
 
         # Equipment with NOZI/NOZO (HX, MISC, some elements)
         if et in {Element.HX, Element.MISC}:
-            nozi_rec = elem._get(Common.NOZI)
-            nozo_rec = elem._get(Common.NOZO)
+            nozi_rec = elem.get_param(Common.NOZI)
+            nozo_rec = elem.get_param(Common.NOZO)
             if nozi_rec and len(nozi_rec.values) > 0 and str(nozi_rec.values[0]) == pipe_idx_str:
                 return "inlet"
             if nozo_rec and len(nozo_rec.values) > 0 and str(nozo_rec.values[0]) == pipe_idx_str:
@@ -202,7 +202,7 @@ class Visualizer:
             Element.EXPAND,
             Element.ORIFICE,
         }:
-            con_rec = elem._get(Common.CON)
+            con_rec = elem.get_param(Common.CON)
             if con_rec and len(con_rec.values) >= 2:
                 if str(con_rec.values[0]) == pipe_idx_str:
                     return "inlet"
@@ -212,7 +212,7 @@ class Visualizer:
 
         # TEE with CON = [C_pipe, _, _, M_pipe, _, B_pipe]
         if et == Element.TEE:
-            con_rec = elem._get(Common.CON)
+            con_rec = elem.get_param(Common.CON)
             if con_rec and len(con_rec.values) >= 6:
                 # CON format: [C, 0, 0, M, 0, B] based on connectivity.py analysis
                 if str(con_rec.values[0]) == pipe_idx_str:

@@ -166,18 +166,18 @@ class BaseElement:
     @property
     def name(self) -> str:
         """Element name tag (e.g. ``'L1'``, ``'P1'``)."""
-        rec = self._get(self.NAME)
+        rec = self.get_param(self.NAME)
         return rec.values[0] if rec and rec.values else ""
 
     @property
     def description(self) -> str:
         """Optional description (second value of the NAME record)."""
-        rec = self._get(self.NAME)
+        rec = self.get_param(self.NAME)
         return rec.values[1] if rec and len(rec.values) > 1 else ""
 
     @description.setter
     def description(self, value: str) -> None:
-        rec = self._get(self.NAME)
+        rec = self.get_param(self.NAME)
         if rec:
             if len(rec.values) > 1:
                 rec.values[1] = value
@@ -187,19 +187,16 @@ class BaseElement:
 
     @property
     def notes(self) -> str:
-        rec = self._get(self.NOTES)
+        rec = self.get_param(self.NOTES)
         return rec.values[0] if rec and rec.values else ""
 
     @notes.setter
     def notes(self, value: str) -> None:
-        self._set(self.NOTES, [value])
+        self.set_param(self.NOTES, [value])
 
     # ------------------------------------------------------------------
     # Internal record access
     # ------------------------------------------------------------------
-
-    def _get(self, param: str) -> KdfRecord | None:
-        return self._parser.get(self._etype, self._index, param)
 
     def get_param(self, param: str) -> KdfRecord | None:
         """Return the record for a given parameter, or *None* if missing.
@@ -207,24 +204,15 @@ class BaseElement:
         Example:
             ```python
             from pykorf.elements import Feed
-
             rec = model.feeds[1].get_param(Feed.NAME)
             rec.update(["EXP DRUM", "FEED"])
             ```
         """
-        return self._get(param)
+        return self._parser.get(self._etype, self._index, param)
 
     def _values(self, param: str) -> list:
-        rec = self._get(param)
+        rec = self.get_param(param)
         return rec.values if rec else []
-
-    def _set(self, param: str, values: list) -> None:
-        """Update an existing record's values list in-place.
-
-        Validates the value count against the default template before writing.
-        """
-        validate_param_values(self._etype, param, values)
-        self._parser.set_value(self._etype, self._index, param, values)
 
     def set_param(self, param: str, values: list) -> bool:
         """Set values for a given parameter.

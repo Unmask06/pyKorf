@@ -114,9 +114,9 @@ class Valve(BaseElement):
     def set_dp(self, value: str | float | list) -> None:
         if isinstance(value, (list, tuple)):
             value = join_cases(value)
-        rec = self._get(Valve.DP)
+        rec = self.get_param(Valve.DP)
         if rec:
-            self._set(Valve.DP, [str(value), *rec.values[1:]])
+            self.set_param(Valve.DP, [str(value), *rec.values[1:]])
 
     @property
     def opening_string(self) -> str:
@@ -126,9 +126,9 @@ class Valve(BaseElement):
         """Set valve opening (% open, per case)."""
         if isinstance(value, (list, tuple)):
             value = join_cases(value)
-        rec = self._get(Valve.OPEN)
+        rec = self.get_param(Valve.OPEN)
         if rec:
-            self._set(Valve.OPEN, [str(value), *rec.values[1:]])
+            self.set_param(Valve.OPEN, [str(value), *rec.values[1:]])
 
     @property
     def inlet_pressure_kPag(self) -> float:

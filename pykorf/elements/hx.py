@@ -78,9 +78,9 @@ class HeatExchanger(BaseElement):
             return 0.0
 
     def set_dp(self, value: str | float) -> None:
-        rec = self._get(HeatExchanger.DP)
+        rec = self.get_param(HeatExchanger.DP)
         if rec:
-            self._set(HeatExchanger.DP, [str(value), *rec.values[1:]])
+            self.set_param(HeatExchanger.DP, [str(value), *rec.values[1:]])
 
     @property
     def inlet_pressure_kPag(self) -> float:

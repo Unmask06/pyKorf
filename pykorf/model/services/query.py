@@ -146,7 +146,7 @@ class QueryService:
         elem = self.model.get_element(ename)
 
         if param is not None:
-            record = elem._get(param.upper())
+            record = elem.get_param(param.upper())
             if record is None:
                 raise ParameterError(
                     f"Parameter {param!r} not found on element {ename!r}",
@@ -201,7 +201,7 @@ class QueryService:
 
             if param_key in (Common.X, Common.Y):
                 # Get current position and update the specific coordinate
-                xy_rec = elem._get(Common.XY)
+                xy_rec = elem.get_param(Common.XY)
                 if xy_rec and len(xy_rec.values) >= 2:
                     if param_key == Common.X:
                         xy_rec.values[0] = str(value)

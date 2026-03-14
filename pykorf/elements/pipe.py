@@ -264,12 +264,12 @@ class Pipe(BaseElement):
         else:
             flow_str = str(flow)
 
-        rec = self._get(Pipe.TFLOW)
+        rec = self.get_param(Pipe.TFLOW)
         if rec is None:
             return
         # values layout: [input_string, calc_numeric, unit]
         new_vals = [flow_str, *rec.values[1:]]
-        self._set(Pipe.TFLOW, new_vals)
+        self.set_param(Pipe.TFLOW, new_vals)
 
     # ------------------------------------------------------------------
     # Geometry
@@ -293,7 +293,7 @@ class Pipe(BaseElement):
 
     @length_m.setter
     def length_m(self, value: float) -> None:
-        self._set(Pipe.LEN, [value, "m"])
+        self.set_param(Pipe.LEN, [value, "m"])
 
     @property
     def material(self) -> str:
@@ -423,7 +423,7 @@ class Pipe(BaseElement):
 
         # Only update parameters that are present in the records
         for param, values in records.items():
-            self._set(param, values)
+            self.set_param(param, values)
 
     def get_fluid(self) -> Fluid:
         """Extract fluid properties from this pipe.

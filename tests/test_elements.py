@@ -82,7 +82,7 @@ class TestPump:
         # Set efficiency override (stored at index 0)
         m.pumps[1].set_efficiency(0.75)
         # Verify it was set correctly by checking the raw value
-        rec = m.pumps[1]._get("EFFP")
+        rec = m.pumps[1].get_param("EFFP")
         assert rec is not None
         assert rec.values[0] == "0.75"
         # Note: efficiency property reads calculated value at index 1,
