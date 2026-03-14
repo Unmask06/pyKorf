@@ -51,12 +51,12 @@ class MiscEquipment(BaseElement):
 
     @property
     def dp_string(self) -> str:
-        return str(self._scalar(MiscEquipment.DP, 0, "0"))
+        return str(self._scalar(MiscEquipment.DP, 0))
 
     @property
     def dp_kPag(self) -> float:
         try:
-            return float(self._scalar(MiscEquipment.DP, 1, 0.0))
+            return float(self._scalar(MiscEquipment.DP, 1))
         except (TypeError, ValueError):
             return 0.0
 

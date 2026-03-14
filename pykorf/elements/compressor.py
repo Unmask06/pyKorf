@@ -71,12 +71,12 @@ class Compressor(BaseElement):
 
     @property
     def comp_type(self) -> str:
-        return str(self._scalar(Compressor.TYPE, 0, "Centrifugal"))
+        return str(self._scalar(Compressor.TYPE, 0))
 
     @property
     def efficiency(self) -> float:
         try:
-            return float(self._scalar(Compressor.EFFC, 1, 0.0))
+            return float(self._scalar(Compressor.EFFC, 1))
         except (TypeError, ValueError):
             return 0.0
 
@@ -88,21 +88,21 @@ class Compressor(BaseElement):
     @property
     def power_kW(self) -> float:
         try:
-            return float(self._scalar(Compressor.POW, 0, 0.0))
+            return float(self._scalar(Compressor.POW, 0))
         except (TypeError, ValueError):
             return 0.0
 
     @property
     def head_m(self) -> float:
         try:
-            return float(self._scalar(Compressor.HQACT, 0, 0.0))
+            return float(self._scalar(Compressor.HQACT, 0))
         except (TypeError, ValueError):
             return 0.0
 
     @property
     def dp_kPag(self) -> float:
         try:
-            return float(self._scalar(Compressor.DP, 1, 0.0))
+            return float(self._scalar(Compressor.DP, 1))
         except (TypeError, ValueError):
             return 0.0
 

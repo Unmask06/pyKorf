@@ -231,11 +231,11 @@ class Pipe(BaseElement):
     @property
     def flow_string(self) -> str:
         """Raw ``TFLOW`` input string as stored in the KDF (e.g. ``'50;55;20'``)."""
-        return str(self._scalar(Pipe.TFLOW, 0, ""))
+        return str(self._scalar(Pipe.TFLOW, 0))
 
     @property
     def flow_unit(self) -> str:
-        return str(self._scalar(Pipe.TFLOW, 2, "t/h"))
+        return str(self._scalar(Pipe.TFLOW, 2))
 
     def get_flow(self) -> list[str]:
         """Return the input flow for each case."""
@@ -278,16 +278,16 @@ class Pipe(BaseElement):
     @property
     def diameter_inch(self) -> str:
         """Nominal pipe diameter (inch string as stored in the KDF)."""
-        return str(self._scalar(Pipe.DIA, 0, ""))
+        return str(self._scalar(Pipe.DIA, 0))
 
     @property
     def schedule(self) -> str:
-        return str(self._scalar(Pipe.SCH, 0, ""))
+        return str(self._scalar(Pipe.SCH, 0))
 
     @property
     def length_m(self) -> float:
         try:
-            return float(self._scalar(Pipe.LEN, 0, 0))
+            return float(self._scalar(Pipe.LEN, 0))
         except (TypeError, ValueError):
             return 0.0
 
@@ -297,13 +297,13 @@ class Pipe(BaseElement):
 
     @property
     def material(self) -> str:
-        return str(self._scalar(Pipe.MAT, 0, "Steel"))
+        return str(self._scalar(Pipe.MAT, 0))
 
     @property
     def roughness_m(self) -> float:
         """Pipe wall roughness in metres."""
         try:
-            return float(self._scalar(Pipe.ROUGHNESS, 1, 0.0000457))
+            return float(self._scalar(Pipe.ROUGHNESS, 1))
         except (TypeError, ValueError):
             return 0.0000457
 
@@ -311,7 +311,7 @@ class Pipe(BaseElement):
     def id_m(self) -> float:
         """Internal diameter in metres (calculated / set)."""
         try:
-            return float(self._scalar(Pipe.ID, 1, 0.0))
+            return float(self._scalar(Pipe.ID, 1))
         except (TypeError, ValueError):
             return 0.0
 
@@ -355,20 +355,38 @@ class Pipe(BaseElement):
     def pressure_drop_per_100m(self) -> float:
         """Calculated ΔP/100 m [kPa/100m]."""
         try:
-            return float(self._scalar(Pipe.DPL, 0, 0.0))
+            return float(self._scalar(Pipe.DPL, 0))
         except (TypeError, ValueError):
             return 0.0
 
     @property
     def reynolds_number(self) -> float:
         try:
-            return float(self._scalar(Pipe.RE, 0, 0.0))
+            return float(self._scalar(Pipe.RE, 0))
         except (TypeError, ValueError):
             return 0.0
 
     @property
     def flow_regime(self) -> list[str]:
         return self._values(Pipe.REG)
+
+    @property
+    def sizing_dp_criteria(self) -> float | str:
+        """Sizing criteria for Pressure Drop (DPL)."""
+        val = self._scalar(Pipe.SIZ, 1)
+        try:
+            return float(val) if val is not None else "N/A"
+        except (TypeError, ValueError):
+            return val if val is not None else "N/A"
+
+    @property
+    def sizing_velocity_criteria(self) -> float | str:
+        """Sizing criteria for Velocity."""
+        val = self._scalar(Pipe.SIZ, 7)
+        try:
+            return float(val) if val is not None else "N/A"
+        except (TypeError, ValueError):
+            return val if val is not None else "N/A"
 
     # ------------------------------------------------------------------
     # Fluid properties
@@ -465,7 +483,7 @@ class Pipe(BaseElement):
     @property
     def equivalent_length_m(self) -> float:
         try:
-            return float(self._scalar(Pipe.EQLEN, 0, 0.0))
+            return float(self._scalar(Pipe.EQLEN, 0))
         except (TypeError, ValueError):
             return 0.0
 

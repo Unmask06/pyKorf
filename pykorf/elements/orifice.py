@@ -80,16 +80,16 @@ class FlowOrifice(BaseElement):
 
     @property
     def orifice_type(self) -> str:
-        return str(self._scalar(FlowOrifice.TYPE, 0, "Orifice"))
+        return str(self._scalar(FlowOrifice.TYPE, 0))
 
     @property
     def dp_string(self) -> str:
-        return str(self._scalar(FlowOrifice.DP, 0, ""))
+        return str(self._scalar(FlowOrifice.DP, 0))
 
     @property
     def dp_kPag(self) -> float:
         try:
-            return float(self._scalar(FlowOrifice.DP, 1, 0.0))
+            return float(self._scalar(FlowOrifice.DP, 1))
         except (TypeError, ValueError):
             return 0.0
 
@@ -104,28 +104,28 @@ class FlowOrifice(BaseElement):
     def beta(self) -> float:
         """Beta ratio (bore/pipe ID)."""
         try:
-            return float(self._scalar(FlowOrifice.BETA, 1, 0.0))
+            return float(self._scalar(FlowOrifice.BETA, 1))
         except (TypeError, ValueError):
             return 0.0
 
     @property
     def bore_m(self) -> float:
         try:
-            return float(self._scalar(FlowOrifice.BORE, 1, 0.0))
+            return float(self._scalar(FlowOrifice.BORE, 1))
         except (TypeError, ValueError):
             return 0.0
 
     @property
     def discharge_coeff(self) -> float:
         try:
-            return float(self._scalar(FlowOrifice.CD, 0, 0.0))
+            return float(self._scalar(FlowOrifice.CD, 0))
         except (TypeError, ValueError):
             return 0.0
 
     @property
     def num_holes(self) -> int:
         try:
-            return int(self._scalar(FlowOrifice.HOLES, 0, 1))
+            return int(self._scalar(FlowOrifice.HOLES, 0))
         except (TypeError, ValueError):
             return 1
 

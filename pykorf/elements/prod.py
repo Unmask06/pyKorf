@@ -56,25 +56,25 @@ class Product(BaseElement):
 
     @property
     def type(self) -> str:
-        return str(self._scalar(Product.TYPE, 0, "Pipe"))
+        return str(self._scalar(Product.TYPE, 0))
 
     @property
     def elevation_m(self) -> float:
         try:
-            return float(self._scalar(Product.ELEV, 0, 0.0))
+            return float(self._scalar(Product.ELEV, 0))
         except (TypeError, ValueError):
             return 0.0
 
     # Pressure
     @property
     def pressure_string(self) -> str:
-        return str(self._scalar(Product.PRES, 0, ""))
+        return str(self._scalar(Product.PRES, 0))
 
     @property
     def pressure_kPag(self) -> float:
         """Calculated inlet pressure [kPag]."""
         try:
-            return float(self._scalar(Product.PIN, 1, 0.0))
+            return float(self._scalar(Product.PIN, 1))
         except (TypeError, ValueError):
             return 0.0
 
@@ -97,6 +97,6 @@ class Product(BaseElement):
     @property
     def nozzle_pipe_index(self) -> int:
         try:
-            return int(self._scalar(self.NOZ, 0, 0))
+            return int(self._scalar(self.NOZ, 0))
         except (TypeError, ValueError):
             return 0

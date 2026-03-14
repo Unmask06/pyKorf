@@ -168,16 +168,16 @@ class General(BaseElement):
 
     @property
     def company(self) -> str:
-        return self._scalar("COM", 0, "")
+        return self._scalar("COM", 0)
 
     @property
     def project(self) -> str:
-        return self._scalar("PRJ", 0, "")
+        return self._scalar("PRJ", 0)
 
     @property
     def units(self) -> str:
         """Unit system, e.g. ``'Metric'``, ``'Imperial'`` or ``'Custom'``."""
-        return self._scalar("UNITS", 0, "Metric")
+        return self._scalar("UNITS", 0)
 
     @property
     def units_definitions(self) -> list[str]:
@@ -191,7 +191,7 @@ class General(BaseElement):
     def patm(self) -> float:
         """Atmospheric pressure (kPa)."""
         try:
-            return float(self._scalar("PATM", 0, 101))
+            return float(self._scalar("PATM", 0))
         except (TypeError, ValueError):
             return 101.0
 
@@ -205,13 +205,13 @@ class General(BaseElement):
 
         Parsed from the ``CASENO`` semicolon string.
         """
-        raw = self._scalar("CASENO", 0, "")
+        raw = self._scalar("CASENO", 0)
         return [c.strip() for c in str(raw).split(";") if c.strip()]
 
     @property
     def case_descriptions(self) -> list[str]:
         """List of case descriptions, e.g. ``['NORMAL', 'RATED', 'MINIMUM']``."""
-        raw = self._scalar("CASEDSC", 0, "")
+        raw = self._scalar("CASEDSC", 0)
         return [c.strip() for c in str(raw).split(";") if c.strip()]
 
     @property
@@ -244,11 +244,11 @@ class General(BaseElement):
 
     @property
     def compressibility_model(self) -> str:
-        return self._scalar("MCOMP", 0, "")
+        return self._scalar("MCOMP", 0)
 
     @property
     def two_phase_model(self) -> str:
-        return self._scalar("MTP", 0, "")
+        return self._scalar("MTP", 0)
 
     # ------------------------------------------------------------------
     # Pump / compressor curve defaults

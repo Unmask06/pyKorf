@@ -91,23 +91,23 @@ class Valve(BaseElement):
 
     @property
     def valve_type(self) -> str:
-        return str(self._scalar(Valve.TYPE, 0, "Linear"))
+        return str(self._scalar(Valve.TYPE, 0))
 
     @property
     def cv(self) -> float:
         try:
-            return float(self._scalar(Valve.CV, 1, 0.0))
+            return float(self._scalar(Valve.CV, 1))
         except (TypeError, ValueError):
             return 0.0
 
     @property
     def dp_string(self) -> str:
-        return str(self._scalar(Valve.DP, 0, ""))
+        return str(self._scalar(Valve.DP, 0))
 
     @property
     def dp_kPag(self) -> float:
         try:
-            return float(self._scalar(Valve.DP, 1, 0.0))
+            return float(self._scalar(Valve.DP, 1))
         except (TypeError, ValueError):
             return 0.0
 
@@ -120,7 +120,7 @@ class Valve(BaseElement):
 
     @property
     def opening_string(self) -> str:
-        return str(self._scalar(Valve.OPEN, 0, "100"))
+        return str(self._scalar(Valve.OPEN, 0))
 
     def set_opening(self, value: str | float | list) -> None:
         """Set valve opening (% open, per case)."""
@@ -133,14 +133,14 @@ class Valve(BaseElement):
     @property
     def inlet_pressure_kPag(self) -> float:
         try:
-            return float(self._scalar(Valve.PIN, 1, 0.0))
+            return float(self._scalar(Valve.PIN, 1))
         except (TypeError, ValueError):
             return 0.0
 
     @property
     def outlet_pressure_kPag(self) -> float:
         try:
-            return float(self._scalar(Valve.POUT, 1, 0.0))
+            return float(self._scalar(Valve.POUT, 1))
         except (TypeError, ValueError):
             return 0.0
 

@@ -59,7 +59,7 @@ class Pump(BaseElement):
     PZVES = "PZVES"
 
     ALL = (
-        "NUM",
+        BaseElement.NUM,
         "NAME",
         "XY",
         "ROT",
@@ -101,40 +101,47 @@ class Pump(BaseElement):
         super().__init__(parser, "PUMP", index)
 
     # ------------------------------------------------------------------
-    # Connections
+    # CON - Connections
     # ------------------------------------------------------------------
 
     @property
     def inlet_pipe(self) -> int:
         try:
-            return int(self._scalar(self.CON, 0, 0))
+            return int(self._scalar(self.CON, 0))
         except (TypeError, ValueError):
             return 0
 
     @property
     def outlet_pipe(self) -> int:
         try:
-            return int(self._scalar(self.CON, 1, 0))
+            return int(self._scalar(self.CON, 1))
         except (TypeError, ValueError):
             return 0
 
+    # ------------------------------------------------------------------
+    # ELEV - Elevation
+    # ------------------------------------------------------------------
+
     @property
-    def pump_type(self) -> str:
-        return str(self._scalar(Pump.TYPE, 0, "Centrifugal"))
+    def elevation_m(self) -> float:
+        try:
+            return float(self._scalar(Pump.ELEV, 0))
+        except (TypeError, ValueError):
+            return 0.0
 
     # ------------------------------------------------------------------
-    # Specified ΔP
+    # DP - Specified / Calculated ΔP
     # ------------------------------------------------------------------
 
     @property
     def dp_string(self) -> str:
-        return str(self._scalar(Pump.DP, 0, ""))
+        return str(self._scalar(Pump.DP, 0))
 
     @property
     def dp_kPag(self) -> float:
         """Calculated differential pressure [kPag]."""
         try:
-            return float(self._scalar(Pump.DP, 1, 0.0))
+            return float(self._scalar(Pump.DP, 1))
         except (TypeError, ValueError):
             return 0.0
 
@@ -149,18 +156,46 @@ class Pump(BaseElement):
             self._set(Pump.DP, new_vals)
 
     # ------------------------------------------------------------------
-    # Efficiency
+    # PIN / POUT - Pressures
+    # ------------------------------------------------------------------
+
+    @property
+    def inlet_pressure_kPag(self) -> float:
+        """Calculated suction pressure [kPag]."""
+        try:
+            return float(self._scalar(Pump.PIN, 1))
+        except (TypeError, ValueError):
+            return 0.0
+
+    @property
+    def outlet_pressure_kPag(self) -> float:
+        """Calculated discharge pressure [kPag]."""
+        try:
+            return float(self._scalar(Pump.POUT, 1))
+        except (TypeError, ValueError):
+            return 0.0
+
+    # ------------------------------------------------------------------
+    # TYPE - Pump Type
+    # ------------------------------------------------------------------
+
+    @property
+    def pump_type(self) -> str:
+        return str(self._scalar(Pump.TYPE, 0))
+
+    # ------------------------------------------------------------------
+    # EFFP - Efficiency
     # ------------------------------------------------------------------
 
     @property
     def efficiency_string(self) -> str:
-        return str(self._scalar(Pump.EFFP, 0, ""))
+        return str(self._scalar(Pump.EFFP, 0))
 
     @property
     def efficiency(self) -> float:
         """Pump hydraulic efficiency (fraction, 0-1)."""
         try:
-            v = self._scalar(Pump.EFFP, 1, 0.0)
+            v = self._scalar(Pump.EFFP, 1)
             return float(v)
         except (TypeError, ValueError):
             return 0.0
@@ -179,22 +214,26 @@ class Pump(BaseElement):
             self._set(Pump.EFFP, [str(value), *rec.values[1:]])
 
     # ------------------------------------------------------------------
-    # Results
+    # POW - Power
     # ------------------------------------------------------------------
 
     @property
     def power_kW(self) -> float:
         """Calculated absorbed power [kW]."""
         try:
-            return float(self._scalar(Pump.POW, 0, 0.0))
+            return float(self._scalar(Pump.POW, 0))
         except (TypeError, ValueError):
             return 0.0
+
+    # ------------------------------------------------------------------
+    # HQACT - Head and Flow
+    # ------------------------------------------------------------------
 
     @property
     def head_m(self) -> float:
         """Calculated operating head [m]."""
         try:
-            return float(self._scalar(Pump.HQACT, 0, 0.0))
+            return float(self._scalar(Pump.HQACT, 0))
         except (TypeError, ValueError):
             return 0.0
 
@@ -202,19 +241,12 @@ class Pump(BaseElement):
     def flow_m3h(self) -> float:
         """Calculated operating flow [m³/h]."""
         try:
-            return float(self._scalar(Pump.HQACT, 2, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
-
-    @property
-    def npsh_required_m(self) -> float:
-        try:
-            return float(self._scalar(Pump.NPSHR13, 1, 0.0))
+            return float(self._scalar(Pump.HQACT, 2))
         except (TypeError, ValueError):
             return 0.0
 
     # ------------------------------------------------------------------
-    # Performance curves
+    # Performance curves (CURRPM, CURDIA, CURVSD, CURC1, CURNP, CURQ, CURH, CUREFF, CURNPSH)
     # ------------------------------------------------------------------
 
     @property
@@ -272,6 +304,91 @@ class Pump(BaseElement):
         if npsh is not None:
             self._set(Pump.CURNPSH, [str(v) for v in npsh] + ["m"])
         self._set(Pump.CURNP, [len(q)])
+
+    # ------------------------------------------------------------------
+    # NPSHA13 / NPSHR13 - NPSH
+    # ------------------------------------------------------------------
+
+    @property
+    def npsha_calc_m(self) -> float:
+        """Calculated NPSH available [m]."""
+        try:
+            return float(self._scalar(Pump.NPSHA13, 1))
+        except (TypeError, ValueError):
+            return 0.0
+
+    @property
+    def npshr_calc_m(self) -> float:
+        """Calculated NPSH required [m]."""
+        try:
+            return float(self._scalar(Pump.NPSHR13, 1))
+        except (TypeError, ValueError):
+            return 0.0
+
+    @property
+    def npsh_required_m(self) -> float:
+        """Alias for npshr_calc_m for backward compatibility."""
+        return self.npshr_calc_m
+
+    # ------------------------------------------------------------------
+    # PZPRES - Shut-off Pressures
+    # ------------------------------------------------------------------
+
+    @property
+    def shutoff_dp_kPa(self) -> float:
+        """Differential pressure at shut-off [kPa]."""
+        try:
+            return float(self._scalar(Pump.PZPRES, 0))
+        except (TypeError, ValueError):
+            return 0.0
+
+    @property
+    def suction_max_pressure_kPag(self) -> float:
+        """Maximum suction pressure [kPag]."""
+        try:
+            return float(self._scalar(Pump.PZPRES, 1))
+        except (TypeError, ValueError):
+            return 0.0
+
+    @property
+    def discharge_shutoff_pressure_kPag(self) -> float:
+        """Discharge pressure at shut-off [kPag]."""
+        try:
+            return float(self._scalar(Pump.PZPRES, 2))
+        except (TypeError, ValueError):
+            return 0.0
+
+    # ------------------------------------------------------------------
+    # PZRAT - Margin
+    # ------------------------------------------------------------------
+
+    @property
+    def shutoff_margin(self) -> float:
+        """Shut-off margin (multiplier)."""
+        try:
+            return float(self._scalar(Pump.PZRAT, 1))
+        except (TypeError, ValueError):
+            return 1.25
+
+    # ------------------------------------------------------------------
+    # PZVES - Vessel Info
+    # ------------------------------------------------------------------
+
+    @property
+    def suction_vessel_max_pressure_kPag(self) -> float:
+        """Suction vessel maximum pressure [kPag]."""
+        try:
+            return float(self._scalar(Pump.PZVES, 0))
+        except (TypeError, ValueError):
+            return 0.0
+
+    @property
+    def suction_vessel_max_level_m(self) -> float:
+        """Suction vessel maximum level [m]."""
+        try:
+            return float(self._scalar(Pump.PZVES, 2))
+        except (TypeError, ValueError):
+            return 0.0
 
     # ------------------------------------------------------------------
     # Convenience

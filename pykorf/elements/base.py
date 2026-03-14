@@ -1,5 +1,4 @@
-"""
-BaseElement - abstract foundation for all KORF element objects.
+"""BaseElement - abstract foundation for all KORF element objects.
 
 Every element holds a live reference to the :class:`KdfParser` so that
 get/set operations immediately affect the underlying record list that will
@@ -107,8 +106,7 @@ def validate_param_values(etype: str, param: str, values: list) -> None:
 
 
 class BaseElement:
-    """
-    Base class wrapping a single KORF element instance.
+    """Base class wrapping a single KORF element instance.
 
     Subclasses carry their own parameter string constants as class-level
     attributes (e.g. ``Pipe.TFLOW == "TFLOW"``).  Common parameters that
@@ -209,6 +207,7 @@ class BaseElement:
         Example:
             ```python
             from pykorf.elements import Feed
+
             rec = model.feeds[1].get_param(Feed.NAME)
             rec.update(["EXP DRUM", "FEED"])
             ```
@@ -244,10 +243,10 @@ class BaseElement:
         validate_param_values(self._etype, param, values)
         return self._parser.set_value(self._etype, self._index, param, values)
 
-    def _scalar(self, param: str, pos: int = 0, default: Any = None) -> Any:
+    def _scalar(self, param: str, pos: int = 0) -> Any:
         """Return a single value from a record's value list."""
         v = self._values(param)
-        return v[pos] if len(v) > pos else default
+        return v[pos] if len(v) > pos else None
 
     # ------------------------------------------------------------------
     # Raw record list
