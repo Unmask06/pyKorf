@@ -1,8 +1,11 @@
 import re
+from typing import Any
 
 import openpyxl
 import pandas as pd
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
+from openpyxl.utils.dataframe import dataframe_to_rows
 
 from pykorf import Model
 from pykorf.reports.unit_converter import converter
@@ -28,6 +31,20 @@ class ResultExporter:
             "Compressors": self._extract_compressors,
         }
 
+        # Header parsing pattern
+        self._header_pattern = re.compile(r"^(.*?) \[(.*?)\]$")
+
+        # Reuseable Styles
+        self._styles = {
+            "title": Font(bold=True, size=14, color="003366"),
+            "header": Font(bold=True, size=10),
+            "unit": Font(italic=True, color="555555", size=10),
+            "data": Font(size=10),
+            "fill": PatternFill(start_color="F2F2F2", end_color="F2F2F2", fill_type="solid"),
+            "thin_side": Side(style="thin"),
+            "thick_side": Side(style="medium"),
+        }
+
     def generate_dataframes(self) -> dict[str, pd.DataFrame]:
         """Runs all registered extractors and returns a dictionary of DataFrames."""
         dfs = {}
@@ -38,117 +55,170 @@ class ResultExporter:
                 dfs[sheet_name] = pd.DataFrame(converted_data)
         return dfs
 
-    def export_to_excel(self, output_path: str, sheet_name: str = "Model Summary") -> str:
+    def export_to_excel(
+        self, output_path: str, sheet_name: str = "Model Summary", elements: list[str] = None
+    ) -> str:
         """Generates the DataFrames and writes them sequentially to a single formatted Excel sheet."""
-        from openpyxl.utils.dataframe import dataframe_to_rows
-        
+        from pathlib import Path
+
         dfs_flat = self.generate_dataframes()
         workbook = openpyxl.Workbook()
         worksheet = workbook.active
         worksheet.title = sheet_name
 
-        # Set page setup for A4 landscape
-        worksheet.page_setup.paperSize = worksheet.PAPERSIZE_A4
+        # Set page setup for A3 Landscape
+        worksheet.page_setup.paperSize = worksheet.PAPERSIZE_A3
         worksheet.page_setup.orientation = worksheet.ORIENTATION_LANDSCAPE
+        worksheet.page_setup.scale = 90
 
-        current_row = 1
+        # Write Source File Name in A1
+        source_name = Path(self.model._parser.path).name
+        cell_a1 = worksheet.cell(row=1, column=1, value=f"Source File: {source_name}")
+        cell_a1.font = self._styles["header"]
 
-        # Export elements in the defined order of extractors
-        for element_type in self._extractors.keys():
-            if element_type not in dfs_flat:
+        current_row = 3
+        element_keys = elements if elements is not None else list(self._extractors.keys())
+
+        for element_type in element_keys:
+            if element_type not in dfs_flat or dfs_flat[element_type].empty:
                 continue
 
-            df_flat = dfs_flat[element_type]
-            if df_flat.empty:
-                continue
+            df = dfs_flat[element_type]
+            start_table_row = current_row
 
-            # Write title
-            cell = worksheet.cell(row=current_row, column=1, value=f"{element_type} Summary")
-            cell.font = openpyxl.styles.Font(bold=True, size=14)
+            # 1. Write Title
+            self._write_cell(worksheet, current_row, 1, f"{element_type} Summary", style="title")
             current_row += 2
 
-            # Parse headers into descriptions and units
-            descriptions = []
-            units = []
-            pattern = re.compile(r"^(.*?) \[(.*?)\]$")
-            for col in df_flat.columns:
-                match = pattern.match(col)
-                if match:
-                    descriptions.append(match.group(1))
-                    units.append(f"[{match.group(2)}]")
-                else:
-                    descriptions.append(col)
-                    units.append("")
-
+            # 2. Write Table Content
             if element_type == "Pumps":
-                pump_names = df_flat.iloc[:, 0].tolist()
-                headers = ["Parameter", "Unit"] + pump_names
-                
-                # Write top header row
-                for c_idx, val in enumerate(headers, start=1):
-                    cell = worksheet.cell(row=current_row, column=c_idx, value=val)
-                    cell.font = openpyxl.styles.Font(bold=True)
-                
-                current_row += 1
-
-                # Write data rows
-                for p_idx in range(1, len(descriptions)):
-                    desc = descriptions[p_idx]
-                    unit = units[p_idx]
-                    
-                    row_data = [desc, unit] + df_flat.iloc[:, p_idx].tolist()
-                    for c_idx, val in enumerate(row_data, start=1):
-                        cell = worksheet.cell(row=current_row, column=c_idx, value=val)
-                        if c_idx == 1:
-                            cell.font = openpyxl.styles.Font(bold=True)
-                        elif c_idx == 2:
-                            cell.font = openpyxl.styles.Font(italic=True, color="555555")
-                    current_row += 1
-
-                # Auto-adjust column widths
-                for c_idx in range(1, len(headers) + 1):
-                    col_letter = get_column_letter(c_idx)
-                    max_len = 0
-                    for r_idx in range(current_row - len(descriptions), current_row):
-                        val = worksheet.cell(row=r_idx, column=c_idx).value
-                        if val is not None:
-                            max_len = max(max_len, len(str(val)))
-                    
-                    current_width = worksheet.column_dimensions[col_letter].width or 10
-                    worksheet.column_dimensions[col_letter].width = max(current_width, max_len + 2)
-
-                current_row += 2
+                end_row, num_cols = self._write_transposed_table(worksheet, df, current_row)
             else:
-                # Write headers
-                for c_idx, desc in enumerate(descriptions, start=1):
-                    cell = worksheet.cell(row=current_row, column=c_idx, value=desc)
-                    cell.font = openpyxl.styles.Font(bold=True)
+                end_row, num_cols = self._write_standard_table(worksheet, df, current_row)
 
-                for c_idx, unit in enumerate(units, start=1):
-                    cell = worksheet.cell(row=current_row + 1, column=c_idx, value=unit)
-                    cell.font = openpyxl.styles.Font(italic=True, color="555555")
+            # 3. Apply Styling & Borders
+            self._apply_table_formatting(worksheet, start_table_row + 2, end_row, num_cols)
 
-                current_row += 2
-
-                # Write data rows
-                for r_idx, row_data in enumerate(dataframe_to_rows(df_flat, index=False, header=False), start=current_row):
-                    for c_idx, val in enumerate(row_data, start=1):
-                        worksheet.cell(row=r_idx, column=c_idx, value=val)
-
-                # Auto-adjust column widths
-                for i, (desc, unit) in enumerate(zip(descriptions, units)):
-                    col_letter = get_column_letter(i + 1)
-                    max_data_len = df_flat.iloc[:, i].astype(str).map(len).max() if len(df_flat) > 0 else 0
-                    col_len = max(len(desc), len(unit), max_data_len)
-
-                    current_width = worksheet.column_dimensions[col_letter].width or 10
-                    worksheet.column_dimensions[col_letter].width = max(current_width, col_len + 2)
-
-                # Update current_row: DataRows + Padding(2)
-                current_row += len(df_flat) + 2
+            current_row = end_row + 3
 
         workbook.save(output_path)
         return str(output_path)
+
+    # =========================================================
+    # INTERNAL WRITING HELPERS
+    # =========================================================
+
+    def _write_cell(self, ws: Any, row: int, col: int, value: Any, style: str = None) -> None:
+        """Helper to write a cell with an optional predefined style."""
+        cell = ws.cell(row=row, column=col, value=value)
+        if style and style in self._styles:
+            cell.font = self._styles[style]
+        return cell
+
+    def _parse_headers(self, columns: list[str]) -> tuple[list[str], list[str]]:
+        """Splits flat column names into (description, unit) tuples."""
+        descriptions, units = [], []
+        for col in columns:
+            match = self._header_pattern.match(col)
+            if match:
+                descriptions.append(match.group(1))
+                units.append(f"[{match.group(2)}]")
+            else:
+                descriptions.append(col)
+                units.append("")
+        return descriptions, units
+
+    def _write_standard_table(self, ws: Any, df: pd.DataFrame, row: int) -> tuple[int, int]:
+        """Writes a standard vertical table (Pipes, Compressors)."""
+        descriptions, units = self._parse_headers(df.columns)
+
+        # Write Two-Level Header
+        for c_idx, (desc, unit) in enumerate(zip(descriptions, units), start=1):
+            cell_desc = ws.cell(row=row, column=c_idx, value=desc)
+            cell_desc.font = self._styles["header"]
+            cell_desc.fill = self._styles["fill"]
+            cell_desc.alignment = Alignment(horizontal="center")
+
+            cell_unit = ws.cell(row=row + 1, column=c_idx, value=unit)
+            cell_unit.font = self._styles["unit"]
+            cell_unit.fill = self._styles["fill"]
+            cell_unit.alignment = Alignment(horizontal="center")
+
+        # Write Data
+        data_start_row = row + 2
+        for r_idx, row_data in enumerate(
+            dataframe_to_rows(df, index=False, header=False), start=data_start_row
+        ):
+            for c_idx, val in enumerate(row_data, start=1):
+                cell = ws.cell(row=r_idx, column=c_idx, value=val)
+                cell.font = self._styles["data"]
+
+        last_row = data_start_row + len(df) - 1
+        self._apply_column_widths(ws, len(descriptions))
+
+        return last_row, len(descriptions)
+
+    def _write_transposed_table(self, ws: Any, df: pd.DataFrame, row: int) -> tuple[int, int]:
+        """Writes a transposed table (Pumps)."""
+        descriptions, units = self._parse_headers(df.columns)
+        pump_names = df.iloc[:, 0].tolist()
+        num_cols = 2 + len(pump_names)
+
+        # Top Header Row (Parameter, Unit, Pump Names...)
+        headers = ["Parameter", "Unit"] + pump_names
+        for c_idx, val in enumerate(headers, start=1):
+            cell = ws.cell(row=row, column=c_idx, value=val)
+            cell.font = self._styles["header"]
+            cell.fill = self._styles["fill"]
+            cell.alignment = Alignment(horizontal="center")
+
+        # Data Rows (One row per parameter)
+        current_row = row + 1
+        for p_idx in range(1, len(descriptions)):
+            # Param Name
+            cell_p = ws.cell(row=current_row, column=1, value=descriptions[p_idx])
+            cell_p.font = self._styles["header"]
+            cell_p.fill = self._styles["fill"]
+
+            # Unit
+            cell_u = ws.cell(row=current_row, column=2, value=units[p_idx])
+            cell_u.font = self._styles["unit"]
+
+            # Values across pumps
+            vals = df.iloc[:, p_idx].tolist()
+            for v_idx, val in enumerate(vals, start=3):
+                cell_v = ws.cell(row=current_row, column=v_idx, value=val)
+                cell_v.font = self._styles["data"]
+
+            current_row += 1
+
+        last_row = current_row - 1
+        self._apply_column_widths(ws, num_cols)
+
+        return last_row, num_cols
+
+    def _apply_table_formatting(self, ws: Any, start_row: int, end_row: int, num_cols: int) -> None:
+        """Applies internal borders and a thick outer border to a table block."""
+        thin_s = self._styles["thin_side"]
+        thick_s = self._styles["thick_side"]
+
+        for r in range(start_row, end_row + 1):
+            for c in range(1, num_cols + 1):
+                cell = ws.cell(row=r, column=c)
+
+                # Determine borders
+                left = thick_s if c == 1 else thin_s
+                right = thick_s if c == num_cols else thin_s
+                top = thick_s if r == start_row else thin_s
+                bottom = thick_s if r == end_row else thin_s
+
+                cell.border = Border(left=left, right=right, top=top, bottom=bottom)
+
+    def _apply_column_widths(self, ws: Any, num_cols: int) -> None:
+        """Sets fixed column widths: Col 1 = 25, Others = 15."""
+        ws.column_dimensions[get_column_letter(1)].width = 25
+        for c in range(2, num_cols + 1):
+            ws.column_dimensions[get_column_letter(c)].width = 15
 
     # =========================================================
     # ELEMENT EXTRACTORS

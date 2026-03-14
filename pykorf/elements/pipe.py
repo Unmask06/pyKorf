@@ -36,7 +36,7 @@ class Pipe(BaseElement):
     # Parameter constants (moved from definitions/pipe.py)
     # ------------------------------------------------------------------
     BEND = "BEND"
-    LBL = "LBL"
+    LBL = "LBL" #[on/off, x-offset, y-offset]
     COLOR = "COLOR"
     STRM = "STRM"
     LOCK = "LOCK"
@@ -382,11 +382,32 @@ class Pipe(BaseElement):
     @property
     def sizing_velocity_criteria(self) -> float | str:
         """Sizing criteria for Velocity."""
-        val = self._scalar(Pipe.SIZ, 7)
+        val = self._scalar(Pipe.SIZ, 3)
         try:
             return float(val) if val is not None else "N/A"
         except (TypeError, ValueError):
             return val if val is not None else "N/A"
+
+    def check_criteria(self) -> str:
+        """Check if calculated results meet sizing criteria.
+
+        Returns 'PASS' if DP/DL and Velocity are within criteria, otherwise 'FAIL'.
+        """
+        dp_crit = self.sizing_dp_criteria
+        vel_crit = self.sizing_velocity_criteria
+        dp_calc = self.pressure_drop_per_100m
+        vel_calc = self.velocity[0] if self.velocity else 0.0
+
+        # Logic for PASS/FAIL
+        dp_pass = True
+        if isinstance(dp_crit, (int, float)):
+            dp_pass = dp_calc <= dp_crit
+
+        vel_pass = True
+        if isinstance(vel_crit, (int, float)):
+            vel_pass = vel_calc <= vel_crit
+
+        return "PASS" if dp_pass and vel_pass else "FAIL"
 
     # ------------------------------------------------------------------
     # Fluid properties
@@ -531,6 +552,7 @@ class Pipe(BaseElement):
                 self.format_export_header("Velocity Criteria", vel_crit_unit): vel_crit_val,
                 self.format_export_header("DP / DL", dp_calc_unit): dp_calc_val,
                 self.format_export_header("Velocity", vel_calc_unit): vel_calc_val,
+                "Criteria Check": self.check_criteria(),
             }
         return {
             "name": self.name,
