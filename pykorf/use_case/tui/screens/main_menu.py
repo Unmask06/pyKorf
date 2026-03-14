@@ -19,6 +19,7 @@ class MainMenuScreen(Screen):
         ("2", "apply_pms", "Apply PMS"),
         ("3", "apply_hmb", "Apply HMB"),
         ("4", "model_info", "Model Info"),
+        ("e", "generate_report", "Generate Report"),
         ("g", "global_settings", "Global Settings"),
         ("c", "config_menu", "Config Menu"),
         ("l", "load_file", "Load File"),
@@ -189,6 +190,9 @@ class MainMenuScreen(Screen):
                         with Horizontal(classes="menu-item"):
                             yield Button("Config", variant="default", id="btn-config")
                             yield Label("Element configuration")
+                        with Horizontal(classes="menu-item"):
+                            yield Button("Generate Report", variant="success", id="btn-generate-report")
+                            yield Label("Export results to Excel summary")
                     with Horizontal(id="menu-footer"):
                         yield Button("Load File", variant="warning", id="btn-load-file")
                         yield Button("Quit", variant="error", id="btn-quit")
@@ -273,6 +277,13 @@ class MainMenuScreen(Screen):
         from pykorf.use_case.tui.screens.config_menu import ConfigMenuScreen
 
         self.app.push_screen(ConfigMenuScreen())
+
+    @on(Button.Pressed, "#btn-generate-report")
+    def action_generate_report(self) -> None:
+        """Switch to Generate Report screen."""
+        from pykorf.use_case.tui.screens.generate_report import GenerateReportScreen
+
+        self.app.push_screen(GenerateReportScreen())
 
     @on(Button.Pressed, "#btn-load-file")
     def action_load_file(self) -> None:
