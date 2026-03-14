@@ -20,15 +20,15 @@ class Expander(BaseElement):
     # ------------------------------------------------------------------
     # Parameter constants (moved from definitions/expand.py)
     # ------------------------------------------------------------------
-    TYPE = "TYPE"
-    ELEV = "ELEV"
-    DP = "DP"
-    PIN = "PIN"
-    POUT = "POUT"
-    DPP = "DPP"
-    CHOKE = "CHOKE"
-    K = "K"
-    ANGLE = "ANGLE"
+    TYPE = "TYPE"  # [expand_type_int]
+    ELEV = "ELEV"  # [elevation, unit]
+    DP = "DP"  # [dp_str, dp_num, unit]
+    PIN = "PIN"  # [pres_in_str, pres_in_num, unit]
+    POUT = "POUT"  # [pres_out_str, pres_out_num, unit]
+    DPP = "DPP"  # [dpp_num, unit]
+    CHOKE = "CHOKE"  # [choke_bool]
+    K = "K"  # [k_factor]
+    ANGLE = "ANGLE"  # [angle_deg]
 
     ALL = (
         "NUM",

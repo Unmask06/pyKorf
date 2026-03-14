@@ -14,15 +14,15 @@ class MiscEquipment(BaseElement):
     # ------------------------------------------------------------------
     # Parameter constants (moved from definitions/misc.py)
     # ------------------------------------------------------------------
-    DP = "DP"
-    PIN = "PIN"
-    POUT = "POUT"
-    PRAT = "PRAT"
-    K = "K"
-    LD = "LD"
-    DPELEV = "DPELEV"
-    VOLBAL = "VOLBAL"
-    MASBAL = "MASBAL"
+    DP = "DP"  # [dp_str, dp_num, unit]
+    PIN = "PIN"  # [pres_in_str, pres_in_num, unit]
+    POUT = "POUT"  # [pres_out_str, pres_out_num, unit]
+    PRAT = "PRAT"  # [prat_str, unit, prat3, unit, prat5, unit, prat7, unit]
+    K = "K"  # [k_factor_str]
+    LD = "LD"  # [ld_str]
+    DPELEV = "DPELEV"  # [elevation_dp, unit]
+    VOLBAL = "VOLBAL"  # [vol_balance_bool]
+    MASBAL = "MASBAL"  # [mass_balance_bool]
 
     ALL = (
         "NUM",

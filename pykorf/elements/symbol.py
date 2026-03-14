@@ -17,12 +17,12 @@ class Symbol(BaseElement):
     # ------------------------------------------------------------------
     # Parameter constants (moved from definitions/symbol.py)
     # ------------------------------------------------------------------
-    TYPE = "TYPE"
-    TEXT = "TEXT"
-    STYLL = "STYLL"
-    STYLA = "STYLA"
-    ANGL = "ANGL"
-    FSIZ = "FSIZ"
+    TYPE = "TYPE"  # ["symbol_type"]
+    TEXT = "TEXT"  # ["text_content"]
+    STYLL = "STYLL"  # [style_l]
+    STYLA = "STYLA"  # [style_a]
+    ANGL = "ANGL"  # [angle, ???]
+    FSIZ = "FSIZ"  # [font_size]
 
     ALL = (
         "NUM",

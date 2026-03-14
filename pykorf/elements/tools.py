@@ -17,12 +17,12 @@ class Tools(BaseElement):
     # ------------------------------------------------------------------
     # Parameter constants (moved from definitions/tools.py)
     # ------------------------------------------------------------------
-    PIPEI = "PIPEI"
-    PIPEOA = "PIPEOA"
-    PIPEOB = "PIPEOB"
-    VALVEI = "VALVEI"
-    VALVEO = "VALVEO"
-    FOI = "FOI"
-    FOO = "FOO"
+    PIPEI = "PIPEI"  # [name, type, flow, flow_unit, ..., ..., den_unit, ..., visc_unit, ..., ..., ..., dia, dia_unit, sch, roughness, unit]
+    PIPEOA = "PIPEOA"  # [elev, unit, ..., vel_unit, ..., ..., ..., ..., ..., ..., ..., dpl_unit, ..., ...]
+    PIPEOB = "PIPEOB"  # [???, ???]
+    VALVEI = "VALVEI"  # [name, type, flow, flow_unit, ..., ..., den_unit, ..., visc_unit, ..., ..., ..., ..., ..., ..., ..., pres_unit, xt]
+    VALVEO = "VALVEO"  # [???, ???]
+    FOI = "FOI"  # [name, type, flow, flow_unit, ..., ..., den_unit, ..., visc_unit, ..., ..., ..., ..., ..., ..., ..., pres_unit, beta, ..., unit, type, holes]
+    FOO = "FOO"  # [..., ..., unit, ..., ..., ..., ..., pres_unit]
 
     ALL = (PIPEI, PIPEOA, PIPEOB, VALVEI, VALVEO, FOI, FOO)

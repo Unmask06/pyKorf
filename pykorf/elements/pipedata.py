@@ -14,15 +14,15 @@ class PipeData(BaseElement):
     # ------------------------------------------------------------------
     # Parameter constants (moved from definitions/pipedata.py)
     # ------------------------------------------------------------------
-    MAT = "MAT"
-    PROP = "PROP"
-    E = "E"
-    NSS = "NSS"
-    IDIA = "IDIA"
-    SDIA = "SDIA"
-    UNITS = "UNITS"
-    SCH = "SCH"
-    DIA = "DIA"
+    MAT = "MAT"  # ["material_name"]
+    PROP = "PROP"  # [density, unit, exp_coeff, unit]
+    E = "E"  # [roughness, unit]
+    NSS = "NSS"  # ["nominal_sizes_str"]
+    IDIA = "IDIA"  # [num_rows, default_sch]
+    SDIA = "SDIA"  # [sdia1, sdia2, ...]
+    UNITS = "UNITS"  # ["diameter_unit"]
+    SCH = "SCH"  # [sch1, sch2, ..., sch20]
+    DIA = "DIA"  # [row_idx, nom_size, od, ???, id1, id2, ..., id20]
 
     ALL = (
         "NUM",

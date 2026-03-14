@@ -22,14 +22,14 @@ class Feed(BaseElement):
     # ------------------------------------------------------------------
     # Parameter constants (moved from definitions/feed.py)
     # ------------------------------------------------------------------
-    TYPE = "TYPE"
-    ELEV = "ELEV"
-    LEVELH = "LEVELH"
-    PRES = "PRES"
-    POUT = "POUT"
-    DP = "DP"
-    EQN = "EQN"
-    CHOKE = "CHOKE"
+    TYPE = "TYPE"  # ["feed_type"]
+    ELEV = "ELEV"  # [elevation, unit]
+    LEVELH = "LEVELH"  # [level1, level2, unit, level4, unit, level6]
+    PRES = "PRES"  # [pres_str, pres_num, unit]
+    POUT = "POUT"  # [pres_out_str, pres_out_num, unit]
+    DP = "DP"  # [dp_str, dp_num, unit]
+    EQN = "EQN"  # [eqn_type, ..., ..., ..., ...]
+    CHOKE = "CHOKE"  # [choke_bool]
 
     ALL = (
         "NUM",

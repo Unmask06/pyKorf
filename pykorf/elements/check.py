@@ -14,11 +14,11 @@ class CheckValve(BaseElement):
     # ------------------------------------------------------------------
     # Parameter constants (moved from definitions/check.py)
     # ------------------------------------------------------------------
-    ELEV = "ELEV"
-    DP = "DP"
-    PIN = "PIN"
-    POUT = "POUT"
-    LD = "LD"
+    ELEV = "ELEV"  # [elevation, unit]
+    DP = "DP"  # [dp_str, dp_num, unit]
+    PIN = "PIN"  # [pres_in_str, pres_in_num, unit]
+    POUT = "POUT"  # [pres_out_str, pres_out_num, unit]
+    LD = "LD"  # [loss_diameter]
 
     ALL = (
         "NUM",

@@ -21,15 +21,15 @@ class HeatExchanger(BaseElement):
     # ------------------------------------------------------------------
     # Parameter constants (moved from definitions/hx.py)
     # ------------------------------------------------------------------
-    TYPE = "TYPE"
-    SIDE = "SIDE"
-    DP = "DP"
-    PIN = "PIN"
-    POUT = "POUT"
-    PRAT = "PRAT"
-    K = "K"
-    DPELEV = "DPELEV"
-    Q = "Q"
+    TYPE = "TYPE"  # ["hx_type"]
+    SIDE = "SIDE"  # ["modeled_side"]
+    DP = "DP"  # [dp_str, dp_num, unit]
+    PIN = "PIN"  # [pres_in_str, pres_in_num, unit]
+    POUT = "POUT"  # [pres_out_str, pres_out_num, unit]
+    PRAT = "PRAT"  # [prat_str, unit, prat3, unit, prat5, unit, prat7, unit]
+    K = "K"  # [k_factor_str]
+    DPELEV = "DPELEV"  # [elevation_dp, unit]
+    Q = "Q"  # [heat_duty_str, heat_duty_num, unit]
 
     ALL = (
         "NUM",

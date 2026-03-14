@@ -22,26 +22,26 @@ class FlowOrifice(BaseElement):
     # ------------------------------------------------------------------
     # Parameter constants (moved from definitions/orifice.py)
     # ------------------------------------------------------------------
-    TYPE = "TYPE"
-    ELEV = "ELEV"
-    DP = "DP"
-    DPF = "DPF"
-    PIN = "PIN"
-    POUT = "POUT"
-    PSAT = "PSAT"
-    HOLES = "HOLES"
-    THICK = "THICK"
-    BORE = "BORE"
-    BETA = "BETA"
-    BETAO = "BETAO"
-    CD = "CD"
-    YIN = "YIN"
-    CHOKE = "CHOKE"
-    OMEGA = "OMEGA"
-    RS = "RS"
-    RC = "RC"
-    NDS = "NDS"
-    MDEN = "MDEN"
+    TYPE = "TYPE"  # ["orifice_type"]
+    ELEV = "ELEV"  # [elevation, unit]
+    DP = "DP"  # [dp_str, dp_num, unit]
+    DPF = "DPF"  # [dpf_str, dpf_num, unit]
+    PIN = "PIN"  # [pres_in_str, pres_in_num, unit]
+    POUT = "POUT"  # [pres_out_str, pres_out_num, unit]
+    PSAT = "PSAT"  # [psat_str, psat_num, unit]
+    HOLES = "HOLES"  # [num_holes]
+    THICK = "THICK"  # [thickness, unit]
+    BORE = "BORE"  # [bore_str, bore_num]
+    BETA = "BETA"  # [beta_str, beta_num]
+    BETAO = "BETAO"  # [betao]
+    CD = "CD"  # [cd_str, cd_num]
+    YIN = "YIN"  # [expansion_factor]
+    CHOKE = "CHOKE"  # [choke_bool]
+    OMEGA = "OMEGA"  # [omega_str, omega_num]
+    RS = "RS"  # [rs_factor]
+    RC = "RC"  # [rc_factor]
+    NDS = "NDS"  # [nds_factor]
+    MDEN = "MDEN"  # ["mden_str"]
 
     ALL = (
         "NUM",
