@@ -48,4 +48,10 @@ if "Pipes" in dfs:
     for key, val in first_pipe.items():
         print(f"        {key:35}: {val}")
 
+# Generate Single Sheet Excel
+output_excel = "summary_export.xlsx"
+print(f"\n      --- Exporting to Excel: {output_excel} ---")
+exporter.export_to_excel(output_excel)
+print(f"      [OK] Successfully created single-sheet summary at {output_excel}")
+
 print("\nDone!")

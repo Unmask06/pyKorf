@@ -278,9 +278,9 @@ class BaseElement:
 
         return val, unit
 
-    def format_export_header(self, base_name: str, prefix: str, unit: str) -> str:
-        """Creates a clean column header: '[Result] Velocity [m/s]'"""
-        header = f"[{prefix}] {base_name}"
+    def format_export_header(self, base_name: str, unit: str) -> str:
+        """Creates a clean column header: 'Velocity [m/s]'"""
+        header = base_name
         if unit:
             header += f" [{unit}]"
         return header

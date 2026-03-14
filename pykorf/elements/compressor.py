@@ -127,8 +127,8 @@ class Compressor(BaseElement):
 
             return {
                 "Compressor Name": self.name,
-                self.format_export_header("Gas Volumetric Flow", "Result", flow_unit): flow_val,
-                self.format_export_header("Differential Pressure", "Result", dp_unit): dp_val,
+                self.format_export_header("Gas Volumetric Flow", flow_unit): flow_val,
+                self.format_export_header("Differential Pressure", dp_unit): dp_val,
             }
 
         return {

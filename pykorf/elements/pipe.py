@@ -525,17 +525,13 @@ class Pipe(BaseElement):
             vel_calc_val, vel_calc_unit = self.get_value_and_unit(
                 Pipe.VEL, val_index=0, unit_index=-1
             )
-
             return {
                 "Pipe Name": self.name,
-                self.format_export_header("DP / DL Criteria", "Input", dp_crit_unit): dp_crit_val,
-                self.format_export_header(
-                    "Velocity Criteria", "Input", vel_crit_unit
-                ): vel_crit_val,
-                self.format_export_header("DP / DL", "Result", dp_calc_unit): dp_calc_val,
-                self.format_export_header("Velocity", "Result", vel_calc_unit): vel_calc_val,
+                self.format_export_header("DP / DL Criteria", dp_crit_unit): dp_crit_val,
+                self.format_export_header("Velocity Criteria", vel_crit_unit): vel_crit_val,
+                self.format_export_header("DP / DL", dp_calc_unit): dp_calc_val,
+                self.format_export_header("Velocity", vel_calc_unit): vel_calc_val,
             }
-
         return {
             "name": self.name,
             "diameter_inch": self.diameter_inch,

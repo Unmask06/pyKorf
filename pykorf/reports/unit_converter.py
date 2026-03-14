@@ -22,6 +22,13 @@ class UnitConverter:
         pattern = re.compile(r"^(.*?) \[(.*?)\]$")
         new_summary_list = []
 
+        def _fmt(v):
+            if isinstance(v, float):
+                return round(v, 2)
+            if isinstance(v, (list, tuple)):
+                return [_fmt(x) for x in v]
+            return v
+
         # Get conversions for the specific unit system
         system_conversions = self.conversions.get(self.unit_system, {})
 
@@ -29,6 +36,7 @@ class UnitConverter:
             new_row = {}
             for key, val in row.items():
                 match = pattern.match(key)
+                processed = False
                 if match:
                     base_name, unit = match.groups()
                     if unit in system_conversions:
@@ -48,9 +56,12 @@ class UnitConverter:
                             except (ValueError, TypeError):
                                 new_val = val
 
-                        new_row[new_key] = new_val
-                        continue
-                new_row[key] = val
+                        new_row[new_key] = _fmt(new_val)
+                        processed = True
+
+                if not processed:
+                    new_row[key] = _fmt(val)
+
             new_summary_list.append(new_row)
 
         return new_summary_list

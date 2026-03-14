@@ -421,24 +421,20 @@ class Pump(BaseElement):
 
             return {
                 "Pump Name": self.name,
-                self.format_export_header("Suction Pressure", "Input", suc_unit): suc_val,
-                self.format_export_header("Discharge Pressure", "Input", dis_unit): dis_val,
-                self.format_export_header("Shut-Off Margin", "Input", ""): margin_val,
-                self.format_export_header(
-                    "Suc Vessel Max Pressure", "Input", ves_p_unit
-                ): ves_pres_val,
-                self.format_export_header("Suc Vessel Max Level", "Input", ves_l_unit): ves_lvl_val,
-                self.format_export_header("Volumetric Flow", "Result", flow_unit): flow_val,
-                self.format_export_header("Head", "Result", head_unit): head_val,
-                self.format_export_header("Differential Pressure", "Result", dp_unit): dp_val,
-                self.format_export_header("Hydraulic Power", "Result", pow_unit): pow_val,
-                self.format_export_header("NPSH Available", "Result", npsh_unit): npsha_val,
-                self.format_export_header("NPSH Required", "Result", npsh_unit): npshr_val,
-                self.format_export_header("Shut-Off DP", "Result", pz_unit): pz_dp_val,
-                self.format_export_header("Suction Max Pressure", "Result", pz_unit): pz_suc_val,
-                self.format_export_header(
-                    "Discharge Shut-Off Pressure", "Result", pz_unit
-                ): pz_dis_val,
+                self.format_export_header("Suction Pressure", suc_unit): suc_val,
+                self.format_export_header("Discharge Pressure", dis_unit): dis_val,
+                self.format_export_header("Shut-Off Margin", ""): margin_val,
+                self.format_export_header("Suc Vessel Max Pressure", ves_p_unit): ves_pres_val,
+                self.format_export_header("Suc Vessel Max Level", ves_l_unit): ves_lvl_val,
+                self.format_export_header("Volumetric Flow", flow_unit): flow_val,
+                self.format_export_header("Head", head_unit): head_val,
+                self.format_export_header("Differential Pressure", dp_unit): dp_val,
+                self.format_export_header("Hydraulic Power", pow_unit): pow_val,
+                self.format_export_header("NPSH Available", npsh_unit): npsha_val,
+                self.format_export_header("NPSH Required", npsh_unit): npshr_val,
+                self.format_export_header("Shut-Off DP", pz_unit): pz_dp_val,
+                self.format_export_header("Suction Max Pressure", pz_unit): pz_suc_val,
+                self.format_export_header("Discharge Shut-Off Pressure", pz_unit): pz_dis_val,
             }
 
         return {
