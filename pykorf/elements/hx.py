@@ -59,60 +59,60 @@ class HeatExchanger(BaseElement):
     @property
     def hx_type(self) -> str:
         """Exchanger type, e.g. ``'S-T'`` (shell-and-tube)."""
-        return str(self._scalar(HeatExchanger.TYPE, 0, "S-T"))
+        return str(self._scalar(HeatExchanger.TYPE, 0))
 
     @property
     def side(self) -> str:
         """Hydraulic side modelled (``'Tube'`` or ``'Shell'``)."""
-        return str(self._scalar(HeatExchanger.SIDE, 0, "Tube"))
+        return str(self._scalar(HeatExchanger.SIDE, 0))
 
     @property
     def dp_string(self) -> str:
-        return str(self._scalar(HeatExchanger.DP, 0, "50"))
+        return str(self._scalar(HeatExchanger.DP, 0))
 
     @property
     def dp_kPag(self) -> float:
         try:
-            return float(self._scalar(HeatExchanger.DP, 1, 0.0))
+            return float(self._scalar(HeatExchanger.DP, 1))
         except (TypeError, ValueError):
             return 0.0
 
     def set_dp(self, value: str | float) -> None:
-        rec = self._get(HeatExchanger.DP)
+        rec = self.get_param(HeatExchanger.DP)
         if rec:
-            self._set(HeatExchanger.DP, [str(value), *rec.values[1:]])
+            self.set_param(HeatExchanger.DP, [str(value), *rec.values[1:]])
 
     @property
     def inlet_pressure_kPag(self) -> float:
         try:
-            return float(self._scalar(HeatExchanger.PIN, 1, 0.0))
+            return float(self._scalar(HeatExchanger.PIN, 1))
         except (TypeError, ValueError):
             return 0.0
 
     @property
     def outlet_pressure_kPag(self) -> float:
         try:
-            return float(self._scalar(HeatExchanger.POUT, 1, 0.0))
+            return float(self._scalar(HeatExchanger.POUT, 1))
         except (TypeError, ValueError):
             return 0.0
 
     @property
     def heat_duty_kJh(self) -> float:
         try:
-            return float(self._scalar(HeatExchanger.Q, 1, 0.0))
+            return float(self._scalar(HeatExchanger.Q, 1))
         except (TypeError, ValueError):
             return 0.0
 
     @property
     def nozzle_in(self) -> int:
         try:
-            return int(self._scalar(self.NOZI, 0, 0))
+            return int(self._scalar(self.NOZI, 0))
         except (TypeError, ValueError):
             return 0
 
     @property
     def nozzle_out(self) -> int:
         try:
-            return int(self._scalar(self.NOZO, 0, 0))
+            return int(self._scalar(self.NOZO, 0))
         except (TypeError, ValueError):
             return 0

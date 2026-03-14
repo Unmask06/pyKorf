@@ -109,9 +109,6 @@ class ConfigMenuScreen(Screen):
                 )
                 yield RichLog(id="config-results", wrap=True)
 
-                with Horizontal(id="config-footer"):
-                    yield Button("Back", variant="default", id="btn-back")
-
             with Vertical(id="right-panel"):
                 with Vertical(classes="info-section"):
                     yield Label("PMS Config")

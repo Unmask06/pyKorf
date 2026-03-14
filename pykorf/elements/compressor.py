@@ -71,38 +71,38 @@ class Compressor(BaseElement):
 
     @property
     def comp_type(self) -> str:
-        return str(self._scalar(Compressor.TYPE, 0, "Centrifugal"))
+        return str(self._scalar(Compressor.TYPE, 0))
 
     @property
     def efficiency(self) -> float:
         try:
-            return float(self._scalar(Compressor.EFFC, 1, 0.0))
+            return float(self._scalar(Compressor.EFFC, 1))
         except (TypeError, ValueError):
             return 0.0
 
     def set_efficiency(self, value: float) -> None:
-        rec = self._get(Compressor.EFFC)
+        rec = self.get_param(Compressor.EFFC)
         if rec:
-            self._set(Compressor.EFFC, [str(value), *rec.values[1:]])
+            self.set_param(Compressor.EFFC, [str(value), *rec.values[1:]])
 
     @property
     def power_kW(self) -> float:
         try:
-            return float(self._scalar(Compressor.POW, 0, 0.0))
+            return float(self._scalar(Compressor.POW, 0))
         except (TypeError, ValueError):
             return 0.0
 
     @property
     def head_m(self) -> float:
         try:
-            return float(self._scalar(Compressor.HQACT, 0, 0.0))
+            return float(self._scalar(Compressor.HQACT, 0))
         except (TypeError, ValueError):
             return 0.0
 
     @property
     def dp_kPag(self) -> float:
         try:
-            return float(self._scalar(Compressor.DP, 1, 0.0))
+            return float(self._scalar(Compressor.DP, 1))
         except (TypeError, ValueError):
             return 0.0
 
@@ -113,3 +113,28 @@ class Compressor(BaseElement):
             return (int(vals[0]), int(vals[1]))
         except (IndexError, TypeError, ValueError):
             return (0, 0)
+
+    # ------------------------------------------------------------------
+    # Convenience
+    # ------------------------------------------------------------------
+
+    def summary(self, export: bool = False) -> dict:
+        if export:
+            flow_val, flow_unit = self.get_value_and_unit(
+                Compressor.QACT, val_index=0, unit_index=-1
+            )
+            dp_val, dp_unit = self.get_value_and_unit(Compressor.DP, val_index=1, unit_index=-1)
+
+            return {
+                "Compressor Name": self.name,
+                self.format_export_header("Gas Volumetric Flow", flow_unit): flow_val,
+                self.format_export_header("Differential Pressure", dp_unit): dp_val,
+            }
+
+        return {
+            "name": self.name,
+            "type": self.comp_type,
+            "head_m": self.head_m,
+            "power_kW": self.power_kW,
+            "efficiency": self.efficiency,
+        }

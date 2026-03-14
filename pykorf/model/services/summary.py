@@ -162,7 +162,7 @@ class SummaryService:
         for elem in self.model.elements:
             if elem.etype == "PIPEDATA":
                 continue
-            name_rec = elem._get("NAME")
+            name_rec = elem.get_param("NAME")
             if name_rec is None or not name_rec.values:
                 issues.append(f"{elem.etype} index {elem.index}: missing NAME record")
             elif not name_rec.values[0] or name_rec.values[0].strip() == "":
@@ -182,7 +182,7 @@ class SummaryService:
 
         for elem in self.model.elements:
             for param_name in critical_params:
-                rec = elem._get(param_name)
+                rec = elem.get_param(param_name)
                 if rec is not None and rec.values:
                     first_val = rec.values[0]
                     # Handle non-string values (e.g., floats) - they are considered valid
@@ -207,7 +207,7 @@ class SummaryService:
             if pipe.name.lower().startswith("d"):
                 continue
 
-            notes_rec = pipe._get("NOTES")
+            notes_rec = pipe.get_param("NOTES")
             if notes_rec is None or not notes_rec.values or not notes_rec.values[0]:
                 issues.append(f"PIPE {pipe.name} (idx {pipe.index}): missing line number in NOTES")
 
@@ -216,7 +216,7 @@ class SummaryService:
         pipe_indices = set(self.model.pipes.keys())
 
         for elem in self.model.elements:
-            con_rec = elem._get("CON")
+            con_rec = elem.get_param("CON")
             if con_rec and con_rec.values:
                 for i, val in enumerate(con_rec.values):
                     try:
@@ -231,7 +231,7 @@ class SummaryService:
                         pass
 
             for nozzle_param in ("NOZL", "NOZ", "NOZI", "NOZO"):
-                nozzle_rec = elem._get(nozzle_param)
+                nozzle_rec = elem.get_param(nozzle_param)
                 if nozzle_rec and nozzle_rec.values:
                     for val in nozzle_rec.values:
                         try:
@@ -275,9 +275,9 @@ class SummaryService:
         for idx in range(1, self.model.num_pipes + 1):
             pipe = self.model.pipes[idx]
 
-            siz_rec = pipe._get(Pipe.SIZ)
-            dpl_rec = pipe._get(Pipe.DPL)
-            vel_rec = pipe._get(Pipe.VEL)
+            siz_rec = pipe.get_param(Pipe.SIZ)
+            dpl_rec = pipe.get_param(Pipe.DPL)
+            vel_rec = pipe.get_param(Pipe.VEL)
 
             if siz_rec is None or not siz_rec.values:
                 continue

@@ -119,7 +119,7 @@ print(f"Unconnected: {unconnected}")
 # CON = [inlet_pipe, outlet_pipe]
 
 pump = model["P1"]
-rec = pump._get(Common.CON)
+rec = pump.get_param(Common.CON)
 print(rec.values)  # [1, 2] - pipe indices
 ```
 
@@ -130,7 +130,7 @@ print(rec.values)  # [1, 2] - pipe indices
 # NOZL = [pipe_index]
 
 feed = model["Source"]
-rec = feed._get(Common.NOZL)  # or Common.NOZ for older versions
+rec = feed.get_param(Common.NOZL)  # or Common.NOZ for older versions
 print(rec.values)  # [1] - single pipe index
 ```
 
@@ -142,7 +142,7 @@ print(rec.values)  # [1] - single pipe index
 # (Combined, Main, Branch)
 
 tee = model["T1"]
-rec = tee._get(Common.CON)
+rec = tee.get_param(Common.CON)
 print(rec.values)  # [1, 0, 2, 0, 3, 0]
 ```
 

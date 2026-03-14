@@ -81,7 +81,6 @@ class ApplyPmsScreen(Screen):
                 yield RichLog(id="pms-results", wrap=True)
                 with Horizontal(id="pms-buttons"):
                     yield Button("Apply", variant="primary", id="btn-apply")
-                    yield Button("Back", variant="default", id="btn-back")
 
             with Vertical(id="right-panel"):
                 with Vertical(classes="info-section"):

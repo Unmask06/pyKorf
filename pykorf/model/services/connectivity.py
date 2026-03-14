@@ -218,7 +218,7 @@ class ConnectivityService:
 
             et = elem.etype
             if et in _CON_ELEMENTS:
-                rec = elem._get("CON")
+                rec = elem.get_param("CON")
                 if rec and (str(rec.values[0]) == "0" or str(rec.values[1]) == "0"):
                     unconnected.append(elem.name)
                 elif rec is None:
@@ -230,11 +230,11 @@ class ConnectivityService:
                         unconnected.append(elem.name)
             elif et in _NOZ_ELEMENTS:
                 noz_param = self._get_nozzle_param(elem)
-                rec = elem._get(noz_param)
+                rec = elem.get_param(noz_param)
                 if rec and str(rec.values[0]) == "0":
                     unconnected.append(elem.name)
             elif et == "TEE":
-                rec = elem._get("CON")
+                rec = elem.get_param("CON")
                 if rec:
                     for i in [0, 3, 5]:
                         if i < len(rec.values) and str(rec.values[i]) == "0":
@@ -296,7 +296,7 @@ class ConnectivityService:
         et = other_elem.etype
 
         if et in _CON_ELEMENTS:
-            rec = other_elem._get("CON")
+            rec = other_elem.get_param("CON")
             if rec is None:
                 if self._set_nozzle_pipe_reference(other_elem, pipe_idx):
                     return
@@ -321,7 +321,7 @@ class ConnectivityService:
 
         elif et in _NOZ_ELEMENTS:
             noz_param = self._get_nozzle_param(other_elem)
-            rec = other_elem._get(noz_param)
+            rec = other_elem.get_param(noz_param)
             if rec is not None:
                 rec.values = [str(pipe_idx), *rec.values[1:]]
                 rec.raw_line = ""
@@ -329,7 +329,7 @@ class ConnectivityService:
                 self.model._parser.set_value(et, other_elem.index, noz_param, [str(pipe_idx)])
 
         elif et == "TEE":
-            rec = other_elem._get("CON")
+            rec = other_elem.get_param("CON")
             if rec is None:
                 raise ConnectivityError(f"{other_elem.name} (TEE) has no CON record")
             vals = list(rec.values)
@@ -368,7 +368,7 @@ class ConnectivityService:
         et = other_elem.etype
 
         if et in _CON_ELEMENTS:
-            rec = other_elem._get("CON")
+            rec = other_elem.get_param("CON")
             if rec is None:
                 if self._clear_nozzle_pipe_reference(other_elem, pipe_idx):
                     return
@@ -391,7 +391,7 @@ class ConnectivityService:
 
         elif et in _NOZ_ELEMENTS:
             noz_param = self._get_nozzle_param(other_elem)
-            rec = other_elem._get(noz_param)
+            rec = other_elem.get_param(noz_param)
             if rec is None or str(rec.values[0]) != pipe_idx:
                 raise ConnectivityError(
                     f"{other_elem.name} is not connected to pipe {pipe_elem.name}"
@@ -400,7 +400,7 @@ class ConnectivityService:
             rec.raw_line = ""
 
         elif et == "TEE":
-            rec = other_elem._get("CON")
+            rec = other_elem.get_param("CON")
             if rec is None:
                 raise ConnectivityError(f"{other_elem.name} (TEE) has no CON record")
             vals = list(rec.values)
@@ -439,7 +439,7 @@ class ConnectivityService:
             for idx, elem in collection.items():
                 if idx == 0:
                     continue
-                rec = elem._get("CON")
+                rec = elem.get_param("CON")
                 if rec is not None:
                     vals = rec.values
                     for i, label in enumerate(["inlet", "outlet"]):
@@ -484,7 +484,7 @@ class ConnectivityService:
                 if idx == 0:
                     continue
                 noz_param = self._get_nozzle_param(elem)
-                rec = elem._get(noz_param)
+                rec = elem.get_param(noz_param)
                 if rec is None or not rec.values:
                     continue
                 try:
@@ -504,7 +504,7 @@ class ConnectivityService:
         for idx, elem in self.model.tees.items():
             if idx == 0:
                 continue
-            rec = elem._get("CON")
+            rec = elem.get_param("CON")
             if rec is None:
                 continue
             labels = ["combined", "main", "branch"]
@@ -537,7 +537,7 @@ class ConnectivityService:
 
             et = elem.etype
             if et in _CON_ELEMENTS:
-                rec = elem._get("CON")
+                rec = elem.get_param("CON")
                 if rec:
                     vals = list(rec.values)
                     changed = False
@@ -552,12 +552,12 @@ class ConnectivityService:
                     self._update_nozzle_pipe_reference(elem, old_s, new_s)
             elif et in _NOZ_ELEMENTS:
                 noz_param = self._get_nozzle_param(elem)
-                rec = elem._get(noz_param)
+                rec = elem.get_param(noz_param)
                 if rec and rec.values and rec.values[0] == old_s:
                     rec.values = [new_s, *rec.values[1:]]
                     rec.raw_line = ""
             elif et == "TEE":
-                rec = elem._get("CON")
+                rec = elem.get_param("CON")
                 if rec:
                     vals = list(rec.values)
                     changed = False
@@ -583,9 +583,9 @@ class ConnectivityService:
 
     def _get_nozzle_param(self, elem) -> str:
         """Get the nozzle parameter name (NOZL or NOZ) for an element."""
-        if elem._get("NOZL") is not None:
+        if elem.get_param("NOZL") is not None:
             return "NOZL"
-        if elem._get("NOZ") is not None:
+        if elem.get_param("NOZ") is not None:
             return "NOZ"
         return "NOZL"
 
@@ -600,7 +600,7 @@ class ConnectivityService:
         """Get all nozzle records (NOZI, NOZO) for an element."""
         records: list[tuple[str, Any]] = []
         for nozzle_param in ("NOZI", "NOZO"):
-            rec = elem._get(nozzle_param)
+            rec = elem.get_param(nozzle_param)
             if rec is not None:
                 records.append((nozzle_param, rec))
         return records
@@ -644,7 +644,7 @@ class ConnectivityService:
         indices = []
         et = elem.etype
         if et in _CON_ELEMENTS:
-            rec = elem._get("CON")
+            rec = elem.get_param("CON")
             if rec and len(rec.values) >= 2:
                 for v in rec.values[:2]:
                     if self._is_valid_idx(v):
@@ -655,12 +655,12 @@ class ConnectivityService:
                         indices.append(int(nozzle_rec.values[0]))
         elif et in _NOZ_ELEMENTS:
             noz_param = self._get_nozzle_param(elem)
-            rec = elem._get(noz_param)
+            rec = elem.get_param(noz_param)
             if rec and rec.values:
                 if self._is_valid_idx(rec.values[0]):
                     indices.append(int(rec.values[0]))
         elif et == "TEE":
-            rec = elem._get("CON")
+            rec = elem.get_param("CON")
             if rec:
                 for i in [0, 3, 5]:
                     if i < len(rec.values) and self._is_valid_idx(rec.values[i]):

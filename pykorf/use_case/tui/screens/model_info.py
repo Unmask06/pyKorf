@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from textual import on
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import Button, DataTable, Footer, Label, RichLog, Static
+from textual.widgets import DataTable, Footer, Label, RichLog, Static
 
 
 class ModelInfoScreen(Screen):
@@ -118,9 +117,6 @@ class ModelInfoScreen(Screen):
                         val_log = RichLog(id="validation-list", wrap=True, highlight=True)
                         yield val_log
 
-                    with Horizontal(id="info-buttons"):
-                        yield Button("Back", variant="default", id="btn-back")
-
                 with Vertical(id="right-panel"):
                     with Vertical(classes="info-section"):
                         yield Label("Quick Stats")
@@ -206,7 +202,3 @@ class ModelInfoScreen(Screen):
             # No issues - show green
             validation_header.add_class("success")
             validation_header.update("Validation: PASSED (no issues)")
-
-    @on(Button.Pressed, "#btn-back")
-    def go_back(self) -> None:
-        self.app.pop_screen()

@@ -40,7 +40,7 @@ EXPAND, JUNC, TEE, VESSEL, GEN, SYMBOL, TOOLS, PSEUDO, PIPEDATA
 | `Pipe`          | `"PIPE"`    | `LEN, DIA, ID, SCH, MAT, TFLOW, TEMP, PRES, BEND` |
 | `Feed`          | `"FEED"`    | `NAME, PRES, TEMP, TFLOW`                         |
 | `Product`       | `"PROD"`    | `NAME, PRES`                                      |
-| `Pump`          | `"PUMP"`    | `NAME, HEAD, EFF, SPEED`                          |
+| `Pump`          | `"PUMP"`    | `NAME, HEAD, EFF, POWER, HQACT, NPSH, PZPRES, PZRAT, PZVES` |
 | `Valve`         | `"VALVE"`   | `NAME, CV, TYPE`                                  |
 | `CheckValve`    | `"CHECK"`   | `NAME, CV`                                        |
 | `FlowOrifice`   | `"ORIFICE"` | `NAME, DIA`                                       |

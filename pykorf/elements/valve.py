@@ -91,56 +91,56 @@ class Valve(BaseElement):
 
     @property
     def valve_type(self) -> str:
-        return str(self._scalar(Valve.TYPE, 0, "Linear"))
+        return str(self._scalar(Valve.TYPE, 0))
 
     @property
     def cv(self) -> float:
         try:
-            return float(self._scalar(Valve.CV, 1, 0.0))
+            return float(self._scalar(Valve.CV, 1))
         except (TypeError, ValueError):
             return 0.0
 
     @property
     def dp_string(self) -> str:
-        return str(self._scalar(Valve.DP, 0, ""))
+        return str(self._scalar(Valve.DP, 0))
 
     @property
     def dp_kPag(self) -> float:
         try:
-            return float(self._scalar(Valve.DP, 1, 0.0))
+            return float(self._scalar(Valve.DP, 1))
         except (TypeError, ValueError):
             return 0.0
 
     def set_dp(self, value: str | float | list) -> None:
         if isinstance(value, (list, tuple)):
             value = join_cases(value)
-        rec = self._get(Valve.DP)
+        rec = self.get_param(Valve.DP)
         if rec:
-            self._set(Valve.DP, [str(value), *rec.values[1:]])
+            self.set_param(Valve.DP, [str(value), *rec.values[1:]])
 
     @property
     def opening_string(self) -> str:
-        return str(self._scalar(Valve.OPEN, 0, "100"))
+        return str(self._scalar(Valve.OPEN, 0))
 
     def set_opening(self, value: str | float | list) -> None:
         """Set valve opening (% open, per case)."""
         if isinstance(value, (list, tuple)):
             value = join_cases(value)
-        rec = self._get(Valve.OPEN)
+        rec = self.get_param(Valve.OPEN)
         if rec:
-            self._set(Valve.OPEN, [str(value), *rec.values[1:]])
+            self.set_param(Valve.OPEN, [str(value), *rec.values[1:]])
 
     @property
     def inlet_pressure_kPag(self) -> float:
         try:
-            return float(self._scalar(Valve.PIN, 1, 0.0))
+            return float(self._scalar(Valve.PIN, 1))
         except (TypeError, ValueError):
             return 0.0
 
     @property
     def outlet_pressure_kPag(self) -> float:
         try:
-            return float(self._scalar(Valve.POUT, 1, 0.0))
+            return float(self._scalar(Valve.POUT, 1))
         except (TypeError, ValueError):
             return 0.0
 

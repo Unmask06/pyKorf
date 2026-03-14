@@ -17,7 +17,7 @@ Example:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import Enum, StrEnum
 from typing import TYPE_CHECKING, Any, Literal
 
 # Import constants from elements
@@ -59,7 +59,7 @@ if TYPE_CHECKING:
 # ============================================================================
 
 
-class KdfVersion(str, Enum):
+class KdfVersion(StrEnum):
     """Supported KDF file versions."""
 
     V2_0 = "KORF_2.0"
@@ -67,7 +67,7 @@ class KdfVersion(str, Enum):
     V3_6 = "KORF_3.6"
 
 
-class UnitSystem(str, Enum):
+class UnitSystem(StrEnum):
     """Unit system options."""
 
     METRIC = "Metric"
@@ -75,7 +75,7 @@ class UnitSystem(str, Enum):
     CUSTOM = "Custom"
 
 
-class ElementType(str, Enum):
+class ElementType(StrEnum):
     """KDF element types."""
 
     GEN = "GEN"
@@ -99,14 +99,14 @@ class ElementType(str, Enum):
     PIPEDATA = "PIPEDATA"
 
 
-class PumpType(str, Enum):
+class PumpType(StrEnum):
     """Pump types."""
 
     CENTRIFUGAL = "Centrifugal"
     RECIPROCATING = "Reciprocating"
 
 
-class ValveType(str, Enum):
+class ValveType(StrEnum):
     """Valve characteristic types."""
 
     LINEAR = "Linear"
@@ -114,14 +114,14 @@ class ValveType(str, Enum):
     QUICK = "Quick"
 
 
-class ValveSubType(str, Enum):
+class ValveSubType(StrEnum):
     """Valve subtypes."""
 
     CONTROL = "Control"
     SAFETY = "Safety"
 
 
-class PipeMaterial(str, Enum):
+class PipeMaterial(StrEnum):
     """Pipe materials."""
 
     STEEL = "Steel"
@@ -131,21 +131,21 @@ class PipeMaterial(str, Enum):
     STAINLESS_STEEL = "Stainless Steel"
 
 
-class VesselOrientation(str, Enum):
+class VesselOrientation(StrEnum):
     """Vessel orientations."""
 
     VERTICAL = "Vertical"
     HORIZONTAL = "Horizontal"
 
 
-class FlashModel(str, Enum):
+class FlashModel(StrEnum):
     """Flash calculation models."""
 
     KORF = "Korf"
     HYSYS = "Hysys"
 
 
-class CompressibilityModel(str, Enum):
+class CompressibilityModel(StrEnum):
     """Compressibility models."""
 
     INCOMPRESSIBLE = "Incompressible"
@@ -154,7 +154,7 @@ class CompressibilityModel(str, Enum):
     PR = "PR"
 
 
-class TwoPhaseModel(str, Enum):
+class TwoPhaseModel(StrEnum):
     """Two-phase flow models."""
 
     HOMOGENEOUS = "Homogeneous"

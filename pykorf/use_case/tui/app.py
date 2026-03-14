@@ -97,6 +97,7 @@ class UseCaseTUI(App):
     def update_file_header(self, file_path: str) -> None:
         """Update the file header with the current KDF path."""
         from pathlib import Path
+
         header = self.query_one("#file-header", Label)
         header.update(f"📄 {Path(file_path).name}")
 
@@ -110,6 +111,7 @@ class UseCaseTUI(App):
             self.show_notification("File reloaded successfully")
             # If we are on MainMenu, we might want to refresh it
             from pykorf.use_case.tui.screens.main_menu import MainMenuScreen
+
             if isinstance(self.screen, MainMenuScreen):
                 self.pop_screen()
                 self.push_screen(MainMenuScreen())
@@ -119,6 +121,7 @@ class UseCaseTUI(App):
     def action_pop_screen(self) -> None:
         """Override pop_screen to prevent exiting the first screen (FilePicker)."""
         from pykorf.use_case.tui.screens.file_picker import FilePickerScreen
+
         if isinstance(self.screen, FilePickerScreen):
             return
         super().pop_screen()
@@ -146,11 +149,11 @@ def run_tui(debug: bool = False) -> None:
     # Configure logging with a temporary log file initially
     # The actual log file will be set when a KDF file is loaded
     import tempfile
-    import os
 
-    temp_log = tempfile.NamedTemporaryFile(mode="w", suffix=".log", delete=False)
-    temp_log.close()
-    configure_logging(temp_log.name)
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".log", delete=False) as temp_log:
+        temp_log_path = temp_log.name
+
+    configure_logging(temp_log_path)
 
     # Enable debug mode if requested (sets DEBUG level)
     if debug:

@@ -152,15 +152,15 @@ class TestUpdateElement:
         m = Model(PUMP_KDF)
         m.update_element("L1", {"LEN": 200})
         pipe = m["L1"]
-        rec = pipe._get("LEN")
+        rec = pipe.get_param("LEN")
         assert rec.values[0] == "200"
 
     def test_update_multiple_params(self):
         m = Model(PUMP_KDF)
         m.update_element("L1", {"LEN": 200, "TFLOW": "80;90;60"})
         pipe = m["L1"]
-        assert pipe._get("LEN").values[0] == "200"
-        assert pipe._get("TFLOW").values[0] == "80;90;60"
+        assert pipe.get_param("LEN").values[0] == "200"
+        assert pipe.get_param("TFLOW").values[0] == "80;90;60"
 
     def test_update_elements_batch(self):
         m = Model(PUMP_KDF)
@@ -170,8 +170,8 @@ class TestUpdateElement:
                 "P1": {"EFFP": "0.75"},
             }
         )
-        assert m["L1"]._get("LEN").values[0] == "200"
-        assert m["P1"]._get("EFFP").values[0] == "0.75"
+        assert m["L1"].get_param("LEN").values[0] == "200"
+        assert m["P1"].get_param("EFFP").values[0] == "0.75"
 
     def test_update_nonexistent_raises(self):
         m = Model(PUMP_KDF)
@@ -255,7 +255,7 @@ class TestAddElement:
         """Adding an element must preserve the NAME descriptor from the template."""
         m = Model(CWC_KDF)
         valve = m.add_element(Element.VALVE, "CV4")
-        name_rec = valve._get("NAME")
+        name_rec = valve.get_param("NAME")
         assert name_rec is not None
         assert name_rec.values[0] == "CV4"
         # Template VALVE NAME is "CV","Valve" — descriptor must be kept
@@ -324,14 +324,14 @@ class TestCopyElement:
     def test_copy_preserves_params(self):
         m = Model(PUMP_KDF)
         src = m["L1"]
-        src_len = src._get("LEN").values[0]
+        src_len = src.get_param("LEN").values[0]
         new_elem = m.copy_element("L1", "L_COPY2")
-        assert new_elem._get("LEN").values[0] == src_len
+        assert new_elem.get_param("LEN").values[0] == src_len
 
     def test_copy_clears_connectivity(self):
         m = Model(PUMP_KDF)
         new_pump = m.copy_element("P1", "P_COPY")
-        con_rec = new_pump._get("CON")
+        con_rec = new_pump.get_param("CON")
         if con_rec and con_rec.values:
             # All values should be "0"
             for v in con_rec.values[:2]:
