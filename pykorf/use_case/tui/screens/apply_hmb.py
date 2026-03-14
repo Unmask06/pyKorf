@@ -88,7 +88,6 @@ class ApplyHmbScreen(Screen):
                 yield RichLog(id="hmb-results", wrap=True)
                 with Horizontal(id="hmb-buttons"):
                     yield Button("Apply", variant="primary", id="btn-apply")
-                    yield Button("Back", variant="default", id="btn-back")
 
             with Vertical(id="right-panel"):
                 with Vertical(classes="info-section"):

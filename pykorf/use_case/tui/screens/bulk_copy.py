@@ -124,7 +124,6 @@ class BulkCopyFluidsScreen(Screen):
                 with Horizontal(id="copy-buttons"):
                     yield Button("Execute", variant="primary", id="btn-execute")
                     yield Button("Copy Log", variant="default", id="btn-copy-log")
-                    yield Button("Back", variant="default", id="btn-back")
                 yield RichLog(id="copy-results", wrap=True)
 
             with Vertical(id="right-panel"):

@@ -4,11 +4,9 @@ This module provides preset functions that apply common global changes
 to KDF models, such as modifying dummy pipes or applying design margins.
 
 Global Settings:
-    1. Set ID/Length for Dummy Pipe - Pipes with names starting with "d"
-       - Set LEN = 0.1 m
-       - Set ID = 1500 mm (converted to meters: 1.5 m)
-       - Set SCH = "ID"
-       - Set LBL = [0, 0, 50] (turn off labels)
+    1. Dummy Pipe & Junction Labels - Modify dummy pipes and hide labels
+       - Pipes starting with "d": Set LEN = 0.1 m, ID = 1.5 m, SCH = "ID", LBL = OFF
+       - All Junctions: Set LBL = [0, 0, 50] (turn off labels)
     2. 25% margin in dP/dL - Apply DP_DES_FAC = 1.25 to all pipes
     3. Rename Line from NOTES - Extract fluid code and serial number from NOTES
        and update pipe name (e.g., "L4" -> "VCL17-806")
@@ -59,7 +57,7 @@ class GlobalSetting:
 
 
 def apply_dummy_pipe_settings(model: Model) -> list[str]:
-    """Apply dummy pipe settings to all pipes with names starting with "d".
+    """Apply dummy pipe settings and hide junction labels.
 
     For each pipe whose name starts with lowercase "d":
     - Set LEN = 0.1 (meters)
@@ -67,22 +65,25 @@ def apply_dummy_pipe_settings(model: Model) -> list[str]:
     - Set SCH = "ID"
     - Set LBL = [0, 0, 50] (turn off labels)
 
+    For all junctions:
+    - Set LBL = [0, 0, 50] (turn off labels)
+
     Args:
         model: Loaded KDF model.
 
     Returns:
-        List of pipe names that were modified.
+        List of pipe and junction names that were modified.
     """
-    from pykorf.elements import Pipe
+    from pykorf.elements import Junction, Pipe
     from pykorf.exceptions import ParameterError
 
-    affected_pipes: list[str] = []
+    affected_names: list[str] = []
     errors: list[str] = []
 
     # ID in meters (1500mm = 1.5m)
     id_meters = 1.5
 
-    # Iterate through all pipes (index >= 1 are real instances)
+    # 1. Iterate through all pipes (index >= 1 are real instances)
     for idx in range(1, model.num_pipes + 1):
         pipe = model.pipes[idx]
         pipe_name = pipe.name
@@ -104,7 +105,7 @@ def apply_dummy_pipe_settings(model: Model) -> list[str]:
 
         try:
             model.set_params(pipe_name, params)
-            affected_pipes.append(pipe_name)
+            affected_names.append(pipe_name)
             logger.info(
                 "Dummy pipe %s: LEN=0.1m, ID=%sm (1500mm), SCH=ID, LBL=OFF",
                 pipe_name,
@@ -119,7 +120,24 @@ def apply_dummy_pipe_settings(model: Model) -> list[str]:
             logger.error(error_msg)
             errors.append(error_msg)
 
-    return affected_pipes
+    # 2. Iterate through all junctions (index >= 1)
+    for idx, junc in model.junctions.items():
+        if idx == 0:
+            continue
+        junc_name = junc.name
+        if not junc_name:
+            continue
+
+        try:
+            model.set_params(junc_name, {Junction.LBL: [0, 0, 50]})
+            affected_names.append(junc_name)
+            logger.info("Junction %s: LBL=OFF", junc_name)
+        except Exception as e:
+            error_msg = f"Error setting LBL on junction {junc_name}: {e}"
+            logger.error(error_msg)
+            errors.append(error_msg)
+
+    return affected_names
 
 
 def apply_dp_margin_settings(model: Model) -> list[str]:
@@ -359,8 +377,8 @@ def apply_pipe_criteria_settings(model: Model) -> list[str]:
 _GLOBAL_SETTINGS: dict[str, GlobalSetting] = {
     "dummy_pipe": GlobalSetting(
         id="dummy_pipe",
-        name="Set ID/Length for Dummy Pipe",
-        description='Pipes with names starting with "d": Set LEN=0.1m, ID=1500mm, SCH="ID", LBL=OFF',
+        name="Dummy Pipe & Junction Labels",
+        description='Pipes starting with "d": LEN=0.1m, ID=1500mm, LBL=OFF. Junctions: LBL=OFF',
         apply_func=apply_dummy_pipe_settings,
     ),
     "dp_margin": GlobalSetting(
