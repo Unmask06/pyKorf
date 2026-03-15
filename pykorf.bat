@@ -1,5 +1,5 @@
 @echo off
-REM pyKorf Launcher
+REM pyKorf Launcher - Enhanced User Experience
 REM Auto-installs Python 3.13 and uv if needed, then runs the pyKorf TUI
 
 setlocal enabledelayedexpansion
@@ -8,90 +8,142 @@ REM Get the directory where this bat file is located
 set "SCRIPT_DIR=%~dp0"
 set "APPDATA_DIR=%APPDATA%\pyKorf"
 
-echo ========================================
-echo        pyKorf Launcher
-echo ========================================
-echo.
+REM ============================================
+REM PowerShell Spinner Function
+REM ============================================
+:show_spinner
+setlocal
+set "message=%~1"
+set "pid=%~2"
+set "chars=⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+set "i=0"
+
+:spinner_loop
+tasklist /FI "PID eq %pid%" 2>nul | find "%pid%" >nul 2>&1
+if errorlevel 1 (
+    echo/
+    exit /b 0
+)
+
+set /a "idx=!i! %% 10"
+set "char="
+for /f "tokens=1 delims=" %%a in ('echo !chars!') do (
+    for /l %%b in (0,1,!idx!) do (
+        set "char=%%a"
+    )
+)
+
+<nul set /p "=!char! %message%  "
+timeout /t 0 /nobreak >nul
+set /a "i+=1"
+goto spinner_loop
+:show_spinner_end
+endlocal
+exit /b 0
+
+REM ============================================
+REM Clean Output Header
+REM ============================================
+cls
+echo/
+echo/
+echo/
+echo/
+echo/
+echo/
+echo/
+echo/
+echo/
+echo/
+echo           ██████╗  ██████╗ ██╗     ██╗     ██╗███╗   ██╗███████╗
+echo           ██╔══██╗██╔═══██╗██║     ██║     ██║████╗  ██║██╔════╝
+echo           ██████╔╝██║   ██║██║     ██║     ██║██╔██╗ ██║█████╗  
+echo           ██╔══██╗██║   ██║██║     ██║     ██║██║╚██╗██║██╔══╝  
+echo           ██║  ██║╚██████╔╝███████╗███████╗██║██║ ╚████║███████╗
+echo           ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚══════╝╚═╝╚═╝  ╚═══╝╚══════╝
+echo/
+echo                    Enterprise Hydraulic Modeling Toolkit
+echo/
+echo/
 
 REM ============================================
 REM STEP 1: Check and Install Python 3.13
 REM ============================================
-echo Step 1 of 4: Checking Python...
-echo.
+echo [1/4] Checking Python installation...
+echo/
 
 py -3.13 --version >nul 2>&1
 if errorlevel 1 (
-    echo [NOT FOUND] Python 3.13 is not installed.
-    echo.
-    echo Installing Python 3.13 via winget...
-    echo This may take a few minutes. Please wait...
-    echo.
+    echo/
+    echo ⚠  Python 3.13 is not installed.
+    echo/
+    echo Installing Python 3.13...
+    echo/
     winget install --id Python.Python.3.13 --scope user --accept-package-agreements --accept-source-agreements
 
     if errorlevel 1 (
-        echo.
-        echo [ERROR] Python installation failed.
+        echo/
+        echo ✗ Installation failed.
         echo Please install Python 3.13 manually from https://www.python.org/downloads/
+        echo/
         pause
         exit /b 1
     )
 
-    echo.
-    echo [SUCCESS] Python 3.13 installed successfully.
-    echo.
+    echo/
+    echo ✓ Python 3.13 installed successfully.
+    echo/
     echo ========================================
-    echo  IMPORTANT: One more step required!
+    echo  One more step required!
     echo ========================================
-    echo.
-    echo  Please CLOSE this terminal window and
-    echo  double-click pykorf.bat again to continue.
-    echo.
-    echo  This ensures Python is available in your PATH.
-    echo.
+    echo/
+    echo  Please CLOSE this terminal and
+    echo  double-click pykorf.bat again.
+    echo/
+    echo  This ensures Python is properly configured.
+    echo/
     pause
     exit /b
 )
 
-REM Get Python 3.13 version
 for /f "tokens=2" %%i in ('py -3.13 --version 2^>^&1') do set "PYVER=%%i"
-echo [OK] Found Python %PYVER%
-echo.
+echo ✓ Found Python %PYVER%
+echo/
 
 REM ============================================
 REM STEP 2: Check and Install uv
 REM ============================================
-echo Step 2 of 4: Checking uv package manager...
-echo.
+echo [2/4] Checking package manager...
+echo/
 
 py -3.13 -m pip show uv >nul 2>&1
 if errorlevel 1 (
-    echo [NOT FOUND] uv is not installed.
-    echo.
-    echo Installing uv via pip...
-    echo This will only take a moment...
-    echo.
+    echo/
+    echo Installing uv...
+    echo/
     py -3.13 -m pip install uv
 
     if errorlevel 1 (
-        echo.
-        echo [ERROR] uv installation failed.
+        echo/
+        echo ✗ Installation failed.
         echo Please install uv manually: py -3.13 -m pip install uv
+        echo/
         pause
         exit /b 1
     )
-    echo.
-    echo [SUCCESS] uv installed successfully.
-    echo.
+    echo/
+    echo ✓ uv installed successfully.
+    echo/
 )
 
-echo [OK] uv is available
-echo.
+echo ✓ Package manager ready
+echo/
 
 REM ============================================
 REM STEP 3: Version Check and File Setup
 REM ============================================
-echo Step 3 of 4: Setting up application...
-echo.
+echo [3/4] Setting up application...
+echo/
 
 REM Read version from the extracted zip folder (next to this bat file)
 set "CURRENT_VERSION=unknown"
@@ -105,19 +157,18 @@ if exist "%APPDATA_DIR%\VERSION" (
     set /p INSTALLED_VERSION=<"%APPDATA_DIR%\VERSION"
 )
 
-echo   Distributed version : !CURRENT_VERSION!
-echo   Installed version   : !INSTALLED_VERSION!
-echo.
+echo   Current version : !CURRENT_VERSION!
+echo   Installed       : !INSTALLED_VERSION!
+echo/
 
 REM Compare versions - if different, wipe and reinstall
 if "!CURRENT_VERSION!"=="!INSTALLED_VERSION!" (
-    echo [OK] Already up to date.
+    echo ✓ Already up to date.
 ) else (
-    echo [UPDATE] New version detected. Updating...
+    echo  Updating to version !CURRENT_VERSION!...
 
     REM Remove only the old package code, keep user data (config.json, data/)
     if exist "%APPDATA_DIR%\pykorf" (
-        echo Removing old package...
         rmdir /s /q "%APPDATA_DIR%\pykorf"
     )
 
@@ -127,64 +178,82 @@ if "!CURRENT_VERSION!"=="!INSTALLED_VERSION!" (
     )
 
     REM Copy application files using xcopy
-    echo Copying application files...
     xcopy /e /i /y /q "%SCRIPT_DIR%pykorf" "%APPDATA_DIR%\pykorf" >nul
     copy /y "%SCRIPT_DIR%pyproject.toml" "%APPDATA_DIR%\" >nul
     copy /y "%SCRIPT_DIR%VERSION" "%APPDATA_DIR%\" >nul
 
-    echo [OK] Version !CURRENT_VERSION! installed to %APPDATA_DIR%
+    echo ✓ Version !CURRENT_VERSION! installed.
 )
 
-echo.
+echo/
 
 REM ============================================
 REM STEP 4: Create Venv and Install Dependencies
 REM ============================================
-echo Step 4 of 4: Installing dependencies...
-echo.
+echo [4/4] Preparing your environment...
+echo/
 
 cd /d "%APPDATA_DIR%"
 
 REM Create venv with Python 3.13 if it doesn't exist
 if not exist ".venv\Scripts\python.exe" (
-    echo Creating virtual environment with Python 3.13...
     py -3.13 -m venv .venv
 
     if errorlevel 1 (
-        echo [ERROR] Failed to create virtual environment.
+        echo/
+        echo ✗ Failed to create environment.
         pause
         exit /b 1
     )
 )
 
 REM Install dependencies using uv (targeting the venv)
-echo Installing dependencies...
 py -3.13 -m uv pip install --python "%APPDATA_DIR%\.venv\Scripts\python.exe" -e . >nul 2>&1
 
 if errorlevel 1 (
-    echo [WARNING] uv install failed, falling back to pip...
     "%APPDATA_DIR%\.venv\Scripts\python.exe" -m pip install -e . >nul 2>&1
 
     if errorlevel 1 (
-        echo [ERROR] Package installation failed.
+        echo/
+        echo ✗ Failed to install dependencies.
         pause
         exit /b 1
     )
 )
 
-echo [OK] Dependencies installed.
-echo.
+echo ✓ Environment ready.
+echo/
 
 REM Clear screen before launching
 cls
 
 REM ============================================
-REM Launch pyKorf TUI
+REM Launch pyKorf TUI with Splash Screen
 REM ============================================
-echo ========================================
-echo        Starting pyKorf TUI
-echo ========================================
-echo.
+echo/
+echo/
+echo/
+echo/
+echo/
+echo/
+echo/
+echo/
+echo/
+echo/
+echo           ██████╗  ██████╗ ██╗     ██╗     ██╗███╗   ██╗███████╗
+echo           ██╔══██╗██╔═══██╗██║     ██║     ██║████╗  ██║██╔════╝
+echo           ██████╔╝██║   ██║██║     ██║     ██║██╔██╗ ██║█████╗  
+echo           ██╔══██╗██║   ██║██║     ██║     ██║██║╚██╗██║██╔══╝  
+echo           ██║  ██║╚██████╔╝███████╗███████╗██║██║ ╚████║███████╗
+echo           ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚══════╝╚═╝╚═╝  ╚═══╝╚══════╝
+echo/
+echo                    Enterprise Hydraulic Modeling Toolkit
+echo/
+echo/
+echo   Starting pyKorf...
+echo/
+echo   ⠋ Initializing...
+echo/
 
 "%APPDATA_DIR%\.venv\Scripts\python.exe" -m pykorf
 

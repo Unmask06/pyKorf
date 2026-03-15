@@ -4,10 +4,60 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime, timedelta
+from time import sleep
+
+from rich.console import Console
+from rich.panel import Panel
+from rich.text import Text
 
 TRIAL_START_DATE = datetime(2026, 3, 15)
 TRIAL_DURATION_DAYS = 14
 DEVELOPER_CONTACT = "Prasanna Palanivel"
+
+console = Console()
+
+
+def show_splash() -> None:
+    """Display pyKorf splash screen with branding."""
+    console.clear()
+    console.print()
+    console.print()
+    console.print()
+    console.print()
+    console.print()
+    console.print()
+    
+    logo_text = Text()
+    logo_text.append("pyKorf", style="bold cyan")
+    logo_text.append(" v0.2.0", style="dim")
+    
+    console.print(
+        Panel(
+            logo_text,
+            title="[bold blue]Welcome to[/bold blue]",
+            subtitle="[dim]Enterprise Hydraulic Modeling Toolkit[/dim]",
+            border_style="cyan",
+            padding=(1, 2),
+        ),
+        justify="center",
+    )
+    console.print()
+
+
+def show_loading(message: str, duration: float = 0.5) -> None:
+    """Show a brief loading animation.
+    
+    Args:
+        message: Message to display during loading
+        duration: Duration in seconds
+    """
+    spinner_frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+    
+    for _ in range(int(duration * 10)):
+        for frame in spinner_frames:
+            console.print(f"\r{frame} {message}", end="", style="dim")
+            sleep(0.05)
+    console.print()
 
 
 def check_trial_expired() -> bool:
@@ -22,16 +72,52 @@ def check_trial_expired() -> bool:
 
 def show_expired_message() -> None:
     """Display trial expired message and exit."""
-    print("=" * 60)
-    print("  pyKorf Trial Period Expired")
-    print("=" * 60)
-    print()
-    print(f"  The trial period ({TRIAL_DURATION_DAYS} days) has ended.")
-    print()
-    print("  To continue using pyKorf, please contact the developer:")
-    print(f"  {DEVELOPER_CONTACT}")
-    print()
-    print("=" * 60)
+    console.clear()
+    console.print()
+    console.print()
+    console.print()
+    
+    console.print(
+        Panel(
+            f"[red bold]Trial Period Expired[/red bold]\n\n"
+            f"The [yellow]{TRIAL_DURATION_DAYS}-day[/yellow] trial has ended.\n\n"
+            f"To continue using pyKorf, please contact:\n"
+            f"[bold cyan]{DEVELOPER_CONTACT}[/bold cyan]",
+            title="[red]⚠ Access Expired[/red]",
+            border_style="red",
+            padding=(1, 2),
+        ),
+        justify="center",
+    )
+    console.print()
+
+
+def show_trial_info(days_left: int) -> None:
+    """Display trial period information.
+    
+    Args:
+        days_left: Number of days remaining in trial
+    """
+    if days_left <= 3:
+        style = "red bold"
+        urgency = "⚠"
+    elif days_left <= 7:
+        style = "yellow"
+        urgency = "ℹ"
+    else:
+        style = "green"
+        urgency = "✓"
+    
+    console.print(
+        Panel(
+            f"[{style}]Trial Mode: {days_left} days remaining[{style}]",
+            title=f"{urgency} Trial Status",
+            border_style="yellow" if days_left <= 7 else "green",
+            padding=(0, 1),
+        ),
+        justify="center",
+    )
+    console.print()
 
 
 def main():
@@ -52,14 +138,17 @@ def main():
     )
     args = parser.parse_args()
 
+    show_splash()
+
     if args.trial:
         if check_trial_expired():
             show_expired_message()
             return
         days_left = (TRIAL_START_DATE + timedelta(days=TRIAL_DURATION_DAYS) - datetime.now()).days
-        print(f"[Trial Mode] Days remaining: {max(0, days_left)}")
-        print()
+        show_trial_info(max(0, days_left))
 
+    show_loading("Initializing...", 0.8)
+    
     from pykorf.use_case.tui import run_tui
 
     run_tui(debug=args.debug)
