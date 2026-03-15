@@ -22,8 +22,6 @@ from pykorf.use_case.tui.logging import (
 class ApplyPmsScreen(Screen):
     """Screen for applying PMS specifications to pipes."""
 
-    BINDINGS = [("escape", "go_back", "Back")]
-
     CSS_PATH = []
 
     CSS = """
@@ -83,7 +81,6 @@ class ApplyPmsScreen(Screen):
                 yield RichLog(id="pms-results", wrap=True)
                 with Horizontal(id="pms-buttons"):
                     yield Button("Apply", variant="primary", id="btn-apply")
-                    yield Button("Back", variant="default", id="btn-back")
 
             with Vertical(id="right-panel"):
                 with Vertical(classes="info-section"):
@@ -103,13 +100,6 @@ class ApplyPmsScreen(Screen):
                     yield Static("via Configuration menu")
                     yield Static("if file not found.")
         yield Footer()
-
-    def action_go_back(self) -> None:
-        self.app.pop_screen()
-
-    @on(Button.Pressed, "#btn-back")
-    def go_back(self) -> None:
-        self.app.pop_screen()
 
     @on(Button.Pressed, "#btn-apply")
     def apply(self) -> None:

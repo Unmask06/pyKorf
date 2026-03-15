@@ -14,8 +14,6 @@ from pykorf.use_case.tui.logging import log_error, log_info, log_success, log_wa
 class ConfigMenuScreen(Screen):
     """Screen for managing configuration files."""
 
-    BINDINGS = [("escape", "go_back", "Back")]
-
     CSS_PATH = []
 
     CSS = """
@@ -111,9 +109,6 @@ class ConfigMenuScreen(Screen):
                 )
                 yield RichLog(id="config-results", wrap=True)
 
-                with Horizontal(id="config-footer"):
-                    yield Button("Back", variant="default", id="btn-back")
-
             with Vertical(id="right-panel"):
                 with Vertical(classes="info-section"):
                     yield Label("PMS Config")
@@ -167,13 +162,6 @@ class ConfigMenuScreen(Screen):
             stream_output = data.get("stream_output", "")
             if stream_output:
                 self.query_one("#stream-output-input", Input).value = stream_output
-
-    def action_go_back(self) -> None:
-        self.app.pop_screen()
-
-    @on(Button.Pressed, "#btn-back")
-    def go_back(self) -> None:
-        self.app.pop_screen()
 
     @on(Button.Pressed, "#btn-import-pms")
     def import_pms(self) -> None:

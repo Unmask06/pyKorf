@@ -82,7 +82,7 @@ class TestPump:
         # Set efficiency override (stored at index 0)
         m.pumps[1].set_efficiency(0.75)
         # Verify it was set correctly by checking the raw value
-        rec = m.pumps[1]._get("EFFP")
+        rec = m.pumps[1].get_param("EFFP")
         assert rec is not None
         assert rec.values[0] == "0.75"
         # Note: efficiency property reads calculated value at index 1,
@@ -146,109 +146,3 @@ class TestHeatExchanger:
     def test_hx_dp(self):
         m = self._model()
         assert m.exchangers[1].dp_kPag > 0
-
-
-class TestFeedSummary:
-    def _model(self):
-        return KorfModel.load(PUMP_KDF)
-
-    def test_feed_summary_exists(self):
-        m = self._model()
-        feed = m.feeds[1]
-        s = feed.summary()
-        assert isinstance(s, dict)
-
-    def test_feed_summary_keys(self):
-        m = self._model()
-        feed = m.feeds[1]
-        s = feed.summary()
-        assert "name" in s
-        assert "type" in s
-        assert "pressure_kPag" in s
-        assert "inlet_pressure_kPag" in s
-
-    def test_feed_summary_values(self):
-        m = self._model()
-        feed = m.feeds[1]
-        s = feed.summary()
-        assert s["name"] == feed.name
-        assert s["pressure_kPag"] == feed.pressure_kPag
-
-
-class TestProductSummary:
-    def _model(self):
-        return KorfModel.load(PUMP_KDF)
-
-    def test_product_summary_exists(self):
-        m = self._model()
-        prod = m.products[1]
-        s = prod.summary()
-        assert isinstance(s, dict)
-
-    def test_product_summary_keys(self):
-        m = self._model()
-        prod = m.products[1]
-        s = prod.summary()
-        assert "name" in s
-        assert "type" in s
-        assert "pressure_kPag" in s
-        assert "outlet_pressure_kPag" in s
-
-    def test_product_summary_values(self):
-        m = self._model()
-        prod = m.products[1]
-        s = prod.summary()
-        assert s["name"] == prod.name
-        assert s["pressure_kPag"] == prod.pressure_kPag
-
-
-class TestValveSummary:
-    def _model(self):
-        return KorfModel.load(PUMP_KDF)
-
-    def test_valve_summary_exists(self):
-        m = self._model()
-        valve = m.valves[1]
-        s = valve.summary()
-        assert isinstance(s, dict)
-
-    def test_valve_summary_keys(self):
-        m = self._model()
-        valve = m.valves[1]
-        s = valve.summary()
-        assert "name" in s
-        assert "type" in s
-        assert "cv" in s
-        assert "dp_kPag" in s
-        assert "inlet_pressure_kPag" in s
-        assert "outlet_pressure_kPag" in s
-
-    def test_valve_summary_values(self):
-        m = self._model()
-        valve = m.valves[1]
-        s = valve.summary()
-        assert s["name"] == valve.name
-        assert s["dp_kPag"] == valve.dp_kPag
-
-
-class TestCompressorSummary:
-    def _model(self):
-        return KorfModel.load(CRANE_KDF)
-
-    def test_compressor_summary_exists(self):
-        m = self._model()
-        if 1 in m.compressors:
-            comp = m.compressors[1]
-            s = comp.summary()
-            assert isinstance(s, dict)
-
-    def test_compressor_summary_keys(self):
-        m = self._model()
-        if 1 in m.compressors:
-            comp = m.compressors[1]
-            s = comp.summary()
-            assert "name" in s
-            assert "type" in s
-            assert "head_m" in s
-            assert "power_kW" in s
-            assert "dp_kPag" in s

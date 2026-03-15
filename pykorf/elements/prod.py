@@ -56,25 +56,25 @@ class Product(BaseElement):
 
     @property
     def type(self) -> str:
-        return str(self._scalar(Product.TYPE, 0, "Pipe"))
+        return str(self._scalar(Product.TYPE, 0))
 
     @property
     def elevation_m(self) -> float:
         try:
-            return float(self._scalar(Product.ELEV, 0, 0.0))
+            return float(self._scalar(Product.ELEV, 0))
         except (TypeError, ValueError):
             return 0.0
 
     # Pressure
     @property
     def pressure_string(self) -> str:
-        return str(self._scalar(Product.PRES, 0, ""))
+        return str(self._scalar(Product.PRES, 0))
 
     @property
     def pressure_kPag(self) -> float:
         """Calculated inlet pressure [kPag]."""
         try:
-            return float(self._scalar(Product.PIN, 1, 0.0))
+            return float(self._scalar(Product.PIN, 1))
         except (TypeError, ValueError):
             return 0.0
 
@@ -89,27 +89,14 @@ class Product(BaseElement):
         else:
             p_str = str(pressure)
 
-        rec = self._get(Product.PRES)
+        rec = self.get_param(Product.PRES)
         if rec:
             new_vals = [p_str, *rec.values[1:]]
-            self._set(Product.PRES, new_vals)
+            self.set_param(Product.PRES, new_vals)
 
     @property
     def nozzle_pipe_index(self) -> int:
         try:
-            return int(self._scalar(self.NOZ, 0, 0))
+            return int(self._scalar(self.NOZ, 0))
         except (TypeError, ValueError):
             return 0
-
-    @property
-    def outlet_pressure_kPag(self) -> float:
-        """Calculated outlet pressure [kPag]."""
-        return self.pressure_kPag
-
-    def summary(self) -> dict:
-        return {
-            "name": self.name,
-            "type": self.type,
-            "pressure_kPag": self.pressure_kPag,
-            "outlet_pressure_kPag": self.outlet_pressure_kPag,
-        }

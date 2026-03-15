@@ -288,28 +288,29 @@ class IOService:
         self,
         path: str | Path,
         *,
-        template_path: str | Path | None = None,
         include_results: bool = True,
         overwrite: bool = True,
     ) -> None:
-        """Export model data to Excel workbook with single-sheet summary format.
+        """Export model data to Excel workbook.
 
-        Creates a single summary sheet with all element data organized in sections:
-        Feeds → Products → Pipes → Pumps → Compressors → Valves
+        Creates multiple sheets:
+        - Summary: Model overview
+        - Pipes: Pipe data
+        - Pumps: Pump data
+        - Valves: Valve data
+        - Feeds: Feed boundary conditions
+        - Products: Product boundary conditions
+        - Connectivity: Connection matrix
 
         Args:
             model: The model to export
             path: Output file path
-            template_path: Path to Excel template with logos (A3 landscape). If None, creates new file.
             include_results: Whether to include calculated results
             overwrite: Whether to overwrite existing files
 
         Raises:
             ExportError: If export fails or file exists and overwrite=False
         """
-        from openpyxl import load_workbook, Workbook
-        from openpyxl.styles import Font, Alignment, Border, Side
-
         path = Path(path)
 
         if not overwrite and path.exists():
@@ -320,87 +321,90 @@ class IOService:
 
         with log_operation("export_to_excel", path=str(path)):
             try:
-                # Load template or create new workbook
-                if template_path and Path(template_path).exists():
-                    wb = load_workbook(template_path)
-                    ws = wb.active
-                    ws.title = "Summary"
-                else:
-                    wb = Workbook()
-                    ws = wb.active
-                    ws.title = "Summary"
-                    self._setup_excel_formatting(ws)
+                with pd.ExcelWriter(path, engine="openpyxl") as writer:
+                    # Summary sheet
+                    summary_data = {
+                        "Property": [
+                            "File",
+                            "Version",
+                            "Cases",
+                            "Pipes",
+                            "Pumps",
+                            "Feeds",
+                            "Products",
+                            "Valves",
+                            "Check Valves",
+                            "Orifices",
+                            "Heat Exchangers",
+                            "Compressors",
+                            "Vessels",
+                        ],
+                        "Value": [
+                            str(self.model.path),
+                            self.model.version,
+                            self.model.num_cases,
+                            self.model.num_pipes,
+                            self.model.num_pumps,
+                            len([e for e in self.model.feeds.values() if e.index > 0]),
+                            len([e for e in self.model.products.values() if e.index > 0]),
+                            len([e for e in self.model.valves.values() if e.index > 0]),
+                            len([e for e in self.model.check_valves.values() if e.index > 0]),
+                            len([e for e in self.model.orifices.values() if e.index > 0]),
+                            len([e for e in self.model.exchangers.values() if e.index > 0]),
+                            len([e for e in self.model.compressors.values() if e.index > 0]),
+                            len([e for e in self.model.vessels.values() if e.index > 0]),
+                        ],
+                    }
+                    pd.DataFrame(summary_data).to_excel(writer, sheet_name="Summary", index=False)
 
-                # Set A3 landscape page setup
-                ws.page_setup.paperSize = ws.PAPERSIZE_A3
-                ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
+                    # Pipes sheet
+                    pipe_rows = []
+                    for idx, pipe in self.model.pipes.items():
+                        if idx == 0:
+                            continue
+                        row = {
+                            "Index": idx,
+                            "Name": pipe.name,
+                            "Diameter (in)": pipe.diameter_inch,
+                            "Schedule": pipe.schedule,
+                            "Length (m)": pipe.length_m,
+                            "Material": pipe.material,
+                        }
+                        if include_results:
+                            row["dP/100m (kPa)"] = pipe.pressure_drop_per_100m
+                            row["Reynolds"] = pipe.reynolds_number
+                        pipe_rows.append(row)
 
-                # Clear data area (preserve logos in rows 1-5)
-                self._clear_excel_data_area(ws)
+                    if pipe_rows:
+                        pd.DataFrame(pipe_rows).to_excel(writer, sheet_name="Pipes", index=False)
 
-                # Write header info
-                current_row = 6
-                case_names = self.model.general.case_descriptions if hasattr(self.model, 'general') else []
-                case_name = case_names[0] if case_names else "N/A"
+                    # Pumps sheet
+                    pump_rows = []
+                    for idx, pump in self.model.pumps.items():
+                        if idx == 0:
+                            continue
+                        row = {
+                            "Index": idx,
+                            "Name": pump.name,
+                            "Type": pump.pump_type if hasattr(pump, "pump_type") else "Unknown",
+                        }
+                        if include_results and hasattr(pump, "head_m"):
+                            row["Head (m)"] = pump.head_m
+                            row["Power (kW)"] = pump.power_kW
+                            row["Efficiency"] = pump.efficiency
+                        pump_rows.append(row)
 
-                ws.cell(row=current_row, column=1, value=f"Case Name: {case_name}")
-                ws.cell(row=current_row, column=1).font = Font(bold=True)
-                current_row += 1
+                    if pump_rows:
+                        pd.DataFrame(pump_rows).to_excel(writer, sheet_name="Pumps", index=False)
 
-                ws.cell(row=current_row, column=1, value=f"File: {self.model.path.name}")
-                current_row += 1
+                    # Case info
+                    if hasattr(self.model, "general"):
+                        case_data = {
+                            "Case Number": self.model.general.case_numbers,
+                            "Description": self.model.general.case_descriptions,
+                        }
+                        pd.DataFrame(case_data).to_excel(writer, sheet_name="Cases", index=False)
 
-                ws.cell(row=current_row, column=1, value=f"Version: {self.model.version}")
-                current_row += 1
-
-                if case_names:
-                    ws.cell(row=current_row, column=1, value=f"Cases: {'; '.join(case_names)}")
-                    current_row += 1
-
-                current_row += 1  # Spacer
-
-                # Feeds section
-                current_row = self._write_excel_section(
-                    ws, current_row, "FEEDS", self._get_feed_rows()
-                )
-                current_row += 1  # Spacer
-
-                # Products section
-                current_row = self._write_excel_section(
-                    ws, current_row, "PRODUCTS", self._get_product_rows()
-                )
-                current_row += 1  # Spacer
-
-                # Pipes section
-                current_row = self._write_excel_section(
-                    ws, current_row, "PIPES", self._get_pipe_rows(include_results)
-                )
-                current_row += 1  # Spacer
-
-                # Pumps section
-                current_row = self._write_excel_section(
-                    ws, current_row, "PUMPS", self._get_pump_rows(include_results)
-                )
-                current_row += 1  # Spacer
-
-                # Compressors section
-                comp_rows = self._get_compressor_rows(include_results)
-                if comp_rows:
-                    current_row = self._write_excel_section(
-                        ws, current_row, "COMPRESSORS", comp_rows
-                    )
-                    current_row += 1  # Spacer
-
-                # Valves section with multi-case support
-                valve_rows = self._get_valve_rows_multi_case(case_names, include_results)
-                current_row = self._write_excel_section(
-                    ws, current_row, "CONTROL VALVES", valve_rows
-                )
-
-                # Auto-fit column widths
-                self._auto_fit_excel_columns(ws)
-
-                wb.save(path)
                 logger.info("export_to_excel_success", path=str(path))
 
             except ImportError as e:
@@ -412,218 +416,6 @@ class IOService:
                 if isinstance(e, ExportError):
                     raise
                 raise ExportError(f"Failed to export to Excel: {e}") from e
-
-    def _setup_excel_formatting(self, ws) -> None:
-        """Set up basic Excel formatting for the worksheet."""
-        from openpyxl.styles import Font, Alignment, Border, Side
-
-        # Set default column widths
-        ws.column_dimensions['A'].width = 5
-        ws.column_dimensions['B'].width = 15
-        ws.column_dimensions['C'].width = 15
-        ws.column_dimensions['D'].width = 20
-        ws.column_dimensions['E'].width = 15
-        ws.column_dimensions['F'].width = 15
-        ws.column_dimensions['G'].width = 15
-        ws.column_dimensions['H'].width = 15
-        ws.column_dimensions['I'].width = 15
-        ws.column_dimensions['J'].width = 15
-        ws.column_dimensions['K'].width = 15
-        ws.column_dimensions['L'].width = 15
-        ws.column_dimensions['M'].width = 15
-        ws.column_dimensions['N'].width = 15
-        ws.column_dimensions['O'].width = 15
-
-    def _clear_excel_data_area(self, ws) -> None:
-        """Clear data area (rows 6+) while preserving logos in rows 1-5."""
-        for row in range(6, ws.max_row + 1):
-            for col in range(1, ws.max_column + 1):
-                cell = ws.cell(row=row, column=col)
-                cell.value = None
-                cell.style = 'Normal'
-
-    def _get_feed_rows(self) -> list[dict]:
-        """Get feed data rows."""
-        rows = []
-        for idx, feed in self.model.feeds.items():
-            if idx == 0:
-                continue
-            rows.append({
-                "Index": idx,
-                "Name": feed.name,
-                "Type": feed.type,
-                "Pressure (kPag)": feed.pressure_kPag,
-                "Inlet Pressure (kPag)": feed.inlet_pressure_kPag,
-            })
-        return rows
-
-    def _get_product_rows(self) -> list[dict]:
-        """Get product data rows."""
-        rows = []
-        for idx, prod in self.model.products.items():
-            if idx == 0:
-                continue
-            rows.append({
-                "Index": idx,
-                "Name": prod.name,
-                "Type": prod.type,
-                "Pressure (kPag)": prod.pressure_kPag,
-                "Outlet Pressure (kPag)": prod.outlet_pressure_kPag,
-            })
-        return rows
-
-    def _get_pipe_rows(self, include_results: bool) -> list[dict]:
-        """Get pipe data rows."""
-        rows = []
-        for idx, pipe in self.model.pipes.items():
-            if idx == 0:
-                continue
-            row = {
-                "Index": idx,
-                "Name": pipe.name,
-                "Diameter (in)": pipe.diameter_inch,
-                "Schedule": pipe.schedule,
-                "Length (m)": pipe.length_m,
-                "Material": pipe.material,
-            }
-            if include_results:
-                row["dP/100m (kPa)"] = pipe.pressure_drop_per_100m
-                row["Reynolds"] = pipe.reynolds_number
-            rows.append(row)
-        return rows
-
-    def _get_pump_rows(self, include_results: bool) -> list[dict]:
-        """Get pump data rows."""
-        rows = []
-        for idx, pump in self.model.pumps.items():
-            if idx == 0:
-                continue
-            row = {
-                "Index": idx,
-                "Name": pump.name,
-                "Type": pump.pump_type if hasattr(pump, "pump_type") else "Unknown",
-            }
-            if include_results and hasattr(pump, "head_m"):
-                row["Head (m)"] = pump.head_m
-                row["Power (kW)"] = pump.power_kW
-                row["Efficiency"] = pump.efficiency
-            rows.append(row)
-        return rows
-
-    def _get_compressor_rows(self, include_results: bool) -> list[dict]:
-        """Get compressor data rows."""
-        rows = []
-        for idx, comp in self.model.compressors.items():
-            if idx == 0:
-                continue
-            row = {
-                "Index": idx,
-                "Name": comp.name,
-                "Type": comp.comp_type if hasattr(comp, "comp_type") else "Unknown",
-            }
-            if include_results:
-                row["Head (m)"] = comp.head_m
-                row["Power (kW)"] = comp.power_kW
-                row["DP (kPag)"] = comp.dp_kPag
-            rows.append(row)
-        return rows
-
-    def _get_valve_rows_multi_case(self, case_names: list[str], include_results: bool) -> list[dict]:
-        """Get valve data rows with multi-case support."""
-        from pykorf.utils import split_cases
-
-        rows = []
-        num_cases = len(case_names) if case_names else 1
-
-        for idx, valve in self.model.valves.items():
-            if idx == 0:
-                continue
-
-            row = {
-                "Index": idx,
-                "Name": valve.name,
-                "Type": valve.valve_type,
-                "CV": valve.cv,
-            }
-
-            # Add multi-case columns
-            dp_values = split_cases(valve.dp_string)
-            inlet_values = split_cases(str(valve._scalar(valve.PIN, 0, "")))
-            opening_values = split_cases(valve.opening_string)
-
-            if num_cases > 1:
-                # Multi-case format: separate columns for each case
-                for i, case_name in enumerate(case_names):
-                    if i < len(dp_values):
-                        row[f"{case_name} DP (kPag)"] = dp_values[i]
-                    if i < len(inlet_values):
-                        row[f"{case_name} Inlet (kPag)"] = inlet_values[i]
-                    if i < len(opening_values):
-                        row[f"{case_name} Opening (%)"] = opening_values[i]
-            else:
-                # Single case format
-                row["DP (kPag)"] = valve.dp_kPag
-                row["Inlet (kPag)"] = valve.inlet_pressure_kPag
-                row["Outlet (kPag)"] = valve.outlet_pressure_kPag
-                row["Opening (%)"] = valve.opening_string
-
-            rows.append(row)
-        return rows
-
-    def _write_excel_section(self, ws, start_row: int, section_name: str, rows: list[dict]) -> int:
-        """Write a section to the Excel sheet."""
-        from openpyxl.styles import Font, Alignment, Border, Side
-
-        if not rows:
-            return start_row
-
-        # Section header
-        ws.cell(row=start_row, column=1, value=f"=== {section_name} ===")
-        ws.cell(row=start_row, column=1).font = Font(bold=True, size=12)
-        start_row += 1
-
-        # Column headers
-        headers = list(rows[0].keys())
-        for col, header in enumerate(headers, start=1):
-            cell = ws.cell(row=start_row, column=col, value=header)
-            cell.font = Font(bold=True)
-            cell.alignment = Alignment(horizontal='center')
-            cell.border = Border(
-                top=Side(style='thin'),
-                bottom=Side(style='thin'),
-                left=Side(style='thin'),
-                right=Side(style='thin'),
-            )
-
-        start_row += 1
-
-        # Data rows
-        for row_data in rows:
-            for col, (key, value) in enumerate(row_data.items(), start=1):
-                cell = ws.cell(row=start_row, column=col, value=value)
-                cell.border = Border(
-                    top=Side(style='thin'),
-                    bottom=Side(style='thin'),
-                    left=Side(style='thin'),
-                    right=Side(style='thin'),
-                )
-            start_row += 1
-
-        return start_row
-
-    def _auto_fit_excel_columns(self, ws) -> None:
-        """Auto-fit column widths based on content."""
-        for col in ws.columns:
-            max_length = 0
-            column = col[0].column_letter
-            for cell in col:
-                try:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(str(cell.value))
-                except:
-                    pass
-            adjusted_width = min(max_length + 2, 50)
-            ws.column_dimensions[column].width = adjusted_width
 
     def export_to_csv(
         self,

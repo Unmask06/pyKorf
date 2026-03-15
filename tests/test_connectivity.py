@@ -21,7 +21,7 @@ class TestConnectDisconnect:
         m.add_element("PUMP", "P_CON")
         m.connect_elements("L1", "P_CON")
         pump = m["P_CON"]
-        con_rec = pump._get("CON")
+        con_rec = pump.get_param("CON")
         pipe_idx = m["L1"].index
         assert str(con_rec.values[0]) == str(pipe_idx)
 
@@ -30,7 +30,7 @@ class TestConnectDisconnect:
         m.add_element("PUMP", "P_DC")
         m.connect_elements("L1", "P_DC")
         m.disconnect_elements("L1", "P_DC")
-        con_rec = m["P_DC"]._get("CON")
+        con_rec = m["P_DC"].get_param("CON")
         assert str(con_rec.values[0]) == "0"
 
     def test_connect_two_pipes_raises(self):
@@ -56,11 +56,11 @@ class TestConnectDisconnect:
         m.connect_elements("P_HX", "HX_A", pipe_name="L_HX")
 
         pipe_idx = m["L_HX"].index
-        pump_con = m["P_HX"]._get("CON")
+        pump_con = m["P_HX"].get_param("CON")
         assert str(pump_con.values[0]) == str(pipe_idx)
 
         hx = m["HX_A"]
-        nozzles = [hx._get("NOZI"), hx._get("NOZO")]
+        nozzles = [hx.get_param("NOZI"), hx.get_param("NOZO")]
         assert any(rec and str(rec.values[0]) == str(pipe_idx) for rec in nozzles)
 
     def test_disconnect_pipe_from_hx_nozzle(self):
@@ -73,7 +73,7 @@ class TestConnectDisconnect:
         m.disconnect_elements("L_HXD", "HX_D")
 
         hx = m["HX_D"]
-        nozzles = [hx._get("NOZI"), hx._get("NOZO")]
+        nozzles = [hx.get_param("NOZI"), hx.get_param("NOZO")]
         assert all(not rec or not rec.values or str(rec.values[0]) != pipe_idx for rec in nozzles)
         assert any(rec and str(rec.values[0]) == "0" for rec in nozzles)
 
@@ -89,7 +89,7 @@ class TestConnectDisconnect:
         m.add_element("VALVE", "V_M1")
         m.add_element("VALVE", "V_M2")
         m.connect_elements([("P_M1", "V_M1", "L_M1"), ("P_M1", "V_M2", "L_M2")])
-        con_rec = m["P_M1"]._get("CON")
+        con_rec = m["P_M1"].get_param("CON")
         assert str(con_rec.values[0]) == str(m["L_M1"].index)
         assert str(con_rec.values[1]) == str(m["L_M2"].index)
 
@@ -107,7 +107,7 @@ class TestCheckConnectivity:
         # Delete a pipe that's referenced by an equipment CON
         # First check which pipes are connected
         pump = m.pumps[1]
-        con_rec = pump._get("CON")
+        con_rec = pump.get_param("CON")
         if con_rec and con_rec.values:
             try:
                 pipe_idx = int(con_rec.values[0])

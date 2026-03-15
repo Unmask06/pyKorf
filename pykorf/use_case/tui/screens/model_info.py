@@ -2,17 +2,14 @@
 
 from __future__ import annotations
 
-from textual import on
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import Button, DataTable, Footer, Label, RichLog, Static
+from textual.widgets import DataTable, Footer, Label, RichLog, Static
 
 
 class ModelInfoScreen(Screen):
     """Screen displaying model element counts, pipe names, and validation errors."""
-
-    BINDINGS = [("escape", "go_back", "Back")]
 
     CSS_PATH = []
 
@@ -120,9 +117,6 @@ class ModelInfoScreen(Screen):
                         val_log = RichLog(id="validation-list", wrap=True, highlight=True)
                         yield val_log
 
-                    with Horizontal(id="info-buttons"):
-                        yield Button("Back", variant="default", id="btn-back")
-
                 with Vertical(id="right-panel"):
                     with Vertical(classes="info-section"):
                         yield Label("Quick Stats")
@@ -203,15 +197,8 @@ class ModelInfoScreen(Screen):
                 else:
                     prefix = "[INFO]"
 
-                val_log.write(f"{prefix} {issue}")
+                val_log.write(f"• {prefix} {issue}")
         else:
             # No issues - show green
             validation_header.add_class("success")
             validation_header.update("Validation: PASSED (no issues)")
-
-    def action_go_back(self) -> None:
-        self.app.pop_screen()
-
-    @on(Button.Pressed, "#btn-back")
-    def go_back(self) -> None:
-        self.app.pop_screen()

@@ -21,8 +21,6 @@ from pykorf.use_case.tui.logging import (
 class GlobalSettingsScreen(Screen):
     """Screen for applying global settings to the model."""
 
-    BINDINGS = [("escape", "action_go_back", "Back")]
-
     CSS_PATH = []
 
     def __init__(self):
@@ -144,7 +142,6 @@ class GlobalSettingsScreen(Screen):
                 with Horizontal(id="settings-buttons"):
                     yield Button("Select All", variant="default", id="btn-select-all")
                     yield Button("Apply Selected", variant="primary", id="btn-apply")
-                    yield Button("Back", variant="default", id="btn-back")
                 yield RichLog(id="settings-results", wrap=True)
 
             with Vertical(id="right-panel"):
@@ -158,7 +155,7 @@ class GlobalSettingsScreen(Screen):
                 with Vertical(classes="info-section"):
                     yield Label("Common Settings")
                     yield Static("─" * 15)
-                    yield Static("• Handling dummy pipe")
+                    yield Static("• Dummy Pipes & Junctions")
                     yield Static("• Friction drop design margin")
                     yield Static("• Bulk Rename Pipes")
 
@@ -169,13 +166,6 @@ class GlobalSettingsScreen(Screen):
                     yield Static("and apply together for")
                     yield Static("efficient updates.")
         yield Footer()
-
-    def action_go_back(self) -> None:
-        self.app.pop_screen()
-
-    @on(Button.Pressed, "#btn-back")
-    def go_back(self) -> None:
-        self.app.pop_screen()
 
     @on(Button.Pressed, "#btn-select-all")
     def select_all(self) -> None:

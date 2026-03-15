@@ -52,6 +52,7 @@ from pykorf.use_case.global_settings import (
     apply_global_settings,
     get_global_setting,
     get_global_settings,
+    set_pipe_criteria,
 )
 from pykorf.use_case.hmb import (
     FluidProperties,
@@ -107,4 +108,5 @@ __all__ = [
     "lookup_stream",
     "parse_stream_from_notes",
     "run_tui",
+    "set_pipe_criteria",
 ]

@@ -56,33 +56,25 @@ class Feed(BaseElement):
 
     @property
     def type(self) -> str:
-        return str(self._scalar(Feed.TYPE, 0, "Pipe"))
+        return str(self._scalar(Feed.TYPE, 0))
 
     @property
     def elevation_m(self) -> float:
         try:
-            return float(self._scalar(Feed.ELEV, 0, 0.0))
+            return float(self._scalar(Feed.ELEV, 0))
         except (TypeError, ValueError):
             return 0.0
 
     # Pressure
     @property
     def pressure_string(self) -> str:
-        return str(self._scalar(Feed.PRES, 0, ""))
+        return str(self._scalar(Feed.PRES, 0))
 
     @property
     def pressure_kPag(self) -> float:
         """Calculated outlet pressure [kPag]."""
         try:
-            return float(self._scalar(Feed.POUT, 1, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
-
-    @property
-    def inlet_pressure_kPag(self) -> float:
-        """Calculated inlet pressure [kPag]."""
-        try:
-            return float(self._scalar(Feed.POUT, 1, 0.0))
+            return float(self._scalar(Feed.POUT, 1))
         except (TypeError, ValueError):
             return 0.0
 
@@ -105,27 +97,19 @@ class Feed(BaseElement):
         else:
             p_str = str(pressure)
 
-        rec = self._get(Feed.PRES)
+        rec = self.get_param(Feed.PRES)
         if rec:
             new_vals = [p_str, *rec.values[1:]]
-            self._set(Feed.PRES, new_vals)
+            self.set_param(Feed.PRES, new_vals)
 
     @property
     def dp_string(self) -> str:
-        return str(self._scalar(Feed.DP, 0, "0"))
+        return str(self._scalar(Feed.DP, 0))
 
     @property
     def nozzle_pipe_index(self) -> int:
         """Index of the pipe connected at this feed."""
         try:
-            return int(self._scalar(self.NOZ, 0, 0))
+            return int(self._scalar(self.NOZ, 0))
         except (TypeError, ValueError):
             return 0
-
-    def summary(self) -> dict:
-        return {
-            "name": self.name,
-            "type": self.type,
-            "pressure_kPag": self.pressure_kPag,
-            "inlet_pressure_kPag": self.inlet_pressure_kPag,
-        }

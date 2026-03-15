@@ -23,8 +23,6 @@ from pykorf.use_case.tui.logging import (
 class ApplyHmbScreen(Screen):
     """Screen for applying HMB fluid properties to pipes."""
 
-    BINDINGS = [("escape", "go_back", "Back")]
-
     CSS_PATH = []
 
     CSS = """
@@ -90,7 +88,6 @@ class ApplyHmbScreen(Screen):
                 yield RichLog(id="hmb-results", wrap=True)
                 with Horizontal(id="hmb-buttons"):
                     yield Button("Apply", variant="primary", id="btn-apply")
-                    yield Button("Back", variant="default", id="btn-back")
 
             with Vertical(id="right-panel"):
                 with Vertical(classes="info-section"):
@@ -112,13 +109,6 @@ class ApplyHmbScreen(Screen):
                     yield Static("  - Viscosity")
                     yield Static("  - Temperature")
         yield Footer()
-
-    def action_go_back(self) -> None:
-        self.app.pop_screen()
-
-    @on(Button.Pressed, "#btn-back")
-    def go_back(self) -> None:
-        self.app.pop_screen()
 
     @on(Button.Pressed, "#btn-apply")
     def apply(self) -> None:

@@ -187,8 +187,8 @@ try:
     if m.feeds:
         feed = list(m.feeds.values())[0]
         if feed.index >= 1:
-            noz_rec = feed._get("NOZ")
-            nozl_rec = feed._get("NOZL")
+            noz_rec = feed.get_param("NOZ")
+            nozl_rec = feed.get_param("NOZL")
             print(f"   FEED has NOZ: {noz_rec is not None}")
             print(f"   FEED has NOZL: {nozl_rec is not None}")
 
@@ -219,8 +219,8 @@ try:
     if m.feeds:
         feed = list(m.feeds.values())[0]
         if feed.index >= 1:
-            noz_rec = feed._get("NOZ")
-            nozl_rec = feed._get("NOZL")
+            noz_rec = feed.get_param("NOZ")
+            nozl_rec = feed.get_param("NOZL")
             print(f"    FEED has NOZ: {noz_rec is not None}")
             print(f"    FEED has NOZL: {nozl_rec is not None}")
 

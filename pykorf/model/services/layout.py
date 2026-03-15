@@ -21,9 +21,8 @@ from typing import TYPE_CHECKING, Any, cast
 
 from pykorf.exceptions import LayoutError
 
-from pykorf.elements.base import BaseElement
-
 if TYPE_CHECKING:
+    from pykorf.elements.base import BaseElement
     from pykorf.model import Model
 
 X_MIN = 1000.0
@@ -62,7 +61,7 @@ class LayoutService:
 
     def get_position(self, elem: BaseElement) -> tuple[float, float] | None:
         """Extract the primary (x, y) position from an element's XY record."""
-        rec = elem._get("XY")
+        rec = elem.get_param("XY")
         if rec is None or len(rec.values) < 2:
             return None
         try:
@@ -72,7 +71,7 @@ class LayoutService:
 
     def __set_position_on_element(self, elem: BaseElement, x: float, y: float) -> None:
         """Set the primary (x, y) position on a concrete element object."""
-        rec = elem._get("XY")
+        rec = elem.get_param("XY")
         if rec is None:
             return
         vals = list(rec.values)
@@ -102,7 +101,8 @@ class LayoutService:
                 raise ValueError("Use set_position(model, element_name, x, y)")
             from pykorf.model import Model as KorfModel
 
-            elem = target.get_element(name_or_x)
+            if isinstance(target, KorfModel):
+                elem = target.get_element(name_or_x)
             self.__set_position_on_element(elem, float(x_or_y), float(y))
             return
 
@@ -269,7 +269,7 @@ class LayoutService:
             for idx, elem in collection.items():
                 if idx == 0:
                     continue
-                rec = elem._get("CON")
+                rec = elem.get_param("CON")
                 if rec and len(rec.values) >= 2:
                     try:
                         in_idx, out_idx = int(rec.values[0]), int(rec.values[1])
@@ -286,7 +286,7 @@ class LayoutService:
                 if idx == 0:
                     continue
                 for noz_param in ("NOZL", "NOZ"):
-                    rec = elem._get(noz_param)
+                    rec = elem.get_param(noz_param)
                     if rec and rec.values:
                         try:
                             pipe_ref = int(rec.values[0])
