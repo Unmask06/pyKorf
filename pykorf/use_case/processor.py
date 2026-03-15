@@ -33,7 +33,7 @@ from pykorf.use_case.line_number import (
     ValidationResult,
     parse_stream_from_notes,
 )
-from pykorf.use_case.pms import apply_pms, load_pms
+from pykorf.use_case.pms import apply_pms
 from pykorf.use_case.settings import SettingsReader, UseCaseSettings
 
 logger = logging.getLogger(__name__)
@@ -112,9 +112,16 @@ class PipedataProcessor:
         Args:
             source: Path to PMS Excel or JSON file
         """
+        from pykorf.use_case.pms import load_all_pms
+
         self._pms_source = source
-        material, pms_data, od_data = load_pms(source)
-        self._pms_data = (material, pms_data, od_data)
+        self._all_materials = load_all_pms(source)
+        # Keep _pms_data for backward compatibility if it was accessed externally, though all_materials is the source of truth
+        if self._all_materials:
+            first_mat = list(self._all_materials.keys())[0]
+            self._pms_data = self._all_materials[first_mat]
+        else:
+            self._pms_data = None
 
     def load_hmb(self, source: Path | str) -> None:
         """Load HMB data.
@@ -184,29 +191,26 @@ class PipedataProcessor:
             logger.warning(f"  Pipe {pipe_name}: No stream number found in NOTES")
 
         # Apply PMS data if loaded
-        if self._pms_data is not None:
-            from pykorf.use_case.pms import lookup_schedule
+        if hasattr(self, "_all_materials") and self._all_materials:
+            from pykorf.use_case.pms import get_pms_data, lookup_pms_across_materials
 
-            material, pms_data, od_data = self._pms_data
             pms_code = line_number.pms_code
             nps = line_number.nominal_pipe_size
 
             logger.info(f"  Looking up PMS: class={pms_code}, NPS={nps}")
             try:
-                spec = lookup_schedule(pms_data, pms_code, float(nps))
-                if "schedule" in spec:
-                    result.pms_schedule = spec["schedule"]
-                elif "wall_mm" in spec:
-                    # Calculate ID from OD and wall thickness
-                    wall_mm = spec["wall_mm"]
-                    nps_float = float(nps)
-                    od_mm = od_data.get(nps_float)
-                    if od_mm is not None:
-                        id_mm = od_mm - 2 * wall_mm
-                        id_inch = id_mm / 25.4
-                        result.pms_schedule = f"ID={id_inch:.3f}"
-                    else:
-                        result.pms_schedule = f"wall={wall_mm}mm"
+                material, spec, od_mm = lookup_pms_across_materials(
+                    self._all_materials, pms_code, float(nps)
+                )
+
+                pms_value = spec.get("value") or spec.get("schedule", "")
+                _, id_or_sch, value, _ = get_pms_data(od_mm, pms_value, material)
+
+                if id_or_sch == "ID":
+                    result.pms_schedule = f"ID={value}mm"
+                else:
+                    result.pms_schedule = str(value)
+
                 result.pms_material = material
                 logger.info(f"  PMS lookup successful: SCH={result.pms_schedule}, MAT={material}")
             except PmsLookupError as e:

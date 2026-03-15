@@ -40,6 +40,7 @@ from pykorf.use_case.exceptions import (
     PmsLookupError,
 )
 from pykorf.use_case.line_number import LineNumber, format_nps
+from pykorf.use_case.paths import ensure_data_dir
 
 if TYPE_CHECKING:
     from pykorf.model import Model
@@ -59,6 +60,78 @@ OdData = dict[float, float]
 # Type alias for PMS lookup result: (OD_mm, "ID" or "SCH", value, material)
 # Value is float for ID (inches), str for SCH (schedule number/name)
 PmsLookupResult = tuple[float, str, float | str, str]
+
+
+def get_pms_path(filename: str = "pms.json") -> Path:
+    """Get the path to a PMS JSON file.
+
+    Args:
+        filename: Name of the PMS file (default: pms.json)
+
+    Returns:
+        Path to the PMS file in the data directory.
+    """
+    safe_filename = Path(filename).name
+    return ensure_data_dir() / safe_filename
+
+
+def load_pms_data(filename: str = "pms.json") -> dict[str, Any]:
+    """Load PMS data from a JSON file.
+
+    Args:
+        filename: Name of the PMS file to load.
+
+    Returns:
+        Dictionary containing PMS data.
+
+    Raises:
+        FileNotFoundError: If the file doesn't exist.
+        json.JSONDecodeError: If the file contains invalid JSON.
+    """
+    pms_path = get_pms_path(filename)
+    with open(pms_path, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def save_pms_data(data: dict[str, Any], filename: str = "pms.json") -> None:
+    """Save PMS data to a JSON file.
+
+    Args:
+        data: Dictionary containing PMS data.
+        filename: Name of the PMS file to save.
+    """
+    pms_path = get_pms_path(filename)
+    with open(pms_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+
+
+def import_pms_from_excel(
+    excel_path: str | Path,
+    output_filename: str = "pms.json",
+) -> Path:
+    """Import PMS data from an Excel file and save as JSON.
+
+    Reads all sheets from the Excel file, using each sheet name as the material.
+
+    Args:
+        excel_path: Path to the Excel file containing PMS data.
+        output_filename: Name for the output JSON file.
+
+    Returns:
+        Path to the created JSON file.
+
+    Raises:
+        FileNotFoundError: If the Excel file doesn't exist.
+        ImportError: If required Excel libraries are not installed.
+    """
+    excel_path = Path(excel_path)
+    if not excel_path.exists():
+        raise FileNotFoundError(f"Excel file not found: {excel_path}")
+
+    output_path = get_pms_path(output_filename)
+    convert_pms_excel(excel_path, output_path)
+
+    return output_path
 
 
 def convert_pms_excel(
@@ -448,7 +521,7 @@ def apply_pms(
             material, spec, od_mm = lookup_pms_across_materials(all_materials, pms_code, float(nps))
 
             # Get the raw PMS value from the spec
-            pms_value = spec.get("value", "")
+            pms_value = spec.get("value") or spec.get("schedule", "")
 
             # Use get_pms_data to process the value
             _, id_or_sch, value, _ = get_pms_data(od_mm, pms_value, material)

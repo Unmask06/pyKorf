@@ -60,61 +60,101 @@ class SummaryService:
         Returns a list of validation issues (empty = valid model).
 
         Args:
-            check_connectivity: Whether to check connectivity consistency.
-            check_layout: Whether to check for layout issues.
+            check_connectivity: Whether to check connectivity consistency (deprecated, ignored).
+            check_layout: Whether to check for layout issues (deprecated, ignored).
 
         Returns:
             List of validation issue descriptions.
         """
-        return self._validate(check_connectivity=check_connectivity, check_layout=check_layout)
+        return self._validate()
 
-    def _validate(self, *, check_connectivity: bool = True, check_layout: bool = True) -> list[str]:
-        """Internal validation implementation."""
+    def _validate(self) -> list[str]:
+        """Internal validation implementation focusing on pipes and PMS."""
         issues: list[str] = []
 
-        # 1. Version header
-        version = self.model.version
-        if not version.startswith("KORF"):
-            issues.append(f"Invalid or missing version header: {version!r}")
+        # We need config to check PMS
+        import json
 
-        # 2. GEN section must exist
-        gen_rec = self.model._parser.get("GEN", 0, "VERNO")
-        if gen_rec is None:
-            gen_recs = self.model._parser.get_all("GEN", 0)
-            if not gen_recs:
-                issues.append("No GEN section found in model")
+        from pykorf.use_case.config import get_pms_path
 
-        # 3. NUM records match actual counts
-        self._check_num_counts(issues)
+        valid_pms_keys = set()
+        pms_path = get_pms_path()
+        if pms_path and pms_path.exists():
+            try:
+                with open(pms_path, encoding="utf-8") as f:
+                    pms_data = json.load(f)
+                    # Handle nested format: {material: {"specifications": {pms_code: ...}}}
+                    for material_data in pms_data.values():
+                        if isinstance(material_data, dict) and "specifications" in material_data:
+                            specs = material_data["specifications"]
+                            if isinstance(specs, dict):
+                                valid_pms_keys.update(specs.keys())
+                        elif isinstance(material_data, dict):
+                            # Fallback for older formats or direct specs
+                            valid_pms_keys.update(material_data.keys())
 
-        # 4. Required params for each element type (at template index 0)
-        self._check_required_params(issues)
+                    # Also include top-level keys just in case it's a legacy flat format
+                    valid_pms_keys.update(pms_data.keys())
+            except Exception:
+                issues.append("Failed to load PMS config file.")
 
-        # 5. Element instances have NAME records
-        self._check_instance_names(issues)
+        from pykorf.use_case.line_number import LineNumber
 
-        # 6. Check for valid NOTES line number format
-        self._check_notes_format(issues)
+        for pipe_idx, pipe in self.model.pipes.items():
+            if pipe_idx == 0:
+                continue
 
-        # 7. Check for empty or invalid parameter values
-        self._check_empty_values(issues)
+            name = pipe.name
+            if not name:
+                issues.append(f"Pipe {pipe_idx} is missing a name.")
+                continue
 
-        # 8. Check pipe line numbers in NOTES
-        self._check_pipe_line_numbers(issues)
+            # Skip dummy pipes
+            if name.startswith("d"):
+                continue
 
-        # 9. Check pipe references in connectivity fields
-        self._check_pipe_references(issues)
+            # 1. Line Number in NOTES Parsing
+            notes_rec = pipe.get_param("NOTES")
+            notes_val = notes_rec.values[0] if notes_rec and notes_rec.values else ""
 
-        # 9. Check connectivity consistency
-        if check_connectivity:
-            issues.extend(self.model.check_connectivity())
+            if not notes_val:
+                issues.append(f"Pipe '{name}' is missing a line number in NOTES.")
+                continue
 
-        # 10. Check layout issues
-        if check_layout:
-            issues.extend(self.model.check_layout())
+            line_data = LineNumber.parse(notes_val)
+            if line_data:
+                # 2. PMS Verification
+                pms_val = line_data.pms_code
+                if valid_pms_keys and pms_val not in valid_pms_keys:
+                    issues.append(
+                        f"Pipe '{name}': PMS '{pms_val}' (from NOTES) not found in pms.json."
+                    )
+            else:
+                issues.append(
+                    f"Pipe '{name}': NOTES value '{notes_val}' is not a valid line number."
+                )
 
-        # 11. Check pipe criteria (DPL and VEL against SIZ)
-        issues.extend(self._validate_pipe_criteria())
+            # 3. Sizing Criteria Check
+            if hasattr(pipe, "check_criteria"):
+                status = pipe.check_criteria()
+                if status == "FAIL":
+                    dp_crit = pipe.sizing_dp_criteria
+                    vel_crit = pipe.sizing_velocity_criteria
+                    dp_calc = pipe.pressure_drop_per_100m
+                    vel_calc = pipe.velocity[0] if pipe.velocity else 0.0
+
+                    failures = []
+                    if dp_calc > dp_crit:
+                        failures.append(f"DP/DL({dp_calc:.2f} > {dp_crit})")
+                    if vel_calc > vel_crit:
+                        failures.append(f"Vel({vel_calc:.2f} > {vel_crit})")
+
+                    if failures:
+                        msg = " and ".join(failures)
+                        issues.append(f"Pipe '{name}' fails sizing criteria: {msg}.")
+                    else:
+                        # Fallback if status is FAIL but thresholds aren't crossed (rounding/edge cases)
+                        issues.append(f"Pipe '{name}' fails sizing criteria.")
 
         return issues
 

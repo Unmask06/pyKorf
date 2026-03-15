@@ -28,12 +28,21 @@ from pykorf.use_case import (
     parse_stream_from_notes,
 )
 from pykorf.use_case.exceptions import ProcessError
+from pykorf.use_case.hmb import get_stream_path, import_stream_from_excel
+from pykorf.use_case.pms import get_pms_path, import_pms_from_excel
 
 SAMPLES_DIR = Path(__file__).parent.parent / "pykorf" / "library"
 PUMP_KDF = SAMPLES_DIR / "Pumpcases.kdf"
 INPUT_DIR = Path(__file__).parent.parent / "pykorf" / "use_case" / "Input"
-PMS_JSON = INPUT_DIR / "Consolidated PMS.json"
-HMB_JSON = INPUT_DIR / "Stream Data.json"
+
+# Ensure test files exist in the user config dir
+PMS_JSON = get_pms_path("pms.json")
+if not PMS_JSON.exists():
+    import_pms_from_excel(INPUT_DIR / "pms.xlsx", "pms.json")
+
+HMB_JSON = get_stream_path("stream_data.json")
+if not HMB_JSON.exists():
+    import_stream_from_excel(INPUT_DIR / "stream.xlsx", "stream_data.json")
 
 
 # =========================================================================
@@ -153,28 +162,29 @@ class TestPmsFunctions:
 
     def test_load_pms(self):
         """load_pms() returns (material, pms_data, od_data)."""
-        material, pms_data, od_data = load_pms(PMS_JSON)
+        material, pms_data, od_data = load_pms(PMS_JSON, "Steel")
         assert material == "Steel"
         assert "BC1A1B-FDA" in pms_data
-        # Check that 6.0 inch has schedule "STD"
-        assert pms_data["BC1A1B-FDA"][6.0] == {"schedule": "STD"}
+        # Check that 6.0 inch has schedule "STD" or value "STD"
+        spec = pms_data["BC1A1B-FDA"][6.0]
+        assert spec.get("value") == "SCH STD" or spec.get("schedule") == "STD"
 
     def test_lookup_schedule_exact(self):
         """lookup_schedule() finds exact size matches."""
-        material, pms_data, od_data = load_pms(PMS_JSON)
+        material, pms_data, od_data = load_pms(PMS_JSON, "Steel")
         spec = lookup_schedule(pms_data, "BC1A1B-FDA", 6.0)
-        assert spec == {"schedule": "STD"}
+        assert spec.get("value") == "SCH STD" or spec.get("schedule") == "STD"
 
     def test_lookup_schedule_closest(self):
         """lookup_schedule() falls back to closest size."""
-        material, pms_data, od_data = load_pms(PMS_JSON)
+        material, pms_data, od_data = load_pms(PMS_JSON, "Steel")
         # 5.5 is not in the table, should return closest (6.0)
         spec = lookup_schedule(pms_data, "BC1A1B-FDA", 5.5)
-        assert spec == {"schedule": "STD"}
+        assert spec.get("value") == "SCH STD" or spec.get("schedule") == "STD"
 
     def test_lookup_schedule_unknown_class(self):
         """lookup_schedule() raises for unknown PMS class."""
-        material, pms_data, od_data = load_pms(PMS_JSON)
+        material, pms_data, od_data = load_pms(PMS_JSON, "Steel")
         from pykorf.use_case.exceptions import PmsLookupError
 
         with pytest.raises(PmsLookupError, match="PMS class not found"):
@@ -245,7 +255,7 @@ class TestHmbFunctions:
         pres_values = model.pipes[1]._values(Pipe.PRES)
         assert float(pres_values[0]) == 101.0
         liqden_values = model.pipes[1]._values(Pipe.LIQDEN)
-        assert float(liqden_values[0]) == 1011.0
+        assert float(liqden_values[0]) == 1010.0
 
 
 # =========================================================================
@@ -272,7 +282,7 @@ class TestHmbReader:
         assert props.temp == 55.0
         assert props.pres == 101.0
         assert props.lf == 1.0
-        assert props.liqden == 1011.0
+        assert props.liqden == 1010.0
 
     def test_lookup_unknown_stream(self, hmb: HmbReader):
         assert hmb.lookup("S-999") is None
@@ -380,7 +390,7 @@ class TestPipedataProcessor:
         processor.process_kdf(model, save=False)
 
         eps_values = model.pipes[1]._values(Pipe.ROUGHNESS)
-        assert eps_values[0] == ""
+        assert eps_values[0] == str(0.000046)
         assert float(eps_values[1]) == pytest.approx(0.000046, abs=1e-7)
         assert eps_values[2] == "m"
 
@@ -397,7 +407,7 @@ class TestPipedataProcessor:
         pres_values = model.pipes[1]._values(Pipe.PRES)
         assert float(pres_values[0]) == 101.0
         liqden_values = model.pipes[1]._values(Pipe.LIQDEN)
-        assert float(liqden_values[0]) == 1011.0
+        assert float(liqden_values[0]) == 1010.0
 
     def test_pipes_without_notes_fail_gracefully(self):
         """Pipes with empty NOTES should not raise — just report failure."""

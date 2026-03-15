@@ -1,11 +1,13 @@
-import pytest
-from pykorf.use_case.config import get_pms_path, get_stream_path
-from pykorf.utils import parse_line, MAX_LINE_LENGTH, MAX_FIELD_COUNT
-from pykorf.use_case.line_number import LineNumber, MAX_LINE_NUMBER_LENGTH
-from pykorf.model import Model
-from pykorf.exceptions import ExportError
 from unittest.mock import MagicMock, patch
+
+import pytest
+
+from pykorf.exceptions import ExportError
+from pykorf.model import Model
+from pykorf.use_case.config import get_pms_path, get_stream_path
+from pykorf.use_case.line_number import MAX_LINE_NUMBER_LENGTH, LineNumber
 from pykorf.use_case.tui.screens.file_picker import FilePickerScreen
+from pykorf.utils import MAX_FIELD_COUNT, MAX_LINE_LENGTH, parse_line
 
 
 def test_path_traversal_sanitization():
@@ -120,7 +122,7 @@ def test_file_picker_kdf_validation(tmp_path):
         # Case 1: Non-kdf file
         invalid_file = tmp_path / "test.txt"
         invalid_file.write_text("not a kdf")
-        mock_input.value = str(invalid_file)
+        mock_input.text = str(invalid_file)
 
         screen._try_load()
 

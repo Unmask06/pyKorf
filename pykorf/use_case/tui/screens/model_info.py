@@ -197,7 +197,7 @@ class ModelInfoScreen(Screen):
                 else:
                     prefix = "[INFO]"
 
-                val_log.write(f"{prefix} {issue}")
+                val_log.write(f"• {prefix} {issue}")
         else:
             # No issues - show green
             validation_header.add_class("success")

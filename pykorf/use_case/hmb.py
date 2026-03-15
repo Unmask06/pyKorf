@@ -248,6 +248,80 @@ class HmbReader:
 # ------------------------------------------------------------------
 
 
+def get_stream_path(filename: str = "stream_data.json") -> Path:
+    """Get the path to a stream data JSON file.
+
+    Args:
+        filename: Name of the stream data file (default: stream_data.json)
+
+    Returns:
+        Path to the stream data file in the data directory.
+    """
+    from pykorf.use_case.paths import ensure_data_dir
+
+    safe_filename = Path(filename).name
+    return ensure_data_dir() / safe_filename
+
+
+def load_stream_data(filename: str = "stream_data.json") -> dict[str, Any]:
+    """Load stream data from a JSON file.
+
+    Args:
+        filename: Name of the stream data file to load.
+
+    Returns:
+        Dictionary containing stream data.
+
+    Raises:
+        FileNotFoundError: If the file doesn't exist.
+        json.JSONDecodeError: If the file contains invalid JSON.
+    """
+    stream_path = get_stream_path(filename)
+    with open(stream_path, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def save_stream_data(data: dict[str, Any], filename: str = "stream_data.json") -> None:
+    """Save stream data to a JSON file.
+
+    Args:
+        data: Dictionary containing stream data.
+        filename: Name of the stream data file to save.
+    """
+    stream_path = get_stream_path(filename)
+    with open(stream_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+
+
+def import_stream_from_excel(
+    excel_path: str | Path,
+    output_filename: str = "stream_data.json",
+) -> Path:
+    """Import stream data from an Excel file and save as JSON.
+
+    Uses the same logic as convert_hmb_excel() but saves to the data directory.
+
+    Args:
+        excel_path: Path to the Excel file containing stream data.
+        output_filename: Name for the output JSON file.
+
+    Returns:
+        Path to the created JSON file.
+
+    Raises:
+        FileNotFoundError: If the Excel file doesn't exist.
+        ImportError: If required Excel libraries are not installed.
+    """
+    excel_path = Path(excel_path)
+    if not excel_path.exists():
+        raise FileNotFoundError(f"Excel file not found: {excel_path}")
+
+    output_path = get_stream_path(output_filename)
+    convert_hmb_excel(excel_path, output_path)
+
+    return output_path
+
+
 def convert_hmb_excel(
     excel_path: Path | str,
     json_path: Path | str | None = None,

@@ -68,6 +68,7 @@ class MainMenuScreen(Screen):
         width: 30%;
         height: 100%;
         padding: 0 1;
+        overflow-y: auto;
     }
     #menu-buttons {
         width: 100%;
@@ -133,6 +134,11 @@ class MainMenuScreen(Screen):
         color: $text-muted;
         text-style: dim;
     }
+    #validation-success {
+        color: $success;
+        text-style: bold;
+        margin-top: 1;
+    }
     """
 
     def compose(self) -> ComposeResult:
@@ -148,6 +154,7 @@ class MainMenuScreen(Screen):
         product_count = 0
         pump_count = 0
         modified_indicator = ""
+        validation_issues = []
         if model is not None:
             from pathlib import Path
 
@@ -160,6 +167,8 @@ class MainMenuScreen(Screen):
             pump_count = len(real_elements(model.pumps))
             if model.is_file_modified():
                 modified_indicator = "⚠ File modified externally"
+
+            validation_issues = model.validate()
 
         with Vertical(id="menu-container"):
             yield Label(f"pyKorf Use Case Tool V{__version__}", id="file-label")
@@ -181,7 +190,7 @@ class MainMenuScreen(Screen):
                             yield Label("Apply heat and mass balance")
                         with Horizontal(classes="menu-item"):
                             yield Button("Model Info", variant="primary", id="btn-model-info")
-                            yield Label("View model statistics and validation")
+                            yield Label("View model statistics")
                         with Horizontal(classes="menu-item"):
                             yield Button(
                                 "Global Settings", variant="primary", id="btn-global-settings"
@@ -191,13 +200,28 @@ class MainMenuScreen(Screen):
                             yield Button("Config", variant="default", id="btn-config")
                             yield Label("Element configuration")
                         with Horizontal(classes="menu-item"):
-                            yield Button("Generate Report", variant="success", id="btn-generate-report")
+                            yield Button(
+                                "Generate Report", variant="success", id="btn-generate-report"
+                            )
                             yield Label("Export results to Excel summary")
                     with Horizontal(id="menu-footer"):
                         yield Button("Load File", variant="warning", id="btn-load-file")
                         yield Button("Quit", variant="error", id="btn-quit")
 
                 with Vertical(id="right-panel"):
+                    with Vertical(classes="side-panel-section"):
+                        yield Label("Validation")
+                        yield Static("─" * 20)
+                        if validation_issues:
+                            yield Label(
+                                f"⚠ {len(validation_issues)} Issues Found",
+                                id="validation-title",
+                                classes="text-error",
+                            )
+                            yield Static("See Model Info for details")
+                        else:
+                            yield Label("✓ Model is valid", id="validation-success")
+
                     with Vertical(classes="side-panel-section"):
                         yield Label("Model Statistics")
                         yield Static("─" * 20)
