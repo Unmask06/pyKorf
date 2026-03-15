@@ -152,3 +152,14 @@ class Valve(BaseElement):
             return (int(vals[0]), int(vals[1]))
         except (IndexError, TypeError, ValueError):
             return (0, 0)
+
+    def summary(self) -> dict:
+        return {
+            "name": self.name,
+            "type": self.valve_type,
+            "cv": self.cv,
+            "dp_kPag": self.dp_kPag,
+            "inlet_pressure_kPag": self.inlet_pressure_kPag,
+            "outlet_pressure_kPag": self.outlet_pressure_kPag,
+            "opening": self.opening_string,
+        }

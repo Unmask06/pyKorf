@@ -265,3 +265,133 @@ class TestModelPreservation:
         del orig["file"]
         del recon["file"]
         assert recon == orig
+
+
+# ---- export_to_excel with template ----------------------------------------
+
+
+class TestExportToExcel:
+    """Tests for the new export_to_excel with single-sheet format."""
+
+    def test_export_to_excel_creates_file(self):
+        """Test that export_to_excel creates an Excel file."""
+        import tempfile
+        
+        from openpyxl import load_workbook
+        
+        model = Model(PUMP_KDF)
+        
+        with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
+            xlsx_path = tmp.name
+        
+        try:
+            model.io.export_to_excel(xlsx_path)
+            assert Path(xlsx_path).exists()
+            
+            # Verify it can be opened
+            wb = load_workbook(xlsx_path)
+            assert "Summary" in wb.sheetnames
+        finally:
+            Path(xlsx_path).unlink(missing_ok=True)
+
+    def test_export_to_excel_with_template(self):
+        """Test that export_to_excel works with a template."""
+        import tempfile
+        
+        from openpyxl import load_workbook
+        
+        model = Model(PUMP_KDF)
+        template_path = Path(__file__).parent.parent / "pykorf" / "templates" / "report_template.xlsx"
+        
+        with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
+            xlsx_path = tmp.name
+        
+        try:
+            if template_path.exists():
+                model.io.export_to_excel(xlsx_path, template_path=template_path)
+            else:
+                model.io.export_to_excel(xlsx_path)
+            
+            assert Path(xlsx_path).exists()
+            
+            # Verify it can be opened
+            wb = load_workbook(xlsx_path)
+            assert "Summary" in wb.sheetnames
+        finally:
+            Path(xlsx_path).unlink(missing_ok=True)
+
+    def test_export_to_excel_single_sheet(self):
+        """Test that export_to_excel creates a single Summary sheet."""
+        import tempfile
+        
+        model = Model(PUMP_KDF)
+        
+        with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
+            xlsx_path = tmp.name
+        
+        try:
+            model.io.export_to_excel(xlsx_path)
+            
+            import pandas as pd
+            xls = pd.ExcelFile(xlsx_path, engine="openpyxl")
+            # Should only have Summary sheet
+            assert xls.sheet_names == ["Summary"]
+        finally:
+            Path(xlsx_path).unlink(missing_ok=True)
+
+    def test_export_to_excel_contains_sections(self):
+        """Test that the Summary sheet contains all element sections."""
+        import tempfile
+        
+        from openpyxl import load_workbook
+        
+        model = Model(PUMP_KDF)
+        
+        with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
+            xlsx_path = tmp.name
+        
+        try:
+            model.io.export_to_excel(xlsx_path)
+            
+            wb = load_workbook(xlsx_path)
+            ws = wb["Summary"]
+            
+            # Find section headers in column A
+            section_names = []
+            for row in range(1, ws.max_row + 1):
+                cell_value = ws.cell(row=row, column=1).value
+                if cell_value and "===" in str(cell_value):
+                    section_names.append(cell_value)
+            
+            # Check for expected sections
+            assert any("FEEDS" in s for s in section_names), "FEEDS section not found"
+            assert any("PRODUCTS" in s for s in section_names), "PRODUCTS section not found"
+            assert any("PIPES" in s for s in section_names), "PIPES section not found"
+            assert any("PUMPS" in s for s in section_names), "PUMPS section not found"
+            assert any("CONTROL VALVES" in s for s in section_names), "CONTROL VALVES section not found"
+        finally:
+            Path(xlsx_path).unlink(missing_ok=True)
+
+    def test_export_to_excel_case_name(self):
+        """Test that case name is read from KDF file."""
+        import tempfile
+        
+        from openpyxl import load_workbook
+        
+        model = Model(PUMP_KDF)
+        
+        with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
+            xlsx_path = tmp.name
+        
+        try:
+            model.io.export_to_excel(xlsx_path)
+            
+            wb = load_workbook(xlsx_path)
+            ws = wb["Summary"]
+            
+            # Find case name in row 6
+            case_name_cell = ws.cell(row=6, column=1).value
+            assert case_name_cell is not None
+            assert "Case Name:" in str(case_name_cell)
+        finally:
+            Path(xlsx_path).unlink(missing_ok=True)

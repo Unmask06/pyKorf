@@ -78,6 +78,14 @@ class Feed(BaseElement):
         except (TypeError, ValueError):
             return 0.0
 
+    @property
+    def inlet_pressure_kPag(self) -> float:
+        """Calculated inlet pressure [kPag]."""
+        try:
+            return float(self._scalar(Feed.POUT, 1, 0.0))
+        except (TypeError, ValueError):
+            return 0.0
+
     def get_pressure(self) -> list[str]:
         return split_cases(self.pressure_string)
 
@@ -113,3 +121,11 @@ class Feed(BaseElement):
             return int(self._scalar(self.NOZ, 0, 0))
         except (TypeError, ValueError):
             return 0
+
+    def summary(self) -> dict:
+        return {
+            "name": self.name,
+            "type": self.type,
+            "pressure_kPag": self.pressure_kPag,
+            "inlet_pressure_kPag": self.inlet_pressure_kPag,
+        }

@@ -100,3 +100,16 @@ class Product(BaseElement):
             return int(self._scalar(self.NOZ, 0, 0))
         except (TypeError, ValueError):
             return 0
+
+    @property
+    def outlet_pressure_kPag(self) -> float:
+        """Calculated outlet pressure [kPag]."""
+        return self.pressure_kPag
+
+    def summary(self) -> dict:
+        return {
+            "name": self.name,
+            "type": self.type,
+            "pressure_kPag": self.pressure_kPag,
+            "outlet_pressure_kPag": self.outlet_pressure_kPag,
+        }

@@ -113,3 +113,13 @@ class Compressor(BaseElement):
             return (int(vals[0]), int(vals[1]))
         except (IndexError, TypeError, ValueError):
             return (0, 0)
+
+    def summary(self) -> dict:
+        return {
+            "name": self.name,
+            "type": self.comp_type,
+            "head_m": self.head_m,
+            "power_kW": self.power_kW,
+            "dp_kPag": self.dp_kPag,
+            "efficiency": self.efficiency,
+        }
