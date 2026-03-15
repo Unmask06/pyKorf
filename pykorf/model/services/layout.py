@@ -21,8 +21,9 @@ from typing import TYPE_CHECKING, Any, cast
 
 from pykorf.exceptions import LayoutError
 
+from pykorf.elements.base import BaseElement
+
 if TYPE_CHECKING:
-    from pykorf.elements.base import BaseElement
     from pykorf.model import Model
 
 X_MIN = 1000.0
@@ -101,8 +102,7 @@ class LayoutService:
                 raise ValueError("Use set_position(model, element_name, x, y)")
             from pykorf.model import Model as KorfModel
 
-            if isinstance(target, KorfModel):
-                elem = target.get_element(name_or_x)
+            elem = target.get_element(name_or_x)
             self.__set_position_on_element(elem, float(x_or_y), float(y))
             return
 
