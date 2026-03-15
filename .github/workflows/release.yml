@@ -1,0 +1,75 @@
+name: Release Windows Build
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Necessary to check existing tags
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Get Version
+        id: get_version
+        shell: pwsh
+        run: |
+          $VERSION = uv run python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])"
+          echo "VERSION=$VERSION" >> $env:GITHUB_OUTPUT
+          echo "Target version: $VERSION"
+
+      - name: Check if Tag Exists
+        id: check_tag
+        shell: pwsh
+        run: |
+          $TAG = "v${{ steps.get_version.outputs.VERSION }}"
+          if (git tag -l $TAG) {
+            echo "EXISTS=true" >> $env:GITHUB_OUTPUT
+            echo "::warning ::Tag $TAG already exists. Skipping build and release steps to avoid failure."
+          } else {
+            echo "EXISTS=false" >> $env:GITHUB_OUTPUT
+          }
+
+      - name: Install Dependencies
+        if: steps.check_tag.outputs.EXISTS == 'false'
+        run: uv sync
+
+      - name: Build Distribution
+        if: steps.check_tag.outputs.EXISTS == 'false'
+        run: .\distribute.bat
+
+      - name: Create Release
+        if: steps.check_tag.outputs.EXISTS == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.get_version.outputs.VERSION }}
+          name: pyKorf v${{ steps.get_version.outputs.VERSION }}
+          body: |
+            ## pyKorf Windows Distribution
+            
+            This is an automated release of the pyKorf Windows build.
+            
+            ### Installation
+            1. Download the `pykorf-${{ steps.get_version.outputs.VERSION }}-trial.zip` asset below.
+            2. Extract all files to a folder.
+            3. Run `pykorf.bat` to launch the application.
+          draft: false
+          prerelease: false
+          files: dist/pykorf-${{ steps.get_version.outputs.VERSION }}-trial.zip
+          generate_release_notes: true
