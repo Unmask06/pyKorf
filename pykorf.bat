@@ -9,39 +9,6 @@ set "SCRIPT_DIR=%~dp0"
 set "APPDATA_DIR=%APPDATA%\pyKorf"
 
 REM ============================================
-REM PowerShell Spinner Function
-REM ============================================
-:show_spinner
-setlocal
-set "message=%~1"
-set "pid=%~2"
-set "chars=⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
-set "i=0"
-
-:spinner_loop
-tasklist /FI "PID eq %pid%" 2>nul | find "%pid%" >nul 2>&1
-if errorlevel 1 (
-    echo/
-    exit /b 0
-)
-
-set /a "idx=!i! %% 10"
-set "char="
-for /f "tokens=1 delims=" %%a in ('echo !chars!') do (
-    for /l %%b in (0,1,!idx!) do (
-        set "char=%%a"
-    )
-)
-
-<nul set /p "=!char! %message%  "
-timeout /t 0 /nobreak >nul
-set /a "i+=1"
-goto spinner_loop
-:show_spinner_end
-endlocal
-exit /b 0
-
-REM ============================================
 REM Clean Output Header
 REM ============================================
 cls
@@ -228,31 +195,9 @@ REM Clear screen before launching
 cls
 
 REM ============================================
-REM Launch pyKorf TUI with Splash Screen
+REM Launch pyKorf TUI
 REM ============================================
-echo/
-echo/
-echo/
-echo/
-echo/
-echo/
-echo/
-echo/
-echo/
-echo/
-echo           ██████╗  ██████╗ ██╗     ██╗     ██╗███╗   ██╗███████╗
-echo           ██╔══██╗██╔═══██╗██║     ██║     ██║████╗  ██║██╔════╝
-echo           ██████╔╝██║   ██║██║     ██║     ██║██╔██╗ ██║█████╗  
-echo           ██╔══██╗██║   ██║██║     ██║     ██║██║╚██╗██║██╔══╝  
-echo           ██║  ██║╚██████╔╝███████╗███████╗██║██║ ╚████║███████╗
-echo           ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚══════╝╚═╝╚═╝  ╚═══╝╚══════╝
-echo/
-echo                    Enterprise Hydraulic Modeling Toolkit
-echo/
-echo/
-echo   Starting pyKorf...
-echo/
-echo   ⠋ Initializing...
+echo   Launching pyKorf TUI...
 echo/
 
 "%APPDATA_DIR%\.venv\Scripts\python.exe" -m pykorf

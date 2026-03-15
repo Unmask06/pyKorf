@@ -1,10 +1,6 @@
 # pyKorf Launcher - PowerShell Version
 # Auto-installs Python 3.13 and uv if needed, then runs the pyKorf TUI
 
-param(
-    [switch]$Debug
-)
-
 $ErrorActionPreference = "Continue"
 
 # Get the directory where this script is located
@@ -205,31 +201,9 @@ Write-Host ""
 Clear-Host
 
 # ============================================
-# Launch pyKorf TUI with Splash Screen
+# Launch pyKorf TUI
 # ============================================
-Write-Host ""
-Write-Host ""
-Write-Host ""
-Write-Host ""
-Write-Host ""
-Write-Host ""
-Write-Host ""
-Write-Host ""
-Write-Host ""
-Write-Host ""
-Write-Host "           ██████╗  ██████╗ ██╗     ██╗     ██╗███╗   ██╗███████╗" -ForegroundColor Cyan
-Write-Host "           ██╔══██╗██╔═══██╗██║     ██║     ██║████╗  ██║██╔════╝" -ForegroundColor Cyan
-Write-Host "           ██████╔╝██║   ██║██║     ██║     ██║██╔██╗ ██║█████╗  " -ForegroundColor Cyan
-Write-Host "           ██╔══██╗██║   ██║██║     ██║     ██║██║╚██╗██║██╔══╝  " -ForegroundColor Cyan
-Write-Host "           ██║  ██║╚██████╔╝███████╗███████╗██║██║ ╚████║███████╗" -ForegroundColor Cyan
-Write-Host "           ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚══════╝╚═╝╚═╝  ╚═══╝╚══════╝" -ForegroundColor Cyan
-Write-Host ""
-Write-Host "                    Enterprise Hydraulic Modeling Toolkit" -ForegroundColor Gray
-Write-Host ""
-Write-Host ""
-Write-Host "   Starting pyKorf..." -ForegroundColor Cyan
-Write-Host ""
-Write-Host "   ⠋ Initializing..." -ForegroundColor Gray
+Write-Host "   Launching pyKorf TUI..." -ForegroundColor Cyan
 Write-Host ""
 
 & "$AppDataDir\.venv\Scripts\python.exe" -m pykorf

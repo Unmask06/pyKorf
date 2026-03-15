@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime, timedelta
+from importlib.metadata import version, PackageNotFoundError
 from time import sleep
 
 from rich.console import Console
@@ -17,6 +18,14 @@ DEVELOPER_CONTACT = "Prasanna Palanivel"
 console = Console()
 
 
+def get_version() -> str:
+    """Get the package version dynamically."""
+    try:
+        return version("pykorf")
+    except PackageNotFoundError:
+        return "dev"
+
+
 def show_splash() -> None:
     """Display pyKorf splash screen with branding."""
     console.clear()
@@ -26,11 +35,12 @@ def show_splash() -> None:
     console.print()
     console.print()
     console.print()
-    
+
+    pkg_version = get_version()
     logo_text = Text()
     logo_text.append("pyKorf", style="bold cyan")
-    logo_text.append(" v0.2.0", style="dim")
-    
+    logo_text.append(f" v{pkg_version}", style="dim")
+
     console.print(
         Panel(
             logo_text,
@@ -52,11 +62,12 @@ def show_loading(message: str, duration: float = 0.5) -> None:
         duration: Duration in seconds
     """
     spinner_frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
-    
-    for _ in range(int(duration * 10)):
-        for frame in spinner_frames:
-            console.print(f"\r{frame} {message}", end="", style="dim")
-            sleep(0.05)
+
+    num_steps = int(duration / 0.05)
+    for i in range(num_steps):
+        frame = spinner_frames[i % len(spinner_frames)]
+        console.print(f"\r{frame} {message}", end="", style="dim")
+        sleep(0.05)
     console.print()
 
 
@@ -76,7 +87,7 @@ def show_expired_message() -> None:
     console.print()
     console.print()
     console.print()
-    
+
     console.print(
         Panel(
             f"[red bold]Trial Period Expired[/red bold]\n\n"
@@ -107,7 +118,7 @@ def show_trial_info(days_left: int) -> None:
     else:
         style = "green"
         urgency = "✓"
-    
+
     console.print(
         Panel(
             f"[{style}]Trial Mode: {days_left} days remaining[{style}]",
@@ -148,7 +159,7 @@ def main():
         show_trial_info(max(0, days_left))
 
     show_loading("Initializing...", 0.8)
-    
+
     from pykorf.use_case.tui import run_tui
 
     run_tui(debug=args.debug)
