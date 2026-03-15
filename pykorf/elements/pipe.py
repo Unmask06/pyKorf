@@ -36,7 +36,7 @@ class Pipe(BaseElement):
     # Parameter constants (moved from definitions/pipe.py)
     # ------------------------------------------------------------------
     BEND = "BEND"
-    LBL = "LBL"
+    LBL = "LBL"  # [on/off, x-offset, y-offset]
     COLOR = "COLOR"
     STRM = "STRM"
     LOCK = "LOCK"
@@ -231,11 +231,11 @@ class Pipe(BaseElement):
     @property
     def flow_string(self) -> str:
         """Raw ``TFLOW`` input string as stored in the KDF (e.g. ``'50;55;20'``)."""
-        return str(self._scalar(Pipe.TFLOW, 0, ""))
+        return str(self._scalar(Pipe.TFLOW, 0))
 
     @property
     def flow_unit(self) -> str:
-        return str(self._scalar(Pipe.TFLOW, 2, "t/h"))
+        return str(self._scalar(Pipe.TFLOW, 2))
 
     def get_flow(self) -> list[str]:
         """Return the input flow for each case."""
@@ -264,12 +264,12 @@ class Pipe(BaseElement):
         else:
             flow_str = str(flow)
 
-        rec = self._get(Pipe.TFLOW)
+        rec = self.get_param(Pipe.TFLOW)
         if rec is None:
             return
         # values layout: [input_string, calc_numeric, unit]
         new_vals = [flow_str, *rec.values[1:]]
-        self._set(Pipe.TFLOW, new_vals)
+        self.set_param(Pipe.TFLOW, new_vals)
 
     # ------------------------------------------------------------------
     # Geometry
@@ -278,32 +278,32 @@ class Pipe(BaseElement):
     @property
     def diameter_inch(self) -> str:
         """Nominal pipe diameter (inch string as stored in the KDF)."""
-        return str(self._scalar(Pipe.DIA, 0, ""))
+        return str(self._scalar(Pipe.DIA, 0))
 
     @property
     def schedule(self) -> str:
-        return str(self._scalar(Pipe.SCH, 0, ""))
+        return str(self._scalar(Pipe.SCH, 0))
 
     @property
     def length_m(self) -> float:
         try:
-            return float(self._scalar(Pipe.LEN, 0, 0))
+            return float(self._scalar(Pipe.LEN, 0))
         except (TypeError, ValueError):
             return 0.0
 
     @length_m.setter
     def length_m(self, value: float) -> None:
-        self._set(Pipe.LEN, [value, "m"])
+        self.set_param(Pipe.LEN, [value, "m"])
 
     @property
     def material(self) -> str:
-        return str(self._scalar(Pipe.MAT, 0, "Steel"))
+        return str(self._scalar(Pipe.MAT, 0))
 
     @property
     def roughness_m(self) -> float:
         """Pipe wall roughness in metres."""
         try:
-            return float(self._scalar(Pipe.ROUGHNESS, 1, 0.0000457))
+            return float(self._scalar(Pipe.ROUGHNESS, 1))
         except (TypeError, ValueError):
             return 0.0000457
 
@@ -311,7 +311,7 @@ class Pipe(BaseElement):
     def id_m(self) -> float:
         """Internal diameter in metres (calculated / set)."""
         try:
-            return float(self._scalar(Pipe.ID, 1, 0.0))
+            return float(self._scalar(Pipe.ID, 1))
         except (TypeError, ValueError):
             return 0.0
 
@@ -355,20 +355,59 @@ class Pipe(BaseElement):
     def pressure_drop_per_100m(self) -> float:
         """Calculated ΔP/100 m [kPa/100m]."""
         try:
-            return float(self._scalar(Pipe.DPL, 0, 0.0))
+            return float(self._scalar(Pipe.DPL, 0))
         except (TypeError, ValueError):
             return 0.0
 
     @property
     def reynolds_number(self) -> float:
         try:
-            return float(self._scalar(Pipe.RE, 0, 0.0))
+            return float(self._scalar(Pipe.RE, 0))
         except (TypeError, ValueError):
             return 0.0
 
     @property
     def flow_regime(self) -> list[str]:
         return self._values(Pipe.REG)
+
+    @property
+    def sizing_dp_criteria(self) -> float | str:
+        """Sizing criteria for Pressure Drop (DPL)."""
+        val = self._scalar(Pipe.SIZ, 1)
+        try:
+            return float(val) if val is not None else "N/A"
+        except (TypeError, ValueError):
+            return val if val is not None else "N/A"
+
+    @property
+    def sizing_velocity_criteria(self) -> float | str:
+        """Sizing criteria for Velocity."""
+        val = self._scalar(Pipe.SIZ, 3)
+        try:
+            return float(val) if val is not None else "N/A"
+        except (TypeError, ValueError):
+            return val if val is not None else "N/A"
+
+    def check_criteria(self) -> str:
+        """Check if calculated results meet sizing criteria.
+
+        Returns 'PASS' if DP/DL and Velocity are within criteria, otherwise 'FAIL'.
+        """
+        dp_crit = self.sizing_dp_criteria
+        vel_crit = self.sizing_velocity_criteria
+        dp_calc = self.pressure_drop_per_100m
+        vel_calc = self.velocity[0] if self.velocity else 0.0
+
+        # Logic for PASS/FAIL
+        dp_pass = True
+        if isinstance(dp_crit, (int, float)):
+            dp_pass = dp_calc <= dp_crit
+
+        vel_pass = True
+        if isinstance(vel_crit, (int, float)):
+            vel_pass = vel_calc <= vel_crit
+
+        return "PASS" if dp_pass and vel_pass else "FAIL"
 
     # ------------------------------------------------------------------
     # Fluid properties
@@ -405,7 +444,7 @@ class Pipe(BaseElement):
 
         # Only update parameters that are present in the records
         for param, values in records.items():
-            self._set(param, values)
+            self.set_param(param, values)
 
     def get_fluid(self) -> Fluid:
         """Extract fluid properties from this pipe.
@@ -465,7 +504,7 @@ class Pipe(BaseElement):
     @property
     def equivalent_length_m(self) -> float:
         try:
-            return float(self._scalar(Pipe.EQLEN, 0, 0.0))
+            return float(self._scalar(Pipe.EQLEN, 0))
         except (TypeError, ValueError):
             return 0.0
 
@@ -493,8 +532,28 @@ class Pipe(BaseElement):
     # Convenience
     # ------------------------------------------------------------------
 
-    def summary(self) -> dict:
-        """Return a dict of key pipe properties (useful for display)."""
+    def summary(self, export: bool = False) -> dict:
+        """Return a dict of key pipe properties (useful for display or export)."""
+        if export:
+            dp_crit_val, dp_crit_unit = self.get_value_and_unit(Pipe.SIZ, val_index=1, unit_index=2)
+            vel_crit_val, vel_crit_unit = self.get_value_and_unit(
+                Pipe.SIZ, val_index=3, unit_index=-1
+            )
+
+            dp_calc_val, dp_calc_unit = self.get_value_and_unit(
+                Pipe.DPL, val_index=0, unit_index=-1
+            )
+            vel_calc_val, vel_calc_unit = self.get_value_and_unit(
+                Pipe.VEL, val_index=0, unit_index=-1
+            )
+            return {
+                "Pipe Name": self.name,
+                self.format_export_header("DP / DL Criteria", dp_crit_unit): dp_crit_val,
+                self.format_export_header("Velocity Criteria", vel_crit_unit): vel_crit_val,
+                self.format_export_header("DP / DL", dp_calc_unit): dp_calc_val,
+                self.format_export_header("Velocity", vel_calc_unit): vel_calc_val,
+                "Criteria Check": self.check_criteria(),
+            }
         return {
             "name": self.name,
             "diameter_inch": self.diameter_inch,

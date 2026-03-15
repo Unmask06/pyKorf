@@ -20,14 +20,13 @@ from __future__ import annotations
 
 import functools
 import logging
+import os
 import time
 from collections.abc import Callable
 from contextlib import contextmanager
 from contextvars import ContextVar
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, TypeVar
-
-import os
+from typing import TYPE_CHECKING, Any
 
 # Try to import structlog, fall back to stdlib logging
 try:
@@ -173,7 +172,7 @@ def _configure_structlog() -> None:
     log_format = os.getenv("PYKORF_LOG_FORMAT", "structured").lower()
     if log_format == "structured":
         structlog.configure(
-            processors=[*shared_processors, structlog.processors.JSONRenderer()],
+            processors=shared_processors + [structlog.processors.JSONRenderer()],  # type: ignore[operator]
             context_class=dict,
             logger_factory=structlog.stdlib.LoggerFactory(),
             wrapper_class=structlog.stdlib.BoundLogger,
@@ -181,7 +180,7 @@ def _configure_structlog() -> None:
         )
     else:
         structlog.configure(
-            processors=[*shared_processors, structlog.dev.ConsoleRenderer(colors=True)],
+            processors=shared_processors + [structlog.dev.ConsoleRenderer(colors=True)],  # type: ignore[operator]
             context_class=dict,
             logger_factory=structlog.stdlib.LoggerFactory(),
             wrapper_class=structlog.stdlib.BoundLogger,
@@ -340,10 +339,7 @@ def log_operation(operation: str, **context: Any):
             raise
 
 
-F = TypeVar("F", bound=Callable[..., Any])
-
-
-def timed(func: F) -> F:
+def timed[F: Callable[..., Any]](func: F) -> F:
     """Decorator to time function execution."""
 
     @functools.wraps(func)

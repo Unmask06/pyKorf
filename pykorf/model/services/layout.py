@@ -61,7 +61,7 @@ class LayoutService:
 
     def get_position(self, elem: BaseElement) -> tuple[float, float] | None:
         """Extract the primary (x, y) position from an element's XY record."""
-        rec = elem._get("XY")
+        rec = elem.get_param("XY")
         if rec is None or len(rec.values) < 2:
             return None
         try:
@@ -71,7 +71,7 @@ class LayoutService:
 
     def __set_position_on_element(self, elem: BaseElement, x: float, y: float) -> None:
         """Set the primary (x, y) position on a concrete element object."""
-        rec = elem._get("XY")
+        rec = elem.get_param("XY")
         if rec is None:
             return
         vals = list(rec.values)
@@ -269,7 +269,7 @@ class LayoutService:
             for idx, elem in collection.items():
                 if idx == 0:
                     continue
-                rec = elem._get("CON")
+                rec = elem.get_param("CON")
                 if rec and len(rec.values) >= 2:
                     try:
                         in_idx, out_idx = int(rec.values[0]), int(rec.values[1])
@@ -286,7 +286,7 @@ class LayoutService:
                 if idx == 0:
                     continue
                 for noz_param in ("NOZL", "NOZ"):
-                    rec = elem._get(noz_param)
+                    rec = elem.get_param(noz_param)
                     if rec and rec.values:
                         try:
                             pipe_ref = int(rec.values[0])

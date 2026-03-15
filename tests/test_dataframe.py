@@ -168,8 +168,8 @@ class TestExcelRoundTrip:
 
         try:
             model.to_excel(xlsx_path)
-            xls = pd.ExcelFile(xlsx_path, engine="openpyxl")
-            assert set(xls.sheet_names) == set(dfs.keys())
+            with pd.ExcelFile(xlsx_path, engine="openpyxl") as xls:
+                assert set(xls.sheet_names) == set(dfs.keys())
         finally:
             Path(xlsx_path).unlink(missing_ok=True)
 

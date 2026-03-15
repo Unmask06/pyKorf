@@ -57,27 +57,27 @@ class Vessel(BaseElement):
 
     @property
     def vessel_type(self) -> str:
-        return str(self._scalar(Vessel.TYPE, 0, "Vertical"))
+        return str(self._scalar(Vessel.TYPE, 0))
 
     @property
     def pressure_string(self) -> str:
-        return str(self._scalar(Vessel.PRES, 0, ""))
+        return str(self._scalar(Vessel.PRES, 0))
 
     @property
     def pressure_kPag(self) -> float:
         try:
-            return float(self._scalar(Vessel.PRES, 1, 0.0))
+            return float(self._scalar(Vessel.PRES, 1))
         except (TypeError, ValueError):
             return 0.0
 
     def set_pressure(self, value: str | float) -> None:
-        rec = self._get(Vessel.PRES)
+        rec = self.get_param(Vessel.PRES)
         if rec:
-            self._set(Vessel.PRES, [str(value), *rec.values[1:]])
+            self.set_param(Vessel.PRES, [str(value), *rec.values[1:]])
 
     @property
     def elevation_m(self) -> float:
         try:
-            return float(self._scalar(Vessel.ELEV, 0, 0.0))
+            return float(self._scalar(Vessel.ELEV, 0))
         except (TypeError, ValueError):
             return 0.0

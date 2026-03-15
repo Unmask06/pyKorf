@@ -53,7 +53,7 @@ class Tee(BaseElement):
     @property
     def tee_type(self) -> int:
         try:
-            return int(self._scalar(Tee.TYPE, 0, 0))
+            return int(self._scalar(Tee.TYPE, 0))
         except (TypeError, ValueError):
             return 0
 

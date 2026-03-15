@@ -9,7 +9,7 @@ from textual.widgets import Label, Static
 class KdfFileHeader(Static):
     """Persistent header showing the current KDF file path."""
 
-    CSS_PATH = []
+    CSS_PATH: list[str] = []
 
     CSS = """
     KdfFileHeader {

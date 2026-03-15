@@ -43,12 +43,12 @@ class PipeData(BaseElement):
 
     @property
     def material(self) -> str:
-        return self._scalar(PipeData.MAT, 0, "")
+        return self._scalar(PipeData.MAT, 0)
 
     @property
     def roughness_m(self) -> float:
         try:
-            return float(self._scalar(PipeData.E, 0, 0.0))
+            return float(self._scalar(PipeData.E, 0))
         except (TypeError, ValueError):
             return 0.0
 

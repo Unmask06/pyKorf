@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from textual.app import App, ComposeResult
 from textual.containers import Vertical
 from textual.widgets import Label, Static
@@ -77,6 +79,8 @@ class UseCaseTUI(App):
 
     BINDINGS = [
         ("q", "quit", "Quit"),
+        ("r", "reload_file", "Reload"),
+        ("escape", "pop_screen", "Back"),
     ]
 
     model = None
@@ -94,8 +98,35 @@ class UseCaseTUI(App):
 
     def update_file_header(self, file_path: str) -> None:
         """Update the file header with the current KDF path."""
+        from pathlib import Path
+
         header = self.query_one("#file-header", Label)
-        header.update(f"📄 {file_path}")
+        header.update(f"📄 {Path(file_path).name}")
+
+    def action_reload_file(self) -> None:
+        """Reload the current KDF file from disk."""
+        if self.model is None:
+            return
+
+        try:
+            self.model.reload()
+            self.show_notification("File reloaded successfully")
+            # If we are on MainMenu, we might want to refresh it
+            from pykorf.use_case.tui.screens.main_menu import MainMenuScreen
+
+            if isinstance(self.screen, MainMenuScreen):
+                self.pop_screen()
+                self.push_screen(MainMenuScreen())
+        except Exception as exc:
+            self.show_notification(f"Error reloading file: {exc}")
+
+    def action_pop_screen(self) -> Any:
+        """Override pop_screen to prevent exiting the first screen (FilePicker)."""
+        from pykorf.use_case.tui.screens.file_picker import FilePickerScreen
+
+        if isinstance(self.screen, FilePickerScreen):
+            return
+        super().pop_screen()
 
     def show_notification(self, message: str) -> None:
         """Show a notification banner with the given message."""
@@ -117,8 +148,14 @@ def run_tui(debug: bool = False) -> None:
     """
     from pykorf.log import configure_logging, enable_debug_mode
 
-    # Configure base logging first
-    configure_logging("pykorf.log")
+    # Configure logging with a temporary log file initially
+    # The actual log file will be set when a KDF file is loaded
+    import tempfile
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".log", delete=False) as temp_log:
+        temp_log_path = temp_log.name
+
+    configure_logging(temp_log_path)
 
     # Enable debug mode if requested (sets DEBUG level)
     if debug:

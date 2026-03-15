@@ -15,6 +15,7 @@ class Junction(BaseElement):
     # Parameter constants (moved from definitions/junc.py)
     # ------------------------------------------------------------------
     PRES = "PRES"
+    LBL = "LBL"
 
     ALL = (
         "NUM",
@@ -35,6 +36,6 @@ class Junction(BaseElement):
     @property
     def pressure_kPag(self) -> float:
         try:
-            return float(self._scalar(Junction.PRES, 1, 0.0))
+            return float(self._scalar(Junction.PRES, 1))
         except (TypeError, ValueError):
             return 0.0

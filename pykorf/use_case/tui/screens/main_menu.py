@@ -19,11 +19,10 @@ class MainMenuScreen(Screen):
         ("2", "apply_pms", "Apply PMS"),
         ("3", "apply_hmb", "Apply HMB"),
         ("4", "model_info", "Model Info"),
+        ("e", "generate_report", "Generate Report"),
         ("g", "global_settings", "Global Settings"),
         ("c", "config_menu", "Config Menu"),
         ("l", "load_file", "Load File"),
-        ("r", "reload_file", "Reload File"),
-        ("q", "quit_app", "Quit"),
     ]
 
     CSS_PATH = []
@@ -69,6 +68,7 @@ class MainMenuScreen(Screen):
         width: 30%;
         height: 100%;
         padding: 0 1;
+        overflow-y: auto;
     }
     #menu-buttons {
         width: 100%;
@@ -134,6 +134,11 @@ class MainMenuScreen(Screen):
         color: $text-muted;
         text-style: dim;
     }
+    #validation-success {
+        color: $success;
+        text-style: bold;
+        margin-top: 1;
+    }
     """
 
     def compose(self) -> ComposeResult:
@@ -149,8 +154,11 @@ class MainMenuScreen(Screen):
         product_count = 0
         pump_count = 0
         modified_indicator = ""
+        validation_issues: list[str] = []
         if model is not None:
-            file_name = str(model._parser.path)
+            from pathlib import Path
+
+            file_name = Path(model._parser.path).name
             from pykorf.use_case.tui.screens import real_elements
 
             pipe_count = len(real_elements(model.pipes))
@@ -160,8 +168,10 @@ class MainMenuScreen(Screen):
             if model.is_file_modified():
                 modified_indicator = "⚠ File modified externally"
 
+            validation_issues = model.validate()
+
         with Vertical(id="menu-container"):
-            yield Label(f"📄 pyKorf Use Case Tool V{__version__}", id="file-label")
+            yield Label(f"pyKorf Use Case Tool V{__version__}", id="file-label")
             yield Label(f"📄 {file_name}", id="file-path-label")
             if modified_indicator:
                 yield Label(modified_indicator, id="modified-indicator")
@@ -180,7 +190,7 @@ class MainMenuScreen(Screen):
                             yield Label("Apply heat and mass balance")
                         with Horizontal(classes="menu-item"):
                             yield Button("Model Info", variant="primary", id="btn-model-info")
-                            yield Label("View model statistics and validation")
+                            yield Label("View model statistics")
                         with Horizontal(classes="menu-item"):
                             yield Button(
                                 "Global Settings", variant="primary", id="btn-global-settings"
@@ -189,11 +199,29 @@ class MainMenuScreen(Screen):
                         with Horizontal(classes="menu-item"):
                             yield Button("Config", variant="default", id="btn-config")
                             yield Label("Element configuration")
+                        with Horizontal(classes="menu-item"):
+                            yield Button(
+                                "Generate Report", variant="success", id="btn-generate-report"
+                            )
+                            yield Label("Export results to Excel summary")
                     with Horizontal(id="menu-footer"):
                         yield Button("Load File", variant="warning", id="btn-load-file")
                         yield Button("Quit", variant="error", id="btn-quit")
 
                 with Vertical(id="right-panel"):
+                    with Vertical(classes="side-panel-section"):
+                        yield Label("Validation")
+                        yield Static("─" * 20)
+                        if validation_issues:
+                            yield Label(
+                                f"⚠ {len(validation_issues)} Issues Found",
+                                id="validation-title",
+                                classes="text-error",
+                            )
+                            yield Static("See Model Info for details")
+                        else:
+                            yield Label("✓ Model is valid", id="validation-success")
+
                     with Vertical(classes="side-panel-section"):
                         yield Label("Model Statistics")
                         yield Static("─" * 20)
@@ -274,6 +302,13 @@ class MainMenuScreen(Screen):
 
         self.app.push_screen(ConfigMenuScreen())
 
+    @on(Button.Pressed, "#btn-generate-report")
+    def action_generate_report(self) -> None:
+        """Switch to Generate Report screen."""
+        from pykorf.use_case.tui.screens.generate_report import GenerateReportScreen
+
+        self.app.push_screen(GenerateReportScreen())
+
     @on(Button.Pressed, "#btn-load-file")
     def action_load_file(self) -> None:
         self.app.pop_screen()
@@ -281,7 +316,11 @@ class MainMenuScreen(Screen):
     @on(Button.Pressed, "#btn-reload")
     def action_reload_button(self) -> None:
         """Reload the current KDF file from disk."""
-        self.action_reload_file()
+        from pykorf.use_case.tui.app import UseCaseTUI
+
+        app = self.app
+        assert isinstance(app, UseCaseTUI)
+        app.action_reload_file()
 
     @on(Button.Pressed, "#btn-save")
     def action_save_button(self) -> None:
@@ -307,25 +346,6 @@ class MainMenuScreen(Screen):
         from pykorf.use_case.tui.screens.model_info import ModelInfoScreen
 
         self.app.push_screen(ModelInfoScreen())
-
-    def action_reload_file(self) -> None:
-        """Reload the current KDF file from disk."""
-        from pykorf.use_case.tui.app import UseCaseTUI
-
-        app = self.app
-        assert isinstance(app, UseCaseTUI)
-        model = app.model
-
-        if model is None:
-            return
-
-        try:
-            model.reload()
-            # Refresh the display
-            self.app.pop_screen()
-            self.app.push_screen(MainMenuScreen())
-        except Exception as exc:
-            app.show_notification(f"Error reloading file: {exc}")
 
     @on(Button.Pressed, "#btn-quit")
     def action_quit_app(self) -> None:

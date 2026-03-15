@@ -1,5 +1,4 @@
-"""
-BaseElement - abstract foundation for all KORF element objects.
+"""BaseElement - abstract foundation for all KORF element objects.
 
 Every element holds a live reference to the :class:`KdfParser` so that
 get/set operations immediately affect the underlying record list that will
@@ -107,8 +106,7 @@ def validate_param_values(etype: str, param: str, values: list) -> None:
 
 
 class BaseElement:
-    """
-    Base class wrapping a single KORF element instance.
+    """Base class wrapping a single KORF element instance.
 
     Subclasses carry their own parameter string constants as class-level
     attributes (e.g. ``Pipe.TFLOW == "TFLOW"``).  Common parameters that
@@ -168,18 +166,18 @@ class BaseElement:
     @property
     def name(self) -> str:
         """Element name tag (e.g. ``'L1'``, ``'P1'``)."""
-        rec = self._get(self.NAME)
+        rec = self.get_param(self.NAME)
         return rec.values[0] if rec and rec.values else ""
 
     @property
     def description(self) -> str:
         """Optional description (second value of the NAME record)."""
-        rec = self._get(self.NAME)
+        rec = self.get_param(self.NAME)
         return rec.values[1] if rec and len(rec.values) > 1 else ""
 
     @description.setter
     def description(self, value: str) -> None:
-        rec = self._get(self.NAME)
+        rec = self.get_param(self.NAME)
         if rec:
             if len(rec.values) > 1:
                 rec.values[1] = value
@@ -189,19 +187,16 @@ class BaseElement:
 
     @property
     def notes(self) -> str:
-        rec = self._get(self.NOTES)
+        rec = self.get_param(self.NOTES)
         return rec.values[0] if rec and rec.values else ""
 
     @notes.setter
     def notes(self, value: str) -> None:
-        self._set(self.NOTES, [value])
+        self.set_param(self.NOTES, [value])
 
     # ------------------------------------------------------------------
     # Internal record access
     # ------------------------------------------------------------------
-
-    def _get(self, param: str) -> KdfRecord | None:
-        return self._parser.get(self._etype, self._index, param)
 
     def get_param(self, param: str) -> KdfRecord | None:
         """Return the record for a given parameter, or *None* if missing.
@@ -209,23 +204,16 @@ class BaseElement:
         Example:
             ```python
             from pykorf.elements import Feed
+
             rec = model.feeds[1].get_param(Feed.NAME)
             rec.update(["EXP DRUM", "FEED"])
             ```
         """
-        return self._get(param)
+        return self._parser.get(self._etype, self._index, param)
 
     def _values(self, param: str) -> list:
-        rec = self._get(param)
+        rec = self.get_param(param)
         return rec.values if rec else []
-
-    def _set(self, param: str, values: list) -> None:
-        """Update an existing record's values list in-place.
-
-        Validates the value count against the default template before writing.
-        """
-        validate_param_values(self._etype, param, values)
-        self._parser.set_value(self._etype, self._index, param, values)
 
     def set_param(self, param: str, values: list) -> bool:
         """Set values for a given parameter.
@@ -244,10 +232,10 @@ class BaseElement:
         validate_param_values(self._etype, param, values)
         return self._parser.set_value(self._etype, self._index, param, values)
 
-    def _scalar(self, param: str, pos: int = 0, default: Any = None) -> Any:
+    def _scalar(self, param: str, pos: int = 0) -> Any:
         """Return a single value from a record's value list."""
         v = self._values(param)
-        return v[pos] if len(v) > pos else default
+        return v[pos] if len(v) > pos else None
 
     # ------------------------------------------------------------------
     # Raw record list
@@ -256,6 +244,46 @@ class BaseElement:
     def records(self) -> list[KdfRecord]:
         """All KDF records belonging to this element instance."""
         return self._parser.get_all(self._etype, self._index)
+
+    # ------------------------------------------------------------------
+    # Export Helpers
+    # ------------------------------------------------------------------
+
+    def get_value_and_unit(
+        self, param: str, val_index: int = 0, unit_index: int = -1
+    ) -> tuple[float | str, str]:
+        """Dynamically fetches the value and the unit from a KDF record.
+
+        Returns:
+            (value, unit_string)
+        """
+        record = self.get_param(param)
+        val: float | str = "N/A"
+        unit = ""
+
+        if record and len(record.values) > val_index:
+            raw_val = record.values[val_index]
+            try:
+                # Store as float to allow math in excel/pandas
+                val = float(raw_val)
+            except (ValueError, TypeError):
+                val = str(raw_val)
+
+        if record and (len(record.values) > abs(unit_index) or unit_index == -1):
+            if len(record.values) > 0:
+                raw_unit = str(record.values[unit_index]).strip()
+                # Ensure it's a string, not a generic number that happens to be at the end
+                if not raw_unit.replace(".", "", 1).replace("-", "", 1).isdigit():
+                    unit = raw_unit
+
+        return val, unit
+
+    def format_export_header(self, base_name: str, unit: str) -> str:
+        """Creates a clean column header: 'Velocity [m/s]'"""
+        header = base_name
+        if unit:
+            header += f" [{unit}]"
+        return header
 
     # ------------------------------------------------------------------
     # Dunder

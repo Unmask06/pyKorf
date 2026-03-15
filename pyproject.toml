@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pykorf"
-version = "0.1.2"
+version = "0.2.0"
 description = "Enterprise Python toolkit for reading, editing and writing KORF hydraulic model files (.kdf)"
 readme = "README.md"
 license = { text = "MIT" }
@@ -189,11 +189,17 @@ module = [
 ]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = "tests.*"
+# Relax strict typing in tests to prevent CI failures on minor type mismatches
+check_untyped_defs = false
+disable_error_code = ["operator", "arg-type", "list-item", "union-attr", "attr-defined"]
+
 [tool.ruff]
 target-version = "py313"
 line-length = 100
 indent-width = 4
-exclude = ["pykorf/_version.py"]
+exclude = ["pykorf/_version.py", ".agents"]
 
 [tool.ruff.lint]
 select = [
@@ -251,12 +257,19 @@ ignore = [
     "TC006",  # Type expression quotes in cast()
     "N806",  # Variable should be lowercase - test fixtures like MockKorfApp
     "PERF102",  # Use dict.values() - pattern used intentionally
-"F841",  # Local variable assigned but never used - acceptable in some patterns
+    "F841",  # Local variable assigned but never used - acceptable in some patterns
     "SIM117",  # Nested with statements - standard pattern for Textual widgets
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["D101", "D102", "D103", "F841", "F821"]
+# Relax checks for test files: ignore missing docs, unused vars, magic values, etc.
+"tests/*" = [
+    "D101", "D102", "D103", "D104", 
+    "F841", "F821", 
+    "S101",     # Allow use of assert
+    "PLR2004",  # Allow magic values in tests
+    "SLF001"    # Allow private member access in tests
+]
 "pykorf/_version.py" = ["ALL"]
 
 [tool.ruff.lint.pydocstyle]

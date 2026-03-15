@@ -7,26 +7,40 @@ Focus on **Absolute Accuracy**, **Completeness**, and **System-Wide Integrity**.
 1.  **High-Resolution Context:** Use `read_file` to read entire modules or large logical blocks (500+ lines). Seeing the "big picture" (imports, global state, decorators) is essential for accuracy.
 2.  **Global Research:** Before refactoring or fixing, use `grep_search` and `glob` to map all dependencies and callsites across the entire project. Never assume a change is local.
 3.  **Proactive Expertise:** Always `activate_skill` for the relevant domain at the start of a task. This loads specialized knowledge and "Best Practice" patterns.
-4.  **Exhaustive Validation:** After any change, run the **entire** relevant test suite, plus `ruff` and `mypy` if applicable. Validation is the only path to finality.
-5.  **Autonomous Problem Solving:** If a test fails or a dependency is missing, investigate and fix it autonomously. Do not stop for permission on technical roadblocks.
+4.  **Skill Evolution:** If new architectural insights, element types, or services are discovered or provided by the developer, **immediately** use the `skill-creator` skill to update the relevant project-specific skills in `.agents/skills/`. This ensures the agent's long-term memory remains accurate.
+5.  **Exhaustive Validation:** After any change, run the **entire** relevant test suite using `uv run pytest`, plus `uv run ruff` and `uv run mypy` if applicable. Validation is the only path to finality.
+6.  **Autonomous Problem Solving:** If a test fails or a dependency is missing, investigate and fix it autonomously using `uv add` or `uv remove`. Do not stop for permission on technical roadblocks.
 
 ## Critical Rules
 
 - **NEVER** launch a new KORF process. Always `Application().connect(path="korf.exe")`.
 - **NEVER** use hardcoded strings for element types/params. Use `pykorf.elements` constants.
 - All model operations are **in-memory**. Persistent only on `model.save()`.
-- Use `uv` for all environment and dependency management.
+- Use `uv` for all package management, running tests (`uv run pytest`), and executing Python files (`uv run <script.py>`).
+
+## Shell & Environment (Windows PowerShell)
+
+- **Environment:** The operating system is Windows (`win32`) and the terminal is strictly **PowerShell**.
+- **NO CMD Syntax:** Do **NOT** use `cmd.exe` flags like `/s`, `/a`, or `/p`. PowerShell interprets these as literal file paths (e.g., `C:\s`), causing `PathNotFound` errors.
+- **NO Bash Syntax:** Do **NOT** use Bash flags like `ls -la` or `rm -rf`.
+- **Command Chaining:** **NEVER** use `&&` or `||`. Use `;` to separate commands (e.g., `cd tests; uv run pytest`).
+- **PowerShell Idioms:**
+  - Use `Get-ChildItem` instead of `dir` or `ls` for clarity and to avoid alias confusion.
+  - Use `-Force` to show hidden files and `-Recurse` for recursive operations.
+  - Use `$env:VAR="value"; command` for setting environment variables.
+- **File Tools First:** Always prefer the provided AI tools (`read_file`, `write_file`, `replace`, `grep_search`) over shell commands like `cat`, `touch`, or `echo > file`.
 
 ## Architecture & Service Map
 
-| Module | Purpose |
-| :--- | :--- |
-| `model` | Facade & Services (CRUD, Connectivity, Layout, I/O, Summary) |
-| `parser` | `KdfParser`, low-level record handling and latin-1 encoding |
-| `elements` | Typed wrappers + parameter constants (e.g., `Pipe.LEN`) |
-| `use_case` | Workflows (PMS, HMB), Global Settings, and Textual TUI |
-| `cases`/`results` | Multi-case management and calculated output extraction |
-| `automation` | GUI automation via `KorfApp` (Win32 backend) |
+| Module            | Purpose                                                      |
+| :---------------- | :----------------------------------------------------------- |
+| `model`           | Facade & Services (CRUD, Connectivity, Layout, I/O, Summary) |
+| `parser`          | `KdfParser`, low-level record handling and latin-1 encoding  |
+| `elements`        | Typed wrappers + parameter constants (e.g., `Pipe.LEN`)      |
+| `use_case`        | Workflows (PMS, HMB), Global Settings, and Textual TUI       |
+| `cases`/`results` | Multi-case management and calculated output extraction       |
+| `automation`      | GUI automation via `KorfApp` (Win32 backend)                 |
+| `visualization`   | PyVis interactive network visualization                      |
 
 ## Mandatory Skills (Load these first!)
 
@@ -36,3 +50,4 @@ Focus on **Absolute Accuracy**, **Completeness**, and **System-Wide Integrity**.
 - **elements** — For anything involving element types or parameters.
 - **testing** — For test patterns, fixtures, and quality commands.
 - **automation** — For GUI automation or `KorfApp` logic.
+- **visualization** — For network diagrams and PyVis-based reporting.

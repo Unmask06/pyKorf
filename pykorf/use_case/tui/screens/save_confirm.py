@@ -68,7 +68,9 @@ class SaveConfirmScreen(Screen):
         with Vertical(id="save-box"):
             yield Label("Save Changes?")
             log = RichLog(id="file-path", wrap=True)
-            log.write(f"File: {self._model._parser.path}")
+            from pathlib import Path
+
+            log.write(f"File: {Path(self._model._parser.path).name}")
             yield log
             yield Label("", id="save-status")
             with Horizontal(id="save-buttons"):

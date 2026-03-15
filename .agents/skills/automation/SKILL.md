@@ -1,6 +1,6 @@
 ---
 name: automation
-description: KORF GUI automation via pywinauto — KorfApp, connect pattern, safety rules
+description: KORF GUI automation via pywinauto — KorfApp, connect pattern, safety rules, and TUI global controls
 ---
 
 # KORF GUI Automation
@@ -22,6 +22,8 @@ subprocess.Popen("korf.exe")
 
 ```python
 from pykorf.automation import KorfApp, open_ui
+# Also available as a top-level shortcut:
+# from pykorf import open_ui
 
 # Connect to running KORF
 app = KorfApp.connect()
@@ -35,6 +37,14 @@ app.run_hydraulics()             # trigger calculation
 app.save()                       # Ctrl+S
 app.disconnect()                 # release handle
 ```
+
+## Use Case TUI Global Controls
+
+The Textual-based TUI (`pykorf.use_case.tui`) uses centralized global bindings:
+
+- **R**: Reload current KDF model (refreshing the active screen).
+- **Q**: Quit the application.
+- **Esc**: Go back to the previous screen (safe on all screens, won't exit the file picker).
 
 ## Requirements
 
@@ -52,4 +62,5 @@ app.disconnect()                 # release handle
 ## Key Files
 
 - `pykorf/automation.py` — `KorfApp` class, `open_ui()` helper
+- `pykorf/use_case/tui/app.py` — Centralized TUI bindings and reload logic
 - `tests/test_automation.py` — automation tests (require running KORF)
