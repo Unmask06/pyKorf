@@ -56,7 +56,7 @@ class ResultExporter:
         return dfs
 
     def export_to_excel(
-        self, output_path: str, sheet_name: str = "Model Summary", elements: list[str] = None
+        self, output_path: str, sheet_name: str = "Model Summary", elements: list[str] | None = None
     ) -> str:
         """Generates the DataFrames and writes them sequentially to a single formatted Excel sheet."""
         from pathlib import Path
@@ -108,7 +108,9 @@ class ResultExporter:
     # INTERNAL WRITING HELPERS
     # =========================================================
 
-    def _write_cell(self, ws: Any, row: int, col: int, value: Any, style: str = None) -> None:
+    def _write_cell(
+        self, ws: Any, row: int, col: int, value: Any, style: str | None = None
+    ) -> None:
         """Helper to write a cell with an optional predefined style."""
         cell = ws.cell(row=row, column=col, value=value)
         if style and style in self._styles:
@@ -133,7 +135,7 @@ class ResultExporter:
         descriptions, units = self._parse_headers(df.columns)
 
         # Write Two-Level Header
-        for c_idx, (desc, unit) in enumerate(zip(descriptions, units), start=1):
+        for c_idx, (desc, unit) in enumerate(zip(descriptions, units, strict=True), start=1):
             cell_desc = ws.cell(row=row, column=c_idx, value=desc)
             cell_desc.font = self._styles["header"]
             cell_desc.fill = self._styles["fill"]
@@ -165,7 +167,7 @@ class ResultExporter:
         num_cols = 2 + len(pump_names)
 
         # Top Header Row (Parameter, Unit, Pump Names...)
-        headers = ["Parameter", "Unit"] + pump_names
+        headers = ["Parameter", "Unit", *pump_names]
         for c_idx, val in enumerate(headers, start=1):
             cell = ws.cell(row=row, column=c_idx, value=val)
             cell.font = self._styles["header"]

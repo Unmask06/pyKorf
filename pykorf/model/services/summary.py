@@ -77,7 +77,7 @@ class SummaryService:
 
         from pykorf.use_case.config import get_pms_path
 
-        valid_pms_keys = set()
+        valid_pms_keys: set[str] = set()
         pms_path = get_pms_path()
         if pms_path and pms_path.exists():
             try:
@@ -138,10 +138,18 @@ class SummaryService:
             if hasattr(pipe, "check_criteria"):
                 status = pipe.check_criteria()
                 if status == "FAIL":
-                    dp_crit = pipe.sizing_dp_criteria
-                    vel_crit = pipe.sizing_velocity_criteria
-                    dp_calc = pipe.pressure_drop_per_100m
-                    vel_calc = pipe.velocity[0] if pipe.velocity else 0.0
+                    try:
+                        dp_crit = float(pipe.sizing_dp_criteria)
+                    except (ValueError, TypeError):
+                        dp_crit = float("inf")
+
+                    try:
+                        vel_crit = float(pipe.sizing_velocity_criteria)
+                    except (ValueError, TypeError):
+                        vel_crit = float("inf")
+
+                    dp_calc = float(pipe.pressure_drop_per_100m) if pipe.pressure_drop_per_100m else 0.0
+                    vel_calc = float(pipe.velocity[0]) if pipe.velocity else 0.0
 
                     failures = []
                     if dp_calc > dp_crit:

@@ -11,7 +11,7 @@ from textual.screen import Screen
 from textual.widgets import Button, Checkbox, Footer, Label, RichLog, Static
 
 from pykorf.use_case.config import get_last_interaction, set_last_interaction
-from pykorf.use_case.tui.logging import log_error, log_info, log_success
+from pykorf.use_case.tui.logging import log_error, log_info, log_success, log_warning
 
 
 class GenerateReportScreen(Screen):
@@ -85,25 +85,27 @@ class GenerateReportScreen(Screen):
     def compose(self) -> ComposeResult:
         app = self.app
         from pykorf.use_case.tui.app import UseCaseTUI
+
         assert isinstance(app, UseCaseTUI)
         model = app.model
-        
+
         output_path = "No file loaded"
         if model:
             kdf_path = Path(model._parser.path)
             output_path = str(kdf_path.with_name(f"{kdf_path.stem}_report.xlsx"))
 
         # Load saved preferences or default to True
-        prefs = get_last_interaction().get("data", {}).get("report_elements", {
-            "Pipes": True,
-            "Pumps": True,
-            "Compressors": True
-        })
+        prefs = (
+            get_last_interaction()
+            .get("data", {})
+            .get("report_elements", {"Pipes": True, "Pumps": True, "Compressors": True})
+        )
 
         # Determine available elements
-        self.available_elements = []
+        self.available_elements: list[str] = []
         if model:
             from pykorf.use_case.tui.screens import real_elements
+
             if len(real_elements(model.pipes)) > 0:
                 self.available_elements.append("Pipes")
             if len(real_elements(model.pumps)) > 0:
@@ -115,24 +117,28 @@ class GenerateReportScreen(Screen):
             with Vertical(id="left-panel"), Vertical(id="report-form"):
                 yield Label("Generate Excel Summary Report", classes="info-section")
                 yield Static("─" * 30)
-                
+
                 yield Label("Output path:")
                 yield Static(output_path, id="output-path-label", classes="path-display")
-                
+
                 yield Label("Elements to include:")
                 with Vertical(id="element-selection"):
                     if not self.available_elements:
                         yield Label("No exportable elements found in model.", classes="text-muted")
                     else:
                         for elem in self.available_elements:
-                            yield Checkbox(elem, value=prefs.get(elem, True), id=f"chk-{elem.lower()}")
-                
+                            yield Checkbox(
+                                elem, value=prefs.get(elem, True), id=f"chk-{elem.lower()}"
+                            )
+
                 yield RichLog(id="report-results", wrap=True)
-                
+
                 with Horizontal(id="report-buttons"):
                     yield Button("Select All", variant="default", id="btn-select-all")
                     yield Button("Generate Report", variant="primary", id="btn-run-generate")
-                    yield Button("Open Excel", variant="default", id="btn-open-excel", disabled=True)
+                    yield Button(
+                        "Open Excel", variant="default", id="btn-open-excel", disabled=True
+                    )
 
             with Vertical(id="right-panel"):
                 with Vertical(classes="info-section"):
@@ -168,7 +174,7 @@ class GenerateReportScreen(Screen):
         """Open the generated Excel file."""
         import os
         from pykorf.use_case.tui.app import UseCaseTUI
-        
+
         app = self.app
         assert isinstance(app, UseCaseTUI)
         model = app.model
@@ -179,7 +185,9 @@ class GenerateReportScreen(Screen):
                 try:
                     os.startfile(str(xlsx_path))
                 except Exception as exc:
-                    log_error(self.query_one("#report-results", RichLog), f"Error opening file: {exc}")
+                    log_error(
+                        self.query_one("#report-results", RichLog), f"Error opening file: {exc}"
+                    )
 
     @on(Button.Pressed, "#btn-run-generate")
     def generate(self) -> None:
@@ -204,7 +212,7 @@ class GenerateReportScreen(Screen):
         # Get selected elements dynamically
         selected_elements = []
         prefs_to_save = {}
-        
+
         if hasattr(self, "available_elements"):
             for elem in self.available_elements:
                 chk_id = f"#chk-{elem.lower()}"
@@ -212,39 +220,50 @@ class GenerateReportScreen(Screen):
                 prefs_to_save[elem] = is_checked
                 if is_checked:
                     selected_elements.append(elem)
-                
+
         # Save preferences
         current_data = get_last_interaction().get("data", {})
         current_data["report_elements"] = prefs_to_save
         set_last_interaction("generate_report", current_data)
 
         if not selected_elements:
-            self.app.call_from_thread(lambda: log_warning(results, "No elements selected for export."))
+            self.app.call_from_thread(
+                lambda: log_warning(results, "No elements selected for export.")
+            )
             return
 
         try:
             kdf_path = Path(model._parser.path)
             xlsx_path = kdf_path.with_name(f"{kdf_path.stem}_report.xlsx")
 
-            self.app.call_from_thread(lambda: log_info(results, f"Initializing exporter..."))
+            self.app.call_from_thread(lambda: log_info(results, "Initializing exporter..."))
             exporter = ResultExporter(model)
-            
-            self.app.call_from_thread(lambda: log_info(results, f"Generating summary data for: {', '.join(selected_elements)}"))
-            self.app.call_from_thread(lambda: log_info(results, f"Writing to Excel: {xlsx_path.name}..."))
-            
+
+            self.app.call_from_thread(
+                lambda: log_info(
+                    results, f"Generating summary data for: {', '.join(selected_elements)}"
+                )
+            )
+            self.app.call_from_thread(
+                lambda: log_info(results, f"Writing to Excel: {xlsx_path.name}...")
+            )
+
             exporter.export_to_excel(str(xlsx_path), elements=selected_elements)
 
-            self.app.call_from_thread(lambda: log_success(results, "\n✅ Report Generated Successfully!"))
+            self.app.call_from_thread(
+                lambda: log_success(results, "\n✅ Report Generated Successfully!")
+            )
             self.app.call_from_thread(lambda: log_info(results, f"Saved to: {xlsx_path}"))
-            
+
             # Enable Open Excel button
             def _enable():
                 btn = self.query_one("#btn-open-excel", Button)
                 btn.disabled = False
+
             self.app.call_from_thread(_enable)
-            
+
             # Show notification on main app too
             self.app.call_from_thread(app.show_notification, f"✅ Report saved: {xlsx_path.name}")
-            
+
         except Exception as exc:
             self.app.call_from_thread(lambda e=exc: log_error(results, f"Error: {e}"))

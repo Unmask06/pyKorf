@@ -43,8 +43,7 @@ def test_line_number_limits():
     # Test LineNumber.validate with long input
     result = LineNumber.validate(long_notes)
     assert result.is_valid is False
-    assert "exceeds maximum length" in result.error_message
-
+    assert result.error_message is not None and "exceeds maximum length" in result.error_message
 
 def test_file_overwrite_protection(tmp_path):
     # Setup: create a dummy model and save it

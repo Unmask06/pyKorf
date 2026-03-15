@@ -36,7 +36,7 @@ class Pipe(BaseElement):
     # Parameter constants (moved from definitions/pipe.py)
     # ------------------------------------------------------------------
     BEND = "BEND"
-    LBL = "LBL" #[on/off, x-offset, y-offset]
+    LBL = "LBL"  # [on/off, x-offset, y-offset]
     COLOR = "COLOR"
     STRM = "STRM"
     LOCK = "LOCK"

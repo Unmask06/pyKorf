@@ -445,7 +445,7 @@ class TestPipedataProcessor:
 
         l1_result = next(r for r in result.pipe_results if r.pipe_name == "L1")
         assert l1_result.success is False
-        assert "PMS" in l1_result.error
+        assert l1_result.error is not None and "PMS" in l1_result.error
 
     def test_unknown_stream_fails_gracefully(self, processor: PipedataProcessor):
         """Unknown stream number should fail gracefully."""
@@ -457,7 +457,7 @@ class TestPipedataProcessor:
 
         l1_result = next(r for r in result.pipe_results if r.pipe_name == "L1")
         assert l1_result.success is False
-        assert "Stream" in l1_result.error
+        assert l1_result.error is not None and "Stream" in l1_result.error
 
     # ------------------------------------------------------------------
     # File-based processing

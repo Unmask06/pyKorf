@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from textual.app import App, ComposeResult
 from textual.containers import Vertical
 from textual.widgets import Label, Static
@@ -118,7 +120,7 @@ class UseCaseTUI(App):
         except Exception as exc:
             self.show_notification(f"Error reloading file: {exc}")
 
-    def action_pop_screen(self) -> None:
+    def action_pop_screen(self) -> Any:
         """Override pop_screen to prevent exiting the first screen (FilePicker)."""
         from pykorf.use_case.tui.screens.file_picker import FilePickerScreen
 

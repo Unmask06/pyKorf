@@ -154,7 +154,7 @@ class MainMenuScreen(Screen):
         product_count = 0
         pump_count = 0
         modified_indicator = ""
-        validation_issues = []
+        validation_issues: list[str] = []
         if model is not None:
             from pathlib import Path
 
