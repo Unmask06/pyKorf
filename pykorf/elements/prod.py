@@ -100,3 +100,18 @@ class Product(BaseElement):
             return int(self._scalar(self.NOZ, 0))
         except (TypeError, ValueError):
             return 0
+
+    def summary(self, export: bool = False) -> dict:
+        if export:
+            pres_val, pres_unit = self.get_value_and_unit(Product.PIN, val_index=1, unit_index=-1)
+            return {
+                "Product Name": self.name,
+                "Type": self.type,
+                self.format_export_header("Inlet Pressure", pres_unit): pres_val,
+            }
+
+        return {
+            "name": self.name,
+            "type": self.type,
+            "pressure_kPag": self.pressure_kPag,
+        }
