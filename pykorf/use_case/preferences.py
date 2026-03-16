@@ -71,21 +71,18 @@ def get_last_interaction() -> dict[str, Any]:
         Dictionary containing last interaction data, or empty dict if not set.
     """
     config = load_config()
-    return config.get("last_interaction", {})
+    return config.get("last_interaction", {}).get("data", {})
 
 
 def set_last_interaction(screen_name: str, data: dict[str, Any]) -> None:
     """Save the last interaction data.
 
     Args:
-        screen_name: Name of the screen/interaction.
+        screen_name: Name of the screen/interaction (kept for API compatibility, not stored).
         data: Dictionary of interaction data to save.
     """
     config = load_config()
-    if "last_interaction" not in config:
-        config["last_interaction"] = {}
-    config["last_interaction"]["screen"] = screen_name
-    config["last_interaction"]["data"] = data
+    config["last_interaction"] = {"data": data}
     save_config(config)
 
 

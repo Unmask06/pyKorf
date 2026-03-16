@@ -95,20 +95,16 @@ class GenerateReportScreen(Screen):
             output_path = str(kdf_path.with_name(f"{kdf_path.stem}_report.xlsx"))
 
         # Load saved preferences or default to True
-        prefs = (
-            get_last_interaction()
-            .get("data", {})
-            .get(
-                "report_elements",
-                {
-                    "Feeds": True,
-                    "Products": True,
-                    "Pipes": True,
-                    "Pumps": True,
-                    "Compressors": True,
-                    "Valves": True,
-                },
-            )
+        prefs = get_last_interaction().get(
+            "report_elements",
+            {
+                "Feeds": True,
+                "Products": True,
+                "Pipes": True,
+                "Pumps": True,
+                "Compressors": True,
+                "Valves": True,
+            },
         )
 
         # Determine available elements
@@ -189,6 +185,7 @@ class GenerateReportScreen(Screen):
     def open_excel(self) -> None:
         """Open the generated Excel file."""
         import os
+
         from pykorf.use_case.tui.app import UseCaseTUI
 
         app = self.app
@@ -238,7 +235,7 @@ class GenerateReportScreen(Screen):
                     selected_elements.append(elem)
 
         # Save preferences
-        current_data = get_last_interaction().get("data", {})
+        current_data = get_last_interaction()
         current_data["report_elements"] = prefs_to_save
         set_last_interaction("generate_report", current_data)
 
