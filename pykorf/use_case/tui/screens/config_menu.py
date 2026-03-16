@@ -147,21 +147,20 @@ class ConfigMenuScreen(Screen):
 
         results_log = self.query_one("#config-results", RichLog)
 
-        last_interaction = get_last_interaction()
-        if last_interaction.get("screen") == "config_menu":
-            data = last_interaction.get("data", {})
-            pms_excel_path = data.get("pms_excel_path", "")
-            if pms_excel_path:
-                self.query_one("#pms-excel-input", Input).value = pms_excel_path
-            pms_output = data.get("pms_output", "")
-            if pms_output:
-                self.query_one("#pms-output-input", Input).value = pms_output
-            stream_excel_path = data.get("stream_excel_path", "")
-            if stream_excel_path:
-                self.query_one("#stream-excel-input", Input).value = stream_excel_path
-            stream_output = data.get("stream_output", "")
-            if stream_output:
-                self.query_one("#stream-output-input", Input).value = stream_output
+        # get_last_interaction() now returns data directly
+        data = get_last_interaction()
+        pms_excel_path = data.get("pms_excel_path", "")
+        if pms_excel_path:
+            self.query_one("#pms-excel-input", Input).value = pms_excel_path
+        pms_output = data.get("pms_output", "")
+        if pms_output:
+            self.query_one("#pms-output-input", Input).value = pms_output
+        stream_excel_path = data.get("stream_excel_path", "")
+        if stream_excel_path:
+            self.query_one("#stream-excel-input", Input).value = stream_excel_path
+        stream_output = data.get("stream_output", "")
+        if stream_output:
+            self.query_one("#stream-output-input", Input).value = stream_output
 
     @on(Button.Pressed, "#btn-import-pms")
     def import_pms(self) -> None:
@@ -190,12 +189,7 @@ class ConfigMenuScreen(Screen):
             log_success(results, "Imported PMS from Excel:")
             log_info(results, f"  {path}")
             # Merge with existing data, only update non-empty values
-            last_interaction = get_last_interaction()
-            data = (
-                last_interaction.get("data", {})
-                if last_interaction.get("screen") == "config_menu"
-                else {}
-            )
+            data = get_last_interaction()
             data["pms_excel_path"] = excel_path
             data["pms_output"] = output_name
             set_last_interaction("config_menu", data)
@@ -233,12 +227,7 @@ class ConfigMenuScreen(Screen):
             log_success(results, "Imported Stream Data from Excel:")
             log_info(results, f"  {path}")
             # Merge with existing data, only update non-empty values
-            last_interaction = get_last_interaction()
-            data = (
-                last_interaction.get("data", {})
-                if last_interaction.get("screen") == "config_menu"
-                else {}
-            )
+            data = get_last_interaction()
             data["stream_excel_path"] = excel_path
             data["stream_output"] = output_name
             set_last_interaction("config_menu", data)

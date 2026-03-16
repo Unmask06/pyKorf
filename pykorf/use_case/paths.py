@@ -56,8 +56,9 @@ def ensure_config_dir() -> Path:
     Returns:
         Path to the config directory.
     """
-    DEFAULT_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-    return DEFAULT_CONFIG_DIR
+    config_dir = get_config_dir()
+    config_dir.mkdir(parents=True, exist_ok=True)
+    return config_dir
 
 
 def get_config_dir() -> Path:

@@ -1,0 +1,5501 @@
+E501 Line too long (105 > 100)
+ --> pykorf\__init__.py:1:101
+  |
+1 | """pyKorf - Enterprise Python toolkit for reading, editing and writing KORF hydraulic model files (.kdf).
+  |                                                                                                     ^^^^^
+2 |
+3 | This package provides comprehensive support for working with KORF hydraulic simulation
+  |
+
+RUF022 `__all__` is not sorted
+   --> pykorf\__init__.py:139:11
+    |
+138 |   __author__ = "pyKorf Contributors"
+139 |   __all__ = [
+    |  ___________^
+140 | |     # Core classes
+141 | |     "CaseSet",
+142 | |     "KorfModel",
+143 | |     "Model",
+144 | |     "Results",
+145 | |     # Configuration
+146 | |     "Config",
+147 | |     "get_config",
+148 | |     "reset_config",
+149 | |     "set_config",
+150 | |     # Exceptions
+151 | |     "AutomationError",
+152 | |     "CaseError",
+153 | |     "ConnectivityError",
+154 | |     "ElementAlreadyExists",
+155 | |     "ElementNotFound",
+156 | |     "ErrorContext",
+157 | |     "ExportError",
+158 | |     "ImportError",
+159 | |     "KorfError",
+160 | |     "LayoutError",
+161 | |     "ParameterError",
+162 | |     "ParseError",
+163 | |     "ValidationError",
+164 | |     "VersionError",
+165 | |     # Fluid
+166 | |     "Fluid",
+167 | |     # Types
+168 | |     "CaseInfo",
+169 | |     "CompressorData",
+170 | |     "ElementBase",
+171 | |     "ElementType",
+172 | |     "ExportOptions",
+173 | |     "FeedData",
+174 | |     "FlowParameters",
+175 | |     "FluidProperties",
+176 | |     "HeatExchangerData",
+177 | |     "KdfBaseModel",
+178 | |     "KdfVersion",
+179 | |     "ModelMetadata",
+180 | |     "PipeData",
+181 | |     "Position",
+182 | |     "ProductData",
+183 | |     "PumpData",
+184 | |     "PumpType",
+185 | |     "UnitConfiguration",
+186 | |     "UnitSystem",
+187 | |     "ValidationIssue",
+188 | |     "ValveData",
+189 | |     "VesselData",
+190 | |     "VesselOrientation",
+191 | |     # Constants
+192 | |     "Element",
+193 | |     # Version
+194 | |     "__author__",
+195 | |     "__version__",
+196 | | ]
+    | |_^
+    |
+help: Apply an isort-style sorting to `__all__`
+
+F401 [*] `pywinauto.timings.TimeoutError` imported but unused
+  --> pykorf\automation.py:38:51
+   |
+36 | if TYPE_CHECKING:
+37 |     from pywinauto.application import Application
+38 |     from pywinauto.timings import TimeoutError as WinTimeout
+   |                                                   ^^^^^^^^^^
+39 | try:
+40 |     from pywinauto.application import Application
+   |
+help: Remove unused import: `pywinauto.timings.TimeoutError`
+
+D102 Missing docstring in public method
+  --> pykorf\cases.py:61:9
+   |
+60 |     @property
+61 |     def count(self) -> int:
+   |         ^^^^^
+62 |         return self._model.general.num_cases
+   |
+
+D205 1 blank line required between summary line and description
+   --> pykorf\cases.py:116:9
+    |
+115 |       def get_case_value(self, raw_string: str, case_index: int) -> str:
+116 | /         """Extract the value for *case_index* (1-based) from a semicolon
+117 | |         string like ``'50;55;20'``.
+118 | |
+119 | |         Parameters
+120 | |         ----------
+121 | |         raw_string:
+122 | |             A KORF multi-case string.
+123 | |         case_index:
+124 | |             1-based case position.
+125 | |         """
+    | |___________^
+126 |           parts = split_cases(raw_string)
+127 |           self._validate_case(case_index)
+    |
+help: Insert single blank line
+
+D205 1 blank line required between summary line and description
+   --> pykorf\cases.py:133:9
+    |
+132 |       def set_case_value(self, raw_string: str, case_index: int, new_value: str) -> str:
+133 | /         """Replace the value for *case_index* in *raw_string* and return the
+134 | |         updated string.
+135 | |
+136 | |         Parameters
+137 | |         ----------
+138 | |         raw_string:
+139 | |             Existing multi-case string, e.g. ``'50;55;20'``.
+140 | |         case_index:
+141 | |             1-based position to update.
+142 | |         new_value:
+143 | |             Replacement value as a string.
+144 | |         """
+    | |___________^
+145 |           parts = split_cases(raw_string)
+146 |           self._validate_case(case_index)
+    |
+help: Insert single blank line
+
+RUF022 `__all__` is not sorted
+   --> pykorf\elements\__init__.py:153:11
+    |
+151 |   }
+152 |
+153 |   __all__ = [
+    |  ___________^
+154 | |     "BaseElement",
+155 | |     "CheckValve",
+156 | |     "Compressor",
+157 | |     "Expander",
+158 | |     "Feed",
+159 | |     "FlowOrifice",
+160 | |     "General",
+161 | |     "HeatExchanger",
+162 | |     "Junction",
+163 | |     "MiscEquipment",
+164 | |     "Pipe",
+165 | |     "PipeData",
+166 | |     "Product",
+167 | |     "Pseudo",
+168 | |     "Pump",
+169 | |     "Symbol",
+170 | |     "Tee",
+171 | |     "Tools",
+172 | |     "Valve",
+173 | |     "Vessel",
+174 | |     # Backward-compat aliases
+175 | |     "Check",
+176 | |     "Common",
+177 | |     "Comp",
+178 | |     "Element",
+179 | |     "Expand",
+180 | |     "Gen",
+181 | |     "Hx",
+182 | |     "Junc",
+183 | |     "Misc",
+184 | |     "Orifice",
+185 | |     "Prod",
+186 | |     # Registries
+187 | |     "ELEMENT_REGISTRY",
+188 | |     "PROPERTIES_BY_ELEMENT",
+189 | | ]
+    | |_^
+    |
+help: Apply an isort-style sorting to `__all__`
+
+D102 Missing docstring in public method
+   --> pykorf\elements\base.py:161:9
+    |
+160 |     @property
+161 |     def index(self) -> int:
+    |         ^^^^^
+162 |         return self._index
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\base.py:165:9
+    |
+164 |     @property
+165 |     def etype(self) -> str:
+    |         ^^^^^
+166 |         return self._etype
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\base.py:191:9
+    |
+190 |     @property
+191 |     def notes(self) -> str:
+    |         ^^^^^
+192 |         rec = self._get(self.NOTES)
+193 |         return rec.values[0] if rec and rec.values else ""
+    |
+
+N802 Function name `dp_kPag` should be lowercase
+  --> pykorf\elements\check.py:43:9
+   |
+42 |     @property
+43 |     def dp_kPag(self) -> float:
+   |         ^^^^^^^
+44 |         try:
+45 |             return float(self._scalar(CheckValve.DP, 1, 0.0))
+   |
+help: Consider adding `@typing.override` if this method overrides a method from a superclass
+
+D102 Missing docstring in public method
+  --> pykorf\elements\check.py:43:9
+   |
+42 |     @property
+43 |     def dp_kPag(self) -> float:
+   |         ^^^^^^^
+44 |         try:
+45 |             return float(self._scalar(CheckValve.DP, 1, 0.0))
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\elements\check.py:62:9
+   |
+61 |     @property
+62 |     def connection(self) -> tuple[int, int]:
+   |         ^^^^^^^^^^
+63 |         vals = self._values(self.CON)
+64 |         try:
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\elements\compressor.py:73:9
+   |
+72 |     @property
+73 |     def comp_type(self) -> str:
+   |         ^^^^^^^^^
+74 |         return str(self._scalar(Compressor.TYPE, 0, "Centrifugal"))
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\elements\compressor.py:77:9
+   |
+76 |     @property
+77 |     def efficiency(self) -> float:
+   |         ^^^^^^^^^^
+78 |         try:
+79 |             return float(self._scalar(Compressor.EFFC, 1, 0.0))
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\elements\compressor.py:83:9
+   |
+81 |             return 0.0
+82 |
+83 |     def set_efficiency(self, value: float) -> None:
+   |         ^^^^^^^^^^^^^^
+84 |         rec = self._get(Compressor.EFFC)
+85 |         if rec:
+   |
+
+N802 Function name `power_kW` should be lowercase
+  --> pykorf\elements\compressor.py:89:9
+   |
+88 |     @property
+89 |     def power_kW(self) -> float:
+   |         ^^^^^^^^
+90 |         try:
+91 |             return float(self._scalar(Compressor.POW, 0, 0.0))
+   |
+help: Consider adding `@typing.override` if this method overrides a method from a superclass
+
+D102 Missing docstring in public method
+  --> pykorf\elements\compressor.py:89:9
+   |
+88 |     @property
+89 |     def power_kW(self) -> float:
+   |         ^^^^^^^^
+90 |         try:
+91 |             return float(self._scalar(Compressor.POW, 0, 0.0))
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\elements\compressor.py:96:9
+   |
+95 |     @property
+96 |     def head_m(self) -> float:
+   |         ^^^^^^
+97 |         try:
+98 |             return float(self._scalar(Compressor.HQACT, 0, 0.0))
+   |
+
+N802 Function name `dp_kPag` should be lowercase
+   --> pykorf\elements\compressor.py:103:9
+    |
+102 |     @property
+103 |     def dp_kPag(self) -> float:
+    |         ^^^^^^^
+104 |         try:
+105 |             return float(self._scalar(Compressor.DP, 1, 0.0))
+    |
+help: Consider adding `@typing.override` if this method overrides a method from a superclass
+
+D102 Missing docstring in public method
+   --> pykorf\elements\compressor.py:103:9
+    |
+102 |     @property
+103 |     def dp_kPag(self) -> float:
+    |         ^^^^^^^
+104 |         try:
+105 |             return float(self._scalar(Compressor.DP, 1, 0.0))
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\compressor.py:110:9
+    |
+109 |     @property
+110 |     def connection(self) -> tuple[int, int]:
+    |         ^^^^^^^^^^
+111 |         vals = self._values(self.CON)
+112 |         try:
+    |
+
+N802 Function name `dp_kPag` should be lowercase
+  --> pykorf\elements\expand.py:65:9
+   |
+64 |     @property
+65 |     def dp_kPag(self) -> float:
+   |         ^^^^^^^
+66 |         try:
+67 |             return float(self._scalar(Expander.DP, 1, 0.0))
+   |
+help: Consider adding `@typing.override` if this method overrides a method from a superclass
+
+D102 Missing docstring in public method
+  --> pykorf\elements\expand.py:65:9
+   |
+64 |     @property
+65 |     def dp_kPag(self) -> float:
+   |         ^^^^^^^
+66 |         try:
+67 |             return float(self._scalar(Expander.DP, 1, 0.0))
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\elements\expand.py:72:9
+   |
+71 |     @property
+72 |     def k_factor(self) -> float:
+   |         ^^^^^^^^
+73 |         try:
+74 |             return float(self._scalar(Expander.K, 0, 0.0))
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\elements\expand.py:79:9
+   |
+78 |     @property
+79 |     def angle_deg(self) -> float:
+   |         ^^^^^^^^^
+80 |         try:
+81 |             return float(self._scalar(Expander.ANGLE, 0, 180.0))
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\elements\expand.py:86:9
+   |
+85 |     @property
+86 |     def connection(self) -> tuple[int, int]:
+   |         ^^^^^^^^^^
+87 |         vals = self._values(self.CON)
+88 |         try:
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\elements\feed.py:58:9
+   |
+57 |     @property
+58 |     def type(self) -> str:
+   |         ^^^^
+59 |         return str(self._scalar(Feed.TYPE, 0, "Pipe"))
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\elements\feed.py:62:9
+   |
+61 |     @property
+62 |     def elevation_m(self) -> float:
+   |         ^^^^^^^^^^^
+63 |         try:
+64 |             return float(self._scalar(Feed.ELEV, 0, 0.0))
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\elements\feed.py:70:9
+   |
+68 |     # Pressure
+69 |     @property
+70 |     def pressure_string(self) -> str:
+   |         ^^^^^^^^^^^^^^^
+71 |         return str(self._scalar(Feed.PRES, 0, ""))
+   |
+
+N802 Function name `pressure_kPag` should be lowercase
+  --> pykorf\elements\feed.py:74:9
+   |
+73 |     @property
+74 |     def pressure_kPag(self) -> float:
+   |         ^^^^^^^^^^^^^
+75 |         """Calculated outlet pressure [kPag]."""
+76 |         try:
+   |
+help: Consider adding `@typing.override` if this method overrides a method from a superclass
+
+D102 Missing docstring in public method
+  --> pykorf\elements\feed.py:81:9
+   |
+79 |             return 0.0
+80 |
+81 |     def get_pressure(self) -> list[str]:
+   |         ^^^^^^^^^^^^
+82 |         return split_cases(self.pressure_string)
+   |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\feed.py:106:9
+    |
+105 |     @property
+106 |     def dp_string(self) -> str:
+    |         ^^^^^^^^^
+107 |         return str(self._scalar(Feed.DP, 0, "0"))
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\gen.py:170:9
+    |
+169 |     @property
+170 |     def company(self) -> str:
+    |         ^^^^^^^
+171 |         return self._scalar("COM", 0, "")
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\gen.py:174:9
+    |
+173 |     @property
+174 |     def project(self) -> str:
+    |         ^^^^^^^
+175 |         return self._scalar("PRJ", 0, "")
+    |
+
+D205 1 blank line required between summary line and description
+   --> pykorf\elements\gen.py:204:9
+    |
+202 |       @property
+203 |       def case_numbers(self) -> list[str]:
+204 | /         """List of active case numbers, e.g. ``['1', '2', '3']``.
+205 | |         Parsed from the ``CASENO`` semicolon string.
+206 | |         """
+    | |___________^
+207 |           raw = self._scalar("CASENO", 0, "")
+208 |           return [c.strip() for c in str(raw).split(";") if c.strip()]
+    |
+help: Insert single blank line
+
+D102 Missing docstring in public method
+   --> pykorf\elements\gen.py:217:9
+    |
+216 |     @property
+217 |     def num_cases(self) -> int:
+    |         ^^^^^^^^^
+218 |         return len(self.case_numbers)
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\gen.py:245:9
+    |
+244 |     @property
+245 |     def compressibility_model(self) -> str:
+    |         ^^^^^^^^^^^^^^^^^^^^^
+246 |         return self._scalar("MCOMP", 0, "")
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\gen.py:249:9
+    |
+248 |     @property
+249 |     def two_phase_model(self) -> str:
+    |         ^^^^^^^^^^^^^^^
+250 |         return self._scalar("MTP", 0, "")
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\gen.py:257:9
+    |
+256 |     @property
+257 |     def pump_curve_q(self) -> list[str]:
+    |         ^^^^^^^^^^^^
+258 |         return self._values("PCURQ")[:-1]  # last token is unit
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\gen.py:261:9
+    |
+260 |     @property
+261 |     def pump_curve_h(self) -> list[str]:
+    |         ^^^^^^^^^^^^
+262 |         return self._values("PCURH")[:-1]
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\gen.py:265:9
+    |
+264 |     @property
+265 |     def pump_curve_eff(self) -> list[str]:
+    |         ^^^^^^^^^^^^^^
+266 |         return self._values("PCUREFF")[:-1]
+    |
+
+D102 Missing docstring in public method
+  --> pykorf\elements\hx.py:70:9
+   |
+69 |     @property
+70 |     def dp_string(self) -> str:
+   |         ^^^^^^^^^
+71 |         return str(self._scalar(HeatExchanger.DP, 0, "50"))
+   |
+
+N802 Function name `dp_kPag` should be lowercase
+  --> pykorf\elements\hx.py:74:9
+   |
+73 |     @property
+74 |     def dp_kPag(self) -> float:
+   |         ^^^^^^^
+75 |         try:
+76 |             return float(self._scalar(HeatExchanger.DP, 1, 0.0))
+   |
+help: Consider adding `@typing.override` if this method overrides a method from a superclass
+
+D102 Missing docstring in public method
+  --> pykorf\elements\hx.py:74:9
+   |
+73 |     @property
+74 |     def dp_kPag(self) -> float:
+   |         ^^^^^^^
+75 |         try:
+76 |             return float(self._scalar(HeatExchanger.DP, 1, 0.0))
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\elements\hx.py:80:9
+   |
+78 |             return 0.0
+79 |
+80 |     def set_dp(self, value: str | float) -> None:
+   |         ^^^^^^
+81 |         rec = self._get(HeatExchanger.DP)
+82 |         if rec:
+   |
+
+N802 Function name `inlet_pressure_kPag` should be lowercase
+  --> pykorf\elements\hx.py:86:9
+   |
+85 |     @property
+86 |     def inlet_pressure_kPag(self) -> float:
+   |         ^^^^^^^^^^^^^^^^^^^
+87 |         try:
+88 |             return float(self._scalar(HeatExchanger.PIN, 1, 0.0))
+   |
+help: Consider adding `@typing.override` if this method overrides a method from a superclass
+
+D102 Missing docstring in public method
+  --> pykorf\elements\hx.py:86:9
+   |
+85 |     @property
+86 |     def inlet_pressure_kPag(self) -> float:
+   |         ^^^^^^^^^^^^^^^^^^^
+87 |         try:
+88 |             return float(self._scalar(HeatExchanger.PIN, 1, 0.0))
+   |
+
+N802 Function name `outlet_pressure_kPag` should be lowercase
+  --> pykorf\elements\hx.py:93:9
+   |
+92 |     @property
+93 |     def outlet_pressure_kPag(self) -> float:
+   |         ^^^^^^^^^^^^^^^^^^^^
+94 |         try:
+95 |             return float(self._scalar(HeatExchanger.POUT, 1, 0.0))
+   |
+help: Consider adding `@typing.override` if this method overrides a method from a superclass
+
+D102 Missing docstring in public method
+  --> pykorf\elements\hx.py:93:9
+   |
+92 |     @property
+93 |     def outlet_pressure_kPag(self) -> float:
+   |         ^^^^^^^^^^^^^^^^^^^^
+94 |         try:
+95 |             return float(self._scalar(HeatExchanger.POUT, 1, 0.0))
+   |
+
+N802 Function name `heat_duty_kJh` should be lowercase
+   --> pykorf\elements\hx.py:100:9
+    |
+ 99 |     @property
+100 |     def heat_duty_kJh(self) -> float:
+    |         ^^^^^^^^^^^^^
+101 |         try:
+102 |             return float(self._scalar(HeatExchanger.Q, 1, 0.0))
+    |
+help: Consider adding `@typing.override` if this method overrides a method from a superclass
+
+D102 Missing docstring in public method
+   --> pykorf\elements\hx.py:100:9
+    |
+ 99 |     @property
+100 |     def heat_duty_kJh(self) -> float:
+    |         ^^^^^^^^^^^^^
+101 |         try:
+102 |             return float(self._scalar(HeatExchanger.Q, 1, 0.0))
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\hx.py:107:9
+    |
+106 |     @property
+107 |     def nozzle_in(self) -> int:
+    |         ^^^^^^^^^
+108 |         try:
+109 |             return int(self._scalar(self.NOZI, 0, 0))
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\hx.py:114:9
+    |
+113 |     @property
+114 |     def nozzle_out(self) -> int:
+    |         ^^^^^^^^^^
+115 |         try:
+116 |             return int(self._scalar(self.NOZO, 0, 0))
+    |
+
+N802 Function name `pressure_kPag` should be lowercase
+  --> pykorf\elements\junction.py:36:9
+   |
+35 |     @property
+36 |     def pressure_kPag(self) -> float:
+   |         ^^^^^^^^^^^^^
+37 |         try:
+38 |             return float(self._scalar(Junction.PRES, 1, 0.0))
+   |
+help: Consider adding `@typing.override` if this method overrides a method from a superclass
+
+D102 Missing docstring in public method
+  --> pykorf\elements\junction.py:36:9
+   |
+35 |     @property
+36 |     def pressure_kPag(self) -> float:
+   |         ^^^^^^^^^^^^^
+37 |         try:
+38 |             return float(self._scalar(Junction.PRES, 1, 0.0))
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\elements\misc.py:53:9
+   |
+52 |     @property
+53 |     def dp_string(self) -> str:
+   |         ^^^^^^^^^
+54 |         return str(self._scalar(MiscEquipment.DP, 0, "0"))
+   |
+
+N802 Function name `dp_kPag` should be lowercase
+  --> pykorf\elements\misc.py:57:9
+   |
+56 |     @property
+57 |     def dp_kPag(self) -> float:
+   |         ^^^^^^^
+58 |         try:
+59 |             return float(self._scalar(MiscEquipment.DP, 1, 0.0))
+   |
+help: Consider adding `@typing.override` if this method overrides a method from a superclass
+
+D102 Missing docstring in public method
+  --> pykorf\elements\misc.py:57:9
+   |
+56 |     @property
+57 |     def dp_kPag(self) -> float:
+   |         ^^^^^^^
+58 |         try:
+59 |             return float(self._scalar(MiscEquipment.DP, 1, 0.0))
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\elements\misc.py:63:9
+   |
+61 |             return 0.0
+62 |
+63 |     def set_dp(self, value: str | float) -> None:
+   |         ^^^^^^
+64 |         rec = self._get(MiscEquipment.DP)
+65 |         if rec:
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\elements\orifice.py:82:9
+   |
+81 |     @property
+82 |     def orifice_type(self) -> str:
+   |         ^^^^^^^^^^^^
+83 |         return str(self._scalar(FlowOrifice.TYPE, 0, "Orifice"))
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\elements\orifice.py:86:9
+   |
+85 |     @property
+86 |     def dp_string(self) -> str:
+   |         ^^^^^^^^^
+87 |         return str(self._scalar(FlowOrifice.DP, 0, ""))
+   |
+
+N802 Function name `dp_kPag` should be lowercase
+  --> pykorf\elements\orifice.py:90:9
+   |
+89 |     @property
+90 |     def dp_kPag(self) -> float:
+   |         ^^^^^^^
+91 |         try:
+92 |             return float(self._scalar(FlowOrifice.DP, 1, 0.0))
+   |
+help: Consider adding `@typing.override` if this method overrides a method from a superclass
+
+D102 Missing docstring in public method
+  --> pykorf\elements\orifice.py:90:9
+   |
+89 |     @property
+90 |     def dp_kPag(self) -> float:
+   |         ^^^^^^^
+91 |         try:
+92 |             return float(self._scalar(FlowOrifice.DP, 1, 0.0))
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\elements\orifice.py:96:9
+   |
+94 |             return 0.0
+95 |
+96 |     def set_dp(self, value: str | float | list) -> None:
+   |         ^^^^^^
+97 |         if isinstance(value, (list, tuple)):
+98 |             value = join_cases(value)
+   |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\orifice.py:112:9
+    |
+111 |     @property
+112 |     def bore_m(self) -> float:
+    |         ^^^^^^
+113 |         try:
+114 |             return float(self._scalar(FlowOrifice.BORE, 1, 0.0))
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\orifice.py:119:9
+    |
+118 |     @property
+119 |     def discharge_coeff(self) -> float:
+    |         ^^^^^^^^^^^^^^^
+120 |         try:
+121 |             return float(self._scalar(FlowOrifice.CD, 0, 0.0))
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\orifice.py:126:9
+    |
+125 |     @property
+126 |     def num_holes(self) -> int:
+    |         ^^^^^^^^^
+127 |         try:
+128 |             return int(self._scalar(FlowOrifice.HOLES, 0, 1))
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\orifice.py:133:9
+    |
+132 |     @property
+133 |     def connection(self) -> tuple[int, int]:
+    |         ^^^^^^^^^^
+134 |         vals = self._values(self.CON)
+135 |         try:
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\pipe.py:237:9
+    |
+236 |     @property
+237 |     def flow_unit(self) -> str:
+    |         ^^^^^^^^^
+238 |         return str(self._scalar(Pipe.TFLOW, 2, "t/h"))
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\pipe.py:284:9
+    |
+283 |     @property
+284 |     def schedule(self) -> str:
+    |         ^^^^^^^^
+285 |         return str(self._scalar(Pipe.SCH, 0, ""))
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\pipe.py:288:9
+    |
+287 |     @property
+288 |     def length_m(self) -> float:
+    |         ^^^^^^^^
+289 |         try:
+290 |             return float(self._scalar(Pipe.LEN, 0, 0))
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\pipe.py:299:9
+    |
+298 |     @property
+299 |     def material(self) -> str:
+    |         ^^^^^^^^
+300 |         return str(self._scalar(Pipe.MAT, 0, "Steel"))
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\pipe.py:363:9
+    |
+362 |     @property
+363 |     def reynolds_number(self) -> float:
+    |         ^^^^^^^^^^^^^^^
+364 |         try:
+365 |             return float(self._scalar(Pipe.RE, 0, 0.0))
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\pipe.py:370:9
+    |
+369 |     @property
+370 |     def flow_regime(self) -> list[str]:
+    |         ^^^^^^^^^^^
+371 |         return self._values(Pipe.REG)
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\pipe.py:466:9
+    |
+465 |     @property
+466 |     def equivalent_length_m(self) -> float:
+    |         ^^^^^^^^^^^^^^^^^^^
+467 |         try:
+468 |             return float(self._scalar(Pipe.EQLEN, 0, 0.0))
+    |
+
+D102 Missing docstring in public method
+  --> pykorf\elements\pipedata.py:45:9
+   |
+44 |     @property
+45 |     def material(self) -> str:
+   |         ^^^^^^^^
+46 |         return self._scalar(PipeData.MAT, 0, "")
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\elements\pipedata.py:49:9
+   |
+48 |     @property
+49 |     def roughness_m(self) -> float:
+   |         ^^^^^^^^^^^
+50 |         try:
+51 |             return float(self._scalar(PipeData.E, 0, 0.0))
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\elements\pipedata.py:56:9
+   |
+55 |     @property
+56 |     def schedules(self) -> list[str]:
+   |         ^^^^^^^^^
+57 |         return [str(s) for s in self._values(PipeData.SCH)]
+   |
+
+PERF401 Use a list comprehension to create a transformed list
+  --> pykorf\elements\pipedata.py:69:17
+   |
+67 |                   and rec.param == PipeData.DIA
+68 |               ):
+69 | /                 results.append(
+70 | |                     {
+71 | |                         "id": rec.values[0],
+72 | |                         "nominal": rec.values[1],
+73 | |                         "od": rec.values[2],
+74 | |                         "ids": rec.values[4:],  # index 3 seems to be a flag or something
+75 | |                     }
+76 | |                 )
+   | |_________________^
+77 |           return results
+   |
+help: Replace for loop with list comprehension
+
+D102 Missing docstring in public method
+  --> pykorf\elements\prod.py:58:9
+   |
+57 |     @property
+58 |     def type(self) -> str:
+   |         ^^^^
+59 |         return str(self._scalar(Product.TYPE, 0, "Pipe"))
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\elements\prod.py:62:9
+   |
+61 |     @property
+62 |     def elevation_m(self) -> float:
+   |         ^^^^^^^^^^^
+63 |         try:
+64 |             return float(self._scalar(Product.ELEV, 0, 0.0))
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\elements\prod.py:70:9
+   |
+68 |     # Pressure
+69 |     @property
+70 |     def pressure_string(self) -> str:
+   |         ^^^^^^^^^^^^^^^
+71 |         return str(self._scalar(Product.PRES, 0, ""))
+   |
+
+N802 Function name `pressure_kPag` should be lowercase
+  --> pykorf\elements\prod.py:74:9
+   |
+73 |     @property
+74 |     def pressure_kPag(self) -> float:
+   |         ^^^^^^^^^^^^^
+75 |         """Calculated inlet pressure [kPag]."""
+76 |         try:
+   |
+help: Consider adding `@typing.override` if this method overrides a method from a superclass
+
+D102 Missing docstring in public method
+  --> pykorf\elements\prod.py:81:9
+   |
+79 |             return 0.0
+80 |
+81 |     def get_pressure(self) -> list[str]:
+   |         ^^^^^^^^^^^^
+82 |         return split_cases(self.pressure_string)
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\elements\prod.py:84:9
+   |
+82 |         return split_cases(self.pressure_string)
+83 |
+84 |     def set_pressure(self, pressure: list | str | float) -> None:
+   |         ^^^^^^^^^^^^
+85 |         if isinstance(pressure, (list, tuple)):
+86 |             p_str = join_cases(pressure)
+   |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\prod.py:98:9
+    |
+ 97 |     @property
+ 98 |     def nozzle_pipe_index(self) -> int:
+    |         ^^^^^^^^^^^^^^^^^
+ 99 |         try:
+100 |             return int(self._scalar(self.NOZ, 0, 0))
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\pump.py:108:9
+    |
+107 |     @property
+108 |     def inlet_pipe(self) -> int:
+    |         ^^^^^^^^^^
+109 |         try:
+110 |             return int(self._scalar(self.CON, 0, 0))
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\pump.py:115:9
+    |
+114 |     @property
+115 |     def outlet_pipe(self) -> int:
+    |         ^^^^^^^^^^^
+116 |         try:
+117 |             return int(self._scalar(self.CON, 1, 0))
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\pump.py:122:9
+    |
+121 |     @property
+122 |     def pump_type(self) -> str:
+    |         ^^^^^^^^^
+123 |         return str(self._scalar(Pump.TYPE, 0, "Centrifugal"))
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\pump.py:130:9
+    |
+129 |     @property
+130 |     def dp_string(self) -> str:
+    |         ^^^^^^^^^
+131 |         return str(self._scalar(Pump.DP, 0, ""))
+    |
+
+N802 Function name `dp_kPag` should be lowercase
+   --> pykorf\elements\pump.py:134:9
+    |
+133 |     @property
+134 |     def dp_kPag(self) -> float:
+    |         ^^^^^^^
+135 |         """Calculated differential pressure [kPag]."""
+136 |         try:
+    |
+help: Consider adding `@typing.override` if this method overrides a method from a superclass
+
+D102 Missing docstring in public method
+   --> pykorf\elements\pump.py:156:9
+    |
+155 |     @property
+156 |     def efficiency_string(self) -> str:
+    |         ^^^^^^^^^^^^^^^^^
+157 |         return str(self._scalar(Pump.EFFP, 0, ""))
+    |
+
+N802 Function name `power_kW` should be lowercase
+   --> pykorf\elements\pump.py:186:9
+    |
+185 |     @property
+186 |     def power_kW(self) -> float:
+    |         ^^^^^^^^
+187 |         """Calculated absorbed power [kW]."""
+188 |         try:
+    |
+help: Consider adding `@typing.override` if this method overrides a method from a superclass
+
+D102 Missing docstring in public method
+   --> pykorf\elements\pump.py:210:9
+    |
+209 |     @property
+210 |     def npsh_required_m(self) -> float:
+    |         ^^^^^^^^^^^^^^^
+211 |         try:
+212 |             return float(self._scalar(Pump.NPSHR13, 1, 0.0))
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\pump.py:280:9
+    |
+278 |     # ------------------------------------------------------------------
+279 |
+280 |     def summary(self) -> dict:
+    |         ^^^^^^^
+281 |         return {
+282 |             "name": self.name,
+    |
+
+D102 Missing docstring in public method
+  --> pykorf\elements\tee.py:54:9
+   |
+53 |     @property
+54 |     def tee_type(self) -> int:
+   |         ^^^^^^^^
+55 |         try:
+56 |             return int(self._scalar(Tee.TYPE, 0, 0))
+   |
+
+N802 Function name `pressures_kPag` should be lowercase
+  --> pykorf\elements\tee.py:61:9
+   |
+60 |     @property
+61 |     def pressures_kPag(self) -> list[float]:
+   |         ^^^^^^^^^^^^^^
+62 |         vals = self._values(Tee.PRES)
+63 |         nums = vals[:-1] if vals and isinstance(vals[-1], str) else vals
+   |
+help: Consider adding `@typing.override` if this method overrides a method from a superclass
+
+D102 Missing docstring in public method
+  --> pykorf\elements\tee.py:61:9
+   |
+60 |     @property
+61 |     def pressures_kPag(self) -> list[float]:
+   |         ^^^^^^^^^^^^^^
+62 |         vals = self._values(Tee.PRES)
+63 |         nums = vals[:-1] if vals and isinstance(vals[-1], str) else vals
+   |
+
+SIM105 Use `contextlib.suppress(TypeError, ValueError)` instead of `try`-`except`-`pass`
+  --> pykorf\elements\tee.py:66:13
+   |
+64 |           result = []
+65 |           for v in nums:
+66 | /             try:
+67 | |                 result.append(float(v))
+68 | |             except (TypeError, ValueError):
+69 | |                 pass
+   | |____________________^
+70 |           return result
+   |
+help: Replace `try`-`except`-`pass` with `with contextlib.suppress(TypeError, ValueError): ...`
+
+PERF203 `try`-`except` within a loop incurs performance overhead
+  --> pykorf\elements\tee.py:68:13
+   |
+66 |               try:
+67 |                   result.append(float(v))
+68 | /             except (TypeError, ValueError):
+69 | |                 pass
+   | |____________________^
+70 |           return result
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\elements\valve.py:93:9
+   |
+92 |     @property
+93 |     def valve_type(self) -> str:
+   |         ^^^^^^^^^^
+94 |         return str(self._scalar(Valve.TYPE, 0, "Linear"))
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\elements\valve.py:97:9
+   |
+96 |     @property
+97 |     def cv(self) -> float:
+   |         ^^
+98 |         try:
+99 |             return float(self._scalar(Valve.CV, 1, 0.0))
+   |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\valve.py:104:9
+    |
+103 |     @property
+104 |     def dp_string(self) -> str:
+    |         ^^^^^^^^^
+105 |         return str(self._scalar(Valve.DP, 0, ""))
+    |
+
+N802 Function name `dp_kPag` should be lowercase
+   --> pykorf\elements\valve.py:108:9
+    |
+107 |     @property
+108 |     def dp_kPag(self) -> float:
+    |         ^^^^^^^
+109 |         try:
+110 |             return float(self._scalar(Valve.DP, 1, 0.0))
+    |
+help: Consider adding `@typing.override` if this method overrides a method from a superclass
+
+D102 Missing docstring in public method
+   --> pykorf\elements\valve.py:108:9
+    |
+107 |     @property
+108 |     def dp_kPag(self) -> float:
+    |         ^^^^^^^
+109 |         try:
+110 |             return float(self._scalar(Valve.DP, 1, 0.0))
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\valve.py:114:9
+    |
+112 |             return 0.0
+113 |
+114 |     def set_dp(self, value: str | float | list) -> None:
+    |         ^^^^^^
+115 |         if isinstance(value, (list, tuple)):
+116 |             value = join_cases(value)
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\elements\valve.py:122:9
+    |
+121 |     @property
+122 |     def opening_string(self) -> str:
+    |         ^^^^^^^^^^^^^^
+123 |         return str(self._scalar(Valve.OPEN, 0, "100"))
+    |
+
+N802 Function name `inlet_pressure_kPag` should be lowercase
+   --> pykorf\elements\valve.py:134:9
+    |
+133 |     @property
+134 |     def inlet_pressure_kPag(self) -> float:
+    |         ^^^^^^^^^^^^^^^^^^^
+135 |         try:
+136 |             return float(self._scalar(Valve.PIN, 1, 0.0))
+    |
+help: Consider adding `@typing.override` if this method overrides a method from a superclass
+
+D102 Missing docstring in public method
+   --> pykorf\elements\valve.py:134:9
+    |
+133 |     @property
+134 |     def inlet_pressure_kPag(self) -> float:
+    |         ^^^^^^^^^^^^^^^^^^^
+135 |         try:
+136 |             return float(self._scalar(Valve.PIN, 1, 0.0))
+    |
+
+N802 Function name `outlet_pressure_kPag` should be lowercase
+   --> pykorf\elements\valve.py:141:9
+    |
+140 |     @property
+141 |     def outlet_pressure_kPag(self) -> float:
+    |         ^^^^^^^^^^^^^^^^^^^^
+142 |         try:
+143 |             return float(self._scalar(Valve.POUT, 1, 0.0))
+    |
+help: Consider adding `@typing.override` if this method overrides a method from a superclass
+
+D102 Missing docstring in public method
+   --> pykorf\elements\valve.py:141:9
+    |
+140 |     @property
+141 |     def outlet_pressure_kPag(self) -> float:
+    |         ^^^^^^^^^^^^^^^^^^^^
+142 |         try:
+143 |             return float(self._scalar(Valve.POUT, 1, 0.0))
+    |
+
+D415 First line should end with a period, question mark, or exclamation point
+   --> pykorf\elements\valve.py:149:9
+    |
+147 |     @property
+148 |     def connection(self) -> tuple[int, int]:
+149 |         """(inlet_pipe_index, outlet_pipe_index)"""
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+150 |         vals = self._values(self.CON)
+151 |         try:
+    |
+help: Add closing punctuation
+
+D102 Missing docstring in public method
+  --> pykorf\elements\vessel.py:59:9
+   |
+58 |     @property
+59 |     def vessel_type(self) -> str:
+   |         ^^^^^^^^^^^
+60 |         return str(self._scalar(Vessel.TYPE, 0, "Vertical"))
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\elements\vessel.py:63:9
+   |
+62 |     @property
+63 |     def pressure_string(self) -> str:
+   |         ^^^^^^^^^^^^^^^
+64 |         return str(self._scalar(Vessel.PRES, 0, ""))
+   |
+
+N802 Function name `pressure_kPag` should be lowercase
+  --> pykorf\elements\vessel.py:67:9
+   |
+66 |     @property
+67 |     def pressure_kPag(self) -> float:
+   |         ^^^^^^^^^^^^^
+68 |         try:
+69 |             return float(self._scalar(Vessel.PRES, 1, 0.0))
+   |
+help: Consider adding `@typing.override` if this method overrides a method from a superclass
+
+D102 Missing docstring in public method
+  --> pykorf\elements\vessel.py:67:9
+   |
+66 |     @property
+67 |     def pressure_kPag(self) -> float:
+   |         ^^^^^^^^^^^^^
+68 |         try:
+69 |             return float(self._scalar(Vessel.PRES, 1, 0.0))
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\elements\vessel.py:73:9
+   |
+71 |             return 0.0
+72 |
+73 |     def set_pressure(self, value: str | float) -> None:
+   |         ^^^^^^^^^^^^
+74 |         rec = self._get(Vessel.PRES)
+75 |         if rec:
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\elements\vessel.py:79:9
+   |
+78 |     @property
+79 |     def elevation_m(self) -> float:
+   |         ^^^^^^^^^^^
+80 |         try:
+81 |             return float(self._scalar(Vessel.ELEV, 0, 0.0))
+   |
+
+N818 Exception name `ElementNotFound` should be named with an Error suffix
+   --> pykorf\exceptions.py:110:7
+    |
+110 | class ElementNotFound(KorfError):
+    |       ^^^^^^^^^^^^^^^
+111 |     """Raised when an element is not found in the model."""
+    |
+
+N818 Exception name `ElementAlreadyExists` should be named with an Error suffix
+   --> pykorf\exceptions.py:134:7
+    |
+134 | class ElementAlreadyExists(KorfError):
+    |       ^^^^^^^^^^^^^^^^^^^^
+135 |     """Raised when attempting to create an element with a duplicate name."""
+    |
+
+TC003 Move standard library import `pathlib.Path` into a type-checking block
+  --> pykorf\log.py:27:21
+   |
+25 | from contextlib import contextmanager
+26 | from contextvars import ContextVar
+27 | from pathlib import Path
+   |                     ^^^^
+28 | from typing import TYPE_CHECKING, Any, TypeVar
+   |
+help: Move into type-checking block
+
+TC004 Move import `structlog` out of type-checking block. Import is used for more than type hinting.
+   --> pykorf\log.py:42:12
+    |
+ 41 | if TYPE_CHECKING:
+ 42 |     import structlog
+    |            ^^^^^^^^^
+ 43 |
+ 44 | # Context variable for request/operation context
+    |
+   ::: pykorf\log.py:134:9
+    |
+133 |     shared_processors = [
+134 |         structlog.stdlib.filter_by_level,
+    |         --------- Used at runtime here
+135 |         structlog.stdlib.add_logger_name,
+136 |         structlog.stdlib.add_log_level,
+    |
+help: Move out of type-checking block
+
+B039 Do not use mutable data structures for `ContextVar` defaults
+  --> pykorf\log.py:45:78
+   |
+44 | # Context variable for request/operation context
+45 | _log_context: ContextVar[dict[str, Any]] = ContextVar("log_context", default={})
+   |                                                                              ^^
+46 |
+47 | # Module-level tracking of current log file
+   |
+help: Replace with `None`; initialize with `.set()``
+
+TC003 Move standard library import `pathlib.Path` into a type-checking block
+  --> pykorf\model\__init__.py:42:21
+   |
+40 | from __future__ import annotations
+41 |
+42 | from pathlib import Path
+   |                     ^^^^
+43 | from typing import Any
+   |
+help: Move into type-checking block
+
+TC001 Move application import `pykorf.elements.BaseElement` into a type-checking block
+  --> pykorf\model\__init__.py:45:29
+   |
+43 | from typing import Any
+44 |
+45 | from pykorf.elements import BaseElement, Feed, Pipe, Product, Pump
+   |                             ^^^^^^^^^^^
+46 | from pykorf.model.services import (
+47 |     ConnectivityService,
+   |
+help: Move into type-checking block
+
+TC001 Move application import `pykorf.elements.Feed` into a type-checking block
+  --> pykorf\model\__init__.py:45:42
+   |
+43 | from typing import Any
+44 |
+45 | from pykorf.elements import BaseElement, Feed, Pipe, Product, Pump
+   |                                          ^^^^
+46 | from pykorf.model.services import (
+47 |     ConnectivityService,
+   |
+help: Move into type-checking block
+
+TC001 Move application import `pykorf.elements.Pipe` into a type-checking block
+  --> pykorf\model\__init__.py:45:48
+   |
+43 | from typing import Any
+44 |
+45 | from pykorf.elements import BaseElement, Feed, Pipe, Product, Pump
+   |                                                ^^^^
+46 | from pykorf.model.services import (
+47 |     ConnectivityService,
+   |
+help: Move into type-checking block
+
+TC001 Move application import `pykorf.elements.Product` into a type-checking block
+  --> pykorf\model\__init__.py:45:54
+   |
+43 | from typing import Any
+44 |
+45 | from pykorf.elements import BaseElement, Feed, Pipe, Product, Pump
+   |                                                      ^^^^^^^
+46 | from pykorf.model.services import (
+47 |     ConnectivityService,
+   |
+help: Move into type-checking block
+
+TC001 Move application import `pykorf.elements.Pump` into a type-checking block
+  --> pykorf\model\__init__.py:45:63
+   |
+43 | from typing import Any
+44 |
+45 | from pykorf.elements import BaseElement, Feed, Pipe, Product, Pump
+   |                                                               ^^^^
+46 | from pykorf.model.services import (
+47 |     ConnectivityService,
+   |
+help: Move into type-checking block
+
+TC001 Move application import `pykorf.parser.KdfRecord` into a type-checking block
+  --> pykorf\model\__init__.py:54:27
+   |
+52 |     SummaryService,
+53 | )
+54 | from pykorf.parser import KdfRecord
+   |                           ^^^^^^^^^
+55 |
+56 | from .core import _ModelBase
+   |
+help: Move into type-checking block
+
+C414 Unnecessary `list()` call within `sorted()`
+   --> pykorf\model\services\connectivity.py:248:16
+    |
+246 |                     unconnected.append(elem.name)
+247 |
+248 |         return sorted(list(set(unconnected)))
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+249 |
+250 |     # -------------------------------------------------------------------------
+    |
+help: Remove the inner `list()` call
+
+PERF401 Use `list.extend` to create a transformed list
+   --> pykorf\model\services\connectivity.py:270:21
+    |
+268 |             for p_idx in pipe_indices:
+269 |                 if p_idx in self.model.pipes:
+270 |                     connected_names.append(self.model.pipes[p_idx].name)
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+271 |
+272 |         return sorted(list(set(connected_names)))
+    |
+help: Replace for loop with list.extend
+
+C414 Unnecessary `list()` call within `sorted()`
+   --> pykorf\model\services\connectivity.py:272:16
+    |
+270 |                     connected_names.append(self.model.pipes[p_idx].name)
+271 |
+272 |         return sorted(list(set(connected_names)))
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+273 |
+274 |     def _connect(self, name1: str, name2: str) -> None:
+    |
+help: Remove the inner `list()` call
+
+E501 Line too long (104 > 100)
+   --> pykorf\model\services\connectivity.py:518:101
+    |
+516 |                 except (ValueError, TypeError):
+517 |                     issues.append(
+518 |                         f"{elem.name} (TEE): {label} CON value {rec.values[i]!r} is not a valid integer"
+    |                                                                                                     ^^^^
+519 |                     )
+520 |                     continue
+    |
+
+SIM102 Use a single `if` statement instead of nested `if` statements
+   --> pykorf\model\services\connectivity.py:573:21
+    |
+571 |               elif et == "JUNC":
+572 |                   for rec in elem.records():
+573 | /                     if rec.param in ("NOZI", "NOZO") and len(rec.values) >= 2:
+574 | |                         if rec.values[1] == old_s:
+    | |__________________________________________________^
+575 |                               rec.values[1] = new_s
+576 |                               rec.raw_line = ""
+    |
+help: Combine `if` statements using `and`
+
+SIM102 Use a single `if` statement instead of nested `if` statements
+   --> pykorf\model\services\connectivity.py:579:21
+    |
+577 |               elif et == "VESSEL":
+578 |                   for rec in elem.records():
+579 | /                     if rec.param in ("NOZLI", "NOZLO") and len(rec.values) >= 2:
+580 | |                         if rec.values[1] == old_s:
+    | |__________________________________________________^
+581 |                               rec.values[1] = new_s
+582 |                               rec.raw_line = ""
+    |
+help: Combine `if` statements using `and`
+
+PERF401 Use `list.extend` to create a transformed list
+   --> pykorf\model\services\connectivity.py:651:25
+    |
+649 |                 for v in rec.values[:2]:
+650 |                     if self._is_valid_idx(v):
+651 |                         indices.append(int(v))
+    |                         ^^^^^^^^^^^^^^^^^^^^^^
+652 |             else:
+653 |                 for _, nozzle_rec in self._get_nozzle_records(elem):
+    |
+help: Replace for loop with list.extend
+
+SIM102 Use a single `if` statement instead of nested `if` statements
+   --> pykorf\model\services\connectivity.py:659:13
+    |
+657 |               noz_param = self._get_nozzle_param(elem)
+658 |               rec = elem._get(noz_param)
+659 | /             if rec and rec.values:
+660 | |                 if self._is_valid_idx(rec.values[0]):
+    | |_____________________________________________________^
+661 |                       indices.append(int(rec.values[0]))
+662 |           elif et == "TEE":
+    |
+help: Combine `if` statements using `and`
+
+PERF401 Use `list.extend` to create a transformed list
+   --> pykorf\model\services\connectivity.py:667:25
+    |
+665 |                 for i in [0, 3, 5]:
+666 |                     if i < len(rec.values) and self._is_valid_idx(rec.values[i]):
+667 |                         indices.append(int(rec.values[i]))
+    |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+668 |         elif et == "JUNC":
+669 |             for rec in elem.records():
+    |
+help: Replace for loop with list.extend
+
+SIM102 Use a single `if` statement instead of nested `if` statements
+   --> pykorf\model\services\connectivity.py:670:17
+    |
+668 |           elif et == "JUNC":
+669 |               for rec in elem.records():
+670 | /                 if rec.param in ("NOZI", "NOZO") and len(rec.values) >= 2:
+671 | |                     if self._is_valid_idx(rec.values[1]):
+    | |_________________________________________________________^
+672 |                           indices.append(int(rec.values[1]))
+673 |           elif et == "VESSEL":
+    |
+help: Combine `if` statements using `and`
+
+SIM102 Use a single `if` statement instead of nested `if` statements
+   --> pykorf\model\services\connectivity.py:675:17
+    |
+673 |           elif et == "VESSEL":
+674 |               for rec in elem.records():
+675 | /                 if rec.param in ("NOZLI", "NOZLO") and len(rec.values) >= 2:
+676 | |                     if self._is_valid_idx(rec.values[1]):
+    | |_________________________________________________________^
+677 |                           indices.append(int(rec.values[1]))
+678 |           return indices
+    |
+help: Combine `if` statements using `and`
+
+SIM105 Use `contextlib.suppress(Exception)` instead of `try`-`except`-`pass`
+   --> pykorf\model\services\io.py:541:13
+    |
+540 |           if options.include_results and hasattr(elem, "summary"):
+541 | /             try:
+542 | |                 data["summary"] = elem.summary()
+543 | |             except Exception:
+544 | |                 pass
+    | |____________________^
+545 |
+546 |           return data
+    |
+help: Replace `try`-`except`-`pass` with `with contextlib.suppress(Exception): ...`
+
+E501 Line too long (104 > 100)
+   --> pykorf\model\services\io.py:725:101
+    |
+723 |         encoding: str = "latin-1",
+724 |     ) -> None:
+725 |         r"""Write a dict of DataFrames (as produced by :meth:`_model_to_dataframes`) to a ``.kdf`` file.
+    |                                                                                                     ^^^^
+726 |
+727 |         The raw lines are reassembled in their original order using the
+    |
+
+TC003 Move standard library import `pathlib.Path` into a type-checking block
+  --> pykorf\model\services\layout.py:19:21
+   |
+18 | from dataclasses import dataclass
+19 | from pathlib import Path
+   |                     ^^^^
+20 | from typing import TYPE_CHECKING, Any
+   |
+help: Move into type-checking block
+
+TC004 Move import `pykorf.elements.base.BaseElement` out of type-checking block. Import is used for more than type hinting.
+   --> pykorf\model\services\layout.py:25:38
+    |
+ 24 | if TYPE_CHECKING:
+ 25 |     from pykorf.elements.base import BaseElement
+    |                                      ^^^^^^^^^^^
+ 26 |     from pykorf.model import Model
+    |
+   ::: pykorf\model\services\layout.py:132:45
+    |
+130 |         if y is not None:
+131 |             raise ValueError("Use set_position(element, x, y) for element objects")
+132 |         self.__set_position_on_element(cast(BaseElement, target), float(name_or_x), float(x_or_y))
+    |                                             ----------- Used at runtime here
+133 |
+134 |     def __all_positions(self) -> dict[str, tuple[float, float]]:
+    |
+help: Move out of type-checking block
+
+F821 Undefined name `cast`
+   --> pykorf\model\services\layout.py:132:40
+    |
+130 |         if y is not None:
+131 |             raise ValueError("Use set_position(element, x, y) for element objects")
+132 |         self.__set_position_on_element(cast(BaseElement, target), float(name_or_x), float(x_or_y))
+    |                                        ^^^^
+133 |
+134 |     def __all_positions(self) -> dict[str, tuple[float, float]]:
+    |
+
+TC001 Move application import `pykorf.parser.KdfRecord` into a type-checking block
+  --> pykorf\model\services\query.py:16:27
+   |
+14 | from pykorf.elements import BaseElement, Common
+15 | from pykorf.exceptions import ErrorContext, ParameterError
+16 | from pykorf.parser import KdfRecord
+   |                           ^^^^^^^^^
+17 |
+18 | if TYPE_CHECKING:
+   |
+help: Move into type-checking block
+
+SIM108 Use ternary operator `results = self.get_elements_by_type(etype) if etype is not None else self.elements` instead of `if`-`else`-block
+   --> pykorf\model\services\query.py:96:9
+    |
+ 94 |               ```
+ 95 |           """
+ 96 | /         if etype is not None:
+ 97 | |             results = self.get_elements_by_type(etype)
+ 98 | |         else:
+ 99 | |             results = self.elements
+    | |___________________________________^
+100 |
+101 |           if name is not None:
+    |
+help: Replace `if`-`else`-block with `results = self.get_elements_by_type(etype) if etype is not None else self.elements`
+
+PERF401 Use `list.extend` to create a transformed list
+   --> pykorf\model\services\summary.py:155:21
+    |
+153 |             for param in required:
+154 |                 if param not in existing_params:
+155 |                     issues.append(f"{etype} template (index 0): missing required param {param!r}")
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+156 |
+157 |     def _check_instance_names(self, issues: list[str]) -> None:
+    |
+help: Replace for loop with list.extend
+
+SIM102 Use a single `if` statement instead of nested `if` statements
+   --> pykorf\model\services\summary.py:171:13
+    |
+169 |           """Check for malformed NOTES records."""
+170 |           for rec in self.model._parser.records:
+171 | /             if rec.param == "NOTES":
+172 | |                 if not rec.values or len(rec.values) < 2:
+173 | |                     if not rec.raw_line:
+    | |________________________________________^
+174 |                           issues.append(f"{rec.element_type} idx {rec.index}: NOTES has no values")
+    |
+help: Combine `if` statements using `and`
+
+SIM102 Use a single `if` statement instead of nested `if` statements
+   --> pykorf\model\services\summary.py:172:17
+    |
+170 |           for rec in self.model._parser.records:
+171 |               if rec.param == "NOTES":
+172 | /                 if not rec.values or len(rec.values) < 2:
+173 | |                     if not rec.raw_line:
+    | |________________________________________^
+174 |                           issues.append(f"{rec.element_type} idx {rec.index}: NOTES has no values")
+    |
+help: Combine `if` statements using `and`
+
+PERF203 `try`-`except` within a loop incurs performance overhead
+   --> pykorf\model\services\summary.py:223:21
+    |
+221 |                                   f"CON {port_name} -> pipe {pipe_idx} not found"
+222 |                               )
+223 | /                     except (ValueError, TypeError):
+224 | |                         pass
+    | |____________________________^
+225 |
+226 |               for nozzle_param in ("NOZL", "NOZ", "NOZI", "NOZO"):
+    |
+
+PERF203 `try`-`except` within a loop incurs performance overhead
+   --> pykorf\model\services\summary.py:237:25
+    |
+235 |                                       f"{nozzle_param} -> pipe {pipe_idx} not found"
+236 |                                   )
+237 | /                         except (ValueError, TypeError):
+238 | |                             pass
+    | |________________________________^
+239 |
+240 |               if elem.etype == "TEE" and con_rec and con_rec.values:
+    |
+
+PERF203 `try`-`except` within a loop incurs performance overhead
+   --> pykorf\model\services\summary.py:251:21
+    |
+249 |                                   f"references non-existent pipe {pipe_idx}"
+250 |                               )
+251 | /                     except (ValueError, TypeError):
+252 | |                         pass
+    | |____________________________^
+253 |
+254 |       def pipe(self, index: int) -> Pipe:
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\parser.py:188:9
+    |
+187 |     @property
+188 |     def records(self) -> list[KdfRecord]:
+    |         ^^^^^^^
+189 |         return self._records
+    |
+
+D205 1 blank line required between summary line and description
+   --> pykorf\parser.py:266:9
+    |
+265 |       def _find_insert_position(self, element_type: str) -> int:
+266 | /         """
+267 | |         Return the list index where new records for *element_type* should
+268 | |         be inserted (after the last existing record for that type).
+269 | |         """
+    | |___________^
+270 |           et = element_type.upper()
+271 |           last_pos = -1
+    |
+help: Insert single blank line
+
+D102 Missing docstring in public method
+  --> pykorf\results.py:82:9
+   |
+80 |         return {idx: pipe.pressure for idx, pipe in self._model.pipes.items() if idx > 0}
+81 |
+82 |     def pipe_dp_per_100m(self) -> dict[int, float]:
+   |         ^^^^^^^^^^^^^^^^
+83 |         return {
+84 |             idx: pipe.pressure_drop_per_100m for idx, pipe in self._model.pipes.items() if idx > 0
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\results.py:91:9
+   |
+89 |     # ------------------------------------------------------------------
+90 |
+91 |     def valve_dp(self) -> dict[int, float]:
+   |         ^^^^^^^^
+92 |         return {idx: v.dp_kPag for idx, v in self._model.valves.items() if idx > 0}
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\results.py:94:9
+   |
+92 |         return {idx: v.dp_kPag for idx, v in self._model.valves.items() if idx > 0}
+93 |
+94 |     def orifice_dp(self) -> dict[int, float]:
+   |         ^^^^^^^^^^
+95 |         return {idx: o.dp_kPag for idx, o in self._model.orifices.items() if idx > 0}
+   |
+
+D102 Missing docstring in public method
+   --> pykorf\results.py:101:9
+    |
+ 99 |     # ------------------------------------------------------------------
+100 |
+101 |     def compressor_summary(self, index: int) -> dict:
+    |         ^^^^^^^^^^^^^^^^^^
+102 |         c = self._model.compressors[index]
+103 |         return {
+    |
+
+PERF401 Use a list comprehension to create a transformed list
+   --> pykorf\results.py:135:13
+    |
+133 |         rows = []
+134 |         for r in self.all_pump_results():
+135 |             rows.append({"element_type": "PUMP", **r})
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+136 |         for idx, pipe in self._model.pipes.items():
+137 |             if idx == 0:
+    |
+help: Replace for loop with list comprehension
+
+N802 Function name `Field` should be lowercase
+  --> pykorf\types.py:47:9
+   |
+45 |             pass
+46 |
+47 |     def Field(*args, **kwargs):  # type: ignore[no-redef]
+   |         ^^^^^
+48 |         return None
+   |
+
+TC004 Move import `pydantic.BaseModel` out of type-checking block. Import is used for more than type hinting.
+   --> pykorf\types.py:55:26
+    |
+ 54 | if TYPE_CHECKING:
+ 55 |     from pydantic import BaseModel, ConfigDict, Field, field_validator
+    |                          ^^^^^^^^^
+ 56 |
+ 57 | # ============================================================================
+    |
+   ::: pykorf\types.py:172:24
+    |
+170 | if HAS_PYDANTIC:
+171 |
+172 |     class KdfBaseModel(BaseModel):  # type: ignore[no-redef]
+    |                        --------- Used at runtime here
+173 |         """Base model for all KDF data models."""
+    |
+help: Move out of type-checking block
+
+TC004 Move import `pydantic.ConfigDict` out of type-checking block. Import is used for more than type hinting.
+   --> pykorf\types.py:55:37
+    |
+ 54 | if TYPE_CHECKING:
+ 55 |     from pydantic import BaseModel, ConfigDict, Field, field_validator
+    |                                     ^^^^^^^^^^
+ 56 |
+ 57 | # ============================================================================
+    |
+   ::: pykorf\types.py:175:24
+    |
+173 |         """Base model for all KDF data models."""
+174 |
+175 |         model_config = ConfigDict(
+    |                        ---------- Used at runtime here
+176 |             populate_by_name=True,
+177 |             str_strip_whitespace=True,
+    |
+help: Move out of type-checking block
+
+TC004 Move import `pydantic.Field` out of type-checking block. Import is used for more than type hinting.
+   --> pykorf\types.py:55:49
+    |
+ 54 | if TYPE_CHECKING:
+ 55 |     from pydantic import BaseModel, ConfigDict, Field, field_validator
+    |                                                 ^^^^^
+ 56 |
+ 57 | # ============================================================================
+    |
+   ::: pykorf\types.py:214:20
+    |
+212 |         """2D position coordinates."""
+213 |
+214 |         x: float = Field(..., description="X coordinate")
+    |                    ----- Used at runtime here
+215 |         y: float = Field(..., description="Y coordinate")
+216 | else:
+    |
+help: Move out of type-checking block
+
+TC004 Move import `pydantic.field_validator` out of type-checking block. Import is used for more than type hinting.
+   --> pykorf\types.py:55:56
+    |
+ 54 | if TYPE_CHECKING:
+ 55 |     from pydantic import BaseModel, ConfigDict, Field, field_validator
+    |                                                        ^^^^^^^^^^^^^^^
+ 56 |
+ 57 | # ============================================================================
+    |
+   ::: pykorf\types.py:265:10
+    |
+263 |         )
+264 |
+265 |         @field_validator("liquid_fraction")
+    |          --------------- Used at runtime here
+266 |         @classmethod
+267 |         def validate_fraction(cls, v: list[float] | None) -> list[float] | None:
+    |
+help: Move out of type-checking block
+
+D102 Missing docstring in public method
+   --> pykorf\types.py:267:13
+    |
+265 |         @field_validator("liquid_fraction")
+266 |         @classmethod
+267 |         def validate_fraction(cls, v: list[float] | None) -> list[float] | None:
+    |             ^^^^^^^^^^^^^^^^^
+268 |             if v is not None:
+269 |                 for val in v:
+    |
+
+RUF022 `__all__` is not sorted
+   --> pykorf\types.py:769:11
+    |
+769 |   __all__ = [
+    |  ___________^
+770 | |     # Enums
+771 | |     "CompressibilityModel",
+772 | |     "ElementType",
+773 | |     "FlashModel",
+774 | |     "KdfVersion",
+775 | |     "PipeMaterial",
+776 | |     "PumpType",
+777 | |     "TwoPhaseModel",
+778 | |     "UnitSystem",
+779 | |     "ValveSubType",
+780 | |     "ValveType",
+781 | |     "VesselOrientation",
+782 | |     # Base models
+783 | |     "FlowParameters",
+784 | |     "FluidProperties",
+785 | |     "KdfBaseModel",
+786 | |     "Position",
+787 | |     "Range3Case",
+788 | |     # Element data
+789 | |     "CompressorData",
+790 | |     "ElementBase",
+791 | |     "FeedData",
+792 | |     "FittingData",
+793 | |     "HeatExchangerData",
+794 | |     "PipeData",
+795 | |     "ProductData",
+796 | |     "PumpData",
+797 | |     "ValveData",
+798 | |     "VesselData",
+799 | |     # Metadata
+800 | |     "CaseInfo",
+801 | |     "ModelMetadata",
+802 | |     "UnitConfiguration",
+803 | |     # Export
+804 | |     "ExportOptions",
+805 | |     "ValidationIssue",
+806 | | ]
+    | |_^
+    |
+help: Apply an isort-style sorting to `__all__`
+
+RUF012 Mutable default value for class attribute
+  --> pykorf\use_case\hmb.py:78:20
+   |
+76 |       """Reader for HMB data with Excel to JSON conversion."""
+77 |
+78 |       PROPERTY_MAP = {
+   |  ____________________^
+79 | |         "TEMP": "temp",
+80 | |         "PRES": "pres",
+81 | |         "LF": "lf",
+82 | |         "LIQDEN": "liqden",
+83 | |         "LIQVISC": "liqvisc",
+84 | |         "LIQSUR": "liqsur",
+85 | |         "LIQCON": "liqcon",
+86 | |         "LIQCP": "liqcp",
+87 | |         "VAPDEN": "vapden",
+88 | |         "VAPVISC": "vapvisc",
+89 | |         "VAPCON": "vapcon",
+90 | |         "VAPCP": "vapcp",
+91 | |     }
+   | |_____^
+92 |
+93 |       def __init__(self, input_dir: Path | str | None = None):
+   |
+help: Consider initializing in `__init__` or annotating with `typing.ClassVar`
+
+SIM108 Use ternary operator `json_path = excel_path.with_suffix(".json") if json_path is None else Path(json_path)` instead of `if`-`else`-block
+   --> pykorf\use_case\hmb.py:129:9
+    |
+128 |           excel_path = Path(excel_path)
+129 | /         if json_path is None:
+130 | |             json_path = excel_path.with_suffix(".json")
+131 | |         else:
+132 | |             json_path = Path(json_path)
+    | |_______________________________________^
+133 |
+134 |           df = read_excel_safe(excel_path, header=None)
+    |
+help: Replace `if`-`else`-block with `json_path = excel_path.with_suffix(".json") if json_path is None else Path(json_path)`
+
+SIM105 Use `contextlib.suppress(ValueError, TypeError)` instead of `try`-`except`-`pass`
+   --> pykorf\use_case\hmb.py:161:25
+    |
+159 |                       val = row.iloc[stream_col_idx]
+160 |                       if pd.notna(val):
+161 | /                         try:
+162 | |                             stream_data[stream_no][prop_key] = float(val)
+163 | |                         except (ValueError, TypeError):
+164 | |                             pass
+    | |________________________________^
+165 |
+166 |           hmb_data: dict[str, dict] = {}
+    |
+help: Replace `try`-`except`-`pass` with `with contextlib.suppress(ValueError, TypeError): ...`
+
+PERF403 Use a dictionary comprehension instead of a for-loop
+   --> pykorf\use_case\hmb.py:168:13
+    |
+166 |         hmb_data: dict[str, dict] = {}
+167 |         for stream_no, props in stream_data.items():
+168 |             hmb_data[stream_no] = props
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+169 |
+170 |         json_path.parent.mkdir(parents=True, exist_ok=True)
+    |
+help: Replace for loop with dict comprehension
+
+F821 Undefined name `Fluid`
+   --> pykorf\use_case\hmb.py:309:56
+    |
+309 | def _create_fluid_from_props(props: dict[str, Any]) -> Fluid:
+    |                                                        ^^^^^
+310 |     """Create a Fluid object from HMB properties dict."""
+311 |     from pykorf.fluid import Fluid
+    |
+
+SIM108 Use ternary operator `line_part = notes_value.split(delimiter)[0] if delimiter in notes_value else notes_value` instead of `if`-`else`-block
+  --> pykorf\use_case\line_number.py:87:9
+   |
+86 |           notes_value = notes_value.strip()
+87 | /         if delimiter in notes_value:
+88 | |             line_part = notes_value.split(delimiter)[0]
+89 | |         else:
+90 | |             line_part = notes_value
+   | |___________________________________^
+91 |
+92 |           # Remove quote character from NPS (e.g., "24"" becomes "24")
+   |
+help: Replace `if`-`else`-block with `line_part = notes_value.split(delimiter)[0] if delimiter in notes_value else notes_value`
+
+SIM108 Use ternary operator `line_part = notes_value.split(delimiter)[0] if delimiter in notes_value else notes_value` instead of `if`-`else`-block
+   --> pykorf\use_case\line_number.py:143:9
+    |
+142 |           notes_value = notes_value.strip()
+143 | /         if delimiter in notes_value:
+144 | |             line_part = notes_value.split(delimiter)[0]
+145 | |         else:
+146 | |             line_part = notes_value
+    | |___________________________________^
+147 |
+148 |           if not cls.LINE_NUMBER_PATTERN.match(line_part):
+    |
+help: Replace `if`-`else`-block with `line_part = notes_value.split(delimiter)[0] if delimiter in notes_value else notes_value`
+
+SIM108 Use ternary operator `line_part = notes_value.split(delimiter)[0] if delimiter in notes_value else notes_value` instead of `if`-`else`-block
+   --> pykorf\use_case\line_number.py:190:5
+    |
+189 |       notes_value = notes_value.strip()
+190 | /     if delimiter in notes_value:
+191 | |         line_part = notes_value.split(delimiter)[0]
+192 | |     else:
+193 | |         line_part = notes_value
+    | |_______________________________^
+194 |
+195 |       line_part = line_part.replace('"', "").replace(" ", "")
+    |
+help: Replace `if`-`else`-block with `line_part = notes_value.split(delimiter)[0] if delimiter in notes_value else notes_value`
+
+B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+  --> pykorf\use_case\pms.py:90:9
+   |
+88 |         import pandas as pd
+89 |     except ImportError:
+90 |         raise ExcelConversionError("pandas is required for Excel conversion")
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+91 |
+92 |     from pykorf.utils import read_excel_safe
+   |
+
+SIM108 Use ternary operator `json_path = excel_path.with_suffix(".json") if json_path is None else Path(json_path)` instead of `if`-`else`-block
+   --> pykorf\use_case\pms.py:95:5
+    |
+ 94 |       excel_path = Path(excel_path)
+ 95 | /     if json_path is None:
+ 96 | |         json_path = excel_path.with_suffix(".json")
+ 97 | |     else:
+ 98 | |         json_path = Path(json_path)
+    | |___________________________________^
+ 99 |
+100 |       sheets = read_excel_safe(excel_path, sheet_name=None, header=None)
+    |
+help: Replace `if`-`else`-block with `json_path = excel_path.with_suffix(".json") if json_path is None else Path(json_path)`
+
+RUF015 Prefer `next(iter(data.values()))` over single element slice
+   --> pykorf\use_case\pms.py:168:24
+    |
+166 |         "specifications" not in data
+167 |         and len(data) > 0
+168 |         and isinstance(list(data.values())[0], dict)
+    |                        ^^^^^^^^^^^^^^^^^^^^^^
+169 |         and "specifications" in list(data.values())[0]
+170 |     ):
+    |
+help: Replace with `next(iter(data.values()))`
+
+RUF015 Prefer `next(iter(data.values()))` over single element slice
+   --> pykorf\use_case\pms.py:169:33
+    |
+167 |         and len(data) > 0
+168 |         and isinstance(list(data.values())[0], dict)
+169 |         and "specifications" in list(data.values())[0]
+    |                                 ^^^^^^^^^^^^^^^^^^^^^^
+170 |     ):
+171 |         available_materials = list(data.keys())
+    |
+help: Replace with `next(iter(data.values()))`
+
+RUF015 Prefer `next(iter(data.values()))` over single element slice
+   --> pykorf\use_case\pms.py:244:24
+    |
+242 |         "specifications" not in data
+243 |         and len(data) > 0
+244 |         and isinstance(list(data.values())[0], dict)
+    |                        ^^^^^^^^^^^^^^^^^^^^^^
+245 |         and "specifications" in list(data.values())[0]
+246 |     ):
+    |
+help: Replace with `next(iter(data.values()))`
+
+RUF015 Prefer `next(iter(data.values()))` over single element slice
+   --> pykorf\use_case\pms.py:245:33
+    |
+243 |         and len(data) > 0
+244 |         and isinstance(list(data.values())[0], dict)
+245 |         and "specifications" in list(data.values())[0]
+    |                                 ^^^^^^^^^^^^^^^^^^^^^^
+246 |     ):
+247 |         for material_name in data.keys():
+    |
+help: Replace with `next(iter(data.values()))`
+
+SIM118 Use `key in dict` instead of `key in dict.keys()`
+   --> pykorf\use_case\pms.py:247:13
+    |
+245 |         and "specifications" in list(data.values())[0]
+246 |     ):
+247 |         for material_name in data.keys():
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+248 |             material, pms_data, od_data = load_pms(source, material_name)
+249 |             all_materials[material_name] = (material, pms_data, od_data)
+    |
+help: Remove `.keys()`
+
+B007 Loop control variable `material_name` not used within loop body
+   --> pykorf\use_case\pms.py:276:9
+    |
+274 |         PmsLookupError: If PMS code not found in any material.
+275 |     """
+276 |     for material_name, (material, pms_data, _) in all_materials.items():
+    |         ^^^^^^^^^^^^^
+277 |         if pms_code in pms_data:
+278 |             spec = lookup_schedule(pms_data, pms_code, nominal_size)
+    |
+help: Rename unused `material_name` to `_material_name`
+
+PERF102 When using only the values of a dict use the `values()` method
+   --> pykorf\use_case\pms.py:276:51
+    |
+274 |         PmsLookupError: If PMS code not found in any material.
+275 |     """
+276 |     for material_name, (material, pms_data, _) in all_materials.items():
+    |                                                   ^^^^^^^^^^^^^^^^^^^
+277 |         if pms_code in pms_data:
+278 |             spec = lookup_schedule(pms_data, pms_code, nominal_size)
+    |
+help: Replace `.items()` with `.values()`
+
+PERF203 `try`-`except` within a loop incurs performance overhead
+   --> pykorf\use_case\processor.py:355:13
+    |
+353 |                   result = self.process_kdf(kdf_file)
+354 |                   results.append(result)
+355 | /             except ProcessError as e:
+356 | |                 results.append(
+357 | |                     ProcessResult(
+358 | |                         file_path=kdf_file,
+359 | |                         errors=[str(e)],
+360 | |                     )
+361 | |                 )
+    | |_________________^
+362 |
+363 |           return results
+    |
+
+B904 Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+  --> pykorf\use_case\settings.py:79:13
+   |
+77 |               import pandas as pd
+78 |           except ImportError:
+79 | /             raise ExcelConversionError(
+80 | |                 "pandas is required for Excel conversion. Install with: pip install pandas openpyxl"
+81 | |             )
+   | |_____________^
+82 |
+83 |           from pykorf.utils import read_excel_safe
+   |
+
+SIM108 Use ternary operator `json_path = excel_path.with_suffix(".json") if json_path is None else Path(json_path)` instead of `if`-`else`-block
+  --> pykorf\use_case\settings.py:86:9
+   |
+85 |           excel_path = Path(excel_path)
+86 | /         if json_path is None:
+87 | |             json_path = excel_path.with_suffix(".json")
+88 | |         else:
+89 | |             json_path = Path(json_path)
+   | |_______________________________________^
+90 |
+91 |           df = read_excel_safe(excel_path, header=None)
+   |
+help: Replace `if`-`else`-block with `json_path = excel_path.with_suffix(".json") if json_path is None else Path(json_path)`
+
+B007 Loop control variable `idx` not used within loop body
+  --> pykorf\use_case\settings.py:95:13
+   |
+93 |         settings_data: dict[str, Any] = {}
+94 |
+95 |         for idx, row in df.iterrows():
+   |             ^^^
+96 |             key = str(row.iloc[0]).strip() if pd.notna(row.iloc[0]) else ""
+97 |             if not key:
+   |
+help: Rename unused `idx` to `_idx`
+
+RUF012 Mutable default value for class attribute
+  --> pykorf\use_case\tui\app.py:49:16
+   |
+47 |       """
+48 |
+49 |       BINDINGS = [
+   |  ________________^
+50 | |         ("q", "quit", "Quit"),
+51 | |     ]
+   | |_____^
+52 |
+53 |       model = None
+   |
+help: Consider initializing in `__init__` or annotating with `typing.ClassVar`
+
+D102 Missing docstring in public method
+  --> pykorf\use_case\tui\app.py:55:9
+   |
+53 |     model = None
+54 |
+55 |     def compose(self) -> ComposeResult:
+   |         ^^^^^^^
+56 |         with Vertical(id="app-container"):
+57 |             yield Label("📄 No file loaded", id="file-header")
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\use_case\tui\app.py:60:9
+   |
+58 |             yield Static("", id="notification-banner")
+59 |
+60 |     def on_mount(self) -> None:
+   |         ^^^^^^^^
+61 |         from pykorf.use_case.tui.screens.file_picker import FilePickerScreen
+   |
+
+TC002 Move third-party import `textual.app.ComposeResult` into a type-checking block
+  --> pykorf\use_case\tui\screens\apply_hmb.py:8:25
+   |
+ 7 | from textual import on, work
+ 8 | from textual.app import ComposeResult
+   |                         ^^^^^^^^^^^^^
+ 9 | from textual.containers import Horizontal, Vertical
+10 | from textual.screen import Screen
+   |
+help: Move into type-checking block
+
+RUF012 Mutable default value for class attribute
+  --> pykorf\use_case\tui\screens\apply_hmb.py:26:16
+   |
+24 |     """Screen for applying HMB fluid properties to pipes."""
+25 |
+26 |     BINDINGS = [("escape", "go_back", "Back")]
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+27 |
+28 |     CSS = """
+   |
+help: Consider initializing in `__init__` or annotating with `typing.ClassVar`
+
+D102 Missing docstring in public method
+  --> pykorf\use_case\tui\screens\apply_hmb.py:63:9
+   |
+61 |     """
+62 |
+63 |     def compose(self) -> ComposeResult:
+   |         ^^^^^^^
+64 |         yield Header()
+65 |         with Vertical(id="hmb-box"):
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\use_case\tui\screens\apply_hmb.py:79:9
+   |
+77 |         yield Footer()
+78 |
+79 |     def action_go_back(self) -> None:
+   |         ^^^^^^^^^^^^^^
+80 |         self.app.pop_screen()
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\use_case\tui\screens\apply_hmb.py:83:9
+   |
+82 |     @on(Button.Pressed, "#btn-back")
+83 |     def go_back(self) -> None:
+   |         ^^^^^^^
+84 |         self.app.pop_screen()
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\use_case\tui\screens\apply_hmb.py:87:9
+   |
+86 |     @on(Button.Pressed, "#btn-apply")
+87 |     def apply(self) -> None:
+   |         ^^^^^
+88 |         self._run_apply()
+   |
+
+TC002 Move third-party import `textual.app.ComposeResult` into a type-checking block
+ --> pykorf\use_case\tui\screens\apply_pms.py:6:25
+  |
+5 | from textual import on, work
+6 | from textual.app import ComposeResult
+  |                         ^^^^^^^^^^^^^
+7 | from textual.containers import Horizontal, Vertical
+8 | from textual.screen import Screen
+  |
+help: Move into type-checking block
+
+RUF012 Mutable default value for class attribute
+  --> pykorf\use_case\tui\screens\apply_pms.py:25:16
+   |
+23 |     """Screen for applying PMS specifications to pipes."""
+24 |
+25 |     BINDINGS = [("escape", "go_back", "Back")]
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+26 |
+27 |     CSS = """
+   |
+help: Consider initializing in `__init__` or annotating with `typing.ClassVar`
+
+D102 Missing docstring in public method
+  --> pykorf\use_case\tui\screens\apply_pms.py:62:9
+   |
+60 |     """
+61 |
+62 |     def compose(self) -> ComposeResult:
+   |         ^^^^^^^
+63 |         yield Header()
+64 |         with Vertical(id="pms-box"):
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\use_case\tui\screens\apply_pms.py:75:9
+   |
+73 |         yield Footer()
+74 |
+75 |     def action_go_back(self) -> None:
+   |         ^^^^^^^^^^^^^^
+76 |         self.app.pop_screen()
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\use_case\tui\screens\apply_pms.py:79:9
+   |
+78 |     @on(Button.Pressed, "#btn-back")
+79 |     def go_back(self) -> None:
+   |         ^^^^^^^
+80 |         self.app.pop_screen()
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\use_case\tui\screens\apply_pms.py:83:9
+   |
+82 |     @on(Button.Pressed, "#btn-apply")
+83 |     def apply(self) -> None:
+   |         ^^^^^
+84 |         self._run_apply()
+   |
+
+TC002 Move third-party import `textual.app.ComposeResult` into a type-checking block
+ --> pykorf\use_case\tui\screens\bulk_copy.py:6:25
+  |
+5 | from textual import on, work
+6 | from textual.app import ComposeResult
+  |                         ^^^^^^^^^^^^^
+7 | from textual.containers import Horizontal, Vertical
+8 | from textual.screen import Screen
+  |
+help: Move into type-checking block
+
+RUF012 Mutable default value for class attribute
+  --> pykorf\use_case\tui\screens\bulk_copy.py:26:16
+   |
+24 |     """Screen for copying fluid properties from one pipe to others."""
+25 |
+26 |     BINDINGS = [("escape", "go_back", "Back")]
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+27 |
+28 |     CSS = """
+   |
+help: Consider initializing in `__init__` or annotating with `typing.ClassVar`
+
+D102 Missing docstring in public method
+  --> pykorf\use_case\tui\screens\bulk_copy.py:63:9
+   |
+61 |     """
+62 |
+63 |     def compose(self) -> ComposeResult:
+   |         ^^^^^^^
+64 |         yield Header()
+65 |         with Vertical(id="copy-box"):
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\use_case\tui\screens\bulk_copy.py:86:9
+   |
+84 |         yield Footer()
+85 |
+86 |     def action_go_back(self) -> None:
+   |         ^^^^^^^^^^^^^^
+87 |         self.app.pop_screen()
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\use_case\tui\screens\bulk_copy.py:90:9
+   |
+89 |     @on(Button.Pressed, "#btn-back")
+90 |     def go_back(self) -> None:
+   |         ^^^^^^^
+91 |         self.app.pop_screen()
+   |
+
+PERF401 Use a list comprehension to create a transformed list
+   --> pykorf\use_case\tui\screens\bulk_copy.py:101:13
+    |
+ 99 |         lines: list[str] = []
+100 |         for line in results.lines:
+101 |             lines.append(str(line))
+    |             ^^^^^^^^^^^^^^^^^^^^^^^
+102 |         text = "\n".join(lines)
+103 |         pyperclip.copy(text)
+    |
+help: Replace for loop with list comprehension
+
+D102 Missing docstring in public method
+   --> pykorf\use_case\tui\screens\bulk_copy.py:107:9
+    |
+106 |     @on(Button.Pressed, "#btn-execute")
+107 |     def execute(self) -> None:
+    |         ^^^^^^^
+108 |         self._run_copy()
+    |
+
+F821 Undefined name `exc`
+   --> pykorf\use_case\tui\screens\bulk_copy.py:158:76
+    |
+156 |             self.app.call_from_thread(self.app.push_screen, SaveConfirmScreen(model))
+157 |         except Exception:
+158 |             self.app.call_from_thread(lambda: log_error(results, f"Error: {exc}"))
+    |                                                                            ^^^
+    |
+
+TC002 Move third-party import `textual.app.ComposeResult` into a type-checking block
+ --> pykorf\use_case\tui\screens\config_menu.py:6:25
+  |
+5 | from textual import on
+6 | from textual.app import ComposeResult
+  |                         ^^^^^^^^^^^^^
+7 | from textual.containers import Horizontal, Vertical
+8 | from textual.screen import Screen
+  |
+help: Move into type-checking block
+
+RUF012 Mutable default value for class attribute
+  --> pykorf\use_case\tui\screens\config_menu.py:17:16
+   |
+15 |     """Screen for managing configuration files."""
+16 |
+17 |     BINDINGS = [("escape", "go_back", "Back")]
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+18 |
+19 |     CSS = """
+   |
+help: Consider initializing in `__init__` or annotating with `typing.ClassVar`
+
+D102 Missing docstring in public method
+  --> pykorf\use_case\tui\screens\config_menu.py:55:9
+   |
+53 |     """
+54 |
+55 |     def compose(self) -> ComposeResult:
+   |         ^^^^^^^
+56 |         yield Header()
+57 |         with Vertical(id="config-box"):
+   |
+
+F841 Local variable `results_log` is assigned to but never used
+   --> pykorf\use_case\tui\screens\config_menu.py:104:9
+    |
+102 |         from pykorf.use_case.config import get_last_interaction
+103 |
+104 |         results_log = self.query_one("#config-results", RichLog)
+    |         ^^^^^^^^^^^
+105 |
+106 |         last_interaction = get_last_interaction()
+    |
+help: Remove assignment to unused variable `results_log`
+
+D102 Missing docstring in public method
+   --> pykorf\use_case\tui\screens\config_menu.py:122:9
+    |
+120 |                 self.query_one("#stream-output-input", Input).value = stream_output
+121 |
+122 |     def action_go_back(self) -> None:
+    |         ^^^^^^^^^^^^^^
+123 |         self.app.pop_screen()
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\use_case\tui\screens\config_menu.py:126:9
+    |
+125 |     @on(Button.Pressed, "#btn-back")
+126 |     def go_back(self) -> None:
+    |         ^^^^^^^
+127 |         self.app.pop_screen()
+    |
+
+TC002 Move third-party import `textual.app.ComposeResult` into a type-checking block
+  --> pykorf\use_case\tui\screens\file_picker.py:8:25
+   |
+ 7 | from textual import on
+ 8 | from textual.app import ComposeResult
+   |                         ^^^^^^^^^^^^^
+ 9 | from textual.containers import Horizontal, Vertical
+10 | from textual.screen import Screen
+   |
+help: Move into type-checking block
+
+D102 Missing docstring in public method
+  --> pykorf\use_case\tui\screens\file_picker.py:51:9
+   |
+49 |     """
+50 |
+51 |     def compose(self) -> ComposeResult:
+   |         ^^^^^^^
+52 |         yield Header()
+53 |         with Vertical(id="file-picker-box"):
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\use_case\tui\screens\file_picker.py:65:9
+   |
+63 |         yield Footer()
+64 |
+65 |     def on_mount(self) -> None:
+   |         ^^^^^^^^
+66 |         last_path = get_last_kdf_path()
+67 |         if last_path:
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\use_case\tui\screens\file_picker.py:72:9
+   |
+71 |     @on(Button.Pressed, "#btn-quit")
+72 |     def quit_app(self) -> None:
+   |         ^^^^^^^^
+73 |         self.app.exit()
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\use_case\tui\screens\file_picker.py:76:9
+   |
+75 |     @on(Button.Pressed, "#btn-load")
+76 |     def load_file(self) -> None:
+   |         ^^^^^^^^^
+77 |         self._try_load()
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\use_case\tui\screens\file_picker.py:80:9
+   |
+79 |     @on(Input.Submitted, "#file-path-input")
+80 |     def submit_path(self) -> None:
+   |         ^^^^^^^^^^^
+81 |         self._try_load()
+   |
+
+TC002 Move third-party import `textual.app.ComposeResult` into a type-checking block
+ --> pykorf\use_case\tui\screens\global_settings.py:6:25
+  |
+5 | from textual import on, work
+6 | from textual.app import ComposeResult
+  |                         ^^^^^^^^^^^^^
+7 | from textual.containers import Horizontal, Vertical
+8 | from textual.screen import Screen
+  |
+help: Move into type-checking block
+
+RUF012 Mutable default value for class attribute
+  --> pykorf\use_case\tui\screens\global_settings.py:24:16
+   |
+22 |     """Screen for applying global settings to the model."""
+23 |
+24 |     BINDINGS = [("escape", "action_go_back", "Back")]
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+25 |
+26 |     def __init__(self):
+   |
+help: Consider initializing in `__init__` or annotating with `typing.ClassVar`
+
+D102 Missing docstring in public method
+  --> pykorf\use_case\tui\screens\global_settings.py:88:9
+   |
+86 |     """
+87 |
+88 |     def compose(self) -> ComposeResult:
+   |         ^^^^^^^
+89 |         yield Header()
+90 |         with Vertical(id="global-settings-box"):
+   |
+
+D102 Missing docstring in public method
+   --> pykorf\use_case\tui\screens\global_settings.py:126:9
+    |
+124 |         yield Footer()
+125 |
+126 |     def action_go_back(self) -> None:
+    |         ^^^^^^^^^^^^^^
+127 |         self.app.pop_screen()
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\use_case\tui\screens\global_settings.py:130:9
+    |
+129 |     @on(Button.Pressed, "#btn-back")
+130 |     def go_back(self) -> None:
+    |         ^^^^^^^
+131 |         self.app.pop_screen()
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\use_case\tui\screens\global_settings.py:144:9
+    |
+143 |     @on(Button.Pressed, "#btn-apply")
+144 |     def apply_settings(self) -> None:
+    |         ^^^^^^^^^^^^^^
+145 |         self._run_apply()
+    |
+
+TC002 Move third-party import `textual.app.ComposeResult` into a type-checking block
+ --> pykorf\use_case\tui\screens\main_menu.py:6:25
+  |
+5 | from textual import on
+6 | from textual.app import ComposeResult
+  |                         ^^^^^^^^^^^^^
+7 | from textual.containers import Horizontal, Vertical
+8 | from textual.screen import Screen
+  |
+help: Move into type-checking block
+
+RUF012 Mutable default value for class attribute
+  --> pykorf\use_case\tui\screens\main_menu.py:15:16
+   |
+13 |       """Central menu showing use-case operations."""
+14 |
+15 |       BINDINGS = [
+   |  ________________^
+16 | |         ("1", "bulk_copy", "Bulk Copy Fluids"),
+17 | |         ("2", "apply_pms", "Apply PMS"),
+18 | |         ("3", "apply_hmb", "Apply HMB"),
+19 | |         ("4", "model_info", "Model Info"),
+20 | |         ("g", "global_settings", "Global Settings"),
+21 | |         ("c", "config_menu", "Config Menu"),
+22 | |         ("l", "load_file", "Load File"),
+23 | |         ("r", "reload_file", "Reload File"),
+24 | |         ("q", "quit_app", "Quit"),
+25 | |     ]
+   | |_____^
+26 |
+27 |       CSS = """
+   |
+help: Consider initializing in `__init__` or annotating with `typing.ClassVar`
+
+D102 Missing docstring in public method
+  --> pykorf\use_case\tui\screens\main_menu.py:69:9
+   |
+67 |     """
+68 |
+69 |     def compose(self) -> ComposeResult:
+   |         ^^^^^^^
+70 |         yield Header()
+71 |         app = self.app
+   |
+
+D102 Missing docstring in public method
+   --> pykorf\use_case\tui\screens\main_menu.py:137:9
+    |
+136 |     @on(Button.Pressed, "#btn-bulk-copy")
+137 |     def action_bulk_copy(self) -> None:
+    |         ^^^^^^^^^^^^^^^^
+138 |         from pykorf.use_case.tui.screens.bulk_copy import BulkCopyFluidsScreen
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\use_case\tui\screens\main_menu.py:143:9
+    |
+142 |     @on(Button.Pressed, "#btn-apply-pms")
+143 |     def action_apply_pms(self) -> None:
+    |         ^^^^^^^^^^^^^^^^
+144 |         from pykorf.use_case.tui.screens.apply_pms import ApplyPmsScreen
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\use_case\tui\screens\main_menu.py:149:9
+    |
+148 |     @on(Button.Pressed, "#btn-apply-hmb")
+149 |     def action_apply_hmb(self) -> None:
+    |         ^^^^^^^^^^^^^^^^
+150 |         from pykorf.use_case.tui.screens.apply_hmb import ApplyHmbScreen
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\use_case\tui\screens\main_menu.py:155:9
+    |
+154 |     @on(Button.Pressed, "#btn-model-info")
+155 |     def action_model_info(self) -> None:
+    |         ^^^^^^^^^^^^^^^^^
+156 |         from pykorf.use_case.tui.screens.model_info import ModelInfoScreen
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\use_case\tui\screens\main_menu.py:161:9
+    |
+160 |     @on(Button.Pressed, "#btn-global-settings")
+161 |     def action_global_settings(self) -> None:
+    |         ^^^^^^^^^^^^^^^^^^^^^^
+162 |         from pykorf.use_case.tui.screens.global_settings import GlobalSettingsScreen
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\use_case\tui\screens\main_menu.py:167:9
+    |
+166 |     @on(Button.Pressed, "#btn-config")
+167 |     def action_config_menu(self) -> None:
+    |         ^^^^^^^^^^^^^^^^^^
+168 |         from pykorf.use_case.tui.screens.config_menu import ConfigMenuScreen
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\use_case\tui\screens\main_menu.py:173:9
+    |
+172 |     @on(Button.Pressed, "#btn-load-file")
+173 |     def action_load_file(self) -> None:
+    |         ^^^^^^^^^^^^^^^^
+174 |         self.app.pop_screen()
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\use_case\tui\screens\main_menu.py:196:9
+    |
+195 |     @on(Button.Pressed, "#btn-quit")
+196 |     def action_quit_app(self) -> None:
+    |         ^^^^^^^^^^^^^^^
+197 |         self.app.exit()
+    |
+
+TC002 Move third-party import `textual.app.ComposeResult` into a type-checking block
+ --> pykorf\use_case\tui\screens\model_info.py:6:25
+  |
+5 | from textual import on
+6 | from textual.app import ComposeResult
+  |                         ^^^^^^^^^^^^^
+7 | from textual.containers import Horizontal, Vertical
+8 | from textual.screen import Screen
+  |
+help: Move into type-checking block
+
+RUF012 Mutable default value for class attribute
+  --> pykorf\use_case\tui\screens\model_info.py:15:16
+   |
+13 |     """Screen displaying model element counts, pipe names, and validation errors."""
+14 |
+15 |     BINDINGS = [("escape", "go_back", "Back")]
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+16 |
+17 |     CSS = """
+   |
+help: Consider initializing in `__init__` or annotating with `typing.ClassVar`
+
+D102 Missing docstring in public method
+  --> pykorf\use_case\tui\screens\model_info.py:65:9
+   |
+63 |     """
+64 |
+65 |     def compose(self) -> ComposeResult:
+   |         ^^^^^^^
+66 |         yield Header()
+   |
+
+D102 Missing docstring in public method
+   --> pykorf\use_case\tui\screens\model_info.py:126:9
+    |
+124 |         yield Footer()
+125 |
+126 |     def on_mount(self) -> None:
+    |         ^^^^^^^^
+127 |         from pykorf.use_case.tui.app import UseCaseTUI
+    |
+
+B007 Loop control variable `idx` not used within loop body
+   --> pykorf\use_case\tui\screens\model_info.py:139:13
+    |
+137 |         log = self.query_one("#pipe-list", RichLog)
+138 |         pipes = real_elements(model.pipes)
+139 |         for idx, pipe in sorted(pipes.items()):
+    |             ^^^
+140 |             if pipe.name:
+141 |                 log.write(f"  {pipe.name}")
+    |
+help: Rename unused `idx` to `_idx`
+
+D102 Missing docstring in public method
+   --> pykorf\use_case\tui\screens\model_info.py:182:9
+    |
+180 |             validation_header.update("Validation: PASSED (no issues)")
+181 |
+182 |     def action_go_back(self) -> None:
+    |         ^^^^^^^^^^^^^^
+183 |         self.app.pop_screen()
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\use_case\tui\screens\model_info.py:186:9
+    |
+185 |     @on(Button.Pressed, "#btn-back")
+186 |     def go_back(self) -> None:
+    |         ^^^^^^^
+187 |         self.app.pop_screen()
+    |
+
+TC002 Move third-party import `textual.app.ComposeResult` into a type-checking block
+  --> pykorf\use_case\tui\screens\save_confirm.py:8:25
+   |
+ 7 | from textual import on
+ 8 | from textual.app import ComposeResult
+   |                         ^^^^^^^^^^^^^
+ 9 | from textual.containers import Horizontal, Vertical
+10 | from textual.screen import Screen
+   |
+help: Move into type-checking block
+
+D102 Missing docstring in public method
+  --> pykorf\use_case\tui\screens\save_confirm.py:65:9
+   |
+63 |         self._model = model
+64 |
+65 |     def compose(self) -> ComposeResult:
+   |         ^^^^^^^
+66 |         with Vertical(id="save-box"):
+67 |             yield Label("Save Changes?")
+   |
+
+D102 Missing docstring in public method
+  --> pykorf\use_case\tui\screens\save_confirm.py:77:9
+   |
+76 |     @on(Button.Pressed, "#btn-save")
+77 |     def save(self) -> None:
+   |         ^^^^
+78 |         status = self.query_one("#save-status", Label)
+79 |         try:
+   |
+
+E501 Line too long (127 > 100)
+   --> pykorf\use_case\tui\screens\save_confirm.py:113:101
+    |
+111 |                     app = cast("UseCaseTUI", self.app)
+112 |                     app.show_notification(
+113 |                         f"\u26a0\ufe0f Warnings/errors detected. Please review {log_name} and update the KDF file accordingly."
+    |                                                                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+114 |                     )
+115 |             else:
+    |
+
+D102 Missing docstring in public method
+   --> pykorf\use_case\tui\screens\save_confirm.py:127:9
+    |
+126 |     @on(Button.Pressed, "#btn-discard")
+127 |     def discard(self) -> None:
+    |         ^^^^^^^
+128 |         self.app.pop_screen()
+    |
+
+TC002 Move third-party import `textual.app.ComposeResult` into a type-checking block
+ --> pykorf\use_case\tui\widgets.py:5:25
+  |
+3 | from __future__ import annotations
+4 |
+5 | from textual.app import ComposeResult
+  |                         ^^^^^^^^^^^^^
+6 | from textual.widgets import Label, Static
+  |
+help: Move into type-checking block
+
+D102 Missing docstring in public method
+  --> pykorf\use_case\tui\widgets.py:27:9
+   |
+25 |         self.file_path = file_path or "No file loaded"
+26 |
+27 |     def compose(self) -> ComposeResult:
+   |         ^^^^^^^
+28 |         yield Label(f"📄 {self.file_path}")
+   |
+
+TC003 Move standard library import `collections.abc.Sequence` into a type-checking block
+  --> pykorf\utils.py:21:29
+   |
+19 | import csv
+20 | import io
+21 | from collections.abc import Sequence
+   |                             ^^^^^^^^
+22 | from pathlib import Path
+23 | from typing import TYPE_CHECKING, Any
+   |
+help: Move into type-checking block
+
+PERF102 When using only the keys of a dict use the `keys()` method
+   --> pykorf\visualization\visualizer.py:152:32
+    |
+151 |         # Build a mapping of pipe index -> connected elements with direction info
+152 |         for idx, _pipe_elem in self._model.pipes.items():
+    |                                ^^^^^^^^^^^^^^^^^^^^^^^
+153 |             if idx == 0:
+154 |                 continue
+    |
+help: Replace `.items()` with `.keys()`
+
+SIM102 Use a single `if` statement instead of nested `if` statements
+   --> pykorf\visualization\visualizer.py:241:17
+    |
+239 |           if et == Element.VESSEL:
+240 |               for rec in elem.records():
+241 | /                 if rec.param == Vessel.NOZLI and len(rec.values) >= 2:
+242 | |                     if str(rec.values[1]) == pipe_idx_str:
+    | |__________________________________________________________^
+243 |                           return "inlet"
+244 |                   if rec.param == Vessel.NOZLO and len(rec.values) >= 2:
+    |
+help: Combine `if` statements using `and`
+
+SIM102 Use a single `if` statement instead of nested `if` statements
+   --> pykorf\visualization\visualizer.py:244:17
+    |
+242 |                       if str(rec.values[1]) == pipe_idx_str:
+243 |                           return "inlet"
+244 | /                 if rec.param == Vessel.NOZLO and len(rec.values) >= 2:
+245 | |                     if str(rec.values[1]) == pipe_idx_str:
+    | |__________________________________________________________^
+246 |                           return "outlet"
+247 |               return "unknown"
+    |
+help: Combine `if` statements using `and`
+
+RUF059 Unpacked variable `etype1` is never used
+   --> pykorf\visualization\visualizer.py:263:20
+    |
+262 |         if len(connected) == 2:
+263 |             name1, etype1, role1 = connected[0]
+    |                    ^^^^^^
+264 |             name2, etype2, role2 = connected[1]
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `etype2` is never used
+   --> pykorf\visualization\visualizer.py:264:20
+    |
+262 |         if len(connected) == 2:
+263 |             name1, etype1, role1 = connected[0]
+264 |             name2, etype2, role2 = connected[1]
+    |                    ^^^^^^
+265 |
+266 |             # Determine flow direction based on roles
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF015 Prefer `next(iter(m.feeds.values()))` over single element slice
+   --> test_review.py:188:16
+    |
+186 |     # Get a FEED element
+187 |     if m.feeds:
+188 |         feed = list(m.feeds.values())[0]
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^
+189 |         if feed.index >= 1:
+190 |             noz_rec = feed._get("NOZ")
+    |
+help: Replace with `next(iter(m.feeds.values()))`
+
+RUF015 Prefer `next(iter(m.feeds.values()))` over single element slice
+   --> test_review.py:220:16
+    |
+218 |     # Get a FEED element
+219 |     if m.feeds:
+220 |         feed = list(m.feeds.values())[0]
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^
+221 |         if feed.index >= 1:
+222 |             noz_rec = feed._get("NOZ")
+    |
+help: Replace with `next(iter(m.feeds.values()))`
+
+D102 Missing docstring in public method
+  --> tests\test_automation.py:36:9
+   |
+34 |         return app, mock_app_instance, mock_window
+35 |
+36 |     def test_repr_connected(self):
+   |         ^^^^^^^^^^^^^^^^^^^
+37 |         app, _, _ = self._make_app()
+38 |         assert "connected" in repr(app)
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_automation.py:40:9
+   |
+38 |         assert "connected" in repr(app)
+39 |
+40 |     def test_repr_disconnected(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^
+41 |         app, _, _ = self._make_app()
+42 |         app.disconnect()
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_automation.py:45:9
+   |
+43 |         assert "disconnected" in repr(app)
+44 |
+45 |     def test_window_title(self):
+   |         ^^^^^^^^^^^^^^^^^
+46 |         app, _, mock_window = self._make_app()
+47 |         assert app.window_title == "KORF - [Pumpcases.kdf]"
+   |
+
+RUF059 Unpacked variable `mock_window` is never used
+  --> tests\test_automation.py:46:17
+   |
+45 |     def test_window_title(self):
+46 |         app, _, mock_window = self._make_app()
+   |                 ^^^^^^^^^^^
+47 |         assert app.window_title == "KORF - [Pumpcases.kdf]"
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+D102 Missing docstring in public method
+  --> tests\test_automation.py:49:9
+   |
+47 |         assert app.window_title == "KORF - [Pumpcases.kdf]"
+48 |
+49 |     def test_require_connected_raises(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+50 |         app, _, _ = self._make_app()
+51 |         app.disconnect()
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_automation.py:55:9
+   |
+53 |             app._require_connected()
+54 |
+55 |     def test_context_manager(self):
+   |         ^^^^^^^^^^^^^^^^^^^^
+56 |         app, _, _ = self._make_app()
+57 |         with app as a:
+   |
+
+N806 Variable `MockKorfApp` in function should be lowercase
+  --> tests\test_automation.py:74:52
+   |
+72 |         mock_app = MagicMock()
+73 |
+74 |         with patch("pykorf.automation.KorfApp") as MockKorfApp:
+   |                                                    ^^^^^^^^^^^
+75 |             MockKorfApp.connect.return_value = mock_app
+76 |             from pykorf.automation import open_ui
+   |
+
+N806 Variable `MockKorfApp` in function should be lowercase
+  --> tests\test_automation.py:89:52
+   |
+87 |         custom_path = r"D:\CustomKorf\korf.exe"
+88 |
+89 |         with patch("pykorf.automation.KorfApp") as MockKorfApp:
+   |                                                    ^^^^^^^^^^^
+90 |             MockKorfApp.connect.return_value = mock_app
+91 |             from pykorf.automation import open_ui
+   |
+
+N806 Variable `MockKorfApp` in function should be lowercase
+   --> tests\test_automation.py:99:52
+    |
+ 97 |     def test_open_ui_propagates_error(self):
+ 98 |         """open_ui raises AutomationError if no KORF instance is running."""
+ 99 |         with patch("pykorf.automation.KorfApp") as MockKorfApp:
+    |                                                    ^^^^^^^^^^^
+100 |             MockKorfApp.connect.side_effect = AutomationError("KORF not running")
+101 |             from pykorf.automation import open_ui
+    |
+
+N806 Variable `MockKorfApp` in function should be lowercase
+   --> tests\test_automation.py:110:52
+    |
+108 |         mock_app = MagicMock()
+109 |
+110 |         with patch("pykorf.automation.KorfApp") as MockKorfApp:
+    |                                                    ^^^^^^^^^^^
+111 |             MockKorfApp.connect.return_value = mock_app
+112 |             from pykorf.automation import open_ui
+    |
+
+N806 Variable `MockKorfApp` in function should be lowercase
+   --> tests\test_automation.py:129:52
+    |
+127 |         mock_app = MagicMock()
+128 |
+129 |         with patch("pykorf.automation.KorfApp") as MockKorfApp:
+    |                                                    ^^^^^^^^^^^
+130 |             MockKorfApp.connect.return_value = mock_app
+131 |             from pykorf.automation import open_ui
+    |
+
+D205 1 blank line required between summary line and description
+ --> tests\test_cases.py:1:1
+  |
+1 | / """
+2 | | Tests for CaseSet and Results helpers.
+3 | | Run with:  pytest tests/
+4 | | """
+  | |___^
+5 |
+6 |   from pathlib import Path
+  |
+help: Insert single blank line
+
+D415 First line should end with a period, question mark, or exclamation point
+ --> tests\test_cases.py:1:1
+  |
+1 | / """
+2 | | Tests for CaseSet and Results helpers.
+3 | | Run with:  pytest tests/
+4 | | """
+  | |___^
+5 |
+6 |   from pathlib import Path
+  |
+help: Add closing punctuation
+
+D101 Missing docstring in public class
+  --> tests\test_cases.py:16:7
+   |
+16 | class TestCaseSet:
+   |       ^^^^^^^^^^^
+17 |     def _cs(self):
+18 |         return CaseSet(KorfModel.load(PUMP_KDF))  # type: ignore[arg-type]
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_cases.py:20:9
+   |
+18 |         return CaseSet(KorfModel.load(PUMP_KDF))  # type: ignore[arg-type]
+19 |
+20 |     def test_names(self):
+   |         ^^^^^^^^^^
+21 |         cs = self._cs()
+22 |         assert cs.names == ["NORMAL", "RATED", "MINIMUM"]
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_cases.py:24:9
+   |
+22 |         assert cs.names == ["NORMAL", "RATED", "MINIMUM"]
+23 |
+24 |     def test_count(self):
+   |         ^^^^^^^^^^
+25 |         cs = self._cs()
+26 |         assert cs.count == 3
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_cases.py:28:9
+   |
+26 |         assert cs.count == 3
+27 |
+28 |     def test_get_case_value(self):
+   |         ^^^^^^^^^^^^^^^^^^^
+29 |         cs = self._cs()
+30 |         assert cs.get_case_value("50;55;20", 1) == "50"
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_cases.py:33:9
+   |
+31 |         assert cs.get_case_value("50;55;20", 3) == "20"
+32 |
+33 |     def test_set_case_value(self):
+   |         ^^^^^^^^^^^^^^^^^^^
+34 |         cs = self._cs()
+35 |         result = cs.set_case_value("50;55;20", 2, "99")
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_cases.py:38:9
+   |
+36 |         assert result == "50;99;20"
+37 |
+38 |     def test_invalid_case_raises(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^
+39 |         import pytest
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_cases.py:47:9
+   |
+45 |             cs.get_case_value("50;55;20", 5)
+46 |
+47 |     def test_pipe_flows_table(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^
+48 |         cs = self._cs()
+49 |         table = cs.pipe_flows_table()
+   |
+
+D101 Missing docstring in public class
+  --> tests\test_cases.py:55:7
+   |
+55 | class TestResults:
+   |       ^^^^^^^^^^^
+56 |     def _res(self):
+57 |         return Results(KorfModel.load(PUMP_KDF))
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_cases.py:59:9
+   |
+57 |         return Results(KorfModel.load(PUMP_KDF))
+58 |
+59 |     def test_pump_summary(self):
+   |         ^^^^^^^^^^^^^^^^^
+60 |         r = self._res()
+61 |         s = r.pump_summary(1)
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_cases.py:65:9
+   |
+63 |         assert s["power_kW"] > 0
+64 |
+65 |     def test_all_pump_results(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^
+66 |         r = self._res()
+67 |         results = r.all_pump_results()
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_cases.py:70:9
+   |
+68 |         assert len(results) == 1
+69 |
+70 |     def test_pipe_velocities(self):
+   |         ^^^^^^^^^^^^^^^^^^^^
+71 |         r = self._res()
+72 |         vels = r.pipe_velocities()
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_cases.py:76:9
+   |
+74 |         assert isinstance(vels[1], list)
+75 |
+76 |     def test_pipe_pressures(self):
+   |         ^^^^^^^^^^^^^^^^^^^
+77 |         r = self._res()
+78 |         p = r.pipe_pressures()
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_cases.py:81:9
+   |
+79 |         assert 1 in p
+80 |
+81 |     def test_valve_dp(self):
+   |         ^^^^^^^^^^^^^
+82 |         r = self._res()
+83 |         dp = r.valve_dp()
+   |
+
+D101 Missing docstring in public class
+  --> tests\test_connectivity.py:18:7
+   |
+18 | class TestConnectDisconnect:
+   |       ^^^^^^^^^^^^^^^^^^^^^
+19 |     def test_connect_pipe_to_pump(self):
+20 |         m = Model(PUMP_KDF)
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_connectivity.py:19:9
+   |
+18 | class TestConnectDisconnect:
+19 |     def test_connect_pipe_to_pump(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^
+20 |         m = Model(PUMP_KDF)
+21 |         m.add_element("PUMP", "P_CON")
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_connectivity.py:28:9
+   |
+26 |         assert str(con_rec.values[0]) == str(pipe_idx)
+27 |
+28 |     def test_disconnect_pipe_from_pump(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+29 |         m = Model(PUMP_KDF)
+30 |         m.add_element("PUMP", "P_DC")
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_connectivity.py:36:9
+   |
+34 |         assert str(con_rec.values[0]) == "0"
+35 |
+36 |     def test_connect_two_pipes_raises(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+37 |         m = Model(PUMP_KDF)
+38 |         m.add_element("PUMP", "P_A")
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_connectivity.py:44:9
+   |
+42 |             m.connect_elements("L_A", "L1")
+43 |
+44 |     def test_connect_no_pipe_auto_creates_pipe(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+45 |         m = Model(PUMP_KDF)
+46 |         m.add_element("PUMP", "P_A")
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_connectivity.py:52:9
+   |
+50 |         assert m["L_AUTOCON"].etype == "PIPE"
+51 |
+52 |     def test_connect_no_pipe_auto_creates_pipe_for_hx(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+53 |         m = Model(PUMP_KDF)
+54 |         m.add_element("PUMP", "P_HX")
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_connectivity.py:66:9
+   |
+64 |         assert any(rec and str(rec.values[0]) == str(pipe_idx) for rec in nozzles)
+65 |
+66 |     def test_disconnect_pipe_from_hx_nozzle(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+67 |         m = Model(PUMP_KDF)
+68 |         m.add_element("PUMP", "P_HXD")
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_connectivity.py:80:9
+   |
+78 |         assert any(rec and str(rec.values[0]) == "0" for rec in nozzles)
+79 |
+80 |     def test_disconnect_not_connected_raises(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+81 |         m = Model(PUMP_KDF)
+82 |         m.add_element("PUMP", "P_NC")
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_connectivity.py:86:9
+   |
+84 |             m.disconnect_elements("L1", "P_NC")
+85 |
+86 |     def test_connect_multiple_pairs(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+87 |         m = Model(PUMP_KDF)
+88 |         m.add_element("PUMP", "P_M1")
+   |
+
+D101 Missing docstring in public class
+  --> tests\test_connectivity.py:97:7
+   |
+97 | class TestCheckConnectivity:
+   |       ^^^^^^^^^^^^^^^^^^^^^
+98 |     def test_check_valid_model(self):
+99 |         m = Model(PUMP_KDF)
+   |
+
+D102 Missing docstring in public method
+   --> tests\test_connectivity.py:98:9
+    |
+ 97 | class TestCheckConnectivity:
+ 98 |     def test_check_valid_model(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^
+ 99 |         m = Model(PUMP_KDF)
+100 |         issues = m.check_connectivity()
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_connectivity.py:105:9
+    |
+103 |         assert isinstance(issues, list)
+104 |
+105 |     def test_check_after_delete_finds_issue(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+106 |         m = Model(PUMP_KDF)
+107 |         # Delete a pipe that's referenced by an equipment CON
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_connectivity.py:125:9
+    |
+123 |                 pass
+124 |
+125 |     def test_check_cwc_model(self):
+    |         ^^^^^^^^^^^^^^^^^^^^
+126 |         m = Model(CWC_KDF)
+127 |         issues = m.check_connectivity()
+    |
+
+D102 Missing docstring in public method
+  --> tests\test_dataframe.py:50:9
+   |
+48 |     """Tests for Model.to_dataframes()."""
+49 |
+50 |     def test_returns_dict_of_dataframes(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+51 |         import pandas as pd
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_dataframe.py:59:9
+   |
+57 |             assert isinstance(df, pd.DataFrame), f"Sheet {key!r} is not a DataFrame"
+58 |
+59 |     def test_has_header_and_element_sheets(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+60 |         model = Model(PUMP_KDF)
+61 |         dfs = model.to_dataframes()
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_dataframe.py:66:9
+   |
+64 |         assert "PIPE" in dfs
+65 |
+66 |     def test_header_df_has_required_columns(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+67 |         model = Model(PUMP_KDF)
+68 |         dfs = model.to_dataframes()
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_dataframe.py:73:9
+   |
+71 |         assert "raw_line" in header_df.columns
+72 |
+73 |     def test_element_df_has_required_columns(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+74 |         model = Model(PUMP_KDF)
+75 |         dfs = model.to_dataframes()
+   |
+
+D102 Missing docstring in public method
+   --> tests\test_dataframe.py:183:9
+    |
+181 |     """Tests for the standalone export functions."""
+182 |
+183 |     def test_model_to_dataframes_function(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+184 |         from pykorf.model.services.io import model_to_dataframes
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_dataframe.py:191:9
+    |
+189 |         assert "_HEADER" in dfs
+190 |
+191 |     def test_dataframes_to_kdf_function(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+192 |         from pykorf.model.services.io import dataframes_to_kdf, model_to_dataframes
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_dataframe.py:207:9
+    |
+205 |             Path(tmp_path).unlink(missing_ok=True)
+206 |
+207 |     def test_dataframes_to_excel_and_back(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+208 |         from pykorf.model.services.io import (
+209 |             dataframes_to_excel,
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_dataframe.py:236:9
+    |
+234 |     """Verify that reconstructed models have identical properties."""
+235 |
+236 |     def test_version_preserved(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^
+237 |         model = Model(PUMP_KDF)
+238 |         dfs = model.to_dataframes()
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_dataframe.py:242:9
+    |
+240 |         assert reconstructed.version == model.version
+241 |
+242 |     def test_element_counts_preserved(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+243 |         model = Model(PUMP_KDF)
+244 |         dfs = model.to_dataframes()
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_dataframe.py:250:9
+    |
+248 |         assert reconstructed.num_cases == model.num_cases
+249 |
+250 |     def test_element_names_preserved(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+251 |         model = Model(PUMP_KDF)
+252 |         original_names = sorted(e.name for e in model.elements)
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_dataframe.py:258:9
+    |
+256 |         assert reconstructed_names == original_names
+257 |
+258 |     def test_summary_preserved(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^
+259 |         model = Model(CWC_KDF)
+260 |         dfs = model.to_dataframes()
+    |
+
+D103 Missing docstring in public function
+ --> tests\test_definitions.py:4:5
+  |
+4 | def test_element_tokens():
+  |     ^^^^^^^^^^^^^^^^^^^
+5 |     assert Element.PIPE == "PIPE"
+6 |     assert Element.ORIFICE == "FO"
+  |
+
+D103 Missing docstring in public function
+  --> tests\test_definitions.py:9:5
+   |
+ 9 | def test_pipe_properties():
+   |     ^^^^^^^^^^^^^^^^^^^^
+10 |     assert Pipe.NAME == "NAME"
+11 |     assert Pipe.PRES == "PRES"
+   |
+
+D103 Missing docstring in public function
+  --> tests\test_definitions.py:15:5
+   |
+15 | def test_property_map_has_pipe_and_orifice():
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+16 |     assert "PRES" in PROPERTIES_BY_ELEMENT[Element.PIPE]
+17 |     assert "DP" in PROPERTIES_BY_ELEMENT[Element.ORIFICE]
+   |
+
+D103 Missing docstring in public function
+  --> tests\test_definitions.py:21:5
+   |
+21 | def test_common_properties():
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+22 |     assert Common.NAME == "NAME"
+23 |     assert Common.NUM == "NUM"
+   |
+
+D205 1 blank line required between summary line and description
+ --> tests\test_elements.py:1:1
+  |
+1 | / """
+2 | | Tests for individual element classes.
+3 | | Run with:  pytest tests/
+4 | | """
+  | |___^
+5 |
+6 |   from pathlib import Path
+  |
+help: Insert single blank line
+
+D415 First line should end with a period, question mark, or exclamation point
+ --> tests\test_elements.py:1:1
+  |
+1 | / """
+2 | | Tests for individual element classes.
+3 | | Run with:  pytest tests/
+4 | | """
+  | |___^
+5 |
+6 |   from pathlib import Path
+  |
+help: Add closing punctuation
+
+D101 Missing docstring in public class
+  --> tests\test_elements.py:15:7
+   |
+15 | class TestPipe:
+   |       ^^^^^^^^
+16 |     def _model(self, kdf=PUMP_KDF):
+17 |         return KorfModel.load(kdf)
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_elements.py:19:9
+   |
+17 |         return KorfModel.load(kdf)
+18 |
+19 |     def test_pipe_name(self):
+   |         ^^^^^^^^^^^^^^
+20 |         m = self._model()
+21 |         assert m.pipes[1].name == "L1"
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_elements.py:23:9
+   |
+21 |         assert m.pipes[1].name == "L1"
+22 |
+23 |     def test_pipe_diameter(self):
+   |         ^^^^^^^^^^^^^^^^^^
+24 |         m = self._model()
+25 |         assert m.pipes[1].diameter_inch == "6"
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_elements.py:27:9
+   |
+25 |         assert m.pipes[1].diameter_inch == "6"
+26 |
+27 |     def test_pipe_schedule(self):
+   |         ^^^^^^^^^^^^^^^^^^
+28 |         m = self._model()
+29 |         # Pumpcases.kdf pipe 1 has schedule "STD"
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_elements.py:32:9
+   |
+30 |         assert m.pipes[1].schedule == "STD"
+31 |
+32 |     def test_pipe_length(self):
+   |         ^^^^^^^^^^^^^^^^
+33 |         m = self._model()
+34 |         assert m.pipes[1].length_m == 100.0
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_elements.py:36:9
+   |
+34 |         assert m.pipes[1].length_m == 100.0
+35 |
+36 |     def test_pipe_material(self):
+   |         ^^^^^^^^^^^^^^^^^^
+37 |         m = self._model()
+38 |         assert m.pipes[1].material == "Steel"
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_elements.py:40:9
+   |
+38 |         assert m.pipes[1].material == "Steel"
+39 |
+40 |     def test_pipe_velocity(self):
+   |         ^^^^^^^^^^^^^^^^^^
+41 |         m = self._model()
+42 |         v = m.pipes[1].velocity
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_elements.py:46:9
+   |
+44 |         assert len(v) > 0
+45 |
+46 |     def test_pipe_summary(self):
+   |         ^^^^^^^^^^^^^^^^^
+47 |         m = self._model()
+48 |         s = m.pipes[1].summary()
+   |
+
+D101 Missing docstring in public class
+  --> tests\test_elements.py:53:7
+   |
+53 | class TestPump:
+   |       ^^^^^^^^
+54 |     def _pump(self):
+55 |         return KorfModel.load(PUMP_KDF).pumps[1]
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_elements.py:57:9
+   |
+55 |         return KorfModel.load(PUMP_KDF).pumps[1]
+56 |
+57 |     def test_pump_name(self):
+   |         ^^^^^^^^^^^^^^
+58 |         assert self._pump().name == "P1"
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_elements.py:60:9
+   |
+58 |         assert self._pump().name == "P1"
+59 |
+60 |     def test_pump_type(self):
+   |         ^^^^^^^^^^^^^^
+61 |         assert self._pump().pump_type == "Centrifugal"
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_elements.py:63:9
+   |
+61 |         assert self._pump().pump_type == "Centrifugal"
+62 |
+63 |     def test_pump_head(self):
+   |         ^^^^^^^^^^^^^^
+64 |         assert self._pump().head_m > 0
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_elements.py:66:9
+   |
+64 |         assert self._pump().head_m > 0
+65 |
+66 |     def test_pump_power(self):
+   |         ^^^^^^^^^^^^^^^
+67 |         assert self._pump().power_kW > 0
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_elements.py:69:9
+   |
+67 |         assert self._pump().power_kW > 0
+68 |
+69 |     def test_pump_efficiency(self):
+   |         ^^^^^^^^^^^^^^^^^^^^
+70 |         e = self._pump().efficiency
+71 |         assert 0 < e <= 1
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_elements.py:73:9
+   |
+71 |         assert 0 < e <= 1
+72 |
+73 |     def test_pump_has_curve(self):
+   |         ^^^^^^^^^^^^^^^^^^^
+74 |         assert self._pump().has_curve
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_elements.py:76:9
+   |
+74 |         assert self._pump().has_curve
+75 |
+76 |     def test_pump_curve_lengths(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^
+77 |         p = self._pump()
+78 |         assert len(p.curve_q) == len(p.curve_h) == len(p.curve_eff)
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_elements.py:80:9
+   |
+78 |         assert len(p.curve_q) == len(p.curve_h) == len(p.curve_eff)
+79 |
+80 |     def test_set_efficiency(self):
+   |         ^^^^^^^^^^^^^^^^^^^
+81 |         m = KorfModel.load(PUMP_KDF)
+82 |         # Set efficiency override (stored at index 0)
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_elements.py:91:9
+   |
+89 |         # which may differ from the override value
+90 |
+91 |     def test_pump_summary(self):
+   |         ^^^^^^^^^^^^^^^^^
+92 |         s = self._pump().summary()
+93 |         assert "power_kW" in s
+   |
+
+D101 Missing docstring in public class
+  --> tests\test_elements.py:97:7
+   |
+97 | class TestFeedProduct:
+   |       ^^^^^^^^^^^^^^^
+98 |     def _model(self):
+99 |         return KorfModel.load(PUMP_KDF)
+   |
+
+D102 Missing docstring in public method
+   --> tests\test_elements.py:101:9
+    |
+ 99 |         return KorfModel.load(PUMP_KDF)
+100 |
+101 |     def test_feed_pressure(self):
+    |         ^^^^^^^^^^^^^^^^^^
+102 |         m = self._model()
+103 |         feed = m.feeds[1]
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_elements.py:106:9
+    |
+104 |         assert "50" in feed.pressure_string
+105 |
+106 |     def test_set_feed_pressure(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^
+107 |         m = self._model()
+108 |         m.feeds[1].set_pressure("80;90;60")
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_elements.py:111:9
+    |
+109 |         assert "80" in m.feeds[1].pressure_string
+110 |
+111 |     def test_product_pressure(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^
+112 |         m = self._model()
+113 |         prod = m.products[1]
+    |
+
+D101 Missing docstring in public class
+   --> tests\test_elements.py:117:7
+    |
+117 | class TestValveOrifice:
+    |       ^^^^^^^^^^^^^^^^
+118 |     def _model(self):
+119 |         return KorfModel.load(PUMP_KDF)
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_elements.py:121:9
+    |
+119 |         return KorfModel.load(PUMP_KDF)
+120 |
+121 |     def test_valve_exists(self):
+    |         ^^^^^^^^^^^^^^^^^
+122 |         m = self._model()
+123 |         assert 1 in m.valves
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_elements.py:125:9
+    |
+123 |         assert 1 in m.valves
+124 |
+125 |     def test_valve_dp(self):
+    |         ^^^^^^^^^^^^^
+126 |         m = self._model()
+127 |         assert m.valves[1].dp_kPag > 0
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_elements.py:129:9
+    |
+127 |         assert m.valves[1].dp_kPag > 0
+128 |
+129 |     def test_orifice_beta(self):
+    |         ^^^^^^^^^^^^^^^^^
+130 |         m = self._model()
+131 |         assert 0 < m.orifices[1].beta < 1
+    |
+
+D101 Missing docstring in public class
+   --> tests\test_elements.py:134:7
+    |
+134 | class TestHeatExchanger:
+    |       ^^^^^^^^^^^^^^^^^
+135 |     def _model(self):
+136 |         return KorfModel.load(PUMP_KDF)
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_elements.py:138:9
+    |
+136 |         return KorfModel.load(PUMP_KDF)
+137 |
+138 |     def test_hx_exists(self):
+    |         ^^^^^^^^^^^^^^
+139 |         m = self._model()
+140 |         assert 1 in m.exchangers
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_elements.py:142:9
+    |
+140 |         assert 1 in m.exchangers
+141 |
+142 |     def test_hx_type(self):
+    |         ^^^^^^^^^^^^
+143 |         m = self._model()
+144 |         assert m.exchangers[1].hx_type == "S-T"
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_elements.py:146:9
+    |
+144 |         assert m.exchangers[1].hx_type == "S-T"
+145 |
+146 |     def test_hx_dp(self):
+    |         ^^^^^^^^^^
+147 |         m = self._model()
+148 |         assert m.exchangers[1].dp_kPag > 0
+    |
+
+D101 Missing docstring in public class
+  --> tests\test_layout.py:15:7
+   |
+15 | class TestGetSetPosition:
+   |       ^^^^^^^^^^^^^^^^^^
+16 |     def test_get_position(self):
+17 |         m = Model(PUMP_KDF)
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_layout.py:16:9
+   |
+15 | class TestGetSetPosition:
+16 |     def test_get_position(self):
+   |         ^^^^^^^^^^^^^^^^^
+17 |         m = Model(PUMP_KDF)
+18 |         pipe = m.pipes[1]
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_layout.py:24:9
+   |
+22 |         assert pos is None or isinstance(pos, tuple)
+23 |
+24 |     def test_set_position(self):
+   |         ^^^^^^^^^^^^^^^^^
+25 |         m = Model(PUMP_KDF)
+26 |         pipe = m.pipes[1]
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_layout.py:32:9
+   |
+30 |             assert pos == (500.0, 300.0)
+31 |
+32 |     def test_set_position_by_name(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^
+33 |         m = Model(PUMP_KDF)
+34 |         m.set_position("L1", 700.0, 450.0)
+   |
+
+D101 Missing docstring in public class
+  --> tests\test_layout.py:40:7
+   |
+40 | class TestCheckLayout:
+   |       ^^^^^^^^^^^^^^^
+41 |     def test_check_layout_returns_list(self):
+42 |         m = Model(PUMP_KDF)
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_layout.py:41:9
+   |
+40 | class TestCheckLayout:
+41 |     def test_check_layout_returns_list(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+42 |         m = Model(PUMP_KDF)
+43 |         issues = m.check_layout()
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_layout.py:46:9
+   |
+44 |         assert isinstance(issues, list)
+45 |
+46 |     def test_check_layout_cwc(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^
+47 |         m = Model(CWC_KDF)
+48 |         issues = m.check_layout()
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_layout.py:51:9
+   |
+49 |         assert isinstance(issues, list)
+50 |
+51 |     def test_model_check_layout(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^
+52 |         m = Model(PUMP_KDF)
+53 |         issues = m.check_layout()
+   |
+
+D101 Missing docstring in public class
+  --> tests\test_layout.py:57:7
+   |
+57 | class TestAutoPlace:
+   |       ^^^^^^^^^^^^^
+58 |     def test_auto_place_new_element(self):
+59 |         m = Model(PUMP_KDF)
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_layout.py:58:9
+   |
+57 | class TestAutoPlace:
+58 |     def test_auto_place_new_element(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+59 |         m = Model(PUMP_KDF)
+60 |         new_pump = m.add_element("PUMP", "P_AP")
+   |
+
+D101 Missing docstring in public class
+  --> tests\test_layout.py:68:7
+   |
+68 | class TestVisualize:
+   |       ^^^^^^^^^^^^^
+69 |     def test_visualize_returns_string(self):
+70 |         m = Model(PUMP_KDF)
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_layout.py:69:9
+   |
+68 | class TestVisualize:
+69 |     def test_visualize_returns_string(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+70 |         m = Model(PUMP_KDF)
+71 |         text = m.visualize()
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_layout.py:75:9
+   |
+73 |         assert "Model Layout" in text
+74 |
+75 |     def test_visualize_cwc(self):
+   |         ^^^^^^^^^^^^^^^^^^
+76 |         m = Model(CWC_KDF)
+77 |         text = m.visualize()
+   |
+
+D101 Missing docstring in public class
+  --> tests\test_model_api.py:28:7
+   |
+28 | class TestModelConstructor:
+   |       ^^^^^^^^^^^^^^^^^^^^
+29 |     def test_model_no_args_creates_default(self):
+30 |         """Model() should load from New.kdf template."""
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_model_api.py:57:9
+   |
+55 |         assert "NORMAL" in m.general.case_descriptions
+56 |
+57 |     def test_repr(self):
+   |         ^^^^^^^^^
+58 |         m = Model(PUMP_KDF)
+59 |         assert "KorfModel(" in repr(m)
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_model_api.py:61:9
+   |
+59 |         assert "KorfModel(" in repr(m)
+60 |
+61 |     def test_load_v36(self):
+   |         ^^^^^^^^^^^^^
+62 |         m = Model(CWC_KDF)
+63 |         assert m.version == "KORF_3.6"
+   |
+
+D101 Missing docstring in public class
+  --> tests\test_model_api.py:72:7
+   |
+72 | class TestNameAccess:
+   |       ^^^^^^^^^^^^^^
+73 |     def test_get_element_by_name(self):
+74 |         m = Model(PUMP_KDF)
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_model_api.py:73:9
+   |
+72 | class TestNameAccess:
+73 |     def test_get_element_by_name(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^
+74 |         m = Model(PUMP_KDF)
+75 |         pipe = m.get_element("L1")
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_model_api.py:79:9
+   |
+77 |         assert pipe.index == 1
+78 |
+79 |     def test_getitem_shorthand(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^
+80 |         m = Model(PUMP_KDF)
+81 |         pipe = m["L1"]
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_model_api.py:84:9
+   |
+82 |         assert pipe.name == "L1"
+83 |
+84 |     def test_contains(self):
+   |         ^^^^^^^^^^^^^
+85 |         m = Model(PUMP_KDF)
+86 |         assert "L1" in m
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_model_api.py:89:9
+   |
+87 |         assert "NONEXISTENT" not in m
+88 |
+89 |     def test_element_not_found(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^
+90 |         m = Model(PUMP_KDF)
+91 |         with pytest.raises(ElementNotFound):
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_model_api.py:94:9
+   |
+92 |             m.get_element("DOES_NOT_EXIST")
+93 |
+94 |     def test_get_pump_by_name(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^
+95 |         m = Model(PUMP_KDF)
+96 |         pump = m["P1"]
+   |
+
+D102 Missing docstring in public method
+   --> tests\test_model_api.py:99:9
+    |
+ 97 |         assert pump.etype == "PUMP"
+ 98 |
+ 99 |     def test_get_param_and_update_values(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+100 |         m = Model(PUMP_KDF)
+101 |         feed = m.feeds[1]
+    |
+
+D101 Missing docstring in public class
+   --> tests\test_model_api.py:114:7
+    |
+114 | class TestElementsListing:
+    |       ^^^^^^^^^^^^^^^^^^^
+115 |     def test_elements_returns_list(self):
+116 |         m = Model(PUMP_KDF)
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_model_api.py:115:9
+    |
+114 | class TestElementsListing:
+115 |     def test_elements_returns_list(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+116 |         m = Model(PUMP_KDF)
+117 |         elems = m.elements
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_model_api.py:121:9
+    |
+119 |         assert len(elems) > 0
+120 |
+121 |     def test_elements_excludes_templates(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+122 |         m = Model(PUMP_KDF)
+123 |         for elem in m.elements:
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_model_api.py:126:9
+    |
+124 |             assert elem.index >= 1
+125 |
+126 |     def test_get_elements_by_type(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^
+127 |         m = Model(PUMP_KDF)
+128 |         pipes = m.get_elements_by_type("PIPE")
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_model_api.py:133:9
+    |
+131 |             assert p.etype == "PIPE"
+132 |
+133 |     def test_get_elements_by_type_empty(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+134 |         m = Model(PUMP_KDF)
+135 |         # No TEEs in Pumpcases
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_model_api.py:139:9
+    |
+137 |         assert len(tees) == 0
+138 |
+139 |     def test_get_elements_by_type_unknown(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+140 |         m = Model(PUMP_KDF)
+141 |         result = m.get_elements_by_type("UNKNOWN_TYPE")
+    |
+
+D101 Missing docstring in public class
+   --> tests\test_model_api.py:150:7
+    |
+150 | class TestUpdateElement:
+    |       ^^^^^^^^^^^^^^^^^
+151 |     def test_update_single_param(self):
+152 |         m = Model(PUMP_KDF)
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_model_api.py:151:9
+    |
+150 | class TestUpdateElement:
+151 |     def test_update_single_param(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^
+152 |         m = Model(PUMP_KDF)
+153 |         m.update_element("L1", {"LEN": 200})
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_model_api.py:158:9
+    |
+156 |         assert rec.values[0] == "200"
+157 |
+158 |     def test_update_multiple_params(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+159 |         m = Model(PUMP_KDF)
+160 |         m.update_element("L1", {"LEN": 200, "TFLOW": "80;90;60"})
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_model_api.py:165:9
+    |
+163 |         assert pipe._get("TFLOW").values[0] == "80;90;60"
+164 |
+165 |     def test_update_elements_batch(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+166 |         m = Model(PUMP_KDF)
+167 |         m.update_elements(
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_model_api.py:176:9
+    |
+174 |         assert m["P1"]._get("EFFP").values[0] == "0.75"
+175 |
+176 |     def test_update_nonexistent_raises(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+177 |         m = Model(PUMP_KDF)
+178 |         with pytest.raises(ElementNotFound):
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_model_api.py:181:9
+    |
+179 |             m.update_element("FAKE", {"LEN": 100})
+180 |
+181 |     def test_update_rename_to_duplicate_name_auto_resolved(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+182 |         m = Model(PUMP_KDF)
+183 |         # Renaming L1 to "P1" (which already exists) should auto-resolve to "P1_1"
+    |
+
+D101 Missing docstring in public class
+   --> tests\test_model_api.py:194:7
+    |
+194 | class TestAddElement:
+    |       ^^^^^^^^^^^^^^
+195 |     def test_add_pipe_raises(self):
+196 |         m = Model(PUMP_KDF)
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_model_api.py:195:9
+    |
+194 | class TestAddElement:
+195 |     def test_add_pipe_raises(self):
+    |         ^^^^^^^^^^^^^^^^^^^^
+196 |         m = Model(PUMP_KDF)
+197 |         with pytest.raises(ValueError, match="PIPE cannot be created"):
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_model_api.py:200:9
+    |
+198 |             m.add_element("PIPE", "L_NEW")
+199 |
+200 |     def test_add_pipe_with_params_raises(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+201 |         m = Model(PUMP_KDF)
+202 |         with pytest.raises(ValueError, match="PIPE cannot be created"):
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_model_api.py:205:9
+    |
+203 |             m.add_element("PIPE", "L_P", {"LEN": "50"})
+204 |
+205 |     def test_connect_auto_created_pipe_does_not_clone_num_record(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+206 |         m = Model(PUMP_KDF)
+207 |         m.add_element("PUMP", "P_NUMCHK")
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_model_api.py:213:9
+    |
+211 |         assert m._parser.get("PIPE", new_pipe.index, "NUM") is None
+212 |
+213 |     def test_add_elements_batch(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^
+214 |         m = Model(PUMP_KDF)
+215 |         orig_pumps = m.num_pumps
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_model_api.py:225:9
+    |
+223 |         assert m.num_pumps == orig_pumps + 1
+224 |
+225 |     def test_add_unknown_type_raises(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+226 |         m = Model(PUMP_KDF)
+227 |         with pytest.raises(ValueError, match="Unknown element type"):
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_model_api.py:230:9
+    |
+228 |             m.add_element("FOOBAR", "X1")
+229 |
+230 |     def test_add_duplicate_name_auto_resolved(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+231 |         m = Model(PUMP_KDF)
+232 |         # Adding pump with duplicate name "P1" should auto-resolve to "P1_1"
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_model_api.py:241:9
+    |
+239 |         assert pump2.name == "P1_2"
+240 |
+241 |     def test_add_then_save_reload(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^
+242 |         m = Model(PUMP_KDF)
+243 |         m.add_element("PUMP", "P_SAVE")
+    |
+
+D101 Missing docstring in public class
+   --> tests\test_model_api.py:287:7
+    |
+287 | class TestDeleteElement:
+    |       ^^^^^^^^^^^^^^^^^
+288 |     def test_delete_pipe(self):
+289 |         m = Model(PUMP_KDF)
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_model_api.py:288:9
+    |
+287 | class TestDeleteElement:
+288 |     def test_delete_pipe(self):
+    |         ^^^^^^^^^^^^^^^^
+289 |         m = Model(PUMP_KDF)
+290 |         assert "L1" in m
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_model_api.py:296:9
+    |
+294 |         assert m.num_pipes == original - 1
+295 |
+296 |     def test_delete_nonexistent_raises(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+297 |         m = Model(PUMP_KDF)
+298 |         with pytest.raises(ElementNotFound):
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_model_api.py:301:9
+    |
+299 |             m.delete_element("NOPE")
+300 |
+301 |     def test_delete_elements_batch(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+302 |         m = Model(PUMP_KDF)
+303 |         original = m.num_pipes
+    |
+
+D101 Missing docstring in public class
+   --> tests\test_model_api.py:315:7
+    |
+315 | class TestCopyElement:
+    |       ^^^^^^^^^^^^^^^
+316 |     def test_copy_pipe(self):
+317 |         m = Model(PUMP_KDF)
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_model_api.py:316:9
+    |
+315 | class TestCopyElement:
+316 |     def test_copy_pipe(self):
+    |         ^^^^^^^^^^^^^^
+317 |         m = Model(PUMP_KDF)
+318 |         original = m.num_pipes
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_model_api.py:324:9
+    |
+322 |         assert m.num_pipes == original + 1
+323 |
+324 |     def test_copy_preserves_params(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+325 |         m = Model(PUMP_KDF)
+326 |         src = m["L1"]
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_model_api.py:331:9
+    |
+329 |         assert new_elem._get("LEN").values[0] == src_len
+330 |
+331 |     def test_copy_clears_connectivity(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+332 |         m = Model(PUMP_KDF)
+333 |         new_pump = m.copy_element("P1", "P_COPY")
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_model_api.py:340:9
+    |
+338 |                 assert str(v) == "0"
+339 |
+340 |     def test_copy_duplicate_name_auto_resolved(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+341 |         m = Model(PUMP_KDF)
+342 |         # Copying to a duplicate name should auto-resolve
+    |
+
+D101 Missing docstring in public class
+   --> tests\test_model_api.py:353:7
+    |
+353 | class TestMoveElement:
+    |       ^^^^^^^^^^^^^^^
+354 |     def test_move_to_empty_index(self):
+355 |         m = Model(PUMP_KDF)
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_model_api.py:354:9
+    |
+353 | class TestMoveElement:
+354 |     def test_move_to_empty_index(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^
+355 |         m = Model(PUMP_KDF)
+356 |         # Move pipe at index 1 to index 100
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_model_api.py:362:9
+    |
+360 |         assert m["L1"].index == 100
+361 |
+362 |     def test_move_swap(self):
+    |         ^^^^^^^^^^^^^^
+363 |         m = Model(PUMP_KDF)
+364 |         name1 = m.pipes[1].name
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_model_api.py:370:9
+    |
+368 |         assert m[name2].index == 1
+369 |
+370 |     def test_move_invalid_index_raises(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+371 |         m = Model(PUMP_KDF)
+372 |         with pytest.raises(ValueError, match="Target index must be >= 1"):
+    |
+
+D205 1 blank line required between summary line and description
+ --> tests\test_parser.py:1:1
+  |
+1 | / """Tests for KdfParser and KorfModel loading/saving.
+2 | | Run with:  pytest tests/
+3 | | """
+  | |___^
+4 |
+5 |   import os
+  |
+help: Insert single blank line
+
+D415 First line should end with a period, question mark, or exclamation point
+ --> tests\test_parser.py:1:1
+  |
+1 | / """Tests for KdfParser and KorfModel loading/saving.
+2 | | Run with:  pytest tests/
+3 | | """
+  | |___^
+4 |
+5 |   import os
+  |
+help: Add closing punctuation
+
+D101 Missing docstring in public class
+  --> tests\test_parser.py:29:7
+   |
+29 | class TestKdfParser:
+   |       ^^^^^^^^^^^^^
+30 |     def test_load_pumpcases(self):
+31 |         p = KdfParser(PUMP_KDF)
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_parser.py:30:9
+   |
+29 | class TestKdfParser:
+30 |     def test_load_pumpcases(self):
+   |         ^^^^^^^^^^^^^^^^^^^
+31 |         p = KdfParser(PUMP_KDF)
+32 |         records = p.load()
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_parser.py:35:9
+   |
+33 |         assert len(records) > 0
+34 |
+35 |     def test_version_detected(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^
+36 |         p = KdfParser(PUMP_KDF)
+37 |         p.load()
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_parser.py:40:9
+   |
+38 |         assert p.version().startswith("KORF")
+39 |
+40 |     def test_num_pipes(self):
+   |         ^^^^^^^^^^^^^^
+41 |         p = KdfParser(PUMP_KDF)
+42 |         p.load()
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_parser.py:45:9
+   |
+43 |         assert p.num_instances("PIPE") == 5
+44 |
+45 |     def test_get_record(self):
+   |         ^^^^^^^^^^^^^^^
+46 |         p = KdfParser(PUMP_KDF)
+47 |         p.load()
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_parser.py:52:9
+   |
+50 |         assert "50" in rec.values[0]  # "50;55;20"
+51 |
+52 |     def test_set_value(self):
+   |         ^^^^^^^^^^^^^^
+53 |         p = KdfParser(PUMP_KDF)
+54 |         p.load()
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_parser.py:76:9
+   |
+74 |             os.unlink(tmp)
+75 |
+76 |     def test_save_does_not_write_double_crlf(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+77 |         p = KdfParser(PUMP_KDF)
+78 |         p.load()
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_parser.py:89:9
+   |
+87 |             os.unlink(tmp)
+88 |
+89 |     def test_save_skips_invalid_nonzero_num_records(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+90 |         p = KdfParser(PUMP_KDF)
+91 |         p.load()
+   |
+
+D102 Missing docstring in public method
+   --> tests\test_parser.py:103:9
+    |
+101 |             os.unlink(tmp)
+102 |
+103 |     def test_save_is_idempotent(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^
+104 |         p = KdfParser(PUMP_KDF)
+105 |         p.load()
+    |
+
+F841 Local variable `clones` is assigned to but never used
+   --> tests\test_parser.py:148:9
+    |
+147 |         # Clone template to index 1
+148 |         clones = p.clone_records("VALVE", 0, 1)
+    |         ^^^^^^
+149 |
+150 |         # Find the cloned CV record
+    |
+help: Remove assignment to unused variable `clones`
+
+D102 Missing docstring in public method
+   --> tests\test_parser.py:156:9
+    |
+154 |         assert cloned_cv.to_line() == cloned_cv.raw_line
+155 |
+156 |     def test_load_crane(self):
+    |         ^^^^^^^^^^^^^^^
+157 |         p = KdfParser(CRANE_KDF)
+158 |         records = p.load()
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_parser.py:161:9
+    |
+159 |         assert len(records) > 0
+160 |
+161 |     def test_num_instances_crane(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^
+162 |         p = KdfParser(CRANE_KDF)
+163 |         p.load()
+    |
+
+D101 Missing docstring in public class
+   --> tests\test_parser.py:172:7
+    |
+172 | class TestKorfModel:
+    |       ^^^^^^^^^^^^^
+173 |     def test_load(self):
+174 |         m = KorfModel.load(PUMP_KDF)
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_parser.py:173:9
+    |
+172 | class TestKorfModel:
+173 |     def test_load(self):
+    |         ^^^^^^^^^
+174 |         m = KorfModel.load(PUMP_KDF)
+175 |         assert m is not None
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_parser.py:177:9
+    |
+175 |         assert m is not None
+176 |
+177 |     def test_repr(self):
+    |         ^^^^^^^^^
+178 |         m = KorfModel.load(PUMP_KDF)
+179 |         assert "KorfModel" in repr(m)
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_parser.py:181:9
+    |
+179 |         assert "KorfModel" in repr(m)
+180 |
+181 |     def test_general_cases(self):
+    |         ^^^^^^^^^^^^^^^^^^
+182 |         m = KorfModel.load(PUMP_KDF)
+183 |         assert "NORMAL" in m.general.case_descriptions
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_parser.py:186:9
+    |
+184 |         assert m.general.num_cases == 3
+185 |
+186 |     def test_pipes_loaded(self):
+    |         ^^^^^^^^^^^^^^^^^
+187 |         m = KorfModel.load(PUMP_KDF)
+188 |         assert len(m.pipes) > 1  # 0 (template) + 5 real pipes
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_parser.py:190:9
+    |
+188 |         assert len(m.pipes) > 1  # 0 (template) + 5 real pipes
+189 |
+190 |     def test_pipe_1_flow(self):
+    |         ^^^^^^^^^^^^^^^^
+191 |         m = KorfModel.load(PUMP_KDF)
+192 |         flows = m.pipes[1].get_flow()
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_parser.py:195:9
+    |
+193 |         assert flows[0] == "50"
+194 |
+195 |     def test_pump_results(self):
+    |         ^^^^^^^^^^^^^^^^^
+196 |         m = KorfModel.load(PUMP_KDF)
+197 |         pump = m.pumps[1]
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_parser.py:202:9
+    |
+200 |         assert 0 < pump.efficiency <= 1
+201 |
+202 |     def test_set_flow_string(self):
+    |         ^^^^^^^^^^^^^^^^^^^^
+203 |         m = KorfModel.load(PUMP_KDF)
+204 |         m.pipes[1].set_flow("60;65;25")
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_parser.py:207:9
+    |
+205 |         assert m.pipes[1].get_flow()[0] == "60"
+206 |
+207 |     def test_set_flow_list(self):
+    |         ^^^^^^^^^^^^^^^^^^
+208 |         m = KorfModel.load(PUMP_KDF)
+209 |         m.pipes[1].set_flow([70, 75, 30])
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_parser.py:214:9
+    |
+212 |         assert flows[1] == "75"
+213 |
+214 |     def test_save_modified(self):
+    |         ^^^^^^^^^^^^^^^^^^
+215 |         m = KorfModel.load(PUMP_KDF)
+216 |         m.pipes[1].set_flow("99;99;99")
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_parser.py:226:9
+    |
+224 |             os.unlink(tmp)
+225 |
+226 |     def test_edits_are_in_memory_until_save(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+227 |         with tempfile.NamedTemporaryFile(suffix=".kdf", delete=False) as f:
+228 |             tmp = f.name
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_parser.py:250:9
+    |
+248 |             os.unlink(tmp)
+249 |
+250 |     def test_save_as_keeps_source_file_unchanged(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+251 |         with tempfile.NamedTemporaryFile(suffix=".kdf", delete=False) as src_f:
+252 |             src_tmp = src_f.name
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_parser.py:271:9
+    |
+269 |             os.unlink(dst_tmp)
+270 |
+271 |     def test_summary(self):
+    |         ^^^^^^^^^^^^
+272 |         m = KorfModel.load(PUMP_KDF)
+273 |         s = m.summary()
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_parser.py:277:9
+    |
+275 |         assert s["num_pumps"] == 1
+276 |
+277 |     def test_element_not_found(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^
+278 |         from pykorf.exceptions import ElementNotFound
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_use_case.py:108:9
+    |
+106 |         assert ln.fluid_code == "BRL1"
+107 |
+108 |     def test_validate_valid(self):
+    |         ^^^^^^^^^^^^^^^^^^^
+109 |         result = LineNumber.validate("6-10U01-WATR-001-BC1A1B;S-101;")
+110 |         assert result.is_valid is True
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_use_case.py:112:9
+    |
+110 |         assert result.is_valid is True
+111 |
+112 |     def test_validate_empty(self):
+    |         ^^^^^^^^^^^^^^^^^^^
+113 |         result = LineNumber.validate("")
+114 |         assert result.is_valid is False
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_use_case.py:116:9
+    |
+114 |         assert result.is_valid is False
+115 |
+116 |     def test_validate_invalid_format(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+117 |         result = LineNumber.validate("invalid-stuff")
+118 |         assert result.is_valid is False
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_use_case.py:131:9
+    |
+129 |     """Tests for the parse_stream_from_notes helper."""
+130 |
+131 |     def test_parse_stream(self):
+    |         ^^^^^^^^^^^^^^^^^
+132 |         assert parse_stream_from_notes("6-10U01-WATR-001-BC1A1B;S-101;") == "S-101"
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_use_case.py:134:9
+    |
+132 |         assert parse_stream_from_notes("6-10U01-WATR-001-BC1A1B;S-101;") == "S-101"
+133 |
+134 |     def test_no_stream(self):
+    |         ^^^^^^^^^^^^^^
+135 |         assert parse_stream_from_notes("6-10U01-WATR-001-BC1A1B") is None
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_use_case.py:141:9
+    |
+139 |         assert parse_stream_from_notes("6-10U01-WATR-001-BC1A1B;;") is None
+140 |
+141 |     def test_empty_notes(self):
+    |         ^^^^^^^^^^^^^^^^
+142 |         assert parse_stream_from_notes("") is None
+143 |         assert parse_stream_from_notes("  ") is None
+    |
+
+RUF059 Unpacked variable `od_data` is never used
+   --> tests\test_use_case.py:156:29
+    |
+154 |     def test_load_pms(self):
+155 |         """load_pms() returns (material, pms_data, od_data)."""
+156 |         material, pms_data, od_data = load_pms(PMS_JSON)
+    |                             ^^^^^^^
+157 |         assert material == "Steel"
+158 |         assert "BC1A1B-FDA" in pms_data
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `material` is never used
+   --> tests\test_use_case.py:164:9
+    |
+162 |     def test_lookup_schedule_exact(self):
+163 |         """lookup_schedule() finds exact size matches."""
+164 |         material, pms_data, od_data = load_pms(PMS_JSON)
+    |         ^^^^^^^^
+165 |         spec = lookup_schedule(pms_data, "BC1A1B-FDA", 6.0)
+166 |         assert spec == {"schedule": "STD"}
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `od_data` is never used
+   --> tests\test_use_case.py:164:29
+    |
+162 |     def test_lookup_schedule_exact(self):
+163 |         """lookup_schedule() finds exact size matches."""
+164 |         material, pms_data, od_data = load_pms(PMS_JSON)
+    |                             ^^^^^^^
+165 |         spec = lookup_schedule(pms_data, "BC1A1B-FDA", 6.0)
+166 |         assert spec == {"schedule": "STD"}
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `material` is never used
+   --> tests\test_use_case.py:170:9
+    |
+168 |     def test_lookup_schedule_closest(self):
+169 |         """lookup_schedule() falls back to closest size."""
+170 |         material, pms_data, od_data = load_pms(PMS_JSON)
+    |         ^^^^^^^^
+171 |         # 5.5 is not in the table, should return closest (6.0)
+172 |         spec = lookup_schedule(pms_data, "BC1A1B-FDA", 5.5)
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `od_data` is never used
+   --> tests\test_use_case.py:170:29
+    |
+168 |     def test_lookup_schedule_closest(self):
+169 |         """lookup_schedule() falls back to closest size."""
+170 |         material, pms_data, od_data = load_pms(PMS_JSON)
+    |                             ^^^^^^^
+171 |         # 5.5 is not in the table, should return closest (6.0)
+172 |         spec = lookup_schedule(pms_data, "BC1A1B-FDA", 5.5)
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `material` is never used
+   --> tests\test_use_case.py:177:9
+    |
+175 |     def test_lookup_schedule_unknown_class(self):
+176 |         """lookup_schedule() raises for unknown PMS class."""
+177 |         material, pms_data, od_data = load_pms(PMS_JSON)
+    |         ^^^^^^^^
+178 |         from pykorf.use_case.exceptions import PmsLookupError
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `od_data` is never used
+   --> tests\test_use_case.py:177:29
+    |
+175 |     def test_lookup_schedule_unknown_class(self):
+176 |         """lookup_schedule() raises for unknown PMS class."""
+177 |         material, pms_data, od_data = load_pms(PMS_JSON)
+    |                             ^^^^^^^
+178 |         from pykorf.use_case.exceptions import PmsLookupError
+    |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+D102 Missing docstring in public method
+   --> tests\test_use_case.py:260:9
+    |
+259 |     @pytest.fixture()
+260 |     def hmb(self) -> HmbReader:
+    |         ^^^
+261 |         reader = HmbReader(INPUT_DIR)
+262 |         reader.load_json(HMB_JSON)
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_use_case.py:265:9
+    |
+263 |         return reader
+264 |
+265 |     def test_load_json(self, hmb: HmbReader):
+    |         ^^^^^^^^^^^^^^
+266 |         streams = hmb.get_all_streams()
+267 |         assert "S-101" in streams
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_use_case.py:269:9
+    |
+267 |         assert "S-101" in streams
+268 |
+269 |     def test_lookup_stream(self, hmb: HmbReader):
+    |         ^^^^^^^^^^^^^^^^^^
+270 |         props = hmb.lookup("S-101")
+271 |         assert props is not None
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_use_case.py:277:9
+    |
+275 |         assert props.liqden == 1011.0
+276 |
+277 |     def test_lookup_unknown_stream(self, hmb: HmbReader):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+278 |         assert hmb.lookup("S-999") is None
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_use_case.py:280:9
+    |
+278 |         assert hmb.lookup("S-999") is None
+279 |
+280 |     def test_fluid_properties_defaults(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+281 |         fp = FluidProperties(stream_no="X")
+282 |         assert fp.temp is None
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_use_case.py:295:9
+    |
+293 |     """Tests for UseCaseSettings defaults."""
+294 |
+295 |     def test_defaults(self):
+    |         ^^^^^^^^^^^^^
+296 |         s = UseCaseSettings()
+297 |         assert s.notes_delimiter == ";"
+    |
+
+F841 Local variable `result` is assigned to but never used
+   --> tests\test_use_case.py:493:9
+    |
+492 |         out_path = tmp_path / "output.kdf"
+493 |         result = processor.process_kdf(model, save=True, save_path=out_path)
+    |         ^^^^^^
+494 |
+495 |         assert out_path.exists()
+    |
+help: Remove assignment to unused variable `result`
+
+D102 Missing docstring in public method
+   --> tests\test_use_case.py:540:9
+    |
+538 |     # ------------------------------------------------------------------
+539 |
+540 |     def test_validate_method(self):
+    |         ^^^^^^^^^^^^^^^^^^^^
+541 |         proc = PipedataProcessor()
+542 |         result = proc.validate("6-10U01-WATR-001-BC1A1B;S-101;")
+    |
+
+D101 Missing docstring in public class
+  --> tests\test_utils.py:12:7
+   |
+12 | class TestParseFormatLine:
+   |       ^^^^^^^^^^^^^^^^^^^
+13 |     def test_parse_simple(self):
+14 |         tokens = parse_line(r'"\PIPE",1,"TFLOW","50;55;20",20,"t/h"')
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_utils.py:13:9
+   |
+12 | class TestParseFormatLine:
+13 |     def test_parse_simple(self):
+   |         ^^^^^^^^^^^^^^^^^
+14 |         tokens = parse_line(r'"\PIPE",1,"TFLOW","50;55;20",20,"t/h"')
+15 |         assert tokens[0] == r"\PIPE"
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_utils.py:19:9
+   |
+17 |         assert tokens[3] == "50;55;20"
+18 |
+19 |     def test_parse_numeric(self):
+   |         ^^^^^^^^^^^^^^^^^^
+20 |         tokens = parse_line(r'"\PIPE",1,"LEN",100,"m"')
+21 |         assert tokens[3] == "100"
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_utils.py:23:9
+   |
+21 |         assert tokens[3] == "100"
+22 |
+23 |     def test_is_numeric_str_true(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^
+24 |         assert _is_numeric_str("100")
+25 |         assert _is_numeric_str("2.22E-02")
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_utils.py:28:9
+   |
+26 |         assert _is_numeric_str("-3.14")
+27 |
+28 |     def test_is_numeric_str_false(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^
+29 |         assert not _is_numeric_str("")
+30 |         assert not _is_numeric_str("t/h")
+   |
+
+D101 Missing docstring in public class
+  --> tests\test_utils.py:34:7
+   |
+34 | class TestCaseHelpers:
+   |       ^^^^^^^^^^^^^^^
+35 |     def test_split_multi(self):
+36 |         assert split_cases("50;55;20") == ["50", "55", "20"]
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_utils.py:35:9
+   |
+34 | class TestCaseHelpers:
+35 |     def test_split_multi(self):
+   |         ^^^^^^^^^^^^^^^^
+36 |         assert split_cases("50;55;20") == ["50", "55", "20"]
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_utils.py:38:9
+   |
+36 |         assert split_cases("50;55;20") == ["50", "55", "20"]
+37 |
+38 |     def test_split_single(self):
+   |         ^^^^^^^^^^^^^^^^^
+39 |         assert split_cases("100") == ["100"]
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_utils.py:41:9
+   |
+39 |         assert split_cases("100") == ["100"]
+40 |
+41 |     def test_split_calculated(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^
+42 |         assert split_cases(";C") == [";C"]
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_utils.py:44:9
+   |
+42 |         assert split_cases(";C") == [";C"]
+43 |
+44 |     def test_join_ints(self):
+   |         ^^^^^^^^^^^^^^
+45 |         assert join_cases([50, 55, 20]) == "50;55;20"
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_utils.py:47:9
+   |
+45 |         assert join_cases([50, 55, 20]) == "50;55;20"
+46 |
+47 |     def test_join_strings(self):
+   |         ^^^^^^^^^^^^^^^^^
+48 |         assert join_cases(["50", "55", "20"]) == "50;55;20"
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_utils.py:50:9
+   |
+48 |         assert join_cases(["50", "55", "20"]) == "50;55;20"
+49 |
+50 |     def test_is_calculated_true(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^
+51 |         assert is_calculated(";C")
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_utils.py:53:9
+   |
+51 |         assert is_calculated(";C")
+52 |
+53 |     def test_is_calculated_false(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^
+54 |         assert not is_calculated("50")
+55 |         assert not is_calculated("")
+   |
+
+D101 Missing docstring in public class
+  --> tests\test_validation.py:16:7
+   |
+16 | class TestValidate:
+   |       ^^^^^^^^^^^^
+17 |     def test_validate_returns_list(self):
+18 |         m = Model(PUMP_KDF)
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_validation.py:17:9
+   |
+16 | class TestValidate:
+17 |     def test_validate_returns_list(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+18 |         m = Model(PUMP_KDF)
+19 |         issues = m.validate()
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_validation.py:22:9
+   |
+20 |         assert isinstance(issues, list)
+21 |
+22 |     def test_validate_pumpcases(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^
+23 |         m = Model(PUMP_KDF)
+24 |         issues = m.validate()
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_validation.py:31:9
+   |
+29 |             print(f"\nPumpcases issues found: {len(issues)}")
+30 |
+31 |     def test_validate_cwc(self):
+   |         ^^^^^^^^^^^^^^^^^
+32 |         m = Model(CWC_KDF)
+33 |         issues = m.validate()
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_validation.py:38:9
+   |
+36 |             print(f"\nCWC issues found: {len(issues)}")
+37 |
+38 |     def test_validate_new(self):
+   |         ^^^^^^^^^^^^^^^^^
+39 |         m = Model(NEW_KDF)
+40 |         issues = m.validate()
+   |
+
+D101 Missing docstring in public class
+  --> tests\test_visualization.py:19:7
+   |
+19 | class TestNodeData:
+   |       ^^^^^^^^^^^^
+20 |     def test_create(self):
+21 |         node = NodeData(id="P1", label="P1", x=100.0, y=200.0, element_type="PUMP")
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_visualization.py:20:9
+   |
+19 | class TestNodeData:
+20 |     def test_create(self):
+   |         ^^^^^^^^^^^
+21 |         node = NodeData(id="P1", label="P1", x=100.0, y=200.0, element_type="PUMP")
+22 |         assert node.id == "P1"
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_visualization.py:25:9
+   |
+23 |         assert node.element_type == "PUMP"
+24 |
+25 |     def test_serialization(self):
+   |         ^^^^^^^^^^^^^^^^^^
+26 |         node = NodeData(id="L1", label="L1", x=50.0, y=75.0, element_type="PIPE")
+27 |         data = node.model_dump()
+   |
+
+D101 Missing docstring in public class
+  --> tests\test_visualization.py:32:7
+   |
+32 | class TestEdgeData:
+   |       ^^^^^^^^^^^^
+33 |     def test_create(self):
+34 |         edge = EdgeData(source="F1", target="L1")
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_visualization.py:33:9
+   |
+32 | class TestEdgeData:
+33 |     def test_create(self):
+   |         ^^^^^^^^^^^
+34 |         edge = EdgeData(source="F1", target="L1")
+35 |         assert edge.source == "F1"
+   |
+
+D101 Missing docstring in public class
+  --> tests\test_visualization.py:39:7
+   |
+39 | class TestNetworkData:
+   |       ^^^^^^^^^^^^^^^
+40 |     def test_create(self):
+41 |         nd = NetworkData(
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_visualization.py:40:9
+   |
+39 | class TestNetworkData:
+40 |     def test_create(self):
+   |         ^^^^^^^^^^^
+41 |         nd = NetworkData(
+42 |             nodes=[
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_visualization.py:50:9
+   |
+48 |         assert len(nd.edges) == 1
+49 |
+50 |     def test_json_round_trip(self):
+   |         ^^^^^^^^^^^^^^^^^^^^
+51 |         nd = NetworkData(
+52 |             nodes=[
+   |
+
+D101 Missing docstring in public class
+  --> tests\test_visualization.py:62:7
+   |
+62 | class TestVisualizer:
+   |       ^^^^^^^^^^^^^^
+63 |     def test_network_data_cwc(self):
+64 |         m = Model(CWC_KDF)
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_visualization.py:63:9
+   |
+62 | class TestVisualizer:
+63 |     def test_network_data_cwc(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^
+64 |         m = Model(CWC_KDF)
+65 |         viz = Visualizer(m)
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_visualization.py:71:9
+   |
+69 |         assert len(nd.edges) > 0
+70 |
+71 |     def test_network_data_pump(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^
+72 |         m = Model(PUMP_KDF)
+73 |         viz = Visualizer(m)
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_visualization.py:78:9
+   |
+76 |         assert len(nd.nodes) > 0
+77 |
+78 |     def test_node_types_present(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^
+79 |         m = Model(CWC_KDF)
+80 |         viz = Visualizer(m)
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_visualization.py:86:9
+   |
+84 |         assert "PROD" in types
+85 |
+86 |     def test_nodes_have_scaled_coordinates(self):
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+87 |         m = Model(CWC_KDF)
+88 |         viz = Visualizer(m)
+   |
+
+D102 Missing docstring in public method
+  --> tests\test_visualization.py:93:9
+   |
+91 |             assert isinstance(node.y, float)
+92 |
+93 |     def test_to_json(self, tmp_path):
+   |         ^^^^^^^^^^^^
+94 |         m = Model(CWC_KDF)
+95 |         viz = Visualizer(m)
+   |
+
+D102 Missing docstring in public method
+   --> tests\test_visualization.py:104:9
+    |
+102 |         assert len(data["nodes"]) > 0
+103 |
+104 |     def test_json_node_structure(self, tmp_path):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^
+105 |         m = Model(CWC_KDF)
+106 |         viz = Visualizer(m)
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_visualization.py:117:9
+    |
+115 |         assert "element_type" in node
+116 |
+117 |     def test_json_edge_structure(self, tmp_path):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^
+118 |         m = Model(CWC_KDF)
+119 |         viz = Visualizer(m)
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_visualization.py:128:9
+    |
+126 |             assert "target" in edge
+127 |
+128 |     def test_to_html(self, tmp_path):
+    |         ^^^^^^^^^^^^
+129 |         m = Model(CWC_KDF)
+130 |         viz = Visualizer(m)
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_visualization.py:137:9
+    |
+135 |         assert "<html>" in content.lower()
+136 |
+137 |     def test_to_html_pump(self, tmp_path):
+    |         ^^^^^^^^^^^^^^^^^
+138 |         m = Model(PUMP_KDF)
+139 |         viz = Visualizer(m)
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_visualization.py:145:9
+    |
+143 |         assert out.stat().st_size > 0
+144 |
+145 |     def test_trail_hx_edges_present(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+146 |         m = Model(TRAIL_KDF)
+147 |         viz = Visualizer(m)
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_visualization.py:151:9
+    |
+149 |         assert any("HP-001" in pair for pair in edge_pairs)
+150 |
+151 |     def test_to_html_includes_layout_boundary_and_legend(self, tmp_path):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+152 |         m = Model(CWC_KDF)
+153 |         viz = Visualizer(m)
+    |
+
+D101 Missing docstring in public class
+   --> tests\test_visualization.py:161:7
+    |
+161 | class TestModelConvenience:
+    |       ^^^^^^^^^^^^^^^^^^^^
+162 |     def test_visualize_network(self, tmp_path):
+163 |         m = Model(CWC_KDF)
+    |
+
+D102 Missing docstring in public method
+   --> tests\test_visualization.py:162:9
+    |
+161 | class TestModelConvenience:
+162 |     def test_visualize_network(self, tmp_path):
+    |         ^^^^^^^^^^^^^^^^^^^^^^
+163 |         m = Model(CWC_KDF)
+164 |         out = tmp_path / "test_model.html"
+    |
+
+Found 495 errors.
+[*] 1 fixable with the `--fix` option (74 hidden fixes can be enabled with the `--unsafe-fixes` option).

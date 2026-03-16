@@ -152,3 +152,29 @@ class Valve(BaseElement):
             return (int(vals[0]), int(vals[1]))
         except (IndexError, TypeError, ValueError):
             return (0, 0)
+
+    def summary(self, export: bool = False) -> dict:
+        if export:
+            dp_val, dp_unit = self.get_value_and_unit(Valve.DP, val_index=1, unit_index=-1)
+            pin_val, pin_unit = self.get_value_and_unit(Valve.PIN, val_index=1, unit_index=-1)
+            pout_val, pout_unit = self.get_value_and_unit(Valve.POUT, val_index=1, unit_index=-1)
+
+            return {
+                "Valve Name": self.name,
+                "Type": self.valve_type,
+                "CV": self.cv,
+                self.format_export_header("Differential Pressure", dp_unit): dp_val,
+                self.format_export_header("Inlet Pressure", pin_unit): pin_val,
+                self.format_export_header("Outlet Pressure", pout_unit): pout_val,
+                "Opening [%]": self.opening_string,
+            }
+
+        return {
+            "name": self.name,
+            "type": self.valve_type,
+            "cv": self.cv,
+            "dp_kPag": self.dp_kPag,
+            "inlet_pressure_kPag": self.inlet_pressure_kPag,
+            "outlet_pressure_kPag": self.outlet_pressure_kPag,
+            "opening": self.opening_string,
+        }
