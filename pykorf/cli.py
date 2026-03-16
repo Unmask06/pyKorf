@@ -7,10 +7,12 @@ from datetime import datetime, timedelta
 from importlib.metadata import PackageNotFoundError, version
 from time import sleep
 
+from rich.align import Align
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
-from rich.align import Align
+
+from pykorf.update import check_for_update, install_update
 
 TRIAL_START_DATE = datetime(2026, 3, 15)
 TRIAL_DURATION_DAYS = 7
@@ -116,7 +118,7 @@ def show_trial_info(days_left: int) -> None:
         urgency = "⚠"
     elif days_left <= 7:
         style = "yellow"
-        urgency = "ℹ"
+        urgency = "i"
     else:
         style = "green"
         urgency = "✓"
@@ -131,6 +133,59 @@ def show_trial_info(days_left: int) -> None:
         justify="center",
     )
     console.print()
+
+
+def show_update_prompt(update_info: dict) -> None:
+    """Display update available prompt and handle user response.
+
+    Args:
+        update_info: Dict with 'latest_version' key
+    """
+    latest_version = update_info["latest_version"]
+
+    console.print(
+        Panel(
+            f"A newer version of pyKorf is available (v{latest_version}).\nInstall now? [Y/n]",
+            title="📦 Update Available",
+            border_style="green",
+            padding=(0, 1),
+        ),
+        justify="center",
+    )
+
+    response = console.input().strip().lower()
+
+    if response in ("", "y", "yes"):
+        console.print()
+        console.print("[dim]Installing update...[/dim]")
+        console.print()
+
+        success, message = install_update()
+
+        if success:
+            console.print(
+                Panel(
+                    message,
+                    title="✅ Success",
+                    border_style="green",
+                    padding=(0, 1),
+                ),
+                justify="center",
+            )
+        else:
+            console.print(
+                Panel(
+                    message,
+                    title="❌ Error",
+                    border_style="red",
+                    padding=(0, 1),
+                ),
+                justify="center",
+            )
+
+        console.print()
+        console.print("[dim]Press Enter to continue...[/dim]")
+        console.input()
 
 
 def main():
@@ -159,6 +214,12 @@ def main():
             return
         days_left = (TRIAL_START_DATE + timedelta(days=TRIAL_DURATION_DAYS) - datetime.now()).days
         show_trial_info(max(0, days_left))
+
+    pkg_version = get_version()
+    if pkg_version != "dev":
+        update_info = check_for_update(pkg_version)
+        if update_info:
+            show_update_prompt(update_info)
 
     show_loading("Initializing...", 0.8)
 
