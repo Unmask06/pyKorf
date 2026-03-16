@@ -124,41 +124,34 @@ from pykorf.types import (
     VesselOrientation,
 )
 
-# Version information - read from pyproject.toml as fallback
-__version__ = "0.2.1"
-try:
-    from pykorf._version import __version__ as _scm_version
 
-    # Use setuptools-scm version only if it's a clean release (no dev/git info)
-    if "dev" not in _scm_version and "+" not in _scm_version:
-        __version__ = _scm_version
-except Exception:
-    pass
+def _get_version() -> str:
+    """Get version from installed package or pyproject.toml.
 
-# Try importlib.metadata if still on fallback
-if __version__ == "0.1.1":
+    Single source of truth is pyproject.toml [project].version.
+    """
     try:
         from importlib.metadata import version
 
-        _meta_version = version("pykorf")
-        if "dev" not in _meta_version and "+" not in _meta_version:
-            __version__ = _meta_version
+        return version("pykorf")
     except Exception:
         pass
 
-# Final fallback: read from pyproject.toml for development
-if __version__ == "0.1.1":
     try:
         import tomllib
 
-        _pyproject_path = Path(__file__).parent.parent / "pyproject.toml"
-        if _pyproject_path.exists():
-            with open(_pyproject_path, "rb") as f:
-                _data = tomllib.load(f)
-                __version__ = _data["project"]["version"]
+        pyproject_path = Path(__file__).parent.parent / "pyproject.toml"
+        if pyproject_path.exists():
+            with open(pyproject_path, "rb") as f:
+                data = tomllib.load(f)
+                return data["project"]["version"]
     except Exception:
         pass
 
+    return "dev"
+
+
+__version__ = _get_version()
 __author__ = "pyKorf Contributors"
 __all__ = [
     # Exceptions

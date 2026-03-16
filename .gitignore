@@ -46,3 +46,5 @@ trail.ipynb
 examples/output/
 examples/examples/
 *.log
+
+*.kilo/
