@@ -98,7 +98,17 @@ class GenerateReportScreen(Screen):
         prefs = (
             get_last_interaction()
             .get("data", {})
-            .get("report_elements", {"Pipes": True, "Pumps": True, "Compressors": True})
+            .get(
+                "report_elements",
+                {
+                    "Feeds": True,
+                    "Products": True,
+                    "Pipes": True,
+                    "Pumps": True,
+                    "Compressors": True,
+                    "Valves": True,
+                },
+            )
         )
 
         # Determine available elements
@@ -106,12 +116,18 @@ class GenerateReportScreen(Screen):
         if model:
             from pykorf.use_case.tui.screens import real_elements
 
+            if len(real_elements(model.feeds)) > 0:
+                self.available_elements.append("Feeds")
+            if len(real_elements(model.products)) > 0:
+                self.available_elements.append("Products")
             if len(real_elements(model.pipes)) > 0:
                 self.available_elements.append("Pipes")
             if len(real_elements(model.pumps)) > 0:
                 self.available_elements.append("Pumps")
             if len(real_elements(model.compressors)) > 0:
                 self.available_elements.append("Compressors")
+            if len(real_elements(model.valves)) > 0:
+                self.available_elements.append("Valves")
 
         with Vertical(id="report-container"), Horizontal():
             with Vertical(id="left-panel"), Vertical(id="report-form"):
