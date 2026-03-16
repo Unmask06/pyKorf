@@ -4,15 +4,16 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime, timedelta
-from importlib.metadata import version, PackageNotFoundError
+from importlib.metadata import PackageNotFoundError, version
 from time import sleep
 
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
+from rich.align import Align
 
 TRIAL_START_DATE = datetime(2026, 3, 15)
-TRIAL_DURATION_DAYS = 14
+TRIAL_DURATION_DAYS = 7
 DEVELOPER_CONTACT = "Prasanna Palanivel"
 
 console = Console()
@@ -43,11 +44,12 @@ def show_splash() -> None:
 
     console.print(
         Panel(
-            logo_text,
+            Align.center(logo_text),
             title="[bold blue]Welcome to[/bold blue]",
             subtitle="[dim]Enterprise Hydraulic Modeling Toolkit[/dim]",
             border_style="cyan",
             padding=(1, 2),
+            width=60,
         ),
         justify="center",
     )
@@ -56,7 +58,7 @@ def show_splash() -> None:
 
 def show_loading(message: str, duration: float = 0.5) -> None:
     """Show a brief loading animation.
-    
+
     Args:
         message: Message to display during loading
         duration: Duration in seconds
@@ -105,7 +107,7 @@ def show_expired_message() -> None:
 
 def show_trial_info(days_left: int) -> None:
     """Display trial period information.
-    
+
     Args:
         days_left: Number of days remaining in trial
     """
