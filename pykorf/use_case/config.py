@@ -51,11 +51,13 @@ from pykorf.use_case.pms import (
 # Re-export preference functions
 from pykorf.use_case.preferences import (
     get_global_settings_selected,
+    get_last_batch_folder_path,
     get_last_interaction,
     get_last_kdf_path,
     load_config,
     save_config,
     set_global_settings_selected,
+    set_last_batch_folder_path,
     set_last_interaction,
     set_last_kdf_path,
 )
@@ -77,6 +79,7 @@ __all__ = [
     "get_config_path",
     "get_data_dir",
     "get_global_settings_selected",
+    "get_last_batch_folder_path",
     "get_last_interaction",
     "get_last_kdf_path",
     "get_pms_path",
@@ -91,6 +94,7 @@ __all__ = [
     "save_pms_data",
     "save_stream_data",
     "set_global_settings_selected",
+    "set_last_batch_folder_path",
     "set_last_interaction",
     "set_last_kdf_path",
 ]

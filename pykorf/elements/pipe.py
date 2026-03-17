@@ -535,6 +535,9 @@ class Pipe(BaseElement):
     def summary(self, export: bool = False) -> dict:
         """Return a dict of key pipe properties (useful for display or export)."""
         if export:
+            # Local import to avoid circular dependency with use_case module
+            from pykorf.use_case.line_number import LineNumber
+
             dp_crit_val, dp_crit_unit = self.get_value_and_unit(Pipe.SIZ, val_index=1, unit_index=2)
             vel_crit_val, vel_crit_unit = self.get_value_and_unit(
                 Pipe.SIZ, val_index=3, unit_index=-1
@@ -546,8 +549,11 @@ class Pipe(BaseElement):
             vel_calc_val, vel_calc_unit = self.get_value_and_unit(
                 Pipe.VEL, val_index=0, unit_index=-1
             )
+
+            parsed_line = LineNumber.parse(self.notes)
             return {
                 "Pipe Name": self.name,
+                "Line Number": parsed_line.raw_line_number if parsed_line else "",
                 self.format_export_header("DP / DL Criteria", dp_crit_unit): dp_crit_val,
                 self.format_export_header("Velocity Criteria", vel_crit_unit): vel_crit_val,
                 self.format_export_header("DP / DL", dp_calc_unit): dp_calc_val,
