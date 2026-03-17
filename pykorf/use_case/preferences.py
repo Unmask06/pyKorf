@@ -105,3 +105,24 @@ def set_global_settings_selected(setting_ids: list[str]) -> None:
     config = load_config()
     config["global_settings_selected"] = setting_ids
     save_config(config)
+
+
+def get_last_batch_folder_path() -> str | None:
+    """Get the last used batch folder path.
+
+    Returns:
+        The last used folder path for batch mode, or None if not set.
+    """
+    config = load_config()
+    return config.get("last_batch_folder_path")
+
+
+def set_last_batch_folder_path(path: str | Path) -> None:
+    """Save the last used batch folder path.
+
+    Args:
+        path: The folder path to save.
+    """
+    config = load_config()
+    config["last_batch_folder_path"] = str(path)
+    save_config(config)
