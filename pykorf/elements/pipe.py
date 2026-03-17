@@ -532,6 +532,38 @@ class Pipe(BaseElement):
     # Convenience
     # ------------------------------------------------------------------
 
+    def _extract_line_number_from_nodes(self) -> str:
+        """Extract line number from connected nodes via connectivity."""
+        from pykorf.model import Model
+        
+        parser = self._parser
+        connected_equipment = []
+        line_number = ""
+        
+        for record in self.records():
+            if record.param == Pipe.CON:
+                target_name = record.values[0]
+                connected_equipment.append(target_name)
+        
+        if connected_equipment:
+            line_number = self.name
+        
+        return line_number
+
+    def extract_list(self) -> dict:
+        """Extract pipe information including line number from nodes."""
+        base_data = super().extract_list()
+        line_number = self._extract_line_number_from_nodes()
+        
+        return {
+            **base_data,
+            "line_number": line_number,
+            "diameter_inch": self.diameter_inch,
+            "schedule": self.schedule,
+            "length_m": self.length_m,
+            "material": self.material,
+        }
+
     def summary(self, export: bool = False) -> dict:
         """Return a dict of key pipe properties (useful for display or export)."""
         if export:

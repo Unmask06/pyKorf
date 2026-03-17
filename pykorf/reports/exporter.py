@@ -295,3 +295,47 @@ class ResultExporter:
 
     def _extract_valves(self) -> list[dict]:
         return [valve.summary(export=True) for idx, valve in self.model.valves.items() if idx != 0]
+
+    def extract_list(self) -> list[dict]:
+        """Extract all elements from the model.
+        
+        Returns a list of dicts, one per element, containing:
+        - name: Element name tag
+        - description: Description from NAME record
+        - element_type: KDF element type (PIPE, PUMP, etc.)
+        - index: Element instance index
+        - Element-specific fields (e.g., line_number for Pipe)
+        
+        Returns:
+            list[dict] with all elements in the model
+        """
+        all_elements = []
+        
+        element_collections = [
+            self.model.pipes,
+            self.model.pumps,
+            self.model.compressors,
+            self.model.valves,
+            self.model.feeds,
+            self.model.products,
+            self.model.vessels,
+            self.model.exchangers,
+            self.model.check_valves,
+            self.model.orifices,
+            self.model.expanders,
+            self.model.junctions,
+            self.model.tees,
+            self.model.misc_equipment,
+            self.model.pipedata,
+        ]
+        
+        for collection in element_collections:
+            if collection is None:
+                continue
+            for idx, element in collection.items():
+                if idx == 0:
+                    continue
+                if hasattr(element, 'extract_list'):
+                    all_elements.append(element.extract_list())
+        
+        return all_elements

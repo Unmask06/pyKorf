@@ -291,3 +291,19 @@ class BaseElement:
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(index={self._index}, name={self.name!r})"
+
+    def extract_list(self) -> dict[str, Any]:
+        """Extract name, description, and element-specific data.
+        
+        Returns a dict with common fields. Subclasses override to add 
+        element-specific extraction logic.
+        
+        Returns:
+            dict with keys: name, description, element_type, index
+        """
+        return {
+            "name": self.name,
+            "description": self.description,
+            "element_type": self.etype,
+            "index": self.index,
+        }
