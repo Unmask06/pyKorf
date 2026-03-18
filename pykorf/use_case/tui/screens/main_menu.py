@@ -23,6 +23,7 @@ class MainMenuScreen(Screen):
         ("g", "global_settings", "Global Settings"),
         ("c", "config_menu", "Config Menu"),
         ("l", "load_file", "Load File"),
+        ("x", "import_export", "Import/Export Excel"),
     ]
 
     CSS_PATH = []
@@ -204,6 +205,9 @@ class MainMenuScreen(Screen):
                                 "Generate Report", variant="success", id="btn-generate-report"
                             )
                             yield Label("Export results to Excel summary")
+                        with Horizontal(classes="menu-item"):
+                            yield Button("Import/Export", variant="primary", id="btn-import-export")
+                            yield Label("Import/Export model to/from Excel")
                     with Horizontal(id="menu-footer"):
                         yield Button("Load File", variant="warning", id="btn-load-file")
                         yield Button("Quit", variant="error", id="btn-quit")
@@ -308,6 +312,17 @@ class MainMenuScreen(Screen):
         from pykorf.use_case.tui.screens.generate_report import GenerateReportScreen
 
         self.app.push_screen(GenerateReportScreen())
+
+    def action_import_export(self) -> None:
+        """Switch to Import/Export Excel screen (keyboard binding)."""
+        from pykorf.use_case.tui.screens.import_export import ImportExportScreen
+
+        self.app.push_screen(ImportExportScreen())
+
+    @on(Button.Pressed, "#btn-import-export")
+    def action_import_export_button(self) -> None:
+        """Switch to Import/Export Excel screen (button click)."""
+        self.action_import_export()
 
     @on(Button.Pressed, "#btn-load-file")
     def action_load_file(self) -> None:

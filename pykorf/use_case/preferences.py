@@ -126,3 +126,45 @@ def set_last_batch_folder_path(path: str | Path) -> None:
     config = load_config()
     config["last_batch_folder_path"] = str(path)
     save_config(config)
+
+
+def get_last_excel_export_path() -> str | None:
+    """Get the last used Excel export path.
+
+    Returns:
+        The last used export path, or None if not set.
+    """
+    config = load_config()
+    return config.get("last_excel_export_path")
+
+
+def set_last_excel_export_path(path: str | Path) -> None:
+    """Save the last used Excel export path.
+
+    Args:
+        path: The export path to save.
+    """
+    config = load_config()
+    config["last_excel_export_path"] = str(path)
+    save_config(config)
+
+
+def get_last_excel_import_path() -> str | None:
+    """Get the last used Excel import path.
+
+    Returns:
+        The last used import path, or None if not set.
+    """
+    config = load_config()
+    return config.get("last_excel_import_path")
+
+
+def set_last_excel_import_path(path: str | Path) -> None:
+    """Save the last used Excel import path.
+
+    Args:
+        path: The import path to save.
+    """
+    config = load_config()
+    config["last_excel_import_path"] = str(path)
+    save_config(config)

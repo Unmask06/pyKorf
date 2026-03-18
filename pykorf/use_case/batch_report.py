@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+import openpyxl
 import pandas as pd
 
 from pykorf import Model
@@ -138,31 +139,151 @@ class BatchReportGenerator:
         return str(output_path)
 
     def _write_excel(self, output_path: Path, elements_by_type: dict[str, list[dict]]) -> None:
-        """Write elements to Excel with multiple sheets.
+        """Write elements to Excel with multiple sheets, preserving existing custom sheets.
+
+        If the Excel file exists, non-element sheets (e.g., Dashboard, Summary) are preserved.
+        Element sheets are always recreated with fresh data. If file is locked or corrupted,
+        creates a new file with _v2, _v3 suffix.
 
         Args:
             output_path: Destination Excel file path.
             elements_by_type: Dict mapping sheet names to element lists.
         """
-        with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
-            for sheet_name, elements in elements_by_type.items():
-                if not elements:
-                    continue
+        workbook: openpyxl.Workbook | None = None
+        output_path_actual = output_path
 
-                df = pd.DataFrame(elements)
+        if output_path.exists():
+            try:
+                workbook = openpyxl.load_workbook(output_path)
 
-                cols = list(df.columns)
-                for col in ["source_path", "source_file"]:
-                    if col in cols:
-                        cols.remove(col)
-                cols = ["source_file", *cols]
+                for sheet_name in self.ELEMENT_TYPES:
+                    if sheet_name in workbook.sheetnames:
+                        del workbook[sheet_name]
 
-                if sheet_name == "Pipes" and "Line Number" in df.columns:
-                    cols.remove("Line Number")
-                    cols.insert(1, "Line Number")
+                logger.info(
+                    "batch_report_preserve",
+                    path=str(output_path),
+                    preserved_sheets=[s for s in workbook.sheetnames if s not in self.ELEMENT_TYPES],
+                )
 
-                if "source_path" in df.columns:
-                    cols.append("source_path")
+            except (PermissionError, OSError) as e:
+                logger.warning(
+                    "batch_report_file_locked",
+                    path=str(output_path),
+                    error=str(e),
+                )
+                output_path_actual = self._create_unique_path(output_path)
+                workbook = openpyxl.Workbook()
+                workbook.remove(workbook.active)
 
-                df = df[[c for c in cols if c in df.columns]]
-                df.to_excel(writer, sheet_name=sheet_name, index=False)
+            except Exception as e:
+                logger.warning(
+                    "batch_report_corrupted",
+                    path=str(output_path),
+                    error=str(e),
+                )
+                output_path_actual = self._create_unique_path(output_path)
+                workbook = openpyxl.Workbook()
+                workbook.remove(workbook.active)
+        else:
+            workbook = openpyxl.Workbook()
+            workbook.remove(workbook.active)
+
+        for sheet_name, elements in elements_by_type.items():
+            if not elements:
+                continue
+
+            df = pd.DataFrame(elements)
+
+            cols = list(df.columns)
+            for col in ["source_path", "source_file"]:
+                if col in cols:
+                    cols.remove(col)
+            cols = ["source_file", *cols]
+
+            if sheet_name == "Pipes" and "Line Number" in df.columns:
+                cols.remove("Line Number")
+                cols.insert(1, "Line Number")
+
+            if "source_path" in df.columns:
+                cols.append("source_path")
+
+            df = df[[c for c in cols if c in df.columns]]
+
+            if sheet_name in workbook.sheetnames:
+                ws = workbook[sheet_name]
+                ws.delete_rows(1, ws.max_row)
+            else:
+                ws = workbook.create_sheet(sheet_name)
+
+            for c_idx, col_name in enumerate(df.columns, start=1):
+                ws.cell(row=1, column=c_idx, value=col_name).font = openpyxl.styles.Font(bold=True)
+
+            for r_idx, row in enumerate(df.values, start=2):
+                for c_idx, value in enumerate(row, start=1):
+                    ws.cell(row=r_idx, column=c_idx, value=value)
+
+            for col in ws.columns:
+                max_length = 0
+                column = col[0].column_letter
+                for cell in col:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except Exception:
+                        pass
+                adjusted_width = (max_length + 2) if max_length < 50 else 50
+                ws.column_dimensions[column].width = adjusted_width
+
+        workbook.save(output_path_actual)
+
+        logger.info(
+            "batch_report_saved",
+            path=str(output_path_actual),
+            sheets_written=len(elements_by_type),
+        )
+
+    def _create_unique_path(self, base_path: Path) -> Path:
+        """Create a unique file path by appending _v2, _v3, etc.
+
+        Args:
+            base_path: Original desired path.
+
+        Returns:
+            Unique path that doesn't exist or is not locked.
+        """
+        counter = 2
+        while True:
+            new_path = base_path.with_stem(f"{base_path.stem}_v{counter}")
+            if not new_path.exists():
+                try:
+                    test_wb = openpyxl.Workbook()
+                    test_wb.save(new_path)
+                    test_wb.close()
+                    new_path.unlink(missing_ok=True)
+                    return new_path
+                except (PermissionError, OSError):
+                    counter += 1
+            else:
+                counter += 1
+
+    def get_preserved_sheets(self, output_path: Path) -> list[str]:
+        """Return list of non-element sheets that will be preserved.
+
+        Args:
+            output_path: Path to existing Excel file.
+
+        Returns:
+            List of sheet names that will be kept (excludes element sheets).
+        """
+        if not output_path.exists():
+            return []
+
+        try:
+            wb = openpyxl.load_workbook(output_path, read_only=True)
+            sheets = set(wb.sheetnames)
+            wb.close()
+
+            return list(sheets - set(self.ELEMENT_TYPES))
+        except Exception:
+            return []

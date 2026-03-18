@@ -284,6 +284,13 @@ class GenerateReportScreen(Screen):
                 )
                 return
 
+            output_path = Path(folder_path) / f"{Path(folder_path).name}_batch_report.xlsx"
+            preserved = generator.get_preserved_sheets(output_path)
+            if preserved:
+                self.app.call_from_thread(
+                    lambda: log_info(results, f"Preserving existing sheets: {', '.join(preserved)}")
+                )
+
             self.app.call_from_thread(
                 lambda: log_info(results, f"Found {count} KDF file(s). Generating report...")
             )
