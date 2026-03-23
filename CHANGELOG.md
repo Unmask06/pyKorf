@@ -5,6 +5,18 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-03-23
+
+### Added
+
+- **Post-install cleanup in launcher**: After the first successful sync to AppData, `pykorf/`, `pyproject.toml`, and `VERSION` are automatically removed from the launch folder — only `pykorf.bat` is needed for all future runs
+
+### Changed
+
+- **Launcher UI redesign**: Installation steps now use a consistent panel-per-step layout (`┌─ [N/4] Title` / `│` / `└─`) with `✓` / `✗` status symbols, uniform indentation, and a subtitle bar setting user expectations; launch screen repeats the header for a clean transition into the app
+
+---
+
 ## [0.3.0] - 2026-03-23
 
 ### Added
