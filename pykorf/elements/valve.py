@@ -23,31 +23,31 @@ class Valve(BaseElement):
     # ------------------------------------------------------------------
     # Parameter constants (moved from definitions/valve.py)
     # ------------------------------------------------------------------
-    ELEV = "ELEV"
-    DP = "DP"
-    PIN = "PIN"
-    POUT = "POUT"
-    DPP = "DPP"
-    PSAT = "PSAT"
-    PCRIT = "PCRIT"
-    THICK = "THICK"
-    K = "K"
-    CV = "CV"
-    DIA = "DIA"
-    TYPE2 = "TYPE2"
-    TYPE = "TYPE"
-    OPEN = "OPEN"
-    OPENCV = "OPENCV"
-    XT = "XT"
-    FL = "FL"
-    YIN = "YIN"
-    FP2 = "FP2"
-    CHOKE = "CHOKE"
-    OMEGA = "OMEGA"
-    RS = "RS"
-    XC = "XC"
-    NDS = "NDS"
-    MDEN = "MDEN"
+    ELEV = "ELEV"  # [elevation, unit]
+    DP = "DP"  # [dp_str, dp_num, unit]
+    PIN = "PIN"  # [pres_in_str, pres_in_num, unit]
+    POUT = "POUT"  # [pres_out_str, pres_out_num, unit]
+    DPP = "DPP"  # [dpp1, dpp2, unit]
+    PSAT = "PSAT"  # [psat_str, psat_num, unit]
+    PCRIT = "PCRIT"  # [pcrit, unit]
+    THICK = "THICK"  # [thickness, unit]
+    K = "K"  # [k_factor_str]
+    CV = "CV"  # [cv_str, cv_num]
+    DIA = "DIA"  # ["dia_type"]
+    TYPE2 = "TYPE2"  # ["valve_category"]
+    TYPE = "TYPE"  # ["valve_type"]
+    OPEN = "OPEN"  # [opening_str, opening_num]
+    OPENCV = "OPENCV"  # [percent_cv]
+    XT = "XT"  # [xt_factor]
+    FL = "FL"  # [fl_factor]
+    YIN = "YIN"  # [expansion_factor]
+    FP2 = "FP2"  # [fp2_factor]
+    CHOKE = "CHOKE"  # [choke_bool]
+    OMEGA = "OMEGA"  # [omega_str, omega_num]
+    RS = "RS"  # [rs_factor]
+    XC = "XC"  # [xc_factor]
+    NDS = "NDS"  # [nds_factor]
+    MDEN = "MDEN"  # ["mden_str"]
 
     ALL = (
         "NUM",

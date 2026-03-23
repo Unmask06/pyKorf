@@ -17,24 +17,24 @@ class Compressor(BaseElement):
     # ------------------------------------------------------------------
     # Parameter constants (moved from definitions/comp.py)
     # ------------------------------------------------------------------
-    ELEV = "ELEV"
-    DP = "DP"
-    PIN = "PIN"
-    POUT = "POUT"
-    PRAT = "PRAT"
-    QACT = "QACT"
-    TYPE = "TYPE"
-    EFFC = "EFFC"
-    EFFS = "EFFS"
-    POW = "POW"
-    FHAD = "FHAD"
-    HQACT = "HQACT"
-    CURRPM = "CURRPM"
-    CURDIA = "CURDIA"
-    CURNP = "CURNP"
-    CURQ = "CURQ"
-    CURH = "CURH"
-    CUREFF = "CUREFF"
+    ELEV = "ELEV"  # [elevation, unit]
+    DP = "DP"  # [dp_str, dp_num, unit]
+    PIN = "PIN"  # [pres_in_str, pres_in_num, unit]
+    POUT = "POUT"  # [pres_out_str, pres_out_num, unit]
+    PRAT = "PRAT"  # [prat_str, prat_num, prat3]
+    QACT = "QACT"  # [flow_str, flow_num, unit]
+    TYPE = "TYPE"  # ["comp_type"]
+    EFFC = "EFFC"  # [eff_str, eff_num]
+    EFFS = "EFFS"  # [eff_str, eff_num]
+    POW = "POW"  # [power, unit]
+    FHAD = "FHAD"  # [fhad_str, fhad_num]
+    HQACT = "HQACT"  # [head, unit, flow, unit]
+    CURRPM = "CURRPM"  # [rpm_str, rpm_num, unit]
+    CURDIA = "CURDIA"  # [dia_str, dia_num, unit]
+    CURNP = "CURNP"  # [num_points]
+    CURQ = "CURQ"  # [q1, q2, ..., q10, unit]
+    CURH = "CURH"  # [h1, h2, ..., h10, unit]
+    CUREFF = "CUREFF"  # [eff1, eff2, ..., eff10, unit]
 
     ALL = (
         "NUM",

@@ -22,14 +22,14 @@ class Product(BaseElement):
     # ------------------------------------------------------------------
     # Parameter constants (moved from definitions/prod.py)
     # ------------------------------------------------------------------
-    TYPE = "TYPE"
-    ELEV = "ELEV"
-    LEVELH = "LEVELH"
-    PRES = "PRES"
-    PIN = "PIN"
-    DP = "DP"
-    EQN = "EQN"
-    CHOKE = "CHOKE"
+    TYPE = "TYPE"  # ["prod_type"]
+    ELEV = "ELEV"  # [elevation, unit]
+    LEVELH = "LEVELH"  # [level1, level2, unit, level4, unit, level6]
+    PRES = "PRES"  # [pres_str, pres_num, unit]
+    PIN = "PIN"  # [pres_in_str, pres_in_num, unit]
+    DP = "DP"  # [dp_str, dp_num, unit]
+    EQN = "EQN"  # [eqn_type, ..., ..., ..., ...]
+    CHOKE = "CHOKE"  # [choke_bool]
 
     ALL = (
         "NUM",

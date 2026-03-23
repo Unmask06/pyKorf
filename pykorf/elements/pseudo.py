@@ -17,23 +17,23 @@ class Pseudo(BaseElement):
     # ------------------------------------------------------------------
     # Parameter constants (moved from definitions/pseudo.py)
     # ------------------------------------------------------------------
-    FOR = "FOR"
-    MW = "MW"
-    TFP = "TFP"
-    TBP = "TBP"
-    TC = "TC"
-    PC = "PC"
-    VC = "VC"
-    ZC = "ZC"
-    ACC = "ACC"
-    DENS = "DENS"
-    DENT = "DENT"
-    DIPM = "DIPM"
-    CP = "CP"
-    VISC = "VISC"
-    HVAP = "HVAP"
-    HFOR = "HFOR"
-    ANT = "ANT"
+    FOR = "FOR"  # [formula, description]
+    MW = "MW"  # [mw1, mw2]
+    TFP = "TFP"  # [tfp1, tfp2, unit]
+    TBP = "TBP"  # [tbp1, tbp2, unit]
+    TC = "TC"  # [tc1, tc2, unit]
+    PC = "PC"  # [pc1, pc2, unit]
+    VC = "VC"  # [vc1, vc2, unit]
+    ZC = "ZC"  # [zc1, zc2]
+    ACC = "ACC"  # [acc1, acc2]
+    DENS = "DENS"  # [dens1, dens2, unit]
+    DENT = "DENT"  # [dent1, dent2, unit, dent4, dent5, unit]
+    DIPM = "DIPM"  # [dipm1, dipm2]
+    CP = "CP"  # [cp1, cp2, ..., cp10, unit]
+    VISC = "VISC"  # [visc1, visc2, ..., visc10, unit]
+    HVAP = "HVAP"  # [hvap1, hvap2]
+    HFOR = "HFOR"  # [hfor1, hfor2]
+    ANT = "ANT"  # [ant1, ant2, ..., ant10, unit, ant12, ant13, ant14, ant15, unit]
 
     ALL = (
         "NUM",

@@ -30,33 +30,33 @@ class Pump(BaseElement):
     # ------------------------------------------------------------------
     # Parameter constants (moved from definitions/pump.py)
     # ------------------------------------------------------------------
-    ELEV = "ELEV"
-    DP = "DP"
-    PIN = "PIN"
-    POUT = "POUT"
-    TYPE = "TYPE"
-    EFFP = "EFFP"
-    EFFS = "EFFS"
-    POW = "POW"
-    HQACT = "HQACT"
-    CURRPM = "CURRPM"
-    CURDIA = "CURDIA"
-    CURVSD = "CURVSD"
-    CURC1 = "CURC1"
-    CURNP = "CURNP"
-    CURQ = "CURQ"
-    CURH = "CURH"
-    CUREFF = "CUREFF"
-    CURNPSH = "CURNPSH"
-    NPSHA13 = "NPSHA13"
-    NPSHR13 = "NPSHR13"
-    NPSHAF = "NPSHAF"
-    NPSHRE = "NPSHRE"
-    NPSHVV = "NPSHVV"
-    NPSHVT = "NPSHVT"
-    PZPRES = "PZPRES"
-    PZRAT = "PZRAT"
-    PZVES = "PZVES"
+    ELEV = "ELEV"  # [elevation, unit]
+    DP = "DP"  # [dp_str, dp_num, unit]
+    PIN = "PIN"  # [pres_in_str, pres_in_num, unit]
+    POUT = "POUT"  # [pres_out_str, pres_out_num, unit]
+    TYPE = "TYPE"  # ["pump_type"]
+    EFFP = "EFFP"  # [eff_str, eff_num]
+    EFFS = "EFFS"  # [eff_str, eff_num]
+    POW = "POW"  # [power, unit]
+    HQACT = "HQACT"  # [head, unit, flow, unit]
+    CURRPM = "CURRPM"  # [rpm_str, rpm_num, unit]
+    CURDIA = "CURDIA"  # [dia_str, dia_num, unit]
+    CURVSD = "CURVSD"  # [vsd_bool]
+    CURC1 = "CURC1"  # [curve_const]
+    CURNP = "CURNP"  # [num_points]
+    CURQ = "CURQ"  # [q1, q2, ..., q10, unit]
+    CURH = "CURH"  # [h1, h2, ..., h10, unit]
+    CUREFF = "CUREFF"  # [eff1, eff2, ..., eff10, unit]
+    CURNPSH = "CURNPSH"  # [npsh1, npsh2, ..., npsh10, unit]
+    NPSHA13 = "NPSHA13"  # [npsha_str, npsha_num, unit]
+    NPSHR13 = "NPSHR13"  # [npshr_str, npshr_num, unit]
+    NPSHAF = "NPSHAF"  # [npshaf1, npshaf2, npshaf3, npshaf4, unit, npshaf6, unit]
+    NPSHRE = "NPSHRE"  # [npshre1, npshre2, unit, npshre4]
+    NPSHVV = "NPSHVV"  # [npshvv_bool]
+    NPSHVT = "NPSHVT"  # ["npshvt_type"]
+    PZPRES = "PZPRES"  # [pz_dp, pz_suc, pz_dis, unit]
+    PZRAT = "PZRAT"  # ["pzrat_type", margin, pzrat3]
+    PZVES = "PZVES"  # [vessel_pres, unit, vessel_level, unit]
 
     ALL = (
         BaseElement.NUM,
