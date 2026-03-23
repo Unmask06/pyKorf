@@ -127,21 +127,21 @@ class BaseElement:
     # ------------------------------------------------------------------
     # Common parameter constants (shared across most element types)
     # ------------------------------------------------------------------
-    NAME = "NAME"
-    NUM = "NUM"
-    XY = "XY"
-    NOTES = "NOTES"
-    CON = "CON"
-    NOZI = "NOZI"
-    NOZO = "NOZO"
-    NOZ = "NOZ"
-    NOZL = "NOZL"
-    X = "X"
-    Y = "Y"
-    ROT = "ROT"
-    FLIP = "FLIP"
-    LBL = "LBL"
-    COLOR = "COLOR"
+    NAME = "NAME"  # ["tag", "description"]
+    NUM = "NUM"  # [index]
+    XY = "XY"  # [x1, y1, x2, y2, ...]
+    NOTES = "NOTES"  # ["notes_text"]
+    CON = "CON"  # [conn1, conn2, ...]
+    NOZI = "NOZI"  # [id, x, y, unit]
+    NOZO = "NOZO"  # [id, x, y, unit]
+    NOZ = "NOZ"  # [id]
+    NOZL = "NOZL"  # [id, x, y, unit, z, unit, ...]
+    X = "X"  # [x]
+    Y = "Y"  # [y]
+    ROT = "ROT"  # [rotation_deg]
+    FLIP = "FLIP"  # [flip_x, flip_y]
+    LBL = "LBL"  # [on/off, x-offset, y-offset]
+    COLOR = "COLOR"  # [color_int]
 
     #: Tuple of all parameter constants (to be overridden by subclasses)
     ALL: tuple[str, ...] = ()

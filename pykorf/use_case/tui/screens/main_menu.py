@@ -23,6 +23,7 @@ class MainMenuScreen(Screen):
         ("g", "global_settings", "Global Settings"),
         ("c", "config_menu", "Config Menu"),
         ("l", "load_file", "Load File"),
+        ("x", "import_export", "Import/Export Excel"),
     ]
 
     CSS_PATH = []
@@ -139,6 +140,20 @@ class MainMenuScreen(Screen):
         text-style: bold;
         margin-top: 1;
     }
+    .menu-section-header {
+        width: 100%;
+        height: 1;
+        color: $accent;
+        text-style: bold;
+        padding: 0 1;
+        margin-top: 1;
+    }
+    .menu-section-divider {
+        width: 100%;
+        height: 1;
+        color: $accent-darken-2;
+        margin-bottom: 0;
+    }
     """
 
     def compose(self) -> ComposeResult:
@@ -179,31 +194,44 @@ class MainMenuScreen(Screen):
             with Horizontal(id="main-content"):
                 with Vertical(id="left-panel"):
                     with Vertical(id="menu-buttons"):
+                        yield Label("▸ Model Operations", classes="menu-section-header")
+                        yield Static("─" * 35, classes="menu-section-divider")
                         with Horizontal(classes="menu-item"):
-                            yield Button("Bulk Copy", variant="primary", id="btn-bulk-copy")
+                            yield Button("⧉ Bulk Copy", variant="primary", id="btn-bulk-copy")
                             yield Label("Copy fluids between elements")
                         with Horizontal(classes="menu-item"):
-                            yield Button("Apply PMS", variant="primary", id="btn-apply-pms")
-                            yield Label("Apply pressure management system")
+                            yield Button("▲ Apply PMS", variant="primary", id="btn-apply-pms")
+                            yield Label("Apply pipe material specifications")
                         with Horizontal(classes="menu-item"):
-                            yield Button("Apply HMB", variant="primary", id="btn-apply-hmb")
-                            yield Label("Apply heat and mass balance")
-                        with Horizontal(classes="menu-item"):
-                            yield Button("Model Info", variant="primary", id="btn-model-info")
-                            yield Label("View model statistics")
+                            yield Button("⚖ Apply HMB", variant="primary", id="btn-apply-hmb")
+                            yield Label("Apply heat and mass balance data")
                         with Horizontal(classes="menu-item"):
                             yield Button(
-                                "Global Settings", variant="primary", id="btn-global-settings"
+                                "⚙ Apply Global", variant="primary", id="btn-global-settings"
                             )
-                            yield Label("Configure global parameters")
+                            yield Label("Apply bulk modifications to all pipes")
+
+                        yield Label("▸ Analysis & Reports", classes="menu-section-header")
+                        yield Static("─" * 35, classes="menu-section-divider")
                         with Horizontal(classes="menu-item"):
-                            yield Button("Config", variant="default", id="btn-config")
-                            yield Label("Element configuration")
+                            yield Button("◎ Model Info", variant="primary", id="btn-model-info")
+                            yield Label("View model statistics and validation")
                         with Horizontal(classes="menu-item"):
                             yield Button(
-                                "Generate Report", variant="success", id="btn-generate-report"
+                                "★ Gen. Report", variant="success", id="btn-generate-report"
                             )
                             yield Label("Export results to Excel summary")
+
+                        yield Label("▸ Configuration", classes="menu-section-header")
+                        yield Static("─" * 35, classes="menu-section-divider")
+                        with Horizontal(classes="menu-item"):
+                            yield Button("⚙ Config Menu", variant="default", id="btn-config")
+                            yield Label("Manage PMS and stream data files")
+                        with Horizontal(classes="menu-item"):
+                            yield Button(
+                                "⇄ Import/Export", variant="primary", id="btn-import-export"
+                            )
+                            yield Label("Import/Export model to/from Excel")
                     with Horizontal(id="menu-footer"):
                         yield Button("Load File", variant="warning", id="btn-load-file")
                         yield Button("Quit", variant="error", id="btn-quit")
@@ -308,6 +336,17 @@ class MainMenuScreen(Screen):
         from pykorf.use_case.tui.screens.generate_report import GenerateReportScreen
 
         self.app.push_screen(GenerateReportScreen())
+
+    def action_import_export(self) -> None:
+        """Switch to Import/Export Excel screen (keyboard binding)."""
+        from pykorf.use_case.tui.screens.import_export import ImportExportScreen
+
+        self.app.push_screen(ImportExportScreen())
+
+    @on(Button.Pressed, "#btn-import-export")
+    def action_import_export_button(self) -> None:
+        """Switch to Import/Export Excel screen (button click)."""
+        self.action_import_export()
 
     @on(Button.Pressed, "#btn-load-file")
     def action_load_file(self) -> None:

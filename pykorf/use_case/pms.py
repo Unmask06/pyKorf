@@ -423,8 +423,7 @@ def lookup_schedule(
 ) -> dict[str, Any]:
     """Look up pipe schedule/wall thickness by PMS code and nominal pipe size.
 
-    Falls back to the closest available size when an exact match is
-    not found.
+    Requires exact NPS match - does NOT fall back to closest size.
 
     Args:
         pms_data: Loaded PMS data (from :func:`load_pms`).
@@ -435,7 +434,8 @@ def lookup_schedule(
         Dict with either {"schedule": str} or {"wall_mm": float}.
 
     Raises:
-        PmsLookupError: If the PMS class is not found or has no sizes.
+        PmsLookupError: If the PMS class is not found, has no sizes,
+            or exact NPS is not defined.
     """
     if pms_code not in pms_data:
         raise PmsLookupError(f"PMS class not found: {pms_code}")
@@ -447,8 +447,10 @@ def lookup_schedule(
     if nominal_size in sizes:
         return sizes[nominal_size]
 
-    closest = min(sizes.keys(), key=lambda x: abs(x - nominal_size))
-    return sizes[closest]
+    raise PmsLookupError(
+        f"NPS {nominal_size}\" not defined for PMS class '{pms_code}'. "
+        f"Available sizes: {sorted([float(k) for k in sizes.keys()])}"
+    )
 
 
 def apply_pms(

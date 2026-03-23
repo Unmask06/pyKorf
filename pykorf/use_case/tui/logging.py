@@ -8,6 +8,7 @@ for warnings and errors.
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -104,6 +105,53 @@ def get_log_entries(
     return results
 
 
+def display_log_entries(
+    dispatch: Callable,
+    log: RichLog,
+    log_file: str | Path | None,
+    logger_filter: str,
+    header: str = "Warnings/Errors:",
+) -> None:
+    """Display warning/error log entries in a RichLog from a worker thread.
+
+    Args:
+        dispatch: ``self.app.call_from_thread`` for safe UI updates from workers.
+        log: RichLog widget to write to.
+        log_file: Path to the log file, or None to skip.
+        logger_filter: Logger name substring to filter entries by.
+        header: Message shown before the first entry.
+    """
+    if not log_file:
+        return
+    entries = get_log_entries(
+        log_file, levels={"WARNING", "ERROR", "CRITICAL"}, logger_filter=logger_filter
+    )
+    if not entries:
+        return
+    dispatch(lambda: log_warning(log, header))
+    for _ts, _name, level, message in entries:
+        if level == "WARNING":
+            dispatch(lambda m=message: log_warning(log, f"  ⚠ {m}"))
+        else:
+            dispatch(lambda m=message: log_error(log, f"  ✗ {m}"))
+
+
+def reload_if_modified(model: object, dispatch: Callable, log: RichLog) -> None:
+    """Reload the model from disk if it was modified externally.
+
+    Args:
+        model: The KDF model to check and potentially reload.
+        dispatch: ``self.app.call_from_thread`` for safe UI updates from workers.
+        log: RichLog widget to log the reload message to.
+    """
+    from pykorf.model import Model  # local import to avoid circular deps
+
+    assert isinstance(model, Model)
+    if model.is_file_modified():
+        dispatch(lambda: log_info(log, "File modified externally, reloading..."))
+        model.reload()
+
+
 def log_debug(log: RichLog, message: str) -> None:
     """Write a debug message to the log (dim cyan)."""
     log.write(Text(message, style="dim cyan"))
@@ -130,6 +178,7 @@ def log_error(log: RichLog, message: str) -> None:
 
 
 __all__ = [
+    "display_log_entries",
     "get_log_entries",
     "has_warnings_or_errors",
     "log_debug",
@@ -137,4 +186,5 @@ __all__ = [
     "log_info",
     "log_success",
     "log_warning",
+    "reload_if_modified",
 ]

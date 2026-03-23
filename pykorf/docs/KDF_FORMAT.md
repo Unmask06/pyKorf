@@ -142,6 +142,11 @@ instances inherit.
 
 ## 7. Parameters by Element
 
+The following tables provide an overview. For the most up-to-date and exhaustive 
+reference of every parameter and its exact token structure (including typical types 
+and default values), refer to the **inline comments** in the concrete element classes 
+within `pykorf/elements/*.py`.
+
 In the tables below:
 
 - **mc** = multi-case (semicolon-delimited string).

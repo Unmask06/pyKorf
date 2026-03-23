@@ -129,6 +129,25 @@ class SummaryService:
                     issues.append(
                         f"Pipe '{name}': PMS '{pms_val}' (from NOTES) not found in pms.json."
                     )
+                else:
+                    # 2b. NPS Availability Check - exact NPS must exist in PMS
+                    nps = line_data.nominal_pipe_size
+                    try:
+                        from pykorf.use_case.pms import load_all_pms, lookup_pms_across_materials
+
+                        all_materials = load_all_pms(pms_path)
+                        _, spec, _ = lookup_pms_across_materials(all_materials, pms_val, float(nps))
+                        # 2c. Schedule Availability Check - schedule value must be defined
+                        pms_value = spec.get("value") or spec.get("schedule", "")
+                        if not pms_value:
+                            issues.append(
+                                f"Pipe '{name}': Schedule not defined for PMS '{pms_val}' at NPS {nps}\"."
+                            )
+                    except Exception as exc:
+                        # Check if it's NPS not available error
+                        err_msg = str(exc)
+                        if "not defined" in err_msg.lower() or "not available" in err_msg.lower():
+                            issues.append(f"Pipe '{name}': {err_msg}")
             else:
                 issues.append(
                     f"Pipe '{name}': NOTES value '{notes_val}' is not a valid line number."
@@ -148,7 +167,9 @@ class SummaryService:
                     except (ValueError, TypeError):
                         vel_crit = float("inf")
 
-                    dp_calc = float(pipe.pressure_drop_per_100m) if pipe.pressure_drop_per_100m else 0.0
+                    dp_calc = (
+                        float(pipe.pressure_drop_per_100m) if pipe.pressure_drop_per_100m else 0.0
+                    )
                     vel_calc = float(pipe.velocity[0]) if pipe.velocity else 0.0
 
                     failures = []
@@ -163,6 +184,10 @@ class SummaryService:
                     else:
                         # Fallback if status is FAIL but thresholds aren't crossed (rounding/edge cases)
                         issues.append(f"Pipe '{name}' fails sizing criteria.")
+
+        # 4. Pipe Property Verification (compare with Line Number + PMS)
+        property_issues = self._verify_pipe_properties()
+        issues.extend(property_issues)
 
         return issues
 
@@ -372,6 +397,215 @@ class SummaryService:
                     pass
 
         return issues
+
+    def _verify_pipe_properties(self) -> list[str]:
+        """Verify pipe properties match the Line Number + PMS specification.
+
+        For each pipe with a valid line number in NOTES:
+        1. Parse line number to get NPS and piping class
+        2. Look up expected schedule/ID and material from PMS
+        3. Compare with actual pipe properties:
+           - NPS/DIA: Numerical comparison (handle fractions like "1/2", "1-1/2")
+           - ID: Compare with 1mm tolerance (convert units as needed)
+           - SCH: Case-insensitive string match
+           - MAT: Case-insensitive string match
+        4. Report mismatches
+
+        Pipes where PMS lookup fails are skipped (already reported by existing validation).
+        Dummy pipes (names starting with 'd') are skipped.
+
+        Returns:
+            List of validation issue descriptions for property mismatches.
+        """
+        issues: list[str] = []
+
+        from pykorf.use_case.config import get_pms_path
+        from pykorf.use_case.line_number import LineNumber, format_nps
+        from pykorf.use_case.pms import load_all_pms, lookup_pms_across_materials
+
+        # Load PMS data once for all pipes
+        pms_path = get_pms_path()
+        if not pms_path or not pms_path.exists():
+            return issues  # PMS file not available, skip verification
+
+        try:
+            all_materials = load_all_pms(pms_path)
+        except Exception:
+            return issues  # Failed to load PMS, skip verification
+
+        for pipe_idx, pipe in self.model.pipes.items():
+            if pipe_idx == 0:
+                continue
+
+            name = pipe.name
+            if not name:
+                continue
+
+            # Skip dummy pipes
+            if name.lower().startswith("d"):
+                continue
+
+            # Parse line number from NOTES
+            notes_rec = pipe.get_param("NOTES")
+            notes_val = notes_rec.values[0] if notes_rec and notes_rec.values else ""
+
+            if not notes_val:
+                continue
+
+            line_data = LineNumber.parse(notes_val)
+            if not line_data:
+                continue
+
+            # Look up PMS data
+            nps = line_data.nominal_pipe_size
+            pms_code = line_data.pms_code
+
+            try:
+                material, spec, od_mm = lookup_pms_across_materials(
+                    all_materials, pms_code, float(nps)
+                )
+            except Exception:
+                # PMS lookup failed - already reported by existing validation, skip
+                continue
+
+            # Get expected values from PMS
+            pms_value = spec.get("value") or spec.get("schedule", "")
+            expected_sch = pms_value if pms_value else None
+            expected_mat = material if material else None
+
+            # Determine if this is ID-based (wall thickness in mm) or SCH-based
+            is_id_based = expected_sch and "mm" in expected_sch.lower()
+
+            # Get actual pipe properties
+            dia_rec = pipe.get_param(Pipe.DIA)
+            sch_rec = pipe.get_param(Pipe.SCH)
+            id_rec = pipe.get_param(Pipe.ID)
+            mat_rec = pipe.get_param(Pipe.MAT)
+
+            actual_dia = dia_rec.values[0] if dia_rec and dia_rec.values else None
+            actual_sch = sch_rec.values[0] if sch_rec and sch_rec.values else None
+            actual_id = id_rec.values[0] if id_rec and id_rec.values else None
+            actual_mat = mat_rec.values[0] if mat_rec and mat_rec.values else None
+
+            mismatches: list[str] = []
+
+            # Verify NPS/DIA
+            if actual_dia:
+                expected_nps_str = format_nps(nps)
+                if not self._compare_nps(str(actual_dia), expected_nps_str):
+                    mismatches.append(f"NPS={expected_nps_str}")
+
+            # Verify Schedule or ID
+            if is_id_based and actual_id and expected_sch:
+                # Parse wall thickness from "5 mm" format
+                wall_str = expected_sch.lower().replace("mm", "").strip()
+                try:
+                    wall_mm = float(wall_str)
+                    expected_id_m = (
+                        od_mm - 2 * wall_mm
+                    ) / 1000.0  # Convert to meters for comparison
+                    # Parse actual ID (convert to mm if in meters)
+                    actual_id_val = float(actual_id)
+
+                    # Compare with 1mm tolerance
+                    if abs(actual_id_val - expected_id_m) > 0.001:
+                        mismatches.append(f"ID={expected_id_m:.1f}mm")
+                except (ValueError, TypeError):
+                    pass
+            elif expected_sch and actual_sch:
+                # Standard schedule comparison - normalize by stripping "SCH " prefix
+                actual_sch_norm = str(actual_sch).strip().upper()
+                expected_sch_norm = expected_sch.strip().upper()
+                # Remove "SCH " prefix if present for comparison
+                if expected_sch_norm.startswith("SCH "):
+                    expected_sch_norm = expected_sch_norm[4:]
+                if actual_sch_norm != expected_sch_norm:
+                    mismatches.append(f"SCH={expected_sch}")
+
+            # Verify Material
+            if expected_mat and actual_mat:
+                if str(actual_mat).strip().upper() != expected_mat.strip().upper():
+                    mismatches.append(f"MAT={expected_mat}")
+
+            # Report mismatches
+            if mismatches:
+                expected_parts = mismatches
+                actual_parts: list[str] = []
+
+                if "NPS=" in ", ".join(mismatches):
+                    actual_parts.append(f"NPS={actual_dia}")
+                if "SCH=" in ", ".join(mismatches) and actual_sch:
+                    actual_parts.append(f"SCH={actual_sch}")
+                if "ID=" in ", ".join(mismatches) and actual_id:
+                    actual_parts.append(f"ID={actual_id}")
+                if "MAT=" in ", ".join(mismatches) and actual_mat:
+                    actual_parts.append(f"MAT={actual_mat}")
+
+                expected_str = ", ".join(expected_parts)
+                actual_str = ", ".join(actual_parts)
+
+                issues.append(
+                    f"Pipe '{name}': Line number expects {expected_str} but model has {actual_str}"
+                )
+
+        return issues
+
+    def _compare_nps(self, actual: str, expected: str) -> bool:
+        """Compare NPS values, handling fractions.
+
+        Args:
+            actual: Actual DIA value from pipe.
+            expected: Expected NPS value from line number.
+
+        Returns:
+            True if values match numerically.
+        """
+        actual_normalized = self._normalize_nps(actual)
+        expected_normalized = self._normalize_nps(expected)
+
+        try:
+            return abs(float(actual_normalized) - float(expected_normalized)) < 0.01
+        except (ValueError, TypeError):
+            return actual.strip() == expected.strip()
+
+    def _normalize_nps(self, nps_str: str) -> str:
+        """Normalize NPS string to decimal for comparison.
+
+        Handles fractions like "1/2", "3/4", "1-1/2".
+
+        Args:
+            nps_str: NPS string (e.g., "6", "1/2", "1-1/2").
+
+        Returns:
+            Decimal string representation.
+        """
+        if not nps_str:
+            return nps_str
+
+        s = nps_str.strip()
+
+        # Handle whole-fraction combination (e.g., "1-1/2")
+        if "-" in s:
+            parts = s.split("-", 1)
+            try:
+                whole = float(parts[0])
+                fraction_str = parts[1]
+                if "/" in fraction_str:
+                    num, den = fraction_str.split("/", 1)
+                    frac = float(num) / float(den)
+                    return str(whole + frac)
+            except (ValueError, TypeError, ZeroDivisionError):
+                pass
+
+        # Handle standalone fraction (e.g., "3/4")
+        if "/" in s:
+            try:
+                num, den = s.split("/", 1)
+                return str(float(num) / float(den))
+            except (ValueError, TypeError, ZeroDivisionError):
+                pass
+
+        return s
 
     def pipe(self, index: int) -> Pipe:
         """Return pipe *index*, raise :exc:`ElementNotFound` if absent.

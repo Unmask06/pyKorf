@@ -23,31 +23,31 @@ class Valve(BaseElement):
     # ------------------------------------------------------------------
     # Parameter constants (moved from definitions/valve.py)
     # ------------------------------------------------------------------
-    ELEV = "ELEV"
-    DP = "DP"
-    PIN = "PIN"
-    POUT = "POUT"
-    DPP = "DPP"
-    PSAT = "PSAT"
-    PCRIT = "PCRIT"
-    THICK = "THICK"
-    K = "K"
-    CV = "CV"
-    DIA = "DIA"
-    TYPE2 = "TYPE2"
-    TYPE = "TYPE"
-    OPEN = "OPEN"
-    OPENCV = "OPENCV"
-    XT = "XT"
-    FL = "FL"
-    YIN = "YIN"
-    FP2 = "FP2"
-    CHOKE = "CHOKE"
-    OMEGA = "OMEGA"
-    RS = "RS"
-    XC = "XC"
-    NDS = "NDS"
-    MDEN = "MDEN"
+    ELEV = "ELEV"  # [elevation, unit]
+    DP = "DP"  # [dp_str, dp_num, unit]
+    PIN = "PIN"  # [pres_in_str, pres_in_num, unit]
+    POUT = "POUT"  # [pres_out_str, pres_out_num, unit]
+    DPP = "DPP"  # [dpp1, dpp2, unit]
+    PSAT = "PSAT"  # [psat_str, psat_num, unit]
+    PCRIT = "PCRIT"  # [pcrit, unit]
+    THICK = "THICK"  # [thickness, unit]
+    K = "K"  # [k_factor_str]
+    CV = "CV"  # [cv_str, cv_num]
+    DIA = "DIA"  # ["dia_type"]
+    TYPE2 = "TYPE2"  # ["valve_category"]
+    TYPE = "TYPE"  # ["valve_type"]
+    OPEN = "OPEN"  # [opening_str, opening_num]
+    OPENCV = "OPENCV"  # [percent_cv]
+    XT = "XT"  # [xt_factor]
+    FL = "FL"  # [fl_factor]
+    YIN = "YIN"  # [expansion_factor]
+    FP2 = "FP2"  # [fp2_factor]
+    CHOKE = "CHOKE"  # [choke_bool]
+    OMEGA = "OMEGA"  # [omega_str, omega_num]
+    RS = "RS"  # [rs_factor]
+    XC = "XC"  # [xc_factor]
+    NDS = "NDS"  # [nds_factor]
+    MDEN = "MDEN"  # ["mden_str"]
 
     ALL = (
         "NUM",
@@ -152,3 +152,29 @@ class Valve(BaseElement):
             return (int(vals[0]), int(vals[1]))
         except (IndexError, TypeError, ValueError):
             return (0, 0)
+
+    def summary(self, export: bool = False) -> dict:
+        if export:
+            dp_val, dp_unit = self.get_value_and_unit(Valve.DP, val_index=1, unit_index=-1)
+            pin_val, pin_unit = self.get_value_and_unit(Valve.PIN, val_index=1, unit_index=-1)
+            pout_val, pout_unit = self.get_value_and_unit(Valve.POUT, val_index=1, unit_index=-1)
+
+            return {
+                "Valve Name": self.name,
+                "Type": self.valve_type,
+                "CV": self.cv,
+                self.format_export_header("Differential Pressure", dp_unit): dp_val,
+                self.format_export_header("Inlet Pressure", pin_unit): pin_val,
+                self.format_export_header("Outlet Pressure", pout_unit): pout_val,
+                "Opening [%]": self.opening_string,
+            }
+
+        return {
+            "name": self.name,
+            "type": self.valve_type,
+            "cv": self.cv,
+            "dp_kPag": self.dp_kPag,
+            "inlet_pressure_kPag": self.inlet_pressure_kPag,
+            "outlet_pressure_kPag": self.outlet_pressure_kPag,
+            "opening": self.opening_string,
+        }

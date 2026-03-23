@@ -10,6 +10,8 @@ Focus on **Absolute Accuracy**, **Completeness**, and **System-Wide Integrity**.
 4.  **Skill Evolution:** If new architectural insights, element types, or services are discovered or provided by the developer, **immediately** use the `skill-creator` skill to update the relevant project-specific skills in `.agents/skills/`. This ensures the agent's long-term memory remains accurate.
 5.  **Exhaustive Validation:** After any change, run the **entire** relevant test suite using `uv run pytest`, plus `uv run ruff` and `uv run mypy` if applicable. Validation is the only path to finality.
 6.  **Autonomous Problem Solving:** If a test fails or a dependency is missing, investigate and fix it autonomously using `uv add` or `uv remove`. Do not stop for permission on technical roadblocks.
+7.  **Design Review for Multi-File Changes:** When a feature spans 2+ files or involves architectural decisions, present options with tradeoffs **before** implementing. Wait for developer confirmation.
+8.  **Interactive Planning Mode:** Be highly interactive during planning — research, present options, confirm details. Once the plan is fixed, coding is straightforward.
 
 ## Critical Rules
 
@@ -51,3 +53,14 @@ Focus on **Absolute Accuracy**, **Completeness**, and **System-Wide Integrity**.
 - **testing** — For test patterns, fixtures, and quality commands.
 - **automation** — For GUI automation or `KorfApp` logic.
 - **visualization** — For network diagrams and PyVis-based reporting.
+
+
+## Guardrails & Boundaries
+
+- **Zero-Destruction Policy:** NEVER delete source files, directories, or test cases simply to bypass errors. If a test is fundamentally flawed, rewrite it; do not delete it. Never modify files outside the immediate project root.
+- **Safe Rollbacks:** Before executing multi-file architectural changes or modifying complex `.kdf` structures, create a temporary backup or use Git (`git stash` or branch). If autonomous fixes fail after **3 consecutive attempts**, revert to the last known-good state and halt. Do not enter an infinite debugging loop.
+- **Anti-Hallucination Fallback:** If you encounter a domain-specific calculation, parameter relation, or architectural pattern you do not fully understand, **DO NOT guess**. Absolute accuracy supersedes autonomous completion. Stop and ask for clarification.
+- **Definition of Done (DoD):** Do not abruptly stop when a task is finished. Conclude every successful session with a concise summary of:
+  1. Files changed.
+  2. Architectural decisions made.
+  3. The final output of the validation suite (`uv run pytest`, `ruff`, etc.).

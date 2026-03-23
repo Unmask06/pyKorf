@@ -175,11 +175,17 @@ class TestPmsFunctions:
         spec = lookup_schedule(pms_data, "BC1A1B-FDA", 6.0)
         assert spec.get("value") == "SCH STD" or spec.get("schedule") == "STD"
 
-    def test_lookup_schedule_closest(self):
-        """lookup_schedule() falls back to closest size."""
+    def test_lookup_schedule_exact_required(self):
+        """lookup_schedule() requires exact NPS match - no fallback to closest."""
         material, pms_data, od_data = load_pms(PMS_JSON, "Steel")
-        # 5.5 is not in the table, should return closest (6.0)
-        spec = lookup_schedule(pms_data, "BC1A1B-FDA", 5.5)
+        from pykorf.use_case.exceptions import PmsLookupError
+
+        # 5.5 is not in the table - should raise error
+        with pytest.raises(PmsLookupError, match="not defined"):
+            lookup_schedule(pms_data, "BC1A1B-FDA", 5.5)
+
+        # Exact match should still work
+        spec = lookup_schedule(pms_data, "BC1A1B-FDA", 6.0)
         assert spec.get("value") == "SCH STD" or spec.get("schedule") == "STD"
 
     def test_lookup_schedule_unknown_class(self):

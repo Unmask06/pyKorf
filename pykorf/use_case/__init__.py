@@ -38,6 +38,7 @@ Simplified API (functions):
     >>> # Model is automatically saved by default
 """
 
+from pykorf.use_case.batch_report import BatchReportGenerator
 from pykorf.use_case.bulk_calc import copy_fluids
 from pykorf.use_case.exceptions import (
     ExcelConversionError,
@@ -78,6 +79,7 @@ from pykorf.use_case.settings import SettingsReader, UseCaseSettings
 from pykorf.use_case.tui import run_tui
 
 __all__ = [
+    "BatchReportGenerator",
     "ExcelConversionError",
     "FluidProperties",
     "HmbReader",

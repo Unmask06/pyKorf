@@ -14,8 +14,8 @@ class Junction(BaseElement):
     # ------------------------------------------------------------------
     # Parameter constants (moved from definitions/junc.py)
     # ------------------------------------------------------------------
-    PRES = "PRES"
-    LBL = "LBL"
+    PRES = "PRES"  # [pres_str, pres_num, unit]
+    LBL = "LBL"  # [on/off, x-offset, y-offset]
 
     ALL = (
         "NUM",

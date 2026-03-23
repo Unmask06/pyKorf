@@ -22,14 +22,14 @@ class Feed(BaseElement):
     # ------------------------------------------------------------------
     # Parameter constants (moved from definitions/feed.py)
     # ------------------------------------------------------------------
-    TYPE = "TYPE"
-    ELEV = "ELEV"
-    LEVELH = "LEVELH"
-    PRES = "PRES"
-    POUT = "POUT"
-    DP = "DP"
-    EQN = "EQN"
-    CHOKE = "CHOKE"
+    TYPE = "TYPE"  # ["feed_type"]
+    ELEV = "ELEV"  # [elevation, unit]
+    LEVELH = "LEVELH"  # [level1, level2, unit, level4, unit, level6]
+    PRES = "PRES"  # [pres_str, pres_num, unit]
+    POUT = "POUT"  # [pres_out_str, pres_out_num, unit]
+    DP = "DP"  # [dp_str, dp_num, unit]
+    EQN = "EQN"  # [eqn_type, ..., ..., ..., ...]
+    CHOKE = "CHOKE"  # [choke_bool]
 
     ALL = (
         "NUM",
@@ -113,3 +113,18 @@ class Feed(BaseElement):
             return int(self._scalar(self.NOZ, 0))
         except (TypeError, ValueError):
             return 0
+
+    def summary(self, export: bool = False) -> dict:
+        if export:
+            pres_val, pres_unit = self.get_value_and_unit(Feed.POUT, val_index=1, unit_index=-1)
+            return {
+                "Feed Name": self.name,
+                "Type": self.type,
+                self.format_export_header("Outlet Pressure", pres_unit): pres_val,
+            }
+
+        return {
+            "name": self.name,
+            "type": self.type,
+            "pressure_kPag": self.pressure_kPag,
+        }

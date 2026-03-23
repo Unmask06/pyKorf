@@ -14,16 +14,16 @@ class Tee(BaseElement):
     # ------------------------------------------------------------------
     # Parameter constants (moved from definitions/tee.py)
     # ------------------------------------------------------------------
-    TYPE = "TYPE"
-    ELEV = "ELEV"
-    PRES = "PRES"
-    DPP = "DPP"
-    KCM = "KCM"
-    KCB = "KCB"
-    SPAC = "SPAC"
-    C = "C"
-    M = "M"
-    B = "B"
+    TYPE = "TYPE"  # [tee_type_int]
+    ELEV = "ELEV"  # [elevation, unit]
+    PRES = "PRES"  # [p1, p2, p3, unit]
+    DPP = "DPP"  # [dp1, dp2, dp3, unit]
+    KCM = "KCM"  # [kcm_str, kcm_num]
+    KCB = "KCB"  # [kcb_str, kcb_num]
+    SPAC = "SPAC"  # [spacing]
+    C = "C"  # [c1, c2, c3, unit]
+    M = "M"  # [m1, m2, m3, unit]
+    B = "B"  # [b1, b2, b3, unit]
 
     ALL = (
         "NUM",

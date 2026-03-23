@@ -288,24 +288,14 @@ class IOService:
         self,
         path: str | Path,
         *,
-        include_results: bool = True,
+        template_path: str | Path | None = None,
         overwrite: bool = True,
     ) -> None:
-        """Export model data to Excel workbook.
-
-        Creates multiple sheets:
-        - Summary: Model overview
-        - Pipes: Pipe data
-        - Pumps: Pump data
-        - Valves: Valve data
-        - Feeds: Feed boundary conditions
-        - Products: Product boundary conditions
-        - Connectivity: Connection matrix
+        """Export model data to Excel workbook in a single-sheet format.
 
         Args:
-            model: The model to export
             path: Output file path
-            include_results: Whether to include calculated results
+            template_path: Path to Excel template with logos (A3 landscape). If None, creates new file.
             overwrite: Whether to overwrite existing files
 
         Raises:
@@ -321,89 +311,10 @@ class IOService:
 
         with log_operation("export_to_excel", path=str(path)):
             try:
-                with pd.ExcelWriter(path, engine="openpyxl") as writer:
-                    # Summary sheet
-                    summary_data = {
-                        "Property": [
-                            "File",
-                            "Version",
-                            "Cases",
-                            "Pipes",
-                            "Pumps",
-                            "Feeds",
-                            "Products",
-                            "Valves",
-                            "Check Valves",
-                            "Orifices",
-                            "Heat Exchangers",
-                            "Compressors",
-                            "Vessels",
-                        ],
-                        "Value": [
-                            str(self.model.path),
-                            self.model.version,
-                            self.model.num_cases,
-                            self.model.num_pipes,
-                            self.model.num_pumps,
-                            len([e for e in self.model.feeds.values() if e.index > 0]),
-                            len([e for e in self.model.products.values() if e.index > 0]),
-                            len([e for e in self.model.valves.values() if e.index > 0]),
-                            len([e for e in self.model.check_valves.values() if e.index > 0]),
-                            len([e for e in self.model.orifices.values() if e.index > 0]),
-                            len([e for e in self.model.exchangers.values() if e.index > 0]),
-                            len([e for e in self.model.compressors.values() if e.index > 0]),
-                            len([e for e in self.model.vessels.values() if e.index > 0]),
-                        ],
-                    }
-                    pd.DataFrame(summary_data).to_excel(writer, sheet_name="Summary", index=False)
+                from pykorf.reports.exporter import ResultExporter
 
-                    # Pipes sheet
-                    pipe_rows = []
-                    for idx, pipe in self.model.pipes.items():
-                        if idx == 0:
-                            continue
-                        row = {
-                            "Index": idx,
-                            "Name": pipe.name,
-                            "Diameter (in)": pipe.diameter_inch,
-                            "Schedule": pipe.schedule,
-                            "Length (m)": pipe.length_m,
-                            "Material": pipe.material,
-                        }
-                        if include_results:
-                            row["dP/100m (kPa)"] = pipe.pressure_drop_per_100m
-                            row["Reynolds"] = pipe.reynolds_number
-                        pipe_rows.append(row)
-
-                    if pipe_rows:
-                        pd.DataFrame(pipe_rows).to_excel(writer, sheet_name="Pipes", index=False)
-
-                    # Pumps sheet
-                    pump_rows = []
-                    for idx, pump in self.model.pumps.items():
-                        if idx == 0:
-                            continue
-                        row = {
-                            "Index": idx,
-                            "Name": pump.name,
-                            "Type": pump.pump_type if hasattr(pump, "pump_type") else "Unknown",
-                        }
-                        if include_results and hasattr(pump, "head_m"):
-                            row["Head (m)"] = pump.head_m
-                            row["Power (kW)"] = pump.power_kW
-                            row["Efficiency"] = pump.efficiency
-                        pump_rows.append(row)
-
-                    if pump_rows:
-                        pd.DataFrame(pump_rows).to_excel(writer, sheet_name="Pumps", index=False)
-
-                    # Case info
-                    if hasattr(self.model, "general"):
-                        case_data = {
-                            "Case Number": self.model.general.case_numbers,
-                            "Description": self.model.general.case_descriptions,
-                        }
-                        pd.DataFrame(case_data).to_excel(writer, sheet_name="Cases", index=False)
+                exporter = ResultExporter(self.model)
+                exporter.export_to_excel(str(path), template_path=str(template_path) if template_path else None)
 
                 logger.info("export_to_excel_success", path=str(path))
 
@@ -1209,19 +1120,19 @@ def export_to_excel(
     model: Model,
     path: str | Path,
     *,
-    include_results: bool = True,
+    template_path: str | Path | None = None,
 ) -> None:
-    """Export model data to Excel workbook.
+    """Export model data to Excel workbook in a single-sheet format.
 
     Args:
         model: The model to export
         path: Output file path
-        include_results: Whether to include calculated results
+        template_path: Path to Excel template with logos (A3 landscape). If None, creates new file.
 
     Raises:
         ExportError: If export fails
     """
-    IOService(model=model).export_to_excel(path, include_results=include_results)
+    IOService(model=model).export_to_excel(path, template_path=template_path)
 
 
 def export_to_csv(

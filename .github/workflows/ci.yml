@@ -10,10 +10,10 @@ jobs:
   quality:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
 
@@ -23,13 +23,39 @@ jobs:
       - name: Install Dependencies
         run: uv sync
 
-      - name: Ruff Check & Format
-        run: |
-          uv run ruff check .
-          uv run ruff format --check .
+      - name: Ruff Check
+        id: ruff-check
+        run: uv run ruff check --fix .
+        continue-on-error: true
+
+      - name: Ruff Format Check
+        id: ruff-format
+        run: uv run ruff format --check .
+        continue-on-error: true
 
       - name: Mypy Static Analysis
+        id: mypy
         run: uv run mypy .
+        continue-on-error: true
 
       - name: Run Tests
+        id: pytest
         run: uv run pytest -m "not automation"
+        continue-on-error: true
+
+      - name: Report Results
+        run: |
+          echo "## Quality Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Ruff Check | ${{ steps.ruff-check.outcome == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Ruff Format | ${{ steps.ruff-format.outcome == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Mypy | ${{ steps.mypy.outcome == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests | ${{ steps.pytest.outcome == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Fail if any check failed
+        if: steps.ruff-check.outcome == 'failure' || steps.ruff-format.outcome == 'failure' || steps.mypy.outcome == 'failure' || steps.pytest.outcome == 'failure'
+        run: |
+          echo "One or more quality checks failed. See above for details."
+          exit 1

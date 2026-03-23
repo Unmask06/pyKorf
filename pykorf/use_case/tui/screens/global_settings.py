@@ -6,15 +6,15 @@ from textual import on, work
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import Button, Checkbox, Footer, Label, RichLog, Static
+from textual.widgets import Button, Checkbox, Footer, Label, LoadingIndicator, RichLog, Static
 
 from pykorf.log import get_log_file
 from pykorf.use_case.tui.logging import (
-    get_log_entries,
+    display_log_entries,
     log_error,
     log_info,
     log_success,
-    log_warning,
+    reload_if_modified,
 )
 
 
@@ -44,6 +44,16 @@ class GlobalSettingsScreen(Screen):
         """Clear persistent logs."""
         self.execution_logs.clear()
         self.has_errors = False
+
+    def _get_selected_setting_ids(self) -> list[str]:
+        from pykorf.use_case.global_settings import get_global_settings
+
+        settings = get_global_settings()
+        return [
+            setting.id
+            for setting in settings
+            if self.query_one(f"#checkbox-{setting.id}", Checkbox).value
+        ]
 
     CSS = """
     GlobalSettingsScreen {
@@ -102,6 +112,14 @@ class GlobalSettingsScreen(Screen):
     #settings-results RichLog {
         overflow-x: hidden;
     }
+    #apply-loading {
+        display: none;
+        height: 1;
+        margin-left: 1;
+    }
+    #apply-loading.active {
+        display: block;
+    }
     #right-panel-content {
         padding: 0 1;
     }
@@ -142,6 +160,7 @@ class GlobalSettingsScreen(Screen):
                 with Horizontal(id="settings-buttons"):
                     yield Button("Select All", variant="default", id="btn-select-all")
                     yield Button("Apply Selected", variant="primary", id="btn-apply")
+                    yield LoadingIndicator(id="apply-loading")
                 yield RichLog(id="settings-results", wrap=True)
 
             with Vertical(id="right-panel"):
@@ -172,31 +191,20 @@ class GlobalSettingsScreen(Screen):
         """Select all checkboxes."""
         from pykorf.use_case.global_settings import get_global_settings
 
-        settings = get_global_settings()
-        for setting in settings:
-            checkbox = self.query_one(f"#checkbox-{setting.id}", Checkbox)
-            checkbox.value = True
+        for setting in get_global_settings():
+            self.query_one(f"#checkbox-{setting.id}", Checkbox).value = True
 
     @on(Button.Pressed, "#btn-apply")
     def apply_settings(self) -> None:
+        self.query_one("#btn-apply", Button).disabled = True
+        self.query_one("#apply-loading").add_class("active")
         self._run_apply()
 
     @on(Checkbox.Changed)
     def checkbox_changed(self, event: Checkbox.Changed) -> None:
-        """Save selections when checkboxes are changed."""
         from pykorf.use_case.config import set_global_settings_selected
-        from pykorf.use_case.global_settings import get_global_settings
 
-        # Collect all selected setting IDs
-        settings = get_global_settings()
-        selected_ids = []
-        for setting in settings:
-            checkbox = self.query_one(f"#checkbox-{setting.id}", Checkbox)
-            if checkbox.value:
-                selected_ids.append(setting.id)
-
-        # Save to config
-        set_global_settings_selected(selected_ids)
+        set_global_settings_selected(self._get_selected_setting_ids())
 
     @work(thread=True)
     def _run_apply(self) -> None:
@@ -210,97 +218,61 @@ class GlobalSettingsScreen(Screen):
         from pykorf.use_case.tui.screens.save_confirm import SaveConfirmScreen
 
         results = self.query_one("#settings-results", RichLog)
-
-        # Clear logs
-        self.app.call_from_thread(results.clear)
-        self._clear_logs()
-
-        # Get selected settings
-        settings = get_global_settings()
-        selected_ids = []
-        for setting in settings:
-            checkbox = self.query_one(f"#checkbox-{setting.id}", Checkbox)
-            if checkbox.value:
-                selected_ids.append(setting.id)
-
-        if not selected_ids:
-            self.app.call_from_thread(
-                lambda: self._log(
-                    results,
-                    "No settings selected. Please select at least one setting.",
-                    "error",
-                )
-            )
-            return
-
-        # Save selections to config
-        set_global_settings_selected(selected_ids)
-
-        # Get the model
-        app = self.app
-        assert isinstance(app, UseCaseTUI)
-        model = app.model
-        if model is None:
-            self.app.call_from_thread(
-                lambda: self._log(
-                    results, "No model loaded. Please load a KDF file first.", "error"
-                )
-            )
-            return
-
-        # Show preview of what will be changed
-        self.app.call_from_thread(lambda: self._log(results, "Applying Global Settings:"))
-        for setting_id in selected_ids:
-            setting = next(s for s in settings if s.id == setting_id)
-            self.app.call_from_thread(
-                lambda s=setting: self._log(results, f"  - {s.name}: {s.description}")
-            )
-        self.app.call_from_thread(lambda: self._log(results, ""))
-
         try:
-            # Check if file has been modified externally and reload if needed
-            if model.is_file_modified():
+            self.app.call_from_thread(results.clear)
+            self._clear_logs()
+
+            settings = get_global_settings()
+            selected_ids = self._get_selected_setting_ids()
+
+            if not selected_ids:
                 self.app.call_from_thread(
-                    lambda: log_info(results, "File modified externally, reloading...")
+                    lambda: self._log(
+                        results,
+                        "No settings selected. Please select at least one setting.",
+                        "error",
+                    )
                 )
-                model.reload()
+                return
 
-            # Apply the settings
+            set_global_settings_selected(selected_ids)
+
+            app = self.app
+            assert isinstance(app, UseCaseTUI)
+            model = app.model
+            if model is None:
+                self.app.call_from_thread(
+                    lambda: self._log(
+                        results, "No model loaded. Please load a KDF file first.", "error"
+                    )
+                )
+                return
+
+            self.app.call_from_thread(lambda: self._log(results, "Applying Global Settings:"))
+            for setting_id in selected_ids:
+                setting = next(s for s in settings if s.id == setting_id)
+                self.app.call_from_thread(
+                    lambda s=setting: self._log(results, f"  - {s.name}: {s.description}")
+                )
+            self.app.call_from_thread(lambda: self._log(results, ""))
+
+            reload_if_modified(model, self.app.call_from_thread, results)
+
             apply_results = apply_global_settings(model, selected_ids, save=False)
-
-            # Check for errors from apply_global_settings
             errors = apply_results.get("_errors", [])
             for error in errors:
                 self.app.call_from_thread(
                     lambda e=error: self._log(results, f"ERROR: {e}", "error")
                 )
 
-            # Fetch WARNING/ERROR logs from use_case.global_settings and display them
-            log_file = get_log_file()
-            if log_file:
-                entries = get_log_entries(
-                    log_file,
-                    levels={"WARNING", "ERROR", "CRITICAL"},
-                    logger_filter="pykorf.use_case.global_settings",
-                )
-                if entries:
-                    self.app.call_from_thread(
-                        lambda: log_warning(
-                            results,
-                            "Warnings/Errors during global settings processing:",
-                        )
-                    )
-                    for _ts, _name, level, message in entries:
-                        if level == "WARNING":
-                            self.app.call_from_thread(
-                                lambda m=message: log_warning(results, f"  ⚠ {m}")
-                            )
-                        else:
-                            self.app.call_from_thread(
-                                lambda m=message: log_error(results, f"  ✗ {m}")
-                            )
+            display_log_entries(
+                self.app.call_from_thread,
+                results,
+                get_log_file(),
+                "pykorf.use_case.global_settings",
+                "Warnings/Errors during global settings processing:",
+            )
 
-            # Display results
             total_affected = 0
             for setting_id, pipes in apply_results.items():
                 if setting_id == "_errors":
@@ -331,7 +303,6 @@ class GlobalSettingsScreen(Screen):
                 lambda: self._log(results, f"\nTotal: {total_affected} pipe(s) modified", "success")
             )
 
-            # Check if errors occurred
             if self.has_errors or errors:
                 self.app.call_from_thread(
                     lambda: self._log(
@@ -345,10 +316,16 @@ class GlobalSettingsScreen(Screen):
                     lambda: self._log(results, "Model updated in memory. Save to persist changes.")
                 )
 
-            # Push save confirm screen (user can view logs there)
             self.app.call_from_thread(self.app.push_screen, SaveConfirmScreen(model))
 
         except Exception as exc:
             self.app.call_from_thread(
                 lambda e=exc: self._log(results, f"Error applying settings: {e}", "error")
             )
+        finally:
+
+            def _finish_settings():
+                self.query_one("#btn-apply", Button).disabled = False
+                self.query_one("#apply-loading").remove_class("active")
+
+            self.app.call_from_thread(_finish_settings)

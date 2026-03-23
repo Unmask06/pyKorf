@@ -46,3 +46,10 @@ trail.ipynb
 examples/output/
 examples/examples/
 *.log
+
+*.kilo/
+
+# ── Local / personal settings ─────────────────────────────
+*.local
+.local/
+settings.local.json

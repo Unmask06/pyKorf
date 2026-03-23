@@ -35,65 +35,65 @@ class Pipe(BaseElement):
     # ------------------------------------------------------------------
     # Parameter constants (moved from definitions/pipe.py)
     # ------------------------------------------------------------------
-    BEND = "BEND"
+    BEND = "BEND"  # [angle_deg]
     LBL = "LBL"  # [on/off, x-offset, y-offset]
-    COLOR = "COLOR"
-    STRM = "STRM"
-    LOCK = "LOCK"
-    TEMP = "TEMP"
-    PRES = "PRES"
-    LF = "LF"
-    H = "H"
-    HAMB = "HAMB"
-    S = "S"
-    FT = "FT"
-    Q = "Q"
-    UI = "UI"
-    TAMB = "TAMB"
-    DAMB = "DAMB"
-    TSUR = "TSUR"
-    QFAC = "QFAC"
-    QNTU = "QNTU"
-    QAIR = "QAIR"
-    QPIP = "QPIP"
-    QINS = "QINS"
-    REFLINE = "REFLINE"
-    OUTIN = "OUTIN"
-    LVFLOW = "LVFLOW"
-    LIQDEN = "LIQDEN"
-    LIQVISC = "LIQVISC"
-    LIQSUR = "LIQSUR"
-    LIQCON = "LIQCON"
-    LIQCP = "LIQCP"
-    LIQMW = "LIQMW"
-    VAPDEN = "VAPDEN"
-    VAPVISC = "VAPVISC"
-    VAPMW = "VAPMW"
-    VAPZ = "VAPZ"
-    VAPK = "VAPK"
-    VAPCON = "VAPCON"
-    VAPCP = "VAPCP"
-    TFLOW = "TFLOW"
-    TPROP = "TPROP"
-    TOTCON = "TOTCON"
-    TOTCP = "TOTCP"
-    TOTMW = "TOTMW"
-    PSAT = "PSAT"
-    OMEGA = "OMEGA"
-    RS = "RS"
-    YW = "YW"
-    MAT = "MAT"
-    DIA = "DIA"
-    ID = "ID"
-    IDH = "IDH"
-    ODF = "ODF"
-    SCH = "SCH"
-    LEN = "LEN"
-    EQLEN = "EQLEN"
-    FITK = "FITK"
-    FITLD = "FITLD"
-    FITLR = "FITLR"
-    FIT1 = "FIT1"
+    COLOR = "COLOR"  # [color_int]
+    STRM = "STRM"  # ["stream_name"]
+    LOCK = "LOCK"  # [lock_bool]
+    TEMP = "TEMP"  # [temp_c1, temp_c2, temp_c3, unit]
+    PRES = "PRES"  # [pres_c1, pres_c2, pres_c3, unit]
+    LF = "LF"  # [liq_frac_c1, liq_frac_c2, liq_frac_c3]
+    H = "H"  # [enthalpy_c1, enthalpy_c2, unit]
+    HAMB = "HAMB"  # [amb_enthalpy, unit]
+    S = "S"  # [entropy_c1, entropy_c2, unit]
+    FT = "FT"  # [fit_type, fit_count]
+    Q = "Q"  # [heat_duty_str, heat_duty_num, unit]
+    UI = "UI"  # [overall_u_str, overall_u_num, unit]
+    TAMB = "TAMB"  # [amb_temp, unit]
+    DAMB = "DAMB"  # [amb_density, unit]
+    TSUR = "TSUR"  # [surface_temp, unit]
+    QFAC = "QFAC"  # [heat_factor]
+    QNTU = "QNTU"  # [ntu_multiplier]
+    QAIR = "QAIR"  # ["air_type", vel, unit]
+    QPIP = "QPIP"  # [emissivity, conductivity, unit]
+    QINS = "QINS"  # [thickness, unit, conductivity, unit]
+    REFLINE = "REFLINE"  # [reference_line_index]
+    OUTIN = "OUTIN"  # [direction_flag]
+    LVFLOW = "LVFLOW"  # [mass_flow, liq_mass_flow, unit]
+    LIQDEN = "LIQDEN"  # [den_c1, den_c2, den_c3, unit]
+    LIQVISC = "LIQVISC"  # [visc_c1, visc_c2, visc_c3, unit]
+    LIQSUR = "LIQSUR"  # [surface_tension_c1, surface_tension_c2, surface_tension_c3, unit]
+    LIQCON = "LIQCON"  # [cond_c1, cond_c2, cond_c3, unit]
+    LIQCP = "LIQCP"  # [cp_c1, cp_c2, cp_c3, unit]
+    LIQMW = "LIQMW"  # [mw_c1, mw_c2, mw_c3]
+    VAPDEN = "VAPDEN"  # [den_c1, den_c2, den_c3, unit]
+    VAPVISC = "VAPVISC"  # [visc_c1, visc_c2, visc_c3, unit]
+    VAPMW = "VAPMW"  # [mw_c1, mw_c2, mw_c3]
+    VAPZ = "VAPZ"  # [z_c1, z_c2, z_c3]
+    VAPK = "VAPK"  # [k_c1, k_c2, k_c3]
+    VAPCON = "VAPCON"  # [cond_c1, cond_c2, cond_c3, unit]
+    VAPCP = "VAPCP"  # [cp_c1, cp_c2, cp_c3, unit]
+    TFLOW = "TFLOW"  # [flow_str, flow_num, unit]
+    TPROP = "TPROP"  # [prop1, prop2, prop3, prop4, den_unit, prop6, visc_unit]
+    TOTCON = "TOTCON"  # [cond_str1, cond_str2, cond_num, unit]
+    TOTCP = "TOTCP"  # [cp_str1, cp_str2, cp_num, unit]
+    TOTMW = "TOTMW"  # [total_mw]
+    PSAT = "PSAT"  # [psat_str, psat_num, unit]
+    OMEGA = "OMEGA"  # [omega_str, omega_num]
+    RS = "RS"  # [rs_factor]
+    YW = "YW"  # [yw_factor]
+    MAT = "MAT"  # ["material_name"]
+    DIA = "DIA"  # [nom_dia, custom_dia_str, unit]
+    ID = "ID"  # [id_str, id_num, unit]
+    IDH = "IDH"  # [idh_str, idh_num, unit]
+    ODF = "ODF"  # [od_str, od_num, unit]
+    SCH = "SCH"  # ["schedule_name"]
+    LEN = "LEN"  # [length, unit]
+    EQLEN = "EQLEN"  # [equivalent_length, unit]
+    FITK = "FITK"  # [total_k]
+    FITLD = "FITLD"  # [total_ld]
+    FITLR = "FITLR"  # [lr_factor]
+    FIT1 = "FIT1"  # ["name", count, k, ld, ..., ...]
     FIT2 = "FIT2"
     FIT3 = "FIT3"
     FIT4 = "FIT4"
@@ -104,26 +104,26 @@ class Pipe(BaseElement):
     FIT9 = "FIT9"
     FIT10 = "FIT10"
     FIT11 = "FIT11"
-    SELEV = "SELEV"
-    DPELEV = "DPELEV"
-    DPFRIC = "DPFRIC"
-    DPACCEL = "DPACCEL"
-    ELEV = "ELEV"
-    DP_DES_FAC = "FAC"
-    ROUGHNESS = "EPS"
-    F = "F"
-    RE = "RE"
-    SIZ = "SIZ"
-    DPL = "DPL"
-    VEL = "VEL"
-    HUP = "HUP"
-    REG = "REG"
-    REGA = "REGA"
-    MTP = "MTP"
-    DUK = "DUK"
-    LM = "LM"
-    EQN = "EQN"
-    FILES = "FILES"
+    SELEV = "SELEV"  # [static_head, unit]
+    DPELEV = "DPELEV"  # [elevation_dp, unit]
+    DPFRIC = "DPFRIC"  # [frictional_dp, unit]
+    DPACCEL = "DPACCEL"  # [acceleration_dp, unit]
+    ELEV = "ELEV"  # [elev_in, elev_out, unit]
+    DP_DES_FAC = "FAC"  # [design_factor]
+    ROUGHNESS = "EPS"  # [roughness_str, roughness_num, unit]
+    F = "F"  # [fric_factor, ...]
+    RE = "RE"  # [reynolds_number]
+    SIZ = "SIZ"  # [sizing_str, dp_crit, unit, vel_crit, ..., ..., ..., unit]
+    DPL = "DPL"  # [dp_per_100m, unit]
+    VEL = "VEL"  # [vel_c1, vel_c2, vel_c3, vel_c4, unit]
+    HUP = "HUP"  # [liquid_holdup]
+    REG = "REG"  # [regime_c1, regime_c2, regime_c3]
+    REGA = "REGA"  # [regime_a1, regime_a2, unit]
+    MTP = "MTP"  # ["two_phase_model"]
+    DUK = "DUK"  # [duk1, duk2, unit]
+    LM = "LM"  # [lm1, lm2, lm3, lm4, lm5, lm6, lm7]
+    EQN = "EQN"  # [eqn_type, ..., ..., ..., ...]
+    FILES = "FILES"  # ["file1", "file2", ...]
 
     ALL = (
         "NUM",
@@ -535,6 +535,9 @@ class Pipe(BaseElement):
     def summary(self, export: bool = False) -> dict:
         """Return a dict of key pipe properties (useful for display or export)."""
         if export:
+            # Local import to avoid circular dependency with use_case module
+            from pykorf.use_case.line_number import LineNumber
+
             dp_crit_val, dp_crit_unit = self.get_value_and_unit(Pipe.SIZ, val_index=1, unit_index=2)
             vel_crit_val, vel_crit_unit = self.get_value_and_unit(
                 Pipe.SIZ, val_index=3, unit_index=-1
@@ -546,8 +549,11 @@ class Pipe(BaseElement):
             vel_calc_val, vel_calc_unit = self.get_value_and_unit(
                 Pipe.VEL, val_index=0, unit_index=-1
             )
+
+            parsed_line = LineNumber.parse(self.notes)
             return {
                 "Pipe Name": self.name,
+                "Line Number": parsed_line.raw_line_number if parsed_line else "",
                 self.format_export_header("DP / DL Criteria", dp_crit_unit): dp_crit_val,
                 self.format_export_header("Velocity Criteria", vel_crit_unit): vel_crit_val,
                 self.format_export_header("DP / DL", dp_calc_unit): dp_calc_val,

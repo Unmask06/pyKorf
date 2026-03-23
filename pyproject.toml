@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pykorf"
-version = "0.2.0"
+version = "0.3.0"
 description = "Enterprise Python toolkit for reading, editing and writing KORF hydraulic model files (.kdf)"
 readme = "README.md"
 license = { text = "MIT" }
@@ -42,7 +42,6 @@ dependencies = [
     "typing-extensions>=4.5.0",
     "structlog>=24.0",
     "pyvis>=0.3",
-    
     "networkx>=3.0",
     "pandas>=2.0",
     "openpyxl>=3.1",
@@ -52,6 +51,7 @@ dependencies = [
     "textual>=1.0",
     "appdirs>=1.4",
     "pyperclip>=1.8",
+    "requests>=2.28",
 ]
 
 [project.optional-dependencies]
@@ -63,11 +63,11 @@ all = [
 pykorf = "pykorf.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/pykorf/pykorf"
+Homepage = "https://github.com/Unmask06/pykorf"
 Documentation = "https://pykorf.readthedocs.io"
-Repository = "https://github.com/pykorf/pykorf"
-Issues = "https://github.com/pykorf/pykorf/issues"
-Changelog = "https://github.com/pykorf/pykorf/blob/main/CHANGELOG.md"
+Repository = "https://github.com/Unmask06/pykorf"
+Issues = "https://github.com/Unmask06/pykorf/issues"
+Changelog = "https://github.com/Unmask06/pykorf/blob/main/CHANGELOG.md"
 
 [tool.uv]
 default-groups = ["dev", "docs"]

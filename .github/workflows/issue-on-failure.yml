@@ -11,14 +11,15 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'failure' }}
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       issues: write
       actions: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Download workflow run logs
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ github.event.workflow_run.id }}
@@ -33,7 +34,7 @@ jobs:
           echo "RUN_ATTEMPT=${{ github.event.workflow_run.run_attempt }}" >> $GITHUB_OUTPUT
 
       - name: Create issue on failure
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -45,29 +46,32 @@ jobs:
 
             const issueTitle = `Workflow Failed: ${workflowName}`;
             
-            const issueBody = `## Workflow Failure Report
+            const issueBody = `/oc
 
-            **Workflow:** [${workflowName}](${workflowUrl})
-            **Branch:** \`${headBranch}\`
-            **Commit:** \`${headSha}\`
-            **Run Attempt:** ${runAttempt}
-            **Conclusion:** FAILED
+## Workflow Failure Report
 
-            ### Failure Details
+**Workflow:** [${workflowName}](${workflowUrl})
+**Branch:** \`${headBranch}\`
+**Commit:** \`${headSha}\`
+**Run Attempt:** ${runAttempt}
+**Conclusion:** FAILED
 
-            The GitHub Actions workflow has failed. Please review the logs and fix the issues.
+### Failure Details
 
-            #### Action Required
+The GitHub Actions workflow has failed. Please analyze the failure and create a fix plan.
 
-            1. Review the [workflow logs](${workflowUrl})
-            2. Identify the failed job(s)
-            3. Fix the underlying issues
-            4. Re-run the workflow
+#### Action Required
 
-            ---
+1. Review the [workflow logs](${workflowUrl})
+2. Identify the failed job(s) and root cause
+3. Create a detailed fix plan
+4. Implement the fix
+5. Verify the fix resolves the issue
 
-            *This issue was automatically created by the issue-on-failure workflow.*
-            `;
+---
+
+*This issue was automatically created by the issue-on-failure workflow.*
+`;
 
             const { data: issue } = await github.rest.issues.create({
               owner: context.repo.owner,
