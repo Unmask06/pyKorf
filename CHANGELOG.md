@@ -5,6 +5,32 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-03-23
+
+### Added
+
+- **Clickable pipe list in Bulk Copy**: Pipe names in the right panel are now clickable buttons that fill the reference pipe input directly
+- **HMB path persistence**: Last used HMB JSON file path is saved and restored across sessions (matching existing PMS path persistence)
+- **Success notifications for PMS/HMB apply**: Banner notification shown after applying PMS or HMB data, consistent with report/import screens
+- **Dynamic element list in Model Info**: Selecting any element type row (Feeds, Products, Pumps, Valves) updates the name list below the table in real time
+- **Recent files list in File Picker**: Quick-select buttons for up to 10 recently opened KDF files with tooltips showing full paths
+- **Real-time path validation in File Picker**: Live file size and modified date display as path is typed
+- **Loading states on all async screens**: Spinner and disabled button during PMS, HMB, Global Settings, and Report generation operations
+- **Main menu grouped sections**: Operations grouped into Model Operations, Analysis & Reports, and Configuration with section headers and icons
+
+### Changed
+
+- **Main menu**: "Global Settings" renamed to "Apply Global Settings" and moved to Model Operations section
+- **Splash screen**: Improved layout with subtitle and tool description; fixed broken spinner (was printing frames inline instead of in-place)
+- **Branch cleanup**: Consolidated to `main` and `dev` branches only; merged all feature work
+
+### Fixed
+
+- **Worker `finally` blocks not running**: Early validation `return` statements sat before `try` blocks in 5 workers — Apply button stayed permanently disabled on validation failure; all fixed
+- **Per-keystroke disk writes in Generate Report**: Folder path was saved to disk on every keystroke; now saved once on generate
+- **Debug print statements in SaveConfirmScreen**: Removed all `print()` debug calls from production save flow
+- **Inline comments on element param constants**: Added parameter format comments to all 17 element classes
+
 ## [0.2.2] - 2026-03-16
 
 ### Added
