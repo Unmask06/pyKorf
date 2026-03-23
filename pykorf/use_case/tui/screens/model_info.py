@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from textual import on
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
@@ -88,20 +89,16 @@ class ModelInfoScreen(Screen):
         with Vertical(id="info-container"):
             with Horizontal():
                 with Vertical(id="left-panel"):
-                    table = DataTable(id="info-table")
+                    table = DataTable(id="info-table", cursor_type="row")
                     table.add_columns("Element Type", "Count")
-                    table.add_rows(
-                        [
-                            ("Pipes", str(len(pipes))),
-                            ("Feeds", str(len(feeds))),
-                            ("Products", str(len(products))),
-                            ("Pumps", str(len(pumps))),
-                            ("Valves", str(len(valves))),
-                        ]
-                    )
+                    table.add_row("Pipes", str(len(pipes)), key="pipes")
+                    table.add_row("Feeds", str(len(feeds)), key="feeds")
+                    table.add_row("Products", str(len(products)), key="products")
+                    table.add_row("Pumps", str(len(pumps)), key="pumps")
+                    table.add_row("Valves", str(len(valves)), key="valves")
                     yield table
 
-                    yield Label("Pipe Names:", classes="info-section")
+                    yield Label("Pipe Names:", id="element-list-label", classes="info-section")
                     log = RichLog(id="pipe-list", wrap=True, highlight=True)
                     yield log
 
@@ -147,6 +144,43 @@ class ModelInfoScreen(Screen):
                         yield Static("before saving changes.")
         yield Footer()
 
+    def _populate_element_list(self, element_type: str) -> None:
+        """Populate the element name list for the given element type key."""
+        from pykorf.use_case.tui.app import UseCaseTUI
+        from pykorf.use_case.tui.screens import real_elements
+
+        app = self.app
+        assert isinstance(app, UseCaseTUI)
+        model = app.model
+        assert model is not None
+
+        element_map = {
+            "pipes": ("Pipe", model.pipes),
+            "feeds": ("Feed", model.feeds),
+            "products": ("Product", model.products),
+            "pumps": ("Pump", model.pumps),
+            "valves": ("Valve", model.valves),
+        }
+
+        label_name, elements_dict = element_map[element_type]
+        elements = real_elements(elements_dict)
+
+        self.query_one("#element-list-label", Label).update(f"{label_name} Names:")
+
+        log = self.query_one("#pipe-list", RichLog)
+        log.clear()
+        named = [(idx, el) for idx, el in sorted(elements.items()) if el.name]
+        if named:
+            for _, el in named:
+                log.write(f"  {el.name}")
+        else:
+            log.write(f"  (no named {label_name.lower()}s)")
+
+    @on(DataTable.RowHighlighted, "#info-table")
+    def on_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
+        if event.row_key and event.row_key.value:
+            self._populate_element_list(event.row_key.value)
+
     def on_mount(self) -> None:
         from pykorf.use_case.tui.app import UseCaseTUI
 
@@ -155,16 +189,8 @@ class ModelInfoScreen(Screen):
         model = app.model
         assert model is not None
 
-        from pykorf.use_case.tui.screens import real_elements
-
-        # Populate pipe list
-        log = self.query_one("#pipe-list", RichLog)
-        pipes = real_elements(model.pipes)
-        for idx, pipe in sorted(pipes.items()):
-            if pipe.name:
-                log.write(f"  {pipe.name}")
-        if not any(p.name for p in pipes.values()):
-            log.write("  (no named pipes)")
+        # Populate initial element list (Pipes)
+        self._populate_element_list("pipes")
 
         # Populate validation list
         validation_issues: list[str] = model.validate()
