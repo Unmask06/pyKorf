@@ -6,16 +6,16 @@ from textual import on, work
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import Button, Footer, Label, RichLog, Static
+from textual.widgets import Button, Footer, Label, LoadingIndicator, RichLog, Static
 
 from pykorf.log import get_log_file
 from pykorf.use_case.config import get_pms_path
 from pykorf.use_case.tui.logging import (
-    get_log_entries,
+    display_log_entries,
     log_error,
     log_info,
     log_success,
-    log_warning,
+    reload_if_modified,
 )
 
 
@@ -58,6 +58,14 @@ class ApplyPmsScreen(Screen):
     #pms-results RichLog {
         overflow-x: hidden;
     }
+    #apply-loading {
+        display: none;
+        height: 1;
+        margin-left: 1;
+    }
+    #apply-loading.active {
+        display: block;
+    }
     #right-panel-content {
         padding: 0 1;
     }
@@ -81,6 +89,7 @@ class ApplyPmsScreen(Screen):
                 yield RichLog(id="pms-results", wrap=True)
                 with Horizontal(id="pms-buttons"):
                     yield Button("Apply", variant="primary", id="btn-apply")
+                    yield LoadingIndicator(id="apply-loading")
 
             with Vertical(id="right-panel"):
                 with Vertical(classes="info-section"):
@@ -103,6 +112,8 @@ class ApplyPmsScreen(Screen):
 
     @on(Button.Pressed, "#btn-apply")
     def apply(self) -> None:
+        self.query_one("#btn-apply", Button).disabled = True
+        self.query_one("#apply-loading").add_class("active")
         self._run_apply()
 
     @work(thread=True)
@@ -111,25 +122,22 @@ class ApplyPmsScreen(Screen):
         from pykorf.use_case.tui.screens.save_confirm import SaveConfirmScreen
 
         results = self.query_one("#pms-results", RichLog)
-
-        self.app.call_from_thread(results.clear)
-
-        # Get PMS path from configuration
-        pms_path = get_pms_path()
-
-        if not pms_path.exists():
-            self.app.call_from_thread(
-                lambda: log_error(
-                    results,
-                    f"PMS file not found: {pms_path}\n"
-                    "Please import PMS data from Excel first (Configuration menu).",
-                )
-            )
-            return
-
-        self.app.call_from_thread(lambda: log_info(results, f"Loading PMS from: {pms_path}"))
-
         try:
+            self.app.call_from_thread(results.clear)
+
+            pms_path = get_pms_path()
+            if not pms_path.exists():
+                self.app.call_from_thread(
+                    lambda: log_error(
+                        results,
+                        f"PMS file not found: {pms_path}\n"
+                        "Please import PMS data from Excel first (Configuration menu).",
+                    )
+                )
+                return
+
+            self.app.call_from_thread(lambda: log_info(results, f"Loading PMS from: {pms_path}"))
+
             from pykorf.use_case import apply_pms
 
             app = self.app
@@ -137,43 +145,33 @@ class ApplyPmsScreen(Screen):
             model = app.model
             assert model is not None
 
-            # Check if file has been modified externally and reload if needed
-            if model.is_file_modified():
-                self.app.call_from_thread(
-                    lambda: log_info(results, "File modified externally, reloading...")
-                )
-                model.reload()
+            reload_if_modified(model, self.app.call_from_thread, results)
 
             updated = apply_pms(str(pms_path), model, save=False)
 
-            # Fetch WARNING/ERROR logs from use_case.pms and display them
-            log_file = get_log_file()
-            if log_file:
-                entries = get_log_entries(
-                    log_file,
-                    levels={"WARNING", "ERROR", "CRITICAL"},
-                    logger_filter="pykorf.use_case.pms",
-                )
-                if entries:
-                    self.app.call_from_thread(
-                        lambda: log_warning(results, "Warnings/Errors during PMS processing:")
-                    )
-                    for _ts, _name, level, message in entries:
-                        if level == "WARNING":
-                            self.app.call_from_thread(
-                                lambda m=message: log_warning(results, f"  ⚠ {m}")
-                            )
-                        else:
-                            self.app.call_from_thread(
-                                lambda m=message: log_error(results, f"  ✗ {m}")
-                            )
+            display_log_entries(
+                self.app.call_from_thread,
+                results,
+                get_log_file(),
+                "pykorf.use_case.pms",
+                "Warnings/Errors during PMS processing:",
+            )
 
             self.app.call_from_thread(
                 lambda: log_success(results, f"Applied PMS specs to {len(updated)} pipes."),
             )
-
             for name in updated:
                 self.app.call_from_thread(lambda n=name: log_info(results, f"  - {n}"))
+
+            app = self.app
+            self.app.call_from_thread(
+                app.show_notification, f"✅ Applied PMS to {len(updated)} pipes."
+            )
             self.app.call_from_thread(self.app.push_screen, SaveConfirmScreen(model))
         except Exception as exc:
             self.app.call_from_thread(lambda e=exc: log_error(results, f"Error: {e}"))
+        finally:
+            def _finish_pms():
+                self.query_one("#btn-apply", Button).disabled = False
+                self.query_one("#apply-loading").remove_class("active")
+            self.app.call_from_thread(_finish_pms)

@@ -64,6 +64,56 @@ def set_last_kdf_path(path: str | Path) -> None:
     save_config(config)
 
 
+def get_recent_files(max_count: int = 10) -> list[str]:
+    """Get the list of recently used KDF file paths.
+
+    Args:
+        max_count: Maximum number of recent files to return.
+
+    Returns:
+        List of recent file paths, most recent first.
+    """
+    config = load_config()
+    return config.get("recent_files", [])[:max_count]
+
+
+def add_recent_file(path: str | Path) -> None:
+    """Add a file path to the recent files list.
+
+    Moves existing entries to the front and caps the list at 10 entries.
+
+    Args:
+        path: The KDF file path to add.
+    """
+    config = load_config()
+    recent = config.get("recent_files", [])
+    path_str = str(path)
+    if path_str in recent:
+        recent.remove(path_str)
+    recent.insert(0, path_str)
+    config["recent_files"] = recent[:10]
+    save_config(config)
+
+
+def record_opened_file(path: str | Path) -> None:
+    """Record a KDF file as last opened and add to recent files in a single write.
+
+    Combines set_last_kdf_path and add_recent_file into one config read/write.
+
+    Args:
+        path: The KDF file path to record.
+    """
+    config = load_config()
+    path_str = str(path)
+    config["last_kdf_path"] = path_str
+    recent = config.get("recent_files", [])
+    if path_str in recent:
+        recent.remove(path_str)
+    recent.insert(0, path_str)
+    config["recent_files"] = recent[:10]
+    save_config(config)
+
+
 def get_last_interaction() -> dict[str, Any]:
     """Get the last interaction data.
 
@@ -146,6 +196,27 @@ def set_last_excel_export_path(path: str | Path) -> None:
     """
     config = load_config()
     config["last_excel_export_path"] = str(path)
+    save_config(config)
+
+
+def get_last_hmb_path() -> str | None:
+    """Get the last used HMB JSON file path.
+
+    Returns:
+        The last used HMB file path, or None if not set.
+    """
+    config = load_config()
+    return config.get("last_hmb_path")
+
+
+def set_last_hmb_path(path: str | Path) -> None:
+    """Save the last used HMB JSON file path.
+
+    Args:
+        path: The HMB file path to save.
+    """
+    config = load_config()
+    config["last_hmb_path"] = str(path)
     save_config(config)
 
 

@@ -8,6 +8,7 @@ from textual import on, work
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
+from textual.containers import VerticalScroll
 from textual.widgets import (
     Button,
     Checkbox,
@@ -57,6 +58,18 @@ class BulkCopyFluidsScreen(Screen):
     #pipe-list-content {
         height: auto;
         overflow-y: auto;
+    }
+    .pipe-select-btn {
+        width: 1fr;
+        height: 1;
+        margin: 0;
+        background: $surface;
+        border: none;
+        text-align: left;
+        color: $text;
+    }
+    .pipe-select-btn:hover {
+        background: $accent 30%;
     }
     #copy-form {
         padding: 0 1;
@@ -128,9 +141,10 @@ class BulkCopyFluidsScreen(Screen):
 
             with Vertical(id="right-panel"):
                 with Vertical(id="pipe-list-section"):
-                    yield Label("Available Pipes")
+                    yield Label("Available Pipes (click to select)")
                     yield Static("─" * 15)
-                    yield Static("Loading pipes...", id="pipe-list-content")
+                    with VerticalScroll(id="pipe-list-content"):
+                        yield Static("Loading pipes...")
 
                 with Vertical(classes="info-section"):
                     yield Label("How to Use")
@@ -158,7 +172,7 @@ class BulkCopyFluidsScreen(Screen):
         self.call_after_refresh(self._populate_pipe_list)
 
     def _populate_pipe_list(self) -> None:
-        """Load and display pipe names sorted by index."""
+        """Load and display pipe names as clickable buttons sorted by index."""
         from typing import cast
 
         from pykorf.use_case.tui.app import UseCaseTUI
@@ -170,7 +184,8 @@ class BulkCopyFluidsScreen(Screen):
         if model is None:
             return
 
-        pipe_list = self.query_one("#pipe-list-content", Static)
+        pipe_list = self.query_one("#pipe-list-content", VerticalScroll)
+        pipe_list.remove_children()
 
         # Get pipes sorted by index (skip index 0 which is template)
         pipes_dict = cast(dict[int, Any], model.pipes)
@@ -179,14 +194,17 @@ class BulkCopyFluidsScreen(Screen):
         )
 
         if not pipes:
-            pipe_list.update("No pipes found in model.")
+            pipe_list.mount(Static("No pipes found in model."))
             return
 
-        # Format pipe names only (no index), comma-separated for easy copy/paste
-        pipe_names = [pipe.name for _, pipe in pipes]
-        display_text = ", ".join(pipe_names)
+        for i, (_, pipe) in enumerate(pipes):
+            btn = Button(pipe.name, classes="pipe-select-btn", id=f"pipe-btn-{i}")
+            pipe_list.mount(btn)
 
-        pipe_list.update(display_text)
+    @on(Button.Pressed, ".pipe-select-btn")
+    def select_pipe(self, event: Button.Pressed) -> None:
+        """Fill the reference pipe input when a pipe button is clicked."""
+        self.query_one("#ref-pipe-input", Input).value = str(event.button.label)
 
     @on(Button.Pressed, "#btn-copy-log")
     def copy_log(self) -> None:

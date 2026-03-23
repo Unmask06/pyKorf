@@ -8,9 +8,9 @@ from textual import on, work
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import Button, Footer, Label, RichLog, Static, TextArea
+from textual.widgets import Button, Footer, Label, LoadingIndicator, RichLog, Static, TextArea
 
-from pykorf.use_case.preferences import get_last_batch_folder_path, set_last_batch_folder_path
+from pykorf.use_case.config import get_last_batch_folder_path, set_last_batch_folder_path
 from pykorf.use_case.tui.logging import log_error, log_info, log_success, log_warning
 
 
@@ -84,6 +84,14 @@ class GenerateReportScreen(Screen):
     #report-results RichLog {
         overflow-x: hidden;
     }
+    #report-loading {
+        display: none;
+        height: 1;
+        margin-left: 1;
+    }
+    #report-loading.active {
+        display: block;
+    }
     #right-panel-content {
         padding: 0 1;
     }
@@ -152,6 +160,7 @@ class GenerateReportScreen(Screen):
                     yield Button(
                         "Open Excel", variant="default", id="btn-open-excel", disabled=True
                     )
+                    yield LoadingIndicator(id="report-loading")
 
             with Vertical(id="right-panel"):
                 with Vertical(classes="info-section"):
@@ -213,13 +222,6 @@ class GenerateReportScreen(Screen):
         btn = self.query_one("#btn-open-excel", Button)
         btn.disabled = True
 
-    @on(TextArea.Changed, "#folder-path-input")
-    def on_folder_path_changed(self, event: TextArea.Changed) -> None:
-        """Save folder path to config when user changes it."""
-        folder_path = event.text_area.text.strip()
-        if folder_path:
-            set_last_batch_folder_path(folder_path)
-
     @on(Button.Pressed, "#btn-open-excel")
     def open_excel(self) -> None:
         """Open the generated Excel file."""
@@ -248,6 +250,8 @@ class GenerateReportScreen(Screen):
 
     @on(Button.Pressed, "#btn-run-generate")
     def generate(self) -> None:
+        self.query_one("#btn-run-generate", Button).disabled = True
+        self.query_one("#report-loading").add_class("active")
         if self.batch_mode:
             self._run_batch_generate()
         else:
@@ -261,17 +265,20 @@ class GenerateReportScreen(Screen):
         results = self.query_one("#report-results", RichLog)
         app = self.app
         assert isinstance(app, UseCaseTUI)
-
-        self.app.call_from_thread(results.clear)
-
-        folder_input = self.query_one("#folder-path-input", TextArea)
-        folder_path = folder_input.text.strip()
-
-        if not folder_path:
-            self.app.call_from_thread(lambda: log_error(results, "Please enter a folder path."))
-            return
-
         try:
+            self.app.call_from_thread(results.clear)
+
+            folder_input = self.query_one("#folder-path-input", TextArea)
+            folder_path = folder_input.text.strip()
+
+            if not folder_path:
+                self.app.call_from_thread(
+                    lambda: log_error(results, "Please enter a folder path.")
+                )
+                return
+
+            set_last_batch_folder_path(folder_path)
+
             self.app.call_from_thread(
                 lambda: log_info(results, f"Discovering KDF files in: {folder_path}")
             )
@@ -319,6 +326,11 @@ class GenerateReportScreen(Screen):
 
         except Exception as exc:
             self.app.call_from_thread(lambda e=exc: log_error(results, f"Error: {e}"))
+        finally:
+            def _finish_batch():
+                self.query_one("#btn-run-generate", Button).disabled = False
+                self.query_one("#report-loading").remove_class("active")
+            self.app.call_from_thread(_finish_batch)
 
     @work(thread=True)
     def _run_generate(self) -> None:
@@ -329,14 +341,13 @@ class GenerateReportScreen(Screen):
         app = self.app
         assert isinstance(app, UseCaseTUI)
         model = app.model
-
-        self.app.call_from_thread(results.clear)
-
-        if model is None:
-            self.app.call_from_thread(lambda: log_error(results, "No model loaded."))
-            return
-
         try:
+            self.app.call_from_thread(results.clear)
+
+            if model is None:
+                self.app.call_from_thread(lambda: log_error(results, "No model loaded."))
+                return
+
             kdf_path = Path(model._parser.path)
             xlsx_path = kdf_path.with_name(f"{kdf_path.stem}_report.xlsx")
 
@@ -367,3 +378,8 @@ class GenerateReportScreen(Screen):
 
         except Exception as exc:
             self.app.call_from_thread(lambda e=exc: log_error(results, f"Error: {e}"))
+        finally:
+            def _finish_report():
+                self.query_one("#btn-run-generate", Button).disabled = False
+                self.query_one("#report-loading").remove_class("active")
+            self.app.call_from_thread(_finish_report)

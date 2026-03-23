@@ -92,39 +92,19 @@ class SaveConfirmScreen(Screen):
                 if hasattr(handler, "flush"):
                     handler.flush()
 
-            # DEBUG: Check log file
             log_file = get_log_file()
-            print(f"DEBUG: log_file = {log_file}")
             if log_file:
                 from pathlib import Path
 
                 log_path = Path(log_file)
-                print(f"DEBUG: log_path exists = {log_path.exists()}")
-                if log_path.exists():
-                    print(f"DEBUG: log file size = {log_path.stat().st_size} bytes")
-                    # Read first few lines for debugging
-                    with open(log_path) as f:
-                        lines = f.readlines()[:5]
-                        for i, line in enumerate(lines):
-                            print(f"DEBUG: line {i}: {line.strip()[:80]}")
-                has_warnings = has_warnings_or_errors(log_file)
-                print(f"DEBUG: has_warnings = {has_warnings}")
-                if has_warnings:
-                    log_name = log_path.name
-                    print(f"DEBUG: Showing notification for {log_name}")
+                if has_warnings_or_errors(log_file):
                     app = cast("UseCaseTUI", self.app)
                     app.show_notification(
-                        f"\u26a0\ufe0f Warnings/errors detected. Please review {log_name} and update the KDF file accordingly."
+                        f"\u26a0\ufe0f Warnings/errors detected. Please review {log_path.name} and update the KDF file accordingly."
                     )
-            else:
-                print("DEBUG: log_file is None")
 
             self.set_timer(1.0, self._dismiss)
         except Exception as exc:
-            import traceback
-
-            print(f"DEBUG: Error saving: {exc}")
-            print(traceback.format_exc())
             status.update(f"Error saving: {exc}")
 
     @on(Button.Pressed, "#btn-discard")
