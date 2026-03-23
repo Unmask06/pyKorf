@@ -34,24 +34,23 @@ def show_splash() -> None:
     console.clear()
     console.print()
     console.print()
-    console.print()
-    console.print()
-    console.print()
-    console.print()
 
     pkg_version = get_version()
-    logo_text = Text()
-    logo_text.append("pyKorf", style="bold cyan")
-    logo_text.append(f" v{pkg_version}", style="dim")
+
+    content = Text(justify="center")
+    content.append("pyKorf", style="bold cyan")
+    content.append(f"  v{pkg_version}\n", style="bold white")
+    content.append("\n")
+    content.append("Enterprise Hydraulic Modeling Toolkit\n", style="cyan")
+    content.append("\n")
+    content.append("KDF editor  ·  PMS/HMB automation  ·  Excel reporting", style="dim")
 
     console.print(
         Panel(
-            Align.center(logo_text),
-            title="[bold blue]Welcome to[/bold blue]",
-            subtitle="[dim]Enterprise Hydraulic Modeling Toolkit[/dim]",
+            Align.center(content),
             border_style="cyan",
-            padding=(1, 2),
-            width=60,
+            padding=(1, 6),
+            width=70,
         ),
         justify="center",
     )
@@ -65,14 +64,8 @@ def show_loading(message: str, duration: float = 0.5) -> None:
         message: Message to display during loading
         duration: Duration in seconds
     """
-    spinner_frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
-
-    num_steps = int(duration / 0.05)
-    for i in range(num_steps):
-        frame = spinner_frames[i % len(spinner_frames)]
-        console.print(f"\r{frame} {message}", end="", style="dim")
-        sleep(0.05)
-    console.print()
+    with console.status(f"[dim]{message}[/dim]", spinner="dots"):
+        sleep(duration)
 
 
 def check_trial_expired() -> bool:
