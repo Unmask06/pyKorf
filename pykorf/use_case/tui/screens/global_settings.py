@@ -5,8 +5,18 @@ from __future__ import annotations
 from textual import on, work
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
+from textual.events import Click
 from textual.screen import Screen
-from textual.widgets import Button, Checkbox, Footer, Label, LoadingIndicator, RichLog, Static
+from textual.widgets import (
+    Button,
+    Checkbox,
+    Footer,
+    Input,
+    Label,
+    LoadingIndicator,
+    RichLog,
+    Static,
+)
 
 from pykorf.log import get_log_file
 from pykorf.use_case.tui.logging import (
@@ -85,6 +95,37 @@ class GlobalSettingsScreen(Screen):
         height: auto;
         min-height: 1;
     }
+    .setting-row-with-input {
+        height: 3;
+        margin-bottom: 0;
+        align: left middle;
+    }
+    .setting-row-with-input Checkbox {
+        width: auto;
+        margin-right: 1;
+    }
+    .setting-row-with-input Label {
+        margin-right: 1;
+        content-align: left middle;
+    }
+    .setting-row-with-input Input {
+        width: 12;
+        height: 3;
+        margin-left: 0;
+        margin-right: 1;
+        background: $surface;
+        color: $text;
+        border: tall $accent;
+    }
+    .setting-row-with-input Input:focus {
+        background: $primary-background;
+        color: $text;
+        border: tall $accent-lighten-2;
+    }
+    .setting-row-with-input Static {
+        margin-left: 0;
+        content-align: left middle;
+    }
     .setting-desc {
         height: auto;
         color: $text-muted;
@@ -133,11 +174,13 @@ class GlobalSettingsScreen(Screen):
     """
 
     def compose(self) -> ComposeResult:
-        from pykorf.use_case.config import get_global_settings_selected
+        from pykorf.use_case.config import get_global_settings_selected, get_last_interaction
         from pykorf.use_case.global_settings import get_global_settings
 
         settings = get_global_settings()
         saved_selections = get_global_settings_selected()
+        interaction_data = get_last_interaction()
+        saved_dp_margin = interaction_data.get("dp_margin") or "1.25"
 
         with Vertical(id="global-settings-container"), Horizontal(id="main-content"):
             with Vertical(id="left-panel"):
@@ -146,11 +189,26 @@ class GlobalSettingsScreen(Screen):
                     yield Static("─" * 30)
                     for setting in settings:
                         is_selected = setting.id in saved_selections
-                        yield Checkbox(
-                            setting.name,
-                            value=is_selected,
-                            id=f"checkbox-{setting.id}",
-                        )
+                        if setting.id == "dp_margin":
+                            with Horizontal(classes="setting-row-with-input", id="dp-margin-row"):
+                                yield Checkbox(
+                                    setting.name,
+                                    value=is_selected,
+                                    id=f"checkbox-{setting.id}",
+                                )
+                                yield Label("dP/dL Margin Factor:")
+                                yield Input(
+                                    value=saved_dp_margin,
+                                    placeholder="1.25",
+                                    id="dp-margin-input",
+                                )
+                                yield Static(" (e.g., 1.25 = 25% margin)")
+                        else:
+                            yield Checkbox(
+                                setting.name,
+                                value=is_selected,
+                                id=f"checkbox-{setting.id}",
+                            )
                         yield Static(
                             f"  {setting.description}",
                             id=f"desc-{setting.id}",
@@ -206,6 +264,30 @@ class GlobalSettingsScreen(Screen):
 
         set_global_settings_selected(self._get_selected_setting_ids())
 
+    @on(Input.Changed, "#dp-margin-input")
+    def dp_margin_changed(self, event: Input.Changed) -> None:
+        """Save dp_margin value when it changes."""
+        from pykorf.use_case.config import get_last_interaction, set_last_interaction
+
+        value = event.value.strip()
+        if value:
+            data = get_last_interaction()
+            data["dp_margin"] = value
+            set_last_interaction("config_menu", data)
+
+    def on_click(self, event: Click) -> None:
+        """Handle click on dp-margin-row to focus input."""
+        if event.widget and event.widget.id == "dp-margin-row":
+            self.query_one("#dp-margin-input", Input).focus()
+
+    def _get_dp_margin(self) -> float:
+        """Get the dp_margin value from input, defaulting to 1.25."""
+        try:
+            value = self.query_one("#dp-margin-input", Input).value.strip()
+            return float(value) if value else 1.25
+        except ValueError:
+            return 1.25
+
     @work(thread=True)
     def _run_apply(self) -> None:
         """Apply selected global settings in a background thread."""
@@ -249,16 +331,26 @@ class GlobalSettingsScreen(Screen):
                 return
 
             self.app.call_from_thread(lambda: self._log(results, "Applying Global Settings:"))
+            dp_margin = self._get_dp_margin()
             for setting_id in selected_ids:
                 setting = next(s for s in settings if s.id == setting_id)
-                self.app.call_from_thread(
-                    lambda s=setting: self._log(results, f"  - {s.name}: {s.description}")
-                )
+                if setting_id == "dp_margin":
+                    self.app.call_from_thread(
+                        lambda s=setting, m=dp_margin: self._log(
+                            results, f"  - {s.name}: DP_DES_FAC={m} ({int((m - 1) * 100)}% margin)"
+                        )
+                    )
+                else:
+                    self.app.call_from_thread(
+                        lambda s=setting: self._log(results, f"  - {s.name}: {s.description}")
+                    )
             self.app.call_from_thread(lambda: self._log(results, ""))
 
             reload_if_modified(model, self.app.call_from_thread, results)
 
-            apply_results = apply_global_settings(model, selected_ids, save=False)
+            apply_results = apply_global_settings(
+                model, selected_ids, save=False, dp_margin=dp_margin
+            )
             errors = apply_results.get("_errors", [])
             for error in errors:
                 self.app.call_from_thread(

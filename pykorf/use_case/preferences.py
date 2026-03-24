@@ -220,6 +220,33 @@ def set_last_hmb_path(path: str | Path) -> None:
     save_config(config)
 
 
+def get_pms_excel_path() -> str | None:
+    """Get the PMS Excel source file path.
+
+    Checks the top-level ``pms_excel_path`` key first, then falls back to
+    the path stored inside ``last_interaction.data`` for backward compatibility.
+
+    Returns:
+        The PMS Excel file path, or None if not set.
+    """
+    config = load_config()
+    path = config.get("pms_excel_path")
+    if not path:
+        path = config.get("last_interaction", {}).get("data", {}).get("pms_excel_path")
+    return path
+
+
+def set_pms_excel_path(path: str | Path) -> None:
+    """Save the PMS Excel source file path.
+
+    Args:
+        path: The PMS Excel file path to save.
+    """
+    config = load_config()
+    config["pms_excel_path"] = str(path)
+    save_config(config)
+
+
 def get_last_excel_import_path() -> str | None:
     """Get the last used Excel import path.
 

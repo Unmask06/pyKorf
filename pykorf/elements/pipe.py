@@ -9,6 +9,7 @@ from pykorf.utils import join_cases, split_cases
 
 if TYPE_CHECKING:
     from pykorf.fluid import Fluid
+    from pykorf.model import Model
 
 
 class Pipe(BaseElement):
@@ -579,3 +580,42 @@ def _is_num(v) -> bool:
         return True
     except (TypeError, ValueError):
         return False
+
+
+def propagate_pipe_rename(model: Model, old_name: str, new_name: str) -> list[str]:
+    """Update EQN references across all pipes when a pipe is renamed.
+
+    EQN records reference other pipes by name (e.g. ``"EQN",1,"L3",0,"",0,0,1,0``).
+    When a pipe is renamed, any pipe whose EQN contains the old name must be
+    updated to use the new name to keep the hydraulic equations consistent.
+
+    Args:
+        model: Loaded KDF model (in-memory).
+        old_name: The pipe name before renaming.
+        new_name: The pipe name after renaming.
+
+    Returns:
+        List of pipe names whose EQN record was updated.
+
+    Example::
+
+        from pykorf.elements.pipe import propagate_pipe_rename
+        updated = propagate_pipe_rename(model, "L3", "VCL17-806")
+        # ["L5", "L9"]  — pipes that referenced L3 in their EQN
+    """
+    updated: list[str] = []
+
+    for idx, pipe in model.pipes.items():
+        if idx == 0:
+            continue
+
+        eqn_rec = pipe.get_param(Pipe.EQN)
+        if eqn_rec is None or not eqn_rec.values:
+            continue
+
+        new_values = [new_name if v == old_name else v for v in eqn_rec.values]
+        if new_values != list(eqn_rec.values):
+            pipe.set_param(Pipe.EQN, new_values)
+            updated.append(pipe.name)
+
+    return updated

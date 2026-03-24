@@ -45,17 +45,18 @@ from pykorf.use_case.paths import ensure_data_dir
 if TYPE_CHECKING:
     from pykorf.model import Model
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("PMS")
 
 DEFAULT_MATERIAL = "Steel"
-DEFAULT_ROUGHNESS_MM = 0.046
+DEFAULT_ROUGHNESS_MICRON = 46
 
 # Type alias for the loaded PMS data structure:
-# {pms_code: {nominal_size_inches: {"schedule": str} | {"wall_mm": float}}}
-PmsData = dict[str, dict[float, dict[str, Any]]]
+# {pms_code: {nominal_size_inches: {"schedule": str} | {"wall_mm": float}, "roughness": float}}
+PmsData = dict[str, dict[float | str, Any]]
 
 # Type alias for OD data: {nominal_size_inches: od_mm}
 OdData = dict[float, float]
+
 
 # Type alias for PMS lookup result: (OD_mm, "ID" or "SCH", value, material)
 # Value is float for ID (inches), str for SCH (schedule number/name)
@@ -177,6 +178,8 @@ def convert_pms_excel(
         material = str(sheet_name).strip()
         specifications: dict[str, dict[str, Any]] = {}
         nominal_sizes: list[str] = []
+        nominal_col_indices: list[int] = []
+        roughness_col_idx: int | None = None
 
         for _idx, row in df.iterrows():
             first_cell = str(row.iloc[0]).strip() if pd.notna(row.iloc[0]) else ""
@@ -185,17 +188,32 @@ def convert_pms_excel(
 
             if first_cell.upper() == "PMS":
                 nominal_sizes = []
+                nominal_col_indices = []
+                roughness_col_idx = None
                 for col_idx in range(1, len(row)):
                     val = row.iloc[col_idx]
                     if pd.notna(val):
-                        nominal_sizes.append(str(val).strip())
+                        val_str = str(val).strip()
+                        if val_str.upper() == "ROUGHNESS":
+                            roughness_col_idx = col_idx
+                        else:
+                            nominal_sizes.append(val_str)
+                            nominal_col_indices.append(col_idx)
             else:
                 pms_code = first_cell
                 specs: dict[str, Any] = {}
 
-                for col_idx in range(1, len(nominal_sizes) + 1):
+                if roughness_col_idx is not None and roughness_col_idx < len(row):
+                    rough_val = row.iloc[roughness_col_idx]
+                    if pd.notna(rough_val):
+                        try:
+                            specs["roughness"] = float(rough_val)
+                        except (ValueError, TypeError):
+                            pass
+
+                for i, col_idx in enumerate(nominal_col_indices):
                     if col_idx < len(row):
-                        nominal_size = nominal_sizes[col_idx - 1]
+                        nominal_size = nominal_sizes[i]
                         val = row.iloc[col_idx]
                         if pd.notna(val):
                             specs[nominal_size] = str(val).strip()
@@ -220,8 +238,9 @@ def load_pms(source: Path | str, material: str | None = None) -> tuple[str, PmsD
 
     Returns:
         ``(material, pms_data, od_data)`` where *pms_data* maps
-        ``pms_code → {nominal_size_inches → {"schedule": str} | {"wall_mm": float}}``
-        and *od_data* maps ``nominal_size_inches → od_mm``.
+        ``pms_code → {nominal_size_inches → {"schedule": str} | {"wall_mm": float}, "roughness": float}``,
+        *od_data* maps ``nominal_size_inches → od_mm``.
+        Roughness is stored in pms_data[pms_code]["roughness"] in microns.
     """
     source = Path(source)
 
@@ -274,6 +293,10 @@ def load_pms(source: Path | str, material: str | None = None) -> tuple[str, PmsD
     for pms_code, size_specs in specifications.items():
         pms_data[pms_code] = {}
         for size_str, spec_info in size_specs.items():
+            if size_str == "roughness":
+                # Keep roughness in pms_data for direct lookup
+                pms_data[pms_code]["roughness"] = spec_info
+                continue
             try:
                 size = float(size_str)
             except (ValueError, TypeError):
@@ -288,14 +311,18 @@ def load_pms(source: Path | str, material: str | None = None) -> tuple[str, PmsD
     return selected_material, pms_data, od_data
 
 
-def load_all_pms(source: Path | str) -> dict[str, tuple[str, PmsData, OdData]]:
+def load_all_pms(
+    source: Path | str,
+) -> dict[str, tuple[str, PmsData, OdData]]:
     """Load PMS data for all materials from a JSON file.
 
     Args:
         source: Path to PMS ``.json`` or ``.xlsx`` file.
 
     Returns:
-        Dictionary mapping material names to ``(material, pms_data, od_data)`` tuples.
+        Dictionary mapping material names to
+        ``(material, pms_data, od_data)`` tuples.
+        Roughness is stored in pms_data[pms_code]["roughness"] in microns.
     """
     source = Path(source)
 
@@ -332,7 +359,7 @@ def lookup_pms_across_materials(
     all_materials: dict[str, tuple[str, PmsData, OdData]],
     pms_code: str,
     nominal_size: float,
-) -> tuple[str, dict[str, Any], float]:
+) -> tuple[str, dict[str, Any], float, PmsData]:
     """Look up PMS code across all materials.
 
     Args:
@@ -341,12 +368,12 @@ def lookup_pms_across_materials(
         nominal_size: Nominal pipe size in inches.
 
     Returns:
-        Tuple of (material, spec, od_mm).
+        Tuple of (material, spec, od_mm, pms_data).
 
     Raises:
         PmsLookupError: If PMS code not found in any material.
     """
-    for material_name, (material, pms_data, _) in all_materials.items():
+    for _mat_name, (material, pms_data, _od) in all_materials.items():
         if pms_code in pms_data:
             spec = lookup_schedule(pms_data, pms_code, nominal_size)
             # Get OD from the "OD" entry
@@ -355,9 +382,24 @@ def lookup_pms_across_materials(
                 od_mm = float(od_spec.get("value", 0))
             else:
                 od_mm = 0.0
-            return material, spec, od_mm
+            return material, spec, od_mm, pms_data
 
     raise PmsLookupError(f"PMS class not found: {pms_code}")
+
+
+def _lookup_roughness_for_pms(
+    pms_data: PmsData,
+    pms_code: str,
+    default_micron: float,
+) -> float:
+    """Return roughness in **metres** for *pms_code*.
+
+    Roughness is stored in pms_data[pms_code]["roughness"] in microns.
+    Falls back to default_micron if not found.
+    """
+    specs = pms_data.get(pms_code, {})
+    roughness = specs.get("roughness", default_micron)
+    return float(roughness) / 1_000_000.0  # µm → m
 
 
 def _calc_id(od_mm: float, wall_mm: float) -> float:
@@ -447,9 +489,11 @@ def lookup_schedule(
     if nominal_size in sizes:
         return sizes[nominal_size]
 
+    # Filter out non-size keys like 'roughness' when listing available sizes
+    available_sizes = [float(k) for k in sizes.keys() if k != "roughness"]
     raise PmsLookupError(
         f"NPS {nominal_size}\" not defined for PMS class '{pms_code}'. "
-        f"Available sizes: {sorted([float(k) for k in sizes.keys()])}"
+        f"Available sizes: {sorted(available_sizes)}"
     )
 
 
@@ -458,7 +502,7 @@ def apply_pms(
     model: Model,
     *,
     delimiter: str = ";",
-    roughness_mm: float = DEFAULT_ROUGHNESS_MM,
+    roughness_micron: float = DEFAULT_ROUGHNESS_MICRON,
     save: bool = True,
 ) -> list[str]:
     """Apply PMS specifications to all pipes in *model*.
@@ -473,7 +517,8 @@ def apply_pms(
         pms_source: Path to PMS JSON (or Excel) file.
         model: Loaded :class:`~pykorf.model.Model`.
         delimiter: NOTES field delimiter (default ``";"``).
-        roughness_mm: Default pipe roughness in mm.
+        roughness_micron: Default pipe roughness in microns (used when no
+            "Roughness" column is present in the PMS Excel).
         save: Whether to save the model after applying changes (default ``True``).
 
     Returns:
@@ -494,7 +539,6 @@ def apply_pms(
         ```
     """
     all_materials = load_all_pms(pms_source)
-    roughness_m = roughness_mm / 1000.0
     updated_pipes: list[str] = []
 
     for idx in range(1, model.num_pipes + 1):
@@ -520,7 +564,12 @@ def apply_pms(
             pms_code = line_num.pms_code
 
             # Look up PMS code across all materials
-            material, spec, od_mm = lookup_pms_across_materials(all_materials, pms_code, float(nps))
+            material, spec, od_mm, pms_data = lookup_pms_across_materials(
+                all_materials, pms_code, float(nps)
+            )
+
+            # Per-PMS roughness (µm from Excel) → m; falls back to roughness_micron parameter
+            pipe_roughness_m = _lookup_roughness_for_pms(pms_data, pms_code, roughness_micron)
 
             # Get the raw PMS value from the spec
             pms_value = spec.get("value") or spec.get("schedule", "")
@@ -535,7 +584,7 @@ def apply_pms(
                 id_meters = float(value) / 1000.0
                 params: dict[str, Any] = {
                     Pipe.MAT: material,
-                    Pipe.ROUGHNESS: [str(roughness_m), str(roughness_m), "m"],
+                    Pipe.ROUGHNESS: [str(pipe_roughness_m), str(pipe_roughness_m), "m"],
                     Pipe.SCH: "ID",
                     Pipe.ID: [str(id_meters), str(id_meters), "m"],
                 }
@@ -552,7 +601,7 @@ def apply_pms(
                 params: dict[str, Any] = {
                     Pipe.DIA: [nps_str, nps_str, "inch"],
                     Pipe.MAT: material,
-                    Pipe.ROUGHNESS: [str(roughness_m), str(roughness_m), "m"],
+                    Pipe.ROUGHNESS: [str(pipe_roughness_m), str(pipe_roughness_m), "m"],
                     Pipe.SCH: value,
                 }
                 logger.info(

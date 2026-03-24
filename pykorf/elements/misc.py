@@ -64,3 +64,17 @@ class MiscEquipment(BaseElement):
         rec = self.get_param(MiscEquipment.DP)
         if rec:
             self.set_param(MiscEquipment.DP, [str(value), *rec.values[1:]])
+
+    def summary(self, export: bool = False) -> dict:
+        if export:
+            dp_val, dp_unit = self.get_value_and_unit(MiscEquipment.DP, val_index=1, unit_index=-1)
+            display_name = f"{self.name} , {self.description}" if self.description else self.name
+            return {
+                "Equipment Name": display_name,
+                self.format_export_header("Pressure Drop", dp_unit): dp_val,
+            }
+
+        return {
+            "name": self.name,
+            "dp_kPag": self.dp_kPag,
+        }

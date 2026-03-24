@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from textual import on, work
@@ -12,6 +13,8 @@ from textual.widgets import Button, Footer, Label, LoadingIndicator, RichLog, St
 
 from pykorf.use_case.config import get_last_batch_folder_path, set_last_batch_folder_path
 from pykorf.use_case.tui.logging import log_error, log_info, log_success, log_warning
+
+_logger = logging.getLogger("GenerateReport")
 
 
 class GenerateReportScreen(Screen):
@@ -272,9 +275,7 @@ class GenerateReportScreen(Screen):
             folder_path = folder_input.text.strip()
 
             if not folder_path:
-                self.app.call_from_thread(
-                    lambda: log_error(results, "Please enter a folder path.")
-                )
+                self.app.call_from_thread(lambda: log_error(results, "Please enter a folder path."))
                 return
 
             set_last_batch_folder_path(folder_path)
@@ -327,9 +328,11 @@ class GenerateReportScreen(Screen):
         except Exception as exc:
             self.app.call_from_thread(lambda e=exc: log_error(results, f"Error: {e}"))
         finally:
+
             def _finish_batch():
                 self.query_one("#btn-run-generate", Button).disabled = False
                 self.query_one("#report-loading").remove_class("active")
+
             self.app.call_from_thread(_finish_batch)
 
     @work(thread=True)
@@ -359,6 +362,7 @@ class GenerateReportScreen(Screen):
             exporter = ResultExporter(model)
             exporter.export_to_excel(str(xlsx_path))
 
+            _logger.info("   Report complete | %s", xlsx_path.name)
             self.app.call_from_thread(
                 lambda: log_success(results, "\n✅ Report Generated Successfully!")
             )
@@ -377,9 +381,16 @@ class GenerateReportScreen(Screen):
             self.app.call_from_thread(app.show_notification, f"✅ Report saved: {xlsx_path.name}")
 
         except Exception as exc:
+            _logger.error(
+                "   Report failed | %s | %s",
+                xlsx_path.name if "xlsx_path" in dir() else "unknown",
+                exc,
+            )
             self.app.call_from_thread(lambda e=exc: log_error(results, f"Error: {e}"))
         finally:
+
             def _finish_report():
                 self.query_one("#btn-run-generate", Button).disabled = False
                 self.query_one("#report-loading").remove_class("active")
+
             self.app.call_from_thread(_finish_report)

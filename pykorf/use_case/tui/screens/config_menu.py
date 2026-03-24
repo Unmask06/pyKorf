@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import datetime
+from pathlib import Path
+
 from textual import on
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
@@ -51,6 +54,12 @@ class ConfigMenuScreen(Screen):
     #config-results RichLog {
         overflow-x: hidden;
     }
+    .file-info {
+        color: $success;
+        height: 1;
+        margin-top: 0;
+        margin-bottom: 1;
+    }
     #right-panel-content {
         padding: 0 1;
     }
@@ -74,6 +83,7 @@ class ConfigMenuScreen(Screen):
                     placeholder="Path to PMS Excel file",
                     id="pms-excel-input",
                 )
+                yield Label("", id="pms-file-info", classes="file-info")
                 yield Input(
                     placeholder="Output filename (default: pms.json)",
                     id="pms-output-input",
@@ -91,6 +101,7 @@ class ConfigMenuScreen(Screen):
                     placeholder="Path to Stream Data Excel file",
                     id="stream-excel-input",
                 )
+                yield Label("", id="stream-file-info", classes="file-info")
                 yield Input(
                     placeholder="Output filename (default: stream_data.json)",
                     id="stream-output-input",
@@ -152,15 +163,56 @@ class ConfigMenuScreen(Screen):
         pms_excel_path = data.get("pms_excel_path", "")
         if pms_excel_path:
             self.query_one("#pms-excel-input", Input).value = pms_excel_path
+            self._update_file_info(pms_excel_path, "pms-file-info")
         pms_output = data.get("pms_output", "")
         if pms_output:
             self.query_one("#pms-output-input", Input).value = pms_output
         stream_excel_path = data.get("stream_excel_path", "")
         if stream_excel_path:
             self.query_one("#stream-excel-input", Input).value = stream_excel_path
+            self._update_file_info(stream_excel_path, "stream-file-info")
         stream_output = data.get("stream_output", "")
         if stream_output:
             self.query_one("#stream-output-input", Input).value = stream_output
+
+    def _update_file_info(self, path_str: str, label_id: str) -> None:
+        """Update file info label with size and modified time."""
+        label = self.query_one(f"#{label_id}", Label)
+
+        if not path_str:
+            label.update("")
+            return
+
+        try:
+            path = Path(path_str.strip().strip('"').strip("'")).resolve()
+        except (OSError, ValueError):
+            label.update("")
+            return
+
+        if not path.exists() or not path.is_file():
+            label.update("")
+            return
+
+        try:
+            stat = path.stat()
+            size_mb = stat.st_size / (1024 * 1024)
+            modified = datetime.datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M")
+            if size_mb >= 1:
+                size_str = f"{size_mb:.1f} MB"
+            else:
+                size_str = f"{stat.st_size / 1024:.1f} KB"
+            label.update(f"✓  {size_str}  |  Modified: {modified}")
+        except OSError:
+            label.update("")
+
+    @on(Input.Changed, "#pms-excel-input")
+    def on_pms_input_changed(self, event: Input.Changed) -> None:
+        """Update PMS file info when input changes."""
+        self._update_file_info(event.value, "pms-file-info")
+
+    @on(Input.Changed, "#stream-excel-input")
+    def on_stream_input_changed(self, event: Input.Changed) -> None:
+        """Update Stream file info when input changes."""
 
     @on(Button.Pressed, "#btn-import-pms")
     def import_pms(self) -> None:
@@ -169,6 +221,7 @@ class ConfigMenuScreen(Screen):
             get_last_interaction,
             import_pms_from_excel,
             set_last_interaction,
+            set_pms_excel_path,
         )
 
         results = self.query_one("#config-results", RichLog)
@@ -188,6 +241,7 @@ class ConfigMenuScreen(Screen):
             path = import_pms_from_excel(excel_path, output_name)
             log_success(results, "Imported PMS from Excel:")
             log_info(results, f"  {path}")
+            set_pms_excel_path(excel_path)
             # Merge with existing data, only update non-empty values
             data = get_last_interaction()
             data["pms_excel_path"] = excel_path

@@ -45,7 +45,7 @@ from pykorf.parser import KdfParser
 
 _DEFAULT_TEMPLATE = Path(__file__).resolve().parent.parent / "library" / "New.kdf"
 
-_logger = logging.getLogger(__name__)
+_logger = logging.getLogger("ModelCore")
 
 
 class _ModelBase:
@@ -69,6 +69,7 @@ class _ModelBase:
         if path is None:
             path = _DEFAULT_TEMPLATE
         self._parser = KdfParser(path)
+        _logger.info("── Load Model ── %s", self._parser.path.name)
         self._parser.load()
         self._build_collections()
         from pykorf.log import set_log_file
@@ -76,6 +77,15 @@ class _ModelBase:
         log_file = self._parser.path.with_suffix(".log")
         set_log_file(log_file)
         self._loaded_mtime = self._parser.path.stat().st_mtime
+        _logger.info(
+            "   Model ready | pipes=%d  pumps=%d  feeds=%d  products=%d  valves=%d  compressors=%d",
+            self._parser.num_instances("PIPE"),
+            self._parser.num_instances("PUMP"),
+            self._parser.num_instances("FEED"),
+            self._parser.num_instances("PROD"),
+            self._parser.num_instances("VALVE"),
+            self._parser.num_instances("COMP"),
+        )
 
     @classmethod
     def load(cls, path: str | Path) -> _ModelBase:
@@ -284,6 +294,8 @@ class _ModelBase:
         Raises:
             ParseError: If the file cannot be read or parsed.
         """
+        _logger.info("── Reload Model ── %s", self._parser.path.name)
         self._parser.load()
         self._build_collections()
         self._loaded_mtime = self._parser.path.stat().st_mtime
+        _logger.info("   Reload complete | %s", self._parser.path.name)
