@@ -146,3 +146,19 @@ class TestHeatExchanger:
     def test_hx_dp(self):
         m = self._model()
         assert m.exchangers[1].dp_kPag > 0
+
+    def test_hx_summary(self):
+        m = self._model()
+        s = m.exchangers[1].summary()
+        assert "name" in s
+        assert "type" in s
+        assert "dp_kPag" in s
+        assert "inlet_pressure_kPag" in s
+        assert "outlet_pressure_kPag" in s
+
+    def test_hx_summary_export(self):
+        m = self._model()
+        s = m.exchangers[1].summary(export=True)
+        assert "Heat Exchanger Name" in s
+        assert "Type" in s
+        assert "Pressure Drop" in str(s)

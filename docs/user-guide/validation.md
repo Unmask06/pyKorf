@@ -109,6 +109,7 @@ export PYKORF_STRICT_VALIDATION=1
 | NUM mismatch | NUM record doesn't match count | Regenerate indices |
 | Outside layout bounds | XY coordinates invalid | Reposition element |
 | Overlapping elements | Two elements at same position | Move one element |
+| Missing title | No SYMBOL with TYPE='Text' and FSIZ=2 | Add title symbol in KORF GUI |
 
 ### Handling Validation Errors
 
@@ -136,7 +137,28 @@ if issues:
     logger.warning(f"Loaded model has {len(issues)} issues")
 ```
 
-### 2. Validate Before Saving
+### 2. Ensure Model Has Title
+
+All KDF models should have at least one title symbol for identification. A title is defined as a SYMBOL element with:
+- `TYPE` = "Text"
+- `FSIZ` = 2 (font size 2)
+
+To add a title:
+1. Open the model in KORF GUI
+2. Insert a SYMBOL element
+3. Set TYPE to "Text"
+4. Set FSIZ to 2
+5. Enter the title text in the TEXT field
+
+```python
+# Check for title
+issues = model.validate()
+title_issues = [i for i in issues if "title" in i.lower()]
+if title_issues:
+    print("Model is missing a title - add in KORF GUI")
+```
+
+### 3. Validate Before Saving
 
 ```python
 # Before saving critical models
@@ -148,7 +170,7 @@ if config.validation.check_connectivity_on_save:
 model.save()
 ```
 
-### 3. Log Validation Issues
+### 4. Log Validation Issues
 
 ```python
 from pykorf.log import get_logger

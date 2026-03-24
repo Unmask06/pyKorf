@@ -20,29 +20,72 @@ Focus on **Absolute Accuracy**, **Completeness**, and **System-Wide Integrity**.
 - All model operations are **in-memory**. Persistent only on `model.save()`.
 - Use `uv` for all package management, running tests (`uv run pytest`), and executing Python files (`uv run <script.py>`).
 
-## Shell & Environment (Windows PowerShell)
+## Shell & Environment (Git Bash on Windows)
 
-- **Environment:** The operating system is Windows (`win32`) and the terminal is strictly **PowerShell**.
-- **NO CMD Syntax:** Do **NOT** use `cmd.exe` flags like `/s`, `/a`, or `/p`. PowerShell interprets these as literal file paths (e.g., `C:\s`), causing `PathNotFound` errors.
-- **NO Bash Syntax:** Do **NOT** use Bash flags like `ls -la` or `rm -rf`.
-- **Command Chaining:** **NEVER** use `&&` or `||`. Use `;` to separate commands (e.g., `cd tests; uv run pytest`).
-- **PowerShell Idioms:**
-  - Use `Get-ChildItem` instead of `dir` or `ls` for clarity and to avoid alias confusion.
-  - Use `-Force` to show hidden files and `-Recurse` for recursive operations.
-  - Use `$env:VAR="value"; command` for setting environment variables.
+- **Shell:** Git Bash on Windows — use **Unix syntax** for all commands.
+- **Command Chaining:** Use `&&` to chain commands (e.g., `cd tests && uv run pytest`). Never use `;` for chaining.
+- **Paths:** Always use forward slashes. Use `/dev/null` not `NUL`.
+- **Python:** Managed via `uv`. Always prefix with `uv run` — never call `python` directly.
+- **Python version:** 3.13 exactly (enforced in `pyproject.toml` and `.python-version`).
 - **File Tools First:** Always prefer the provided AI tools (`read_file`, `write_file`, `replace`, `grep_search`) over shell commands like `cat`, `touch`, or `echo > file`.
+
+### Common Commands
+
+```bash
+uv run pytest                        # Run all tests
+uv run pytest tests/test_model_api.py  # Single file
+uv run ruff check pykorf tests       # Lint
+uv run mypy pykorf                   # Type check
+uv run pykorf                        # Launch TUI
+uv run pykorf --debug                # Launch TUI (debug)
+```
 
 ## Architecture & Service Map
 
 | Module            | Purpose                                                      |
 | :---------------- | :----------------------------------------------------------- |
 | `model`           | Facade & Services (CRUD, Connectivity, Layout, I/O, Summary) |
-| `parser`          | `KdfParser`, low-level record handling and latin-1 encoding  |
+| `parser`          | `KdfParser`, low-level record handling                       |
 | `elements`        | Typed wrappers + parameter constants (e.g., `Pipe.LEN`)      |
 | `use_case`        | Workflows (PMS, HMB), Global Settings, and Textual TUI       |
 | `cases`/`results` | Multi-case management and calculated output extraction       |
 | `automation`      | GUI automation via `KorfApp` (Win32 backend)                 |
 | `visualization`   | PyVis interactive network visualization                      |
+
+### Model Services (facade on `Model`)
+
+| Service              | Attribute                   | Responsibility                              |
+| :------------------- | :-------------------------- | :------------------------------------------ |
+| `ElementService`     | `model._element_service`    | CRUD for elements (add, update, delete, copy, move) |
+| `QueryService`       | `model.query`               | Filtering, parameter get/set                |
+| `ConnectivityService`| `model.connectivity`        | Connect/disconnect elements, validation     |
+| `LayoutService`      | `model.layout`              | XY positioning, visualization               |
+| `IOService`          | `model.io`                  | save, to_dataframes, to_excel, from_excel   |
+| `SummaryService`     | `model.summary_service`     | validate, repr, element accessors           |
+
+### Key Patterns
+
+- `Model(path)` parses `.kdf` via `KdfParser` into memory. Changes persist only on `model.io.save()`.
+- Element types (17 total) are in `pykorf/elements/`. `ELEMENT_REGISTRY` in `elements/__init__.py` maps KDF tokens (e.g. `\PIPE`) to classes.
+- Multi-case parameters are stored as semicolon-separated strings.
+- **Import from `config.py`** in TUI screens — never from sub-modules (`preferences.py`, `pms.py`, etc.) directly.
+
+### TUI Screen Flow
+
+```
+FilePickerScreen → MainMenuScreen → [operation screens]
+```
+
+Screens live in `pykorf/use_case/tui/screens/`: `apply_pms`, `apply_hmb`, `generate_report`, `bulk_copy`, `global_settings`, `import_export`, `config_menu`, `model_info`.
+
+### Test Patterns
+
+```python
+SAMPLES_DIR = Path(__file__).parent.parent / "pykorf" / "library"
+model = KorfModel.load(SAMPLES_DIR / "Pumpcases.kdf")
+```
+
+Markers: `unit`, `integration`, `slow`, `automation` (automation requires KORF GUI installed).
 
 ## Mandatory Skills (Load these first!)
 

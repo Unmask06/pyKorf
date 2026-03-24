@@ -734,6 +734,7 @@ class SummaryService:
             "num_valves": self.model._parser.num_instances("VALVE"),
             "num_orifices": self.model._parser.num_instances("FO"),
             "num_exchangers": self.model._parser.num_instances("HX"),
+            "num_misc": self.model._parser.num_instances("MISC"),
         }
 
     def __repr__(self) -> str:

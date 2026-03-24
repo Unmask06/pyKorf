@@ -116,3 +116,31 @@ class HeatExchanger(BaseElement):
             return int(self._scalar(self.NOZO, 0))
         except (TypeError, ValueError):
             return 0
+
+    def summary(self, export: bool = False) -> dict:
+        if export:
+            dp_val, dp_unit = self.get_value_and_unit(HeatExchanger.DP, val_index=1, unit_index=-1)
+            pin_val, pin_unit = self.get_value_and_unit(
+                HeatExchanger.PIN, val_index=1, unit_index=-1
+            )
+            pout_val, pout_unit = self.get_value_and_unit(
+                HeatExchanger.POUT, val_index=1, unit_index=-1
+            )
+
+            return {
+                "Heat Exchanger Name": self.name,
+                "Type": self.hx_type,
+                "Side": self.side,
+                self.format_export_header("Pressure Drop", dp_unit): dp_val,
+                self.format_export_header("Inlet Pressure", pin_unit): pin_val,
+                self.format_export_header("Outlet Pressure", pout_unit): pout_val,
+            }
+
+        return {
+            "name": self.name,
+            "type": self.hx_type,
+            "side": self.side,
+            "dp_kPag": self.dp_kPag,
+            "inlet_pressure_kPag": self.inlet_pressure_kPag,
+            "outlet_pressure_kPag": self.outlet_pressure_kPag,
+        }

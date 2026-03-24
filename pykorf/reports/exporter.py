@@ -34,7 +34,9 @@ class ResultExporter:
             "Pumps": self._extract_pumps,
             "Compressors": self._extract_compressors,
             "Valves": self._extract_valves,
+            "Heat Exchangers": self._extract_heat_exchangers,
             "Junctions": self._extract_junctions,
+            "Misc Equipment": self._extract_misc,
         }
 
         # Header parsing pattern
@@ -42,10 +44,12 @@ class ResultExporter:
 
         # Reuseable Styles
         self._styles = {
+            "model_title": Font(bold=True, size=18, color="003366"),
             "title": Font(bold=True, size=14, color="003366"),
             "header": Font(bold=True, size=10),
             "unit": Font(italic=True, color="555555", size=10),
             "data": Font(size=10),
+            "footer": Font(italic=True, size=9, color="888888"),
             "fill": PatternFill(start_color="F2F2F2", end_color="F2F2F2", fill_type="solid"),
             "thin_side": Side(style="thin"),
             "thick_side": Side(style="medium"),
@@ -89,20 +93,28 @@ class ResultExporter:
             worksheet.page_setup.orientation = worksheet.ORIENTATION_LANDSCAPE
             worksheet.page_setup.scale = 80
 
-        # Write Source File Name in A1
-        source_name = Path(self.model._parser.path).name
-        cell_a1 = worksheet.cell(row=1, column=1, value=f"Source File: {source_name}")
-        cell_a1.font = self._styles["header"]
+        # Row 1 — Model title from KORF SYMBOL (FSIZ=2)
+        model_title = self._get_model_title()
+        if model_title:
+            title_cell = worksheet.cell(row=1, column=1, value=model_title)
+            title_cell.font = self._styles["model_title"]
+            worksheet.row_dimensions[1].height = 28
 
-        # Case info
+        # Row 2 — Source file
+        source_name = Path(self.model._parser.path).name
+        worksheet.cell(row=2, column=1, value=f"Source File: {source_name}").font = self._styles[
+            "header"
+        ]
+
+        # Row 3 — Cases
         case_names = self.model.general.case_descriptions if hasattr(self.model, "general") else []
         if case_names:
             worksheet.cell(
-                row=2, column=1, value=f"Cases: {'; '.join(case_names)}"
+                row=3, column=1, value=f"Cases: {'; '.join(case_names)}"
             ).font = self._styles["header"]
 
-        current_row_left = 6 if template_path else 4
-        current_row_right = 6 if template_path else 4
+        current_row_left = 8 if template_path else 5
+        current_row_right = 8 if template_path else 5
 
         element_keys = elements if elements is not None else list(self._extractors.keys())
 
@@ -112,7 +124,7 @@ class ResultExporter:
 
             df = dfs_flat[element_type]
 
-            is_right_side = element_type in ("Feeds", "Products", "Junctions")
+            is_right_side = element_type in ("Feeds", "Products", "Junctions", "Misc Equipment")
             current_row = current_row_right if is_right_side else current_row_left
             start_col = 15 if is_right_side else 1
 
@@ -144,6 +156,18 @@ class ResultExporter:
                 current_row_right = current_row
             else:
                 current_row_left = current_row
+
+        # Footer — auto-generated notice
+        footer_row = max(current_row_left, current_row_right) + 1
+        footer_text = (
+            "This report is auto-generated from the KORF hydraulic model. "
+            "Do not edit this document directly — any changes must be made in the source model "
+            f"({source_name}) and the report regenerated."
+        )
+        footer_cell = worksheet.cell(row=footer_row, column=1, value=footer_text)
+        footer_cell.font = self._styles["footer"]
+        footer_cell.alignment = Alignment(wrap_text=False)
+        worksheet.row_dimensions[footer_row].height = 30
 
         workbook.save(output_path)
         return str(output_path)
@@ -277,6 +301,28 @@ class ResultExporter:
         for c in range(start_col + 1, start_col + num_cols):
             ws.column_dimensions[get_column_letter(c)].width = 15
 
+    def _get_model_title(self) -> str:
+        """Fetches the model title from the first SYMBOL with TYPE='Text' and FSIZ=2."""
+        from pykorf.elements import Symbol
+
+        symbol_indices = {
+            rec.index
+            for rec in self.model._parser.records
+            if rec.element_type == "SYMBOL" and rec.index is not None
+        }
+        for idx in symbol_indices:
+            type_rec = self.model._parser.get("SYMBOL", idx, Symbol.TYPE)
+            fsiz_rec = self.model._parser.get("SYMBOL", idx, Symbol.FSIZ)
+            text_rec = self.model._parser.get("SYMBOL", idx, Symbol.TEXT)
+            if not (type_rec and fsiz_rec and text_rec):
+                continue
+            try:
+                if type_rec.values[0] == "Text" and int(fsiz_rec.values[0]) == 2:
+                    return str(text_rec.values[0]) if text_rec.values else ""
+            except (ValueError, TypeError, IndexError):
+                continue
+        return ""
+
     # =========================================================
     # ELEMENT EXTRACTORS
     # =========================================================
@@ -301,6 +347,9 @@ class ResultExporter:
     def _extract_valves(self) -> list[dict]:
         return [valve.summary(export=True) for idx, valve in self.model.valves.items() if idx != 0]
 
+    def _extract_heat_exchangers(self) -> list[dict]:
+        return [hx.summary(export=True) for idx, hx in self.model.exchangers.items() if idx != 0]
+
     def _extract_junctions(self) -> list[dict]:
         """Extract junction data for export.
 
@@ -310,4 +359,9 @@ class ResultExporter:
             junction.summary(export=True)
             for idx, junction in self.model.junctions.items()
             if idx != 0 and not junction.name.startswith("J")
+        ]
+
+    def _extract_misc(self) -> list[dict]:
+        return [
+            misc.summary(export=True) for idx, misc in self.model.misc_equipment.items() if idx != 0
         ]
