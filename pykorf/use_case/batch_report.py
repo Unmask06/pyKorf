@@ -104,9 +104,11 @@ class BatchReportGenerator:
             etype: [] for etype in self.ELEMENT_TYPES
         }
 
-        logger.info("── Batch Report ── folder=%s  files=%d", str(self.folder), len(self.kdf_files))
+        logger.info("batch_report_start", folder=str(self.folder), files=len(self.kdf_files))
         for i, kdf_file in enumerate(self.kdf_files, 1):
-            logger.info("   [%d/%d] Processing %s", i, len(self.kdf_files), kdf_file.name)
+            logger.info(
+                "batch_report_processing", index=i, total=len(self.kdf_files), file=kdf_file.name
+            )
             try:
                 model = Model.load(str(kdf_file))
                 exporter = ResultExporter(model)
@@ -124,7 +126,9 @@ class BatchReportGenerator:
 
                     elements_by_type[sheet_name].extend(elements)
 
-                logger.info("   [%d/%d] Done %s", i, len(self.kdf_files), kdf_file.name)
+                logger.info(
+                    "batch_report_done", index=i, total=len(self.kdf_files), file=kdf_file.name
+                )
             except Exception as e:
                 error_msg = f"Error processing {kdf_file.name}: {e}"
                 self._errors.append(error_msg)
@@ -166,7 +170,9 @@ class BatchReportGenerator:
                 logger.info(
                     "batch_report_preserve",
                     path=str(output_path),
-                    preserved_sheets=[s for s in workbook.sheetnames if s not in self.ELEMENT_TYPES],
+                    preserved_sheets=[
+                        s for s in workbook.sheetnames if s not in self.ELEMENT_TYPES
+                    ],
                 )
 
             except (PermissionError, OSError) as e:
