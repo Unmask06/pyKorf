@@ -40,6 +40,12 @@ class FilePickerScreen(Screen):
     #file-picker-box > Label {
         margin-bottom: 1;
     }
+    #file-name-label {
+        color: $success;
+        text-style: bold;
+        height: auto;
+        margin-bottom: 0;
+    }
     #file-path-input {
         height: 6;
         margin-bottom: 1;
@@ -105,6 +111,7 @@ class FilePickerScreen(Screen):
         yield Header()
         with Vertical(id="file-picker-box"):
             yield Label("Drag & drop a KDF file onto this window  —  or enter the path manually:")
+            yield Label("", id="file-name-label")
             yield TextArea(
                 text="",
                 id="file-path-input",
@@ -159,9 +166,11 @@ class FilePickerScreen(Screen):
     def _validate_path(self, raw_path: str) -> None:
         info_label = self.query_one("#file-info", Label)
         error_label = self.query_one("#file-error", Label)
+        name_label = self.query_one("#file-name-label", Label)
 
         info_label.update("")
         error_label.update("")
+        name_label.update("")
 
         if not raw_path:
             return
@@ -191,8 +200,10 @@ class FilePickerScreen(Screen):
                 size_str = f"{size_mb:.1f} MB"
             else:
                 size_str = f"{stat.st_size / 1024:.1f} KB"
+            name_label.update(path.name)
             info_label.update(f"✓  {size_str}  |  Modified: {modified}")
         except OSError:
+            name_label.update(path.name)
             info_label.update("✓ Valid .kdf file")
 
     @on(Button.Pressed, "#btn-clear")
