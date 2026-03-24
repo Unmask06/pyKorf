@@ -36,7 +36,7 @@ from pykorf.use_case.line_number import (
 from pykorf.use_case.pms import apply_pms
 from pykorf.use_case.settings import SettingsReader, UseCaseSettings
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("BatchProcessor")
 
 
 @dataclass
@@ -116,14 +116,26 @@ class PipedataProcessor:
         """
         from pykorf.use_case.pms import load_all_pms
 
+        logger.info("── Load PMS ── %s", Path(source).name)
         self._pms_source = source
         self._all_materials = load_all_pms(source)
         # Keep _pms_data for backward compatibility if it was accessed externally, though all_materials is the source of truth
         if self._all_materials:
             first_mat = list(self._all_materials.keys())[0]
             self._pms_data = self._all_materials[first_mat]
+            total_specs = sum(
+                len(mat.get("specifications", mat))
+                for mat in self._all_materials.values()
+                if isinstance(mat, dict)
+            )
+            logger.info(
+                "   PMS loaded | materials=%d  specs=%d",
+                len(self._all_materials),
+                total_specs,
+            )
         else:
             self._pms_data = None
+            logger.warning("   PMS loaded but no material data found in %s", Path(source).name)
 
     def load_hmb(self, source: Path | str) -> None:
         """Load HMB data.
@@ -131,8 +143,11 @@ class PipedataProcessor:
         Args:
             source: Path to HMB Excel or JSON file
         """
+        logger.info("── Load HMB ── %s", Path(source).name)
         self._hmb_source = source
         self._hmb_data = load_hmb(source)
+        stream_count = len(self._hmb_data) if self._hmb_data else 0
+        logger.info("   HMB loaded | streams=%d", stream_count)
 
     def validate(self, notes_value: str) -> ValidationResult:
         """Validate line number format in NOTES field.
@@ -278,6 +293,7 @@ class PipedataProcessor:
                 save = True
 
         result = ProcessResult(file_path=file_path)
+        logger.info("── Process ── %s", file_path.name)
 
         # Apply PMS updates if loaded
         if self._pms_source is not None:
@@ -333,6 +349,12 @@ class PipedataProcessor:
             if str(out) != "<in-memory>":
                 model.save(out)
 
+        logger.info(
+            "   Process complete | pipes_processed=%d  updated=%d  errors=%d",
+            result.pipes_processed,
+            result.pipes_updated,
+            len(result.errors),
+        )
         return result
 
     def process_folder(

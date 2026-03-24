@@ -1,3 +1,4 @@
+import logging
 import re
 from typing import Any
 
@@ -9,6 +10,8 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 
 from pykorf import Model
 from pykorf.reports.unit_converter import UnitConverter
+
+_logger = logging.getLogger("ResultExporter")
 
 
 class ResultExporter:
@@ -77,7 +80,11 @@ class ResultExporter:
 
         from openpyxl import load_workbook
 
+        source_name = Path(self.model._parser.path).name
+        _logger.info("── Generate Report ── %s", source_name)
         dfs_flat = self.generate_dataframes()
+        non_empty = [k for k, v in dfs_flat.items() if not v.empty]
+        _logger.info("   Sections: %s", ", ".join(non_empty) if non_empty else "none")
 
         if template_path and Path(template_path).exists():
             workbook = load_workbook(template_path)
@@ -170,6 +177,7 @@ class ResultExporter:
         worksheet.row_dimensions[footer_row].height = 30
 
         workbook.save(output_path)
+        _logger.info("   Report saved | %s", output_path)
         return str(output_path)
 
     # =========================================================

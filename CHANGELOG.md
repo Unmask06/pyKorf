@@ -5,6 +5,30 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] - 2026-03-24
+
+### Added
+
+- **EQN propagation on pipe rename**: Renaming a pipe in Global Settings now updates all EQN references across the model; implemented via `propagate_pipe_rename()` in `pykorf/elements/pipe.py`
+- **Suction & Discharge Pressure in compressor summary**: `compressor.summary()` now includes `Suction Pressure` and `Discharge Pressure` fields
+- **Description in element summaries**: `Feed`, `Product`, and `Compressor` summaries now include the `NAME` param description (index 1) appended to the element name
+- **Misc Equipment summary with Pressure Drop**: `MiscEquipment.summary()` added; registered on the right panel in `ResultExporter`
+- **Excel report metadata rows**: Report now opens with model title (from SYMBOL FSIZ=2), source filename, and case names before the tables
+- **Excel report footer**: Auto-generated notice row appended after all tables reminding users not to edit directly
+- **Structured key-checkpoint logging**: All major operations (`Load Model`, `Reload Model`, `Save Model`, `Validate`, `Load PMS`, `Load HMB`, `Process`, `Batch Report`, `Generate Report`) now emit `──` checkpoint logs to the `.log` file with consistent named loggers (`ModelCore`, `IOService`, `SummaryService`, `BatchProcessor`, `ResultExporter`, `GenerateReport`)
+
+### Changed
+
+- **Excel report header row height**: Header rows now use height 30 with `wrap_text=True` and `vertical="center"` alignment
+- **AGENTS.md synced with CLAUDE.md**: Shell section corrected to Git Bash (Unix syntax, `&&` chaining); Architecture section expanded with Model Services table, TUI screen flow, and test patterns
+- **`UnitConverter` per-instance in `ResultExporter`**: Replaced shared global singleton with a per-instance `UnitConverter()` to ensure correct unit handling
+
+### Fixed
+
+- **Report generation not captured in log file**: `ResultExporter` and `GenerateReport` screen lacked file-logger hooks; both now use named loggers that route to the active `.log` file
+
+---
+
 ## [0.3.1] - 2026-03-23
 
 ### Added

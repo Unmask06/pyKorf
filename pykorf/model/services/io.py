@@ -8,7 +8,6 @@ operations while providing high-level I/O methods.
 from __future__ import annotations
 
 import json
-import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
@@ -22,7 +21,7 @@ from pykorf.types import ExportOptions
 if TYPE_CHECKING:
     from pykorf.model import Model
 
-logger = get_logger(__name__)
+logger = get_logger("IOService")
 
 # DataFrame column constants
 _HEADER_SHEET = "_HEADER"
@@ -86,13 +85,12 @@ class IOService:
         if check_layout:
             issues = self.model.check_layout()
             if issues:
-                _logger = logging.getLogger(__name__)
-                _logger.warning(
+                logger.warning(
                     f"Layout issues detected ({len(issues)}): "
                     "Run model.auto_layout() to fix, or save with check_layout=False to ignore"
                 )
                 for issue in issues[:5]:  # Log first 5
-                    _logger.warning(f"  - {issue}")
+                    logger.warning(f"  - {issue}")
 
         dest_path = Path(path) if path else self.model._parser.path
 
@@ -102,8 +100,9 @@ class IOService:
                 context=None,
             )
 
-        print(f"Saving model to {dest_path}...")
+        logger.info(f"── Save Model ── {dest_path.name}")
         self.model._parser.save(path)
+        logger.info(f"   Saved | {dest_path}")
 
     def save_as(
         self, path: str | Path, *, check_layout: bool = True, overwrite: bool = False
@@ -314,7 +313,9 @@ class IOService:
                 from pykorf.reports.exporter import ResultExporter
 
                 exporter = ResultExporter(self.model)
-                exporter.export_to_excel(str(path), template_path=str(template_path) if template_path else None)
+                exporter.export_to_excel(
+                    str(path), template_path=str(template_path) if template_path else None
+                )
 
                 logger.info("export_to_excel_success", path=str(path))
 

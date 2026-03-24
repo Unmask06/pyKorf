@@ -45,7 +45,7 @@ from pykorf.use_case.paths import ensure_data_dir
 if TYPE_CHECKING:
     from pykorf.model import Model
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("PMS")
 
 DEFAULT_MATERIAL = "Steel"
 DEFAULT_ROUGHNESS_MICRON = 46

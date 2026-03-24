@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 if TYPE_CHECKING:
     from pykorf.model import Model
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("GlobalSettings")
 
 
 @dataclass

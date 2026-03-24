@@ -35,7 +35,7 @@ from pykorf.use_case.line_number import parse_stream_from_notes
 if TYPE_CHECKING:
     from pykorf.model import Model
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("HMB")
 
 
 @dataclass

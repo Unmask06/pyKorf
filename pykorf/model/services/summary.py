@@ -6,6 +6,7 @@ summary information about model contents.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -14,6 +15,8 @@ from pykorf.exceptions import ElementNotFound
 
 if TYPE_CHECKING:
     from pykorf.model import Model
+
+_logger = logging.getLogger("SummaryService")
 
 # Minimum required params per element type (params that must exist at index 0)
 _REQUIRED_PARAMS: dict[str, tuple[str, ...]] = {
@@ -66,7 +69,15 @@ class SummaryService:
         Returns:
             List of validation issue descriptions.
         """
-        return self._validate()
+        _logger.info("── Validate ── %s", self.model._parser.path.name)
+        issues = self._validate()
+        if issues:
+            _logger.warning("   Validation: %d issue(s) found", len(issues))
+            for issue in issues:
+                _logger.warning("   · %s", issue)
+        else:
+            _logger.info("   Validation passed — no issues")
+        return issues
 
     def _validate(self) -> list[str]:
         """Internal validation implementation focusing on pipes and PMS."""
