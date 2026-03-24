@@ -119,16 +119,26 @@ echo.
 echo Creating launcher...
 copy /y pykorf.bat %DIST_DIR%\
 
+REM Create bat_version.txt from BAT_VERSION constant in pykorf.bat
+echo.
+echo Creating bat_version.txt...
+set "BAT_VER="
+for /f "tokens=2 delims==" %%v in ('findstr /r "^set .BAT_VERSION=" pykorf.bat') do set "BAT_VER=%%v"
+set "BAT_VER=%BAT_VER:"=%"
+set "BAT_VER=%BAT_VER: =%"
+echo %BAT_VER%> %DIST_DIR%\bat_version.txt
+echo BAT_VERSION: %BAT_VER%
+
 REM Step 4: Create distribution zip
 echo.
 echo Creating distribution package...
 uv run python -c "import zipfile, os; z = zipfile.ZipFile(r'%DIST_DIR%/pykorf-v%MAJOR%.zip', 'w', zipfile.ZIP_DEFLATED); base = r'%DIST_DIR%'; [z.write(os.path.join(root, f), os.path.relpath(os.path.join(root, f), base)) for root, dirs, files in os.walk(base) for f in files if not f.endswith('.zip')]; z.close()"
 
-REM Clean up unzipped content (keep only the zip)
+REM Clean up unzipped content
+REM Keep pykorf.bat and bat_version.txt — uploaded as separate release assets
 echo Cleaning up...
 for /d %%d in (%DIST_DIR%\*) do rd /s /q "%%d"
 del /q %DIST_DIR%\pyproject.toml 2>nul
-del /q %DIST_DIR%\pykorf.bat 2>nul
 del /q %DIST_DIR%\VERSION 2>nul
 
 echo.

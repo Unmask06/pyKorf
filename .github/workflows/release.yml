@@ -75,5 +75,8 @@ jobs:
             Subsequent updates are handled automatically from within the application.
           draft: false
           prerelease: false
-          files: dist/pykorf-v${{ steps.get_version.outputs.MAJOR }}.zip
+          files: |
+            dist/pykorf-v${{ steps.get_version.outputs.MAJOR }}.zip
+            dist/pykorf.bat
+            dist/bat_version.txt
           generate_release_notes: true
