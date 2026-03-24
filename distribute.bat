@@ -119,10 +119,10 @@ echo.
 echo Creating launcher...
 copy /y pykorf.bat %DIST_DIR%\
 
-REM Step 4: Create distribution zip with version suffix (trial)
+REM Step 4: Create distribution zip
 echo.
 echo Creating distribution package...
-uv run python -c "import zipfile, os; z = zipfile.ZipFile(r'%DIST_DIR%/%PACKAGE_NAME%-%VERSION%-trial.zip', 'w', zipfile.ZIP_DEFLATED); base = r'%DIST_DIR%'; [z.write(os.path.join(root, f), os.path.relpath(os.path.join(root, f), base)) for root, dirs, files in os.walk(base) for f in files if not f.endswith('.zip')]; z.close()"
+uv run python -c "import zipfile, os; z = zipfile.ZipFile(r'%DIST_DIR%/pykorf-v%MAJOR%.zip', 'w', zipfile.ZIP_DEFLATED); base = r'%DIST_DIR%'; [z.write(os.path.join(root, f), os.path.relpath(os.path.join(root, f), base)) for root, dirs, files in os.walk(base) for f in files if not f.endswith('.zip')]; z.close()"
 
 REM Clean up unzipped content (keep only the zip)
 echo Cleaning up...
@@ -133,7 +133,7 @@ del /q %DIST_DIR%\VERSION 2>nul
 
 echo.
 echo === Build Complete ===
-echo Distribution package: %DIST_DIR%\%PACKAGE_NAME%-%VERSION%-trial.zip
+echo Distribution package: %DIST_DIR%\pykorf-v%MAJOR%.zip
 echo.
 echo Contents:
 echo   - pykorf/          (obfuscated package)

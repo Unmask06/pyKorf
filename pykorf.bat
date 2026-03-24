@@ -2,17 +2,18 @@
 setlocal enabledelayedexpansion
 
 REM ============================================
-REM pyKorf Launcher - Enhanced Installation
+REM pyKorf Launcher
 REM ============================================
 
-REM Initialize environment
+REM --- Compatibility version for this launcher ---
+REM Bump BAT_MAJOR when a new launcher must be distributed to users.
+set "BAT_MAJOR=1"
+
 chcp 65001 > nul
-set "SCRIPT_DIR=%~dp0"
 set "APPDATA_DIR=%APPDATA%\pyKorf"
 for /f %%a in ('echo prompt $E^| cmd') do set "ESC=%%a"
 
 REM Color codes
-set "BLUE=%ESC%[94m"
 set "CYAN=%ESC%[96m"
 set "GREEN=%ESC%[92m"
 set "RED=%ESC%[91m"
@@ -22,8 +23,40 @@ set "WHITE=%ESC%[97m"
 set "RESET=%ESC%[0m"
 
 REM ============================================
-REM Header
+REM Fast path — already installed
 REM ============================================
+if not exist "%APPDATA_DIR%\.venv\Scripts\python.exe" goto :first_install
+
+set "INST_VER=0.0.0"
+if exist "%APPDATA_DIR%\VERSION" set /p INST_VER=<"%APPDATA_DIR%\VERSION"
+set "INST_MAJOR=0"
+for /f "tokens=1 delims=." %%a in ("!INST_VER!") do set "INST_MAJOR=%%a"
+
+if not "!INST_MAJOR!"=="!BAT_MAJOR!" (
+    cls
+    echo.
+    echo %RED%  ┌───────────────────────────────────────────────────────┐%RESET%
+    echo %RED%  │   Launcher Outdated                                   │%RESET%
+    echo %RED%  │                                                       │%RESET%
+    echo %RED%  │   This launcher is not compatible with the installed  │%RESET%
+    echo %RED%  │   version of pyKorf.                                  │%RESET%
+    echo %RED%  │                                                       │%RESET%
+    echo %RED%  │   Contact your administrator for the updated          │%RESET%
+    echo %RED%  │   pykorf.bat file.                                    │%RESET%
+    echo %RED%  └───────────────────────────────────────────────────────┘%RESET%
+    echo.
+    pause
+    exit /b 1
+)
+
+cd /d "%APPDATA_DIR%"
+".venv\Scripts\python.exe" -m pykorf
+exit /b
+
+REM ============================================
+REM First-time install
+REM ============================================
+:first_install
 cls
 echo.
 echo %CYAN%        ######  #     # #    # ####### ######  ####### %RESET%
@@ -37,7 +70,7 @@ echo.
 echo %GRAY%            Enterprise Hydraulic Modeling Toolkit%RESET%
 echo.
 echo %GRAY%  ────────────────────────────────────────────────────────%RESET%
-echo %WHITE%    Setup  ·  Steps 1 – 4  ·  Runs once, stays ready%RESET%
+echo %WHITE%    First-time setup  ·  Steps 1 – 4  ·  Runs once%RESET%
 echo %GRAY%  ────────────────────────────────────────────────────────%RESET%
 echo.
 
@@ -47,7 +80,6 @@ REM ============================================
 echo %CYAN%  ┌─ [1 / 4]  Python Runtime%RESET%
 echo %CYAN%  │%RESET%
 
-REM Try 'py' launcher first
 set "PYTHON_EXE="
 py -3.13 --version >nul 2>&1
 if %errorlevel% equ 0 (
@@ -55,7 +87,6 @@ if %errorlevel% equ 0 (
     goto :python_found
 )
 
-REM Try 'python' and check version
 for /f "tokens=2" %%v in ('python --version 2^>nul') do (
     set "VER=%%v"
     if "!VER:~0,4!"=="3.13" (
@@ -125,73 +156,55 @@ echo %CYAN%  └─%RESET%
 echo.
 
 REM ============================================
-REM STEP 3: Application Setup
+REM STEP 3: Download pyKorf from GitHub
 REM ============================================
-echo %CYAN%  ┌─ [3 / 4]  Application Files%RESET%
+echo %CYAN%  ┌─ [3 / 4]  Download pyKorf%RESET%
 echo %CYAN%  │%RESET%
 
-REM If source files were already cleaned up from a previous run, skip syncing
-if not exist "%SCRIPT_DIR%pykorf" (
-    if exist "%APPDATA_DIR%\pykorf" (
-        echo %CYAN%  │%RESET%  %GREEN%✓  Already installed%RESET%
-        echo %CYAN%  └─%RESET%
-        echo.
-        goto :env_setup
-    )
+set "ZIP_URL=https://github.com/Unmask06/pykorf/releases/latest/download/pykorf-v!BAT_MAJOR!.zip"
+set "ZIP_PATH=%TEMP%\pykorf.zip"
+
+echo %CYAN%  │%RESET%  %GRAY%  Downloading from GitHub...%RESET%
+curl -L --fail --progress-bar -o "!ZIP_PATH!" "!ZIP_URL!"
+if %errorlevel% neq 0 (
+    echo %CYAN%  │%RESET%
+    echo %CYAN%  └─%RESET%  %RED%✗  Download failed%RESET%
+    echo.
+    echo %YELLOW%  ┌───────────────────────────────────────────────────────┐%RESET%
+    echo %YELLOW%  │   If pyKorf has released a new major version,         │%RESET%
+    echo %YELLOW%  │   contact your administrator for the updated           │%RESET%
+    echo %YELLOW%  │   pykorf.bat file.                                    │%RESET%
+    echo %YELLOW%  └───────────────────────────────────────────────────────┘%RESET%
+    echo.
+    pause
+    exit /b 1
 )
 
-set "CURRENT_VERSION=unknown"
-if exist "%SCRIPT_DIR%VERSION" set /p CURRENT_VERSION=<"%SCRIPT_DIR%VERSION"
-
-set "INSTALLED_VERSION=none"
-if exist "%APPDATA_DIR%\VERSION" set /p INSTALLED_VERSION=<"%APPDATA_DIR%\VERSION"
-
-if "!CURRENT_VERSION!"=="!INSTALLED_VERSION!" (
-    if exist "%APPDATA_DIR%\pykorf" (
-        echo %CYAN%  │%RESET%  %GREEN%✓  v!CURRENT_VERSION! — up to date%RESET%
-        echo %CYAN%  └─%RESET%
-        echo.
-        if exist "%SCRIPT_DIR%pykorf" rd /s /q "%SCRIPT_DIR%pykorf"
-        if exist "%SCRIPT_DIR%pyproject.toml" del /q "%SCRIPT_DIR%pyproject.toml"
-        if exist "%SCRIPT_DIR%VERSION" del /q "%SCRIPT_DIR%VERSION"
-        goto :env_setup
-    )
-)
-
-echo %CYAN%  │%RESET%  %GRAY%  Installing v!CURRENT_VERSION!...%RESET%
-
-REM Ensure directory exists
+echo %CYAN%  │%RESET%  %GRAY%  Extracting...%RESET%
 if not exist "%APPDATA_DIR%" mkdir "%APPDATA_DIR%"
-
-REM Robust sync using robocopy
-robocopy "%SCRIPT_DIR%pykorf" "%APPDATA_DIR%\pykorf" /E /PURGE /R:3 /W:5 /NFL /NDL /NJH /NJS /nc /ns /np >nul
-set "SYNC_OK=0"
-if !ERRORLEVEL! lss 8 set "SYNC_OK=1"
-copy /y "%SCRIPT_DIR%pyproject.toml" "%APPDATA_DIR%\" >nul
-copy /y "%SCRIPT_DIR%VERSION" "%APPDATA_DIR%\" >nul
-
-echo %CYAN%  │%RESET%  %GREEN%✓  Installed — v!CURRENT_VERSION!%RESET%
-
-REM Remove source files from the launch folder — only pykorf.bat is needed from now on
-if "!SYNC_OK!"=="1" (
-    if exist "%SCRIPT_DIR%pykorf" rd /s /q "%SCRIPT_DIR%pykorf"
-    if exist "%SCRIPT_DIR%pyproject.toml" del /q "%SCRIPT_DIR%pyproject.toml"
-    if exist "%SCRIPT_DIR%VERSION" del /q "%SCRIPT_DIR%VERSION"
-    echo %CYAN%  │%RESET%  %GRAY%  Cleaned up — only pykorf.bat needed from now on%RESET%
+tar -xf "!ZIP_PATH!" -C "%APPDATA_DIR%\"
+if %errorlevel% neq 0 (
+    echo %CYAN%  │%RESET%
+    echo %CYAN%  └─%RESET%  %RED%✗  Extraction failed%RESET%
+    echo.
+    pause
+    exit /b 1
 )
+del "!ZIP_PATH!" >nul 2>&1
+
+echo %CYAN%  │%RESET%  %GREEN%✓  Downloaded and extracted%RESET%
 echo %CYAN%  └─%RESET%
 echo.
 
+REM ============================================
+REM STEP 4: Virtual Environment & Dependencies
+REM ============================================
 :env_setup
-REM ============================================
-REM STEP 4: Environment & Dependencies
-REM ============================================
 echo %CYAN%  ┌─ [4 / 4]  Virtual Environment%RESET%
 echo %CYAN%  │%RESET%
 
 cd /d "%APPDATA_DIR%"
 
-REM Create venv if missing
 if not exist ".venv\Scripts\python.exe" (
     echo %CYAN%  │%RESET%  %GRAY%  Creating environment...%RESET%
     if "!USE_UV!"=="1" (
@@ -208,8 +221,7 @@ if not exist ".venv\Scripts\python.exe" (
     )
 )
 
-REM Install/Update dependencies
-echo %CYAN%  │%RESET%  %GRAY%  Updating dependencies...%RESET%
+echo %CYAN%  │%RESET%  %GRAY%  Installing dependencies...%RESET%
 if "!USE_UV!"=="1" (
     !PYTHON_EXE! -m uv pip install --python ".venv\Scripts\python.exe" -e . --quiet
 ) else (
