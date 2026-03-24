@@ -98,7 +98,9 @@ class PipedataProcessor:
 
         self._pms_source: Path | str | None = None
         self._hmb_source: Path | str | None = None
-        self._pms_data: tuple[str, dict, dict] | None = None  # (material, pms_data, od_data)
+        self._pms_data: tuple[str, dict, dict] | None = (
+            None  # (material, pms_data, od_data) - roughness is in pms_data[pms_code]["roughness"]
+        )
         self._hmb_data: dict[str, dict[str, Any]] | None = None
 
     @property
@@ -199,7 +201,7 @@ class PipedataProcessor:
 
             logger.info(f"  Looking up PMS: class={pms_code}, NPS={nps}")
             try:
-                material, spec, od_mm = lookup_pms_across_materials(
+                material, spec, od_mm, _pms_data = lookup_pms_across_materials(
                     self._all_materials, pms_code, float(nps)
                 )
 

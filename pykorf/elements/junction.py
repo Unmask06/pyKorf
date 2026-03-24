@@ -39,3 +39,16 @@ class Junction(BaseElement):
             return float(self._scalar(Junction.PRES, 1))
         except (TypeError, ValueError):
             return 0.0
+
+    def summary(self, export: bool = False) -> dict:
+        if export:
+            pres_val, pres_unit = self.get_value_and_unit(Junction.PRES, val_index=1, unit_index=-1)
+            return {
+                "Junction Name": self.name,
+                self.format_export_header("Pressure", pres_unit): pres_val,
+            }
+
+        return {
+            "name": self.name,
+            "pressure_kPag": self.pressure_kPag,
+        }

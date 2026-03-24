@@ -9,7 +9,7 @@ REM Initialize environment
 chcp 65001 > nul
 set "SCRIPT_DIR=%~dp0"
 set "APPDATA_DIR=%APPDATA%\pyKorf"
-set "ESC="
+for /f %%a in ('echo prompt $E^| cmd') do set "ESC=%%a"
 
 REM Color codes
 set "BLUE=%ESC%[94m"

@@ -8,7 +8,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.utils.dataframe import dataframe_to_rows
 
 from pykorf import Model
-from pykorf.reports.unit_converter import converter
+from pykorf.reports.unit_converter import UnitConverter
 
 
 class ResultExporter:
@@ -22,6 +22,8 @@ class ResultExporter:
     def __init__(self, model: Model):
         self.model = model
 
+        self._converter = UnitConverter()
+
         # ---------------------------------------------------------
         # REGISTRY: Add new element extractors here in the future
         # ---------------------------------------------------------
@@ -32,6 +34,7 @@ class ResultExporter:
             "Pumps": self._extract_pumps,
             "Compressors": self._extract_compressors,
             "Valves": self._extract_valves,
+            "Junctions": self._extract_junctions,
         }
 
         # Header parsing pattern
@@ -54,7 +57,7 @@ class ResultExporter:
         for sheet_name, extractor_func in self._extractors.items():
             data = extractor_func()
             if data:  # Only add the sheet if there are actual elements
-                converted_data = converter.convert_summary(data)
+                converted_data = self._converter.convert_summary(data)
                 dfs[sheet_name] = pd.DataFrame(converted_data)
         return dfs
 
@@ -109,7 +112,7 @@ class ResultExporter:
 
             df = dfs_flat[element_type]
 
-            is_right_side = element_type in ("Feeds", "Products")
+            is_right_side = element_type in ("Feeds", "Products", "Junctions")
             current_row = current_row_right if is_right_side else current_row_left
             start_col = 15 if is_right_side else 1
 
@@ -178,13 +181,14 @@ class ResultExporter:
         descriptions, units = self._parse_headers(df.columns)
 
         # Write Two-Level Header
+        ws.row_dimensions[row].height = 30
         for c_idx, (desc, unit) in enumerate(
             zip(descriptions, units, strict=True), start=start_col
         ):
             cell_desc = ws.cell(row=row, column=c_idx, value=desc)
             cell_desc.font = self._styles["header"]
             cell_desc.fill = self._styles["fill"]
-            cell_desc.alignment = Alignment(horizontal="center")
+            cell_desc.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
 
             cell_unit = ws.cell(row=row + 1, column=c_idx, value=unit)
             cell_unit.font = self._styles["unit"]
@@ -214,12 +218,13 @@ class ResultExporter:
         num_cols = 2 + len(pump_names)
 
         # Top Header Row (Parameter, Unit, Pump Names...)
+        ws.row_dimensions[row].height = 30
         headers = ["Parameter", "Unit", *pump_names]
         for c_idx, val in enumerate(headers, start=start_col):
             cell = ws.cell(row=row, column=c_idx, value=val)
             cell.font = self._styles["header"]
             cell.fill = self._styles["fill"]
-            cell.alignment = Alignment(horizontal="center")
+            cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
 
         # Data Rows (One row per parameter)
         current_row = row + 1
@@ -295,3 +300,14 @@ class ResultExporter:
 
     def _extract_valves(self) -> list[dict]:
         return [valve.summary(export=True) for idx, valve in self.model.valves.items() if idx != 0]
+
+    def _extract_junctions(self) -> list[dict]:
+        """Extract junction data for export.
+
+        Only includes junctions whose names do NOT start with "J".
+        """
+        return [
+            junction.summary(export=True)
+            for idx, junction in self.model.junctions.items()
+            if idx != 0 and not junction.name.startswith("J")
+        ]

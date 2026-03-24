@@ -117,8 +117,9 @@ class Feed(BaseElement):
     def summary(self, export: bool = False) -> dict:
         if export:
             pres_val, pres_unit = self.get_value_and_unit(Feed.POUT, val_index=1, unit_index=-1)
+            display_name = f"{self.name} , {self.description}" if self.description else self.name
             return {
-                "Feed Name": self.name,
+                "Feed Name": display_name,
                 "Type": self.type,
                 self.format_export_header("Outlet Pressure", pres_unit): pres_val,
             }

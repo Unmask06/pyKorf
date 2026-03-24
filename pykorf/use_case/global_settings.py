@@ -53,7 +53,7 @@ class GlobalSetting:
     id: str
     name: str
     description: str
-    apply_func: Callable[[Model], list[str]]
+    apply_func: Callable[..., list[str]]
 
 
 def apply_dummy_pipe_settings(model: Model) -> list[str]:
@@ -140,14 +140,14 @@ def apply_dummy_pipe_settings(model: Model) -> list[str]:
     return affected_names
 
 
-def apply_dp_margin_settings(model: Model) -> list[str]:
-    """Apply 25% margin to pressure drop design factor for all pipes.
+def apply_dp_margin_settings(model: Model, margin: float = 1.25) -> list[str]:
+    """Apply margin to pressure drop design factor for all pipes.
 
-    Sets DP_DES_FAC = 1.25 on all pipes, providing a 25% margin
-    on the pressure drop calculations.
+    Sets DP_DES_FAC on all pipes, providing a margin on pressure drop calculations.
 
     Args:
         model: Loaded KDF model.
+        margin: Design margin factor (default 1.25 for 25% margin).
 
     Returns:
         List of pipe names that were modified.
@@ -163,13 +163,15 @@ def apply_dp_margin_settings(model: Model) -> list[str]:
         pipe_name = pipe.name
 
         params: dict[str, Any] = {
-            Pipe.DP_DES_FAC: 1.25,
+            Pipe.DP_DES_FAC: margin,
         }
 
         try:
             model.set_params(pipe_name, params)
             affected_pipes.append(pipe_name)
-            logger.info("Pipe %s: DP_DES_FAC=1.25 (25%% margin)", pipe_name)
+            logger.info(
+                "Pipe %s: DP_DES_FAC=%s (%s%% margin)", pipe_name, margin, int((margin - 1) * 100)
+            )
         except ParameterError as e:
             error_msg = f"Validation error on {pipe_name}: {e}"
             logger.error(error_msg)
@@ -383,8 +385,8 @@ _GLOBAL_SETTINGS: dict[str, GlobalSetting] = {
     ),
     "dp_margin": GlobalSetting(
         id="dp_margin",
-        name="25% margin in dP/dL",
-        description="Set DP_DES_FAC=1.25 on all pipes for 25% pressure drop margin",
+        name="Margin in dP/dL",
+        description="Set DP_DES_FAC on all pipes for pressure drop design margin",
         apply_func=apply_dp_margin_settings,
     ),
     "rename_line": GlobalSetting(
@@ -428,6 +430,7 @@ def apply_global_settings(
     setting_ids: list[str],
     *,
     save: bool = True,
+    dp_margin: float = 1.25,
 ) -> dict[str, list[str]]:
     """Apply selected global settings to a model.
 
@@ -435,6 +438,7 @@ def apply_global_settings(
         model: Loaded KDF model.
         setting_ids: List of setting IDs to apply (e.g., ["dummy_pipe", "dp_margin"]).
         save: Whether to save the model after applying changes (default True).
+        dp_margin: Design margin factor for dp_margin setting (default 1.25).
 
     Returns:
         Dictionary mapping setting IDs to lists of affected pipe names.
@@ -460,7 +464,11 @@ def apply_global_settings(
             continue
 
         try:
-            affected = setting.apply_func(model)
+            # Pass dp_margin parameter to the dp_margin setting
+            if setting_id == "dp_margin":
+                affected = setting.apply_func(model, margin=dp_margin)
+            else:
+                affected = setting.apply_func(model)
             results[setting_id] = affected
             logger.info(
                 "Applied setting '%s' to %d pipes",

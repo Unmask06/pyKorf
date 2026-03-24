@@ -189,6 +189,10 @@ class SummaryService:
         property_issues = self._verify_pipe_properties()
         issues.extend(property_issues)
 
+        # 5. Title Symbol Verification - check model has at least one title
+        title_issues = self._check_title_symbol()
+        issues.extend(title_issues)
+
         return issues
 
     def _check_num_counts(self, issues: list[str]) -> None:
@@ -283,6 +287,47 @@ class SummaryService:
             notes_rec = pipe.get_param("NOTES")
             if notes_rec is None or not notes_rec.values or not notes_rec.values[0]:
                 issues.append(f"PIPE {pipe.name} (idx {pipe.index}): missing line number in NOTES")
+
+    def _check_title_symbol(self) -> list[str]:
+        """Check that model has at least one title symbol.
+
+        A title symbol is identified by:
+        - SYMBOL element with TYPE="Text" and FSIZ=2
+
+        Returns:
+            List of validation issues (empty if title found).
+        """
+        from pykorf.elements import Symbol
+
+        issues: list[str] = []
+        has_title = False
+
+        # Group records by index to check each symbol
+        symbol_indices = {
+            rec.index
+            for rec in self.model._parser.records
+            if rec.element_type == "SYMBOL" and rec.index is not None
+        }
+
+        for symbol_idx in symbol_indices:
+            type_rec = self.model._parser.get("SYMBOL", symbol_idx, Symbol.TYPE)
+            fsiz_rec = self.model._parser.get("SYMBOL", symbol_idx, Symbol.FSIZ)
+
+            if type_rec and type_rec.values and fsiz_rec and fsiz_rec.values:
+                type_val = type_rec.values[0]
+                try:
+                    fsiz_val = int(fsiz_rec.values[0])
+                except (ValueError, TypeError):
+                    fsiz_val = None
+
+                if type_val == "Text" and fsiz_val == 2:
+                    has_title = True
+                    break
+
+        if not has_title:
+            issues.append("Add Title (Text with size 2)")
+
+        return issues
 
     def _check_pipe_references(self, issues: list[str]) -> None:
         """Check pipe references in CON/NOZL/NOZ fields."""

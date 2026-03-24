@@ -161,13 +161,40 @@ class TestPmsFunctions:
     """Tests for the simplified PMS function API."""
 
     def test_load_pms(self):
-        """load_pms() returns (material, pms_data, od_data)."""
+        """load_pms() returns (material, pms_data, od_data). Roughness is in pms_data[pms_code]["roughness"]."""
         material, pms_data, od_data = load_pms(PMS_JSON, "Steel")
         assert material == "Steel"
         assert "BC1A1B-FDA" in pms_data
         # Check that 6.0 inch has schedule "STD" or value "STD"
         spec = pms_data["BC1A1B-FDA"][6.0]
         assert spec.get("value") == "SCH STD" or spec.get("schedule") == "STD"
+
+    def test_load_pms_roughness_in_pms_data(self):
+        """Roughness is stored in pms_data[pms_code][\"roughness\"] as float."""
+        import json
+        import tempfile
+        from pathlib import Path
+
+        # Create test JSON with roughness
+        test_data = {
+            "Steel": {
+                "specifications": {"TEST-PMS": {"roughness": 46.5, "6": "SCH 80", "8": "SCH 40"}}
+            }
+        }
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(test_data, f)
+            temp_path = Path(f.name)
+
+        try:
+            material, pms_data, od_data = load_pms(temp_path, "Steel")
+            # Roughness should be accessible directly in pms_data
+            assert "TEST-PMS" in pms_data
+            assert pms_data["TEST-PMS"]["roughness"] == 46.5
+            # Schedule data should also be present
+            assert pms_data["TEST-PMS"][6.0]["value"] == "SCH 80"
+        finally:
+            temp_path.unlink()
 
     def test_lookup_schedule_exact(self):
         """lookup_schedule() finds exact size matches."""

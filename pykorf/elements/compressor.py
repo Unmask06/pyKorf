@@ -19,8 +19,8 @@ class Compressor(BaseElement):
     # ------------------------------------------------------------------
     ELEV = "ELEV"  # [elevation, unit]
     DP = "DP"  # [dp_str, dp_num, unit]
-    PIN = "PIN"  # [pres_in_str, pres_in_num, unit]
-    POUT = "POUT"  # [pres_out_str, pres_out_num, unit]
+    PIN = "PIN"  # [pres_in_spec, pres_in_calc, unit]
+    POUT = "POUT"  # [pres_out_spec, pres_out_calc, unit]
     PRAT = "PRAT"  # [prat_str, prat_num, prat3]
     QACT = "QACT"  # [flow_str, flow_num, unit]
     TYPE = "TYPE"  # ["comp_type"]
@@ -124,11 +124,18 @@ class Compressor(BaseElement):
                 Compressor.QACT, val_index=0, unit_index=-1
             )
             dp_val, dp_unit = self.get_value_and_unit(Compressor.DP, val_index=1, unit_index=-1)
+            suc_val, suc_unit = self.get_value_and_unit(Compressor.PIN, val_index=1, unit_index=-1)
+            dis_val, dis_unit = self.get_value_and_unit(Compressor.POUT, val_index=1, unit_index=-1)
+            pow_val, pow_unit = self.get_value_and_unit(Compressor.POW, val_index=0, unit_index=-1)
 
+            display_name = f"{self.name} , {self.description}" if self.description else self.name
             return {
-                "Compressor Name": self.name,
-                self.format_export_header("Gas Volumetric Flow", flow_unit): flow_val,
+                "Compressor Name": display_name,
+                self.format_export_header("Suction Pressure", suc_unit): suc_val,
+                self.format_export_header("Discharge Pressure", dis_unit): dis_val,
                 self.format_export_header("Differential Pressure", dp_unit): dp_val,
+                self.format_export_header("Gas Volumetric Flow", flow_unit): flow_val,
+                self.format_export_header("Power", pow_unit): pow_val,
             }
 
         return {
