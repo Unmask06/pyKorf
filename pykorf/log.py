@@ -172,7 +172,7 @@ def _configure_structlog() -> None:
     log_format = os.getenv("PYKORF_LOG_FORMAT", "structured").lower()
     if log_format == "structured":
         structlog.configure(
-            processors=[*shared_processors, structlog.processors.JSONRenderer()],
+            processors=[*shared_processors, structlog.processors.JSONRenderer()],  # type: ignore[list-item]
             context_class=dict,
             logger_factory=structlog.stdlib.LoggerFactory(),
             wrapper_class=structlog.stdlib.BoundLogger,
@@ -180,7 +180,7 @@ def _configure_structlog() -> None:
         )
     else:
         structlog.configure(
-            processors=[*shared_processors, structlog.dev.ConsoleRenderer(colors=True)],
+            processors=[*shared_processors, structlog.dev.ConsoleRenderer(colors=True)],  # type: ignore[list-item]
             context_class=dict,
             logger_factory=structlog.stdlib.LoggerFactory(),
             wrapper_class=structlog.stdlib.BoundLogger,

@@ -132,53 +132,70 @@ def show_update_prompt(update_info: dict) -> None:
     """Display update available prompt and handle user response.
 
     Args:
-        update_info: Dict with 'latest_version' key
+        update_info: Dict with 'latest_version', 'release_url', and 'zipball_url' keys.
     """
     latest_version = update_info["latest_version"]
+    release_url = update_info.get("release_url", "")
+    zipball_url = update_info.get("zipball_url", "")
+    release_notes = update_info.get("release_notes", "")
+
+    body = f"A newer version of pyKorf is available: [bold cyan]v{latest_version}[/bold cyan]\n"
+    if release_notes:
+        body += "\n[bold]What's new:[/bold]\n"
+        body += f"[dim]{release_notes}[/dim]\n"
+    if release_url:
+        body += f"\n[dim]{release_url}[/dim]"
+    body += "\n\nInstall now? [Y/n]"
 
     console.print(
-        Panel(
-            f"A newer version of pyKorf is available (v{latest_version}).\nInstall now? [Y/n]",
-            title="📦 Update Available",
-            border_style="green",
-            padding=(0, 1),
-        ),
+        Panel(body, title="📦 Update Available", border_style="green", padding=(0, 1)),
         justify="center",
     )
 
     response = console.input().strip().lower()
 
-    if response in ("", "y", "yes"):
-        console.print()
-        console.print("[dim]Installing update...[/dim]")
-        console.print()
+    if response not in ("", "y", "yes"):
+        return
 
-        success, message = install_update()
+    console.print()
 
-        if success:
-            console.print(
-                Panel(
-                    message,
-                    title="✅ Success",
-                    border_style="green",
-                    padding=(0, 1),
-                ),
-                justify="center",
-            )
-        else:
-            console.print(
-                Panel(
-                    message,
-                    title="❌ Error",
-                    border_style="red",
-                    padding=(0, 1),
-                ),
-                justify="center",
-            )
-
+    if not zipball_url:
+        console.print("[yellow]No download URL available — please update manually.[/yellow]")
         console.print()
         console.print("[dim]Press Enter to continue...[/dim]")
         console.input()
+        return
+
+    success = False
+    message = ""
+
+    with console.status("[dim]Downloading update...[/dim]", spinner="dots"):
+        success, message = install_update(zipball_url)
+
+    if success:
+        console.print(
+            Panel(
+                f"[green]{message}[/green]",
+                title="✅ Update Installed",
+                border_style="green",
+                padding=(0, 1),
+            ),
+            justify="center",
+        )
+    else:
+        console.print(
+            Panel(
+                f"[red]{message}[/red]",
+                title="❌ Update Failed",
+                border_style="red",
+                padding=(0, 1),
+            ),
+            justify="center",
+        )
+
+    console.print()
+    console.print("[dim]Press Enter to continue...[/dim]")
+    console.input()
 
 
 def main():

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pykorf"
-version = "0.3.2"
+version = "0.3.3"
 description = "Enterprise Python toolkit for reading, editing and writing KORF hydraulic model files (.kdf)"
 readme = "README.md"
 license = { text = "MIT" }
@@ -105,7 +105,7 @@ packages = ["pykorf"]
 include-package-data = true
 
 [tool.setuptools.package-data]
-pykorf = ["library/*.kdf", "library/*.lib", "library/*.csv", "py.typed"]
+pykorf = ["library/*.kdf", "library/*.lib", "library/*.csv", "py.typed", "reports/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
