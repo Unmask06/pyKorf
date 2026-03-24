@@ -300,10 +300,15 @@ class GenerateReportScreen(Screen):
                 )
 
             self.app.call_from_thread(
-                lambda: log_info(results, f"Found {count} KDF file(s). Generating report...")
+                lambda: log_info(results, f"Found {count} KDF file(s). Processing...")
             )
 
-            output_path = generator.generate_report()
+            def _progress(current: int, total: int, filename: str) -> None:
+                self.app.call_from_thread(
+                    lambda c=current, t=total, f=filename: log_info(results, f"  [{c}/{t}] {f}")
+                )
+
+            output_path = generator.generate_report(progress_callback=_progress)
 
             self.app.call_from_thread(
                 lambda: log_success(results, "\n✅ Batch Report Generated Successfully!")

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -73,6 +74,7 @@ class BatchReportGenerator:
         output_path: str | Path | None = None,
         element_types: list[str] | None = None,
         include_line_numbers: bool = True,
+        progress_callback: Callable[[int, int, str], None] | None = None,
     ) -> str:
         """Generate multi-sheet Excel report.
 
@@ -80,6 +82,8 @@ class BatchReportGenerator:
             output_path: Destination .xlsx file. If None, creates in source folder.
             element_types: Filter by types ['Pipes', 'Pumps', ...]. None = all.
             include_line_numbers: Parse and add line_number column for pipes.
+            progress_callback: Optional ``(current, total, filename)`` callback
+                called before each file is processed.
 
         Returns:
             Path to generated Excel file.
@@ -109,6 +113,8 @@ class BatchReportGenerator:
             logger.info(
                 "batch_report_processing", index=i, total=len(self.kdf_files), file=kdf_file.name
             )
+            if progress_callback:
+                progress_callback(i, len(self.kdf_files), kdf_file.name)
             try:
                 model = Model.load(str(kdf_file))
                 exporter = ResultExporter(model)

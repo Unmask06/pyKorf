@@ -137,11 +137,15 @@ def show_update_prompt(update_info: dict) -> None:
     latest_version = update_info["latest_version"]
     release_url = update_info.get("release_url", "")
     zipball_url = update_info.get("zipball_url", "")
+    release_notes = update_info.get("release_notes", "")
 
     body = f"A newer version of pyKorf is available: [bold cyan]v{latest_version}[/bold cyan]\n"
+    if release_notes:
+        body += "\n[bold]What's new:[/bold]\n"
+        body += f"[dim]{release_notes}[/dim]\n"
     if release_url:
-        body += f"[dim]{release_url}[/dim]\n"
-    body += "\nInstall now? [Y/n]"
+        body += f"\n[dim]{release_url}[/dim]"
+    body += "\n\nInstall now? [Y/n]"
 
     console.print(
         Panel(body, title="📦 Update Available", border_style="green", padding=(0, 1)),

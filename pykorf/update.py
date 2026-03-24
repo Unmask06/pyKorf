@@ -7,8 +7,9 @@ import subprocess
 import sys
 import tempfile
 import zipfile
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import requests
 
@@ -50,6 +51,47 @@ def _compare_versions(current: str, latest: str) -> int:
     elif current_parts > latest_parts:
         return 1
     return 0
+
+
+_DEV_KEYWORDS = frozenset(
+    ["ci", "workflow", "mypy", "ruff", "isort", "pre-commit", "pyproject", "lint", "type-check"]
+)
+
+
+def _clean_release_notes(body: str, max_lines: int = 15) -> str:
+    r"""Convert raw GitHub release markdown into plain end-user bullet points.
+
+    Keeps only bullet-point lines, strips markdown syntax and developer-only
+    entries (CI, linting, type-checking, internal tooling).
+    """
+    import re
+
+    kept: list[str] = []
+    for line in body.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith(("#", "---", "```", "<!--")):
+            continue
+        if not (stripped.startswith("- ") or stripped.startswith("* ")):
+            continue
+        lower = stripped.lower()
+        if any(kw in lower for kw in _DEV_KEYWORDS):
+            continue
+        # Strip bold/italic markers
+        clean = re.sub(r"\*{1,2}(.*?)\*{1,2}", r"\1", stripped)
+        # Strip PR/issue refs like (#123)
+        clean = re.sub(r"\s*\((?:closes?\s*)?#\d+\)", "", clean)
+        # Strip backtick code spans
+        clean = re.sub(r"`([^`]+)`", r"\1", clean)
+        # Normalise bullet to •
+        clean = re.sub(r"^[-*]\s+", "• ", clean.strip())
+        kept.append(clean)
+
+    if not kept:
+        return ""
+    result = kept[:max_lines]
+    if len(kept) > max_lines:
+        result.append("  ...")
+    return "\n".join(result)
 
 
 def _get_install_root() -> Path:
@@ -105,10 +147,12 @@ def check_for_update(current_version: str, timeout: float = 3.0) -> dict[str, An
         return None
 
     if _compare_versions(current_version, latest_version) < 0:
+        raw_notes = data.get("body") or ""
         return {
             "latest_version": _normalize_version(latest_version),
             "release_url": data.get("html_url", ""),
             "zipball_url": data.get("zipball_url", ""),
+            "release_notes": _clean_release_notes(raw_notes),
         }
     return None
 
