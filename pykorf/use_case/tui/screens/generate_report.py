@@ -344,6 +344,7 @@ class GenerateReportScreen(Screen):
         app = self.app
         assert isinstance(app, UseCaseTUI)
         model = app.model
+        xlsx_path: Path | None = None
         try:
             self.app.call_from_thread(results.clear)
 
@@ -383,7 +384,7 @@ class GenerateReportScreen(Screen):
         except Exception as exc:
             _logger.error(
                 "   Report failed | %s | %s",
-                xlsx_path.name if "xlsx_path" in dir() else "unknown",
+                xlsx_path.name if xlsx_path is not None else "unknown",
                 exc,
             )
             self.app.call_from_thread(lambda e=exc: log_error(results, f"Error: {e}"))

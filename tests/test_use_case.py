@@ -170,7 +170,7 @@ class TestPmsFunctions:
         assert spec.get("value") == "SCH STD" or spec.get("schedule") == "STD"
 
     def test_load_pms_roughness_in_pms_data(self):
-        """Roughness is stored in pms_data[pms_code][\"roughness\"] as float."""
+        r"""Roughness is stored in pms_data[pms_code]["roughness"] as float."""
         import json
         import tempfile
         from pathlib import Path

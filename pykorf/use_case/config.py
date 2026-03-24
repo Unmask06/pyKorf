@@ -75,8 +75,6 @@ from pykorf.use_case.preferences import (
 
 __all__ = [
     "APP_NAME",
-    "get_pms_excel_path",
-    "set_pms_excel_path",
     "CONFIG_FILENAME",
     "DATA_SUBDIR",
     "DEFAULT_CONFIG_DIR",
@@ -99,6 +97,7 @@ __all__ = [
     "get_last_hmb_path",
     "get_last_interaction",
     "get_last_kdf_path",
+    "get_pms_excel_path",
     "get_pms_path",
     "get_recent_files",
     "get_stream_path",
@@ -119,4 +118,5 @@ __all__ = [
     "set_last_hmb_path",
     "set_last_interaction",
     "set_last_kdf_path",
+    "set_pms_excel_path",
 ]
