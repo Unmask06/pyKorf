@@ -5,6 +5,21 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.3] - 2026-03-24
+
+### What's New
+
+- When an update is available, pyKorf now shows a plain-English summary of what changed before asking you to install it — no more raw developer notes.
+- Batch reports now show per-file progress (`[1/5] filename.kdf`) as each file is processed, so you always know where things stand.
+- A `/release` workflow is available for maintainers to version, document, and publish releases in one step.
+
+### Improved
+
+- The auto-update installer now works correctly with the bat-based distribution — it downloads the latest release directly from GitHub, unpacks it into the correct location, and reinstalls in place.
+- The update prompt shows a live spinner while the download and install runs, with a clear "restart required" message on success.
+
+---
+
 ## [0.3.2] - 2026-03-24
 
 ### Added
