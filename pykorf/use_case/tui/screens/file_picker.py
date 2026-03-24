@@ -33,7 +33,7 @@ class FilePickerScreen(Screen):
     #file-picker-box {
         width: 80;
         height: auto;
-        max-height: 40;
+        max-height: 44;
         border: round $accent;
         padding: 1 2;
     }
@@ -41,7 +41,7 @@ class FilePickerScreen(Screen):
         margin-bottom: 1;
     }
     #file-path-input {
-        height: 4;
+        height: 6;
         margin-bottom: 1;
     }
     #file-info {
@@ -104,7 +104,7 @@ class FilePickerScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Header()
         with Vertical(id="file-picker-box"):
-            yield Label("Enter the path to a KDF file:")
+            yield Label("Drag & drop a KDF file onto this window  —  or enter the path manually:")
             yield TextArea(
                 text="",
                 id="file-path-input",
