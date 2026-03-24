@@ -98,6 +98,12 @@ if exist pykorf\py.typed (
     copy /y pykorf\py.typed %DIST_DIR%\pykorf\
 )
 
+REM Copy JSON data files (excluded from PyArmor obfuscation, must be copied manually)
+if exist pykorf\reports (
+    mkdir %DIST_DIR%\pykorf\reports 2>nul
+    copy /y pykorf\reports\*.json %DIST_DIR%\pykorf\reports\ >nul
+)
+
 REM Copy pyproject.toml and strip dev dependencies (only keep runtime deps)
 echo.
 echo Preparing pyproject.toml (stripping dev dependencies)...

@@ -151,6 +151,9 @@ if "!CURRENT_VERSION!"=="!INSTALLED_VERSION!" (
         echo %CYAN%  │%RESET%  %GREEN%✓  v!CURRENT_VERSION! — up to date%RESET%
         echo %CYAN%  └─%RESET%
         echo.
+        if exist "%SCRIPT_DIR%pykorf" rd /s /q "%SCRIPT_DIR%pykorf"
+        if exist "%SCRIPT_DIR%pyproject.toml" del /q "%SCRIPT_DIR%pyproject.toml"
+        if exist "%SCRIPT_DIR%VERSION" del /q "%SCRIPT_DIR%VERSION"
         goto :env_setup
     )
 )
