@@ -200,6 +200,7 @@ def apply_rename_line_settings(model: Model) -> list[str]:
         List of pipe names that were modified.
     """
     from pykorf.elements import Pipe
+    from pykorf.elements.pipe import propagate_pipe_rename
     from pykorf.exceptions import ParameterError
     from pykorf.use_case.line_number import extract_fluid_seq_from_notes
 
@@ -269,6 +270,16 @@ def apply_rename_line_settings(model: Model) -> list[str]:
             model.set_params(pipe_name, {Pipe.NAME: new_name_values})
             affected_pipes.append(pipe_name)
             logger.info("Pipe %s: renamed to %s", pipe_name, new_name)
+
+            # Propagate rename to any EQN records that reference this pipe by name
+            eqn_updated = propagate_pipe_rename(model, pipe_name, new_name)
+            if eqn_updated:
+                logger.info(
+                    "Pipe %s: EQN reference updated in %d pipe(s): %s",
+                    new_name,
+                    len(eqn_updated),
+                    eqn_updated,
+                )
         except ParameterError as e:
             error_msg = f"Validation error on {pipe_name}: {e}"
             logger.error(error_msg)
