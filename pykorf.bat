@@ -37,7 +37,7 @@ set "VER_URL=https://github.com/Unmask06/pykorf/releases/latest/download/bat_ver
 set "BAT_URL=https://github.com/Unmask06/pykorf/releases/latest/download/pykorf.bat"
 set "VER_TMP=%TEMP%\pk_bat_ver.txt"
 
-curl -L --fail --silent --max-time 5 -o "!VER_TMP!" "!VER_URL!" 2>nul
+curl -L --fail --silent --max-time 10 -o "!VER_TMP!" "!VER_URL!" 2>nul
 if %errorlevel% neq 0 goto :self_update_done
 
 set "REMOTE_VER="
@@ -70,8 +70,14 @@ if %errorlevel% neq 0 goto :self_update_done
 
 (
     echo @echo off
-    echo ping -n 2 127.0.0.1 ^>nul
+    echo ping -n 3 127.0.0.1 ^>nul
     echo copy /y "!NEW_BAT!" "!SELF!" ^>nul 2^>nul
+    echo if errorlevel 1 ^(
+    echo     echo Update failed: could not replace launcher. File may be in use.
+    echo     del "!NEW_BAT!" 2^>nul
+    echo     ^(goto^) 2^>nul ^& del "%%~f0"
+    echo     exit /b 1
+    echo ^)
     echo del "!NEW_BAT!" 2^>nul
     echo start "" "!SELF!"
     echo ^(goto^) 2^>nul ^& del "%%~f0"
@@ -243,7 +249,7 @@ if %errorlevel% neq 0 (
 
 echo %CYAN%  │%RESET%  %GRAY%  Extracting...%RESET%
 if not exist "%APPDATA_DIR%" mkdir "%APPDATA_DIR%"
-tar -xf "!ZIP_PATH!" -C "%APPDATA_DIR%\"
+tar -xf "!ZIP_PATH!" -C "%APPDATA_DIR%"
 if %errorlevel% neq 0 (
     echo %CYAN%  │%RESET%
     echo %CYAN%  └─%RESET%  %RED%✗  Extraction failed%RESET%
