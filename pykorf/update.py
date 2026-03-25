@@ -225,10 +225,13 @@ def install_update(
             return False, f"File copy failed: {exc}"
 
         # ── 4. Reinstall in place ────────────────────────────────────────────
-        # uv venv does not include pip, so prefer `uv pip install` when uv is
-        # on PATH; fall back to ensurepip + pip for non-uv environments.
+        # uv venv does not include pip, so prefer `uv pip install`.
+        # uv lives in the venv Scripts dir (not on system PATH), so check
+        # there first before falling back to PATH / ensurepip.
         try:
-            uv_exe = shutil.which("uv")
+            venv_scripts = Path(sys.executable).parent
+            uv_in_venv = venv_scripts / ("uv.exe" if sys.platform == "win32" else "uv")
+            uv_exe = str(uv_in_venv) if uv_in_venv.exists() else shutil.which("uv")
             if uv_exe:
                 cmd = [uv_exe, "pip", "install", "--python", sys.executable, "-e", ".", "--quiet"]
             else:
