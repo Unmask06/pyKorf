@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pykorf"
-version = "0.3.4"
+version = "0.4.0"
 description = "Enterprise Python toolkit for reading, editing and writing KORF hydraulic model files (.kdf)"
 readme = "README.md"
 license = { text = "MIT" }
@@ -167,6 +167,7 @@ disable_error_code = [
     "index",            # Index operations on unions
     "attr-defined",     # Dynamic attribute access
     "misc",             # Miscellaneous strict checks
+    "import-untyped",   # Third-party libraries without type stubs
 ]
 
 # Error display
@@ -180,12 +181,13 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = [
     "pywinauto.*",
-    "win32gui.*", 
-    "win32con.*", 
+    "win32gui.*",
+    "win32con.*",
     "win32process.*",
     "yaml",
     "tomllib",
     "tomli_w",
+    "requests",
 ]
 ignore_missing_imports = true
 
