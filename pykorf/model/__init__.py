@@ -536,6 +536,20 @@ class Model(_ModelBase):
         """
         return self._layout_service.auto_layout(spacing)
 
+    def snap_orthogonal(self, threshold_deg: float = 10.0) -> None:
+        """Snap near-orthogonal connections to exactly horizontal or vertical.
+
+        For each connected element pair whose angle deviates less than
+        *threshold_deg* from horizontal or vertical, adjusts one element's
+        position to make the connection perfectly orthogonal.
+
+        Parameters
+        ----------
+        threshold_deg:
+            Maximum deviation in degrees to trigger snapping. Defaults to 10.
+        """
+        return self._layout_service.snap_orthogonal(threshold_deg)
+
     def visualize(self, **kwargs: Any) -> str:
         """Create a text visualization of elements and connections.
 

@@ -65,6 +65,29 @@ class TestAutoPlace:
             assert pos != (0.0, 0.0)
 
 
+class TestSnapOrthogonal:
+    def test_snap_orthogonal_does_not_crash(self):
+        m = Model(PUMP_KDF)
+        m.snap_orthogonal()  # should not raise
+
+    def test_snap_orthogonal_cwc(self):
+        m = Model(CWC_KDF)
+        m.snap_orthogonal()  # smoke test on more complex model
+
+    def test_snap_orthogonal_custom_threshold(self):
+        m = Model(PUMP_KDF)
+        m.snap_orthogonal(threshold_deg=5.0)  # narrower threshold, should not raise
+
+    def test_snap_orthogonal_positions_remain_valid(self):
+        m = Model(CWC_KDF)
+        m.snap_orthogonal()
+        for elem in m.elements:
+            pos = m.get_position(elem)
+            if pos is not None:
+                assert isinstance(pos[0], float)
+                assert isinstance(pos[1], float)
+
+
 class TestVisualize:
     def test_visualize_returns_string(self):
         m = Model(PUMP_KDF)

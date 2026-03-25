@@ -300,6 +300,104 @@ class LayoutService:
 
         return conn_lines
 
+    def _get_connected_pairs(self) -> list[tuple[str, str]]:
+        """Return connected element pairs via pipe indices.
+
+        Builds a map of pipe index -> elements using that pipe (from CON /
+        NOZL / NOZ records) and returns unique pairs of elements that share
+        a common pipe.
+        """
+        from collections import defaultdict
+
+        pipe_to_elems: dict[int, list[str]] = defaultdict(list)
+
+        equip_attrs = (
+            "pumps",
+            "valves",
+            "check_valves",
+            "orifices",
+            "exchangers",
+            "compressors",
+            "misc_equipment",
+            "expanders",
+        )
+        for attr in equip_attrs:
+            for idx, elem in getattr(self.model, attr, {}).items():
+                if idx == 0:
+                    continue
+                rec = elem.get_param("CON")
+                if rec and len(rec.values) >= 2:
+                    for raw in rec.values[:2]:
+                        try:
+                            pipe_idx = int(raw)
+                            if pipe_idx:
+                                pipe_to_elems[pipe_idx].append(elem.name)
+                        except (ValueError, TypeError):
+                            pass
+
+        for attr in ("feeds", "products"):
+            for idx, elem in getattr(self.model, attr, {}).items():
+                if idx == 0:
+                    continue
+                for noz in ("NOZL", "NOZ"):
+                    rec = elem.get_param(noz)
+                    if rec and rec.values:
+                        try:
+                            pipe_idx = int(rec.values[0])
+                            if pipe_idx:
+                                pipe_to_elems[pipe_idx].append(elem.name)
+                        except (ValueError, TypeError):
+                            pass
+                        break
+
+        pairs: list[tuple[str, str]] = []
+        seen: set[frozenset[str]] = set()
+        for elems in pipe_to_elems.values():
+            if len(elems) == 2:
+                key: frozenset[str] = frozenset(elems)
+                if key not in seen:
+                    seen.add(key)
+                    pairs.append((elems[0], elems[1]))
+        return pairs
+
+    def snap_orthogonal(self, threshold_deg: float = 10.0) -> None:
+        """Snap near-orthogonal connections to be exactly horizontal or vertical.
+
+        For each connected element pair, if the angle between their positions
+        deviates less than *threshold_deg* from horizontal (0°) or vertical
+        (90°), the second element's Y (horizontal snap) or X (vertical snap)
+        is adjusted to make the connection exactly orthogonal.
+
+        Args:
+            threshold_deg: Maximum deviation in degrees to trigger snapping.
+                Defaults to 10.
+        """
+        import math
+
+        pairs = self._get_connected_pairs()
+        for name1, name2 in pairs:
+            try:
+                elem1 = self.model.get_element(name1)
+                elem2 = self.model.get_element(name2)
+            except Exception:
+                continue
+            pos1 = self.get_position(elem1)
+            pos2 = self.get_position(elem2)
+            if pos1 is None or pos2 is None:
+                continue
+            dx = pos2[0] - pos1[0]
+            dy = pos2[1] - pos1[1]
+            if dx == 0 and dy == 0:
+                continue
+            # angle_deg in [0, 90]: deviation from the nearest cardinal axis
+            angle_deg = math.degrees(math.atan2(abs(dy), abs(dx)))
+            if angle_deg < threshold_deg:
+                # Almost horizontal — align elem2's Y to elem1's Y
+                self.__set_position_on_element(elem2, pos2[0], pos1[1])
+            elif angle_deg > (90.0 - threshold_deg):
+                # Almost vertical — align elem2's X to elem1's X
+                self.__set_position_on_element(elem2, pos1[0], pos2[1])
+
     def auto_layout(self, spacing: float | None = None) -> None:
         """Automatically arrange all unplaced elements in a logical flow."""
         spacing = spacing or COMFORT_SPACING_X
@@ -337,6 +435,8 @@ class LayoutService:
 
             self.set_position(self.model, elem.name, x, y)
             existing.append((x, y))
+
+        self.snap_orthogonal()
 
     def visualize_network(self, path: str | Path = "network.html") -> None:
         """Generate an interactive PyVis HTML visualization."""
