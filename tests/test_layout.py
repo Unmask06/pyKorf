@@ -12,13 +12,16 @@ PUMP_KDF = SAMPLES_DIR / "Pumpcases.kdf"
 CWC_KDF = SAMPLES_DIR / "Cooling Water Circuit.kdf"
 
 
+# ---------------------------------------------------------------------------
+# Core shortcuts that live directly on Model (pre-existing API)
+# ---------------------------------------------------------------------------
+
+
 class TestGetSetPosition:
     def test_get_position(self):
         m = Model(PUMP_KDF)
         pipe = m.pipes[1]
         pos = m.get_position(pipe)
-        # Pipe should have some XY position (may be tuple or None)
-        # Just check it doesn't crash
         assert pos is None or isinstance(pos, tuple)
 
     def test_set_position(self):
@@ -60,19 +63,21 @@ class TestAutoPlace:
         new_pump = m.add_element("PUMP", "P_AP")
         m.auto_place(new_pump)
         pos = m.get_position(new_pump)
-        # Should have been placed somewhere
         if pos is not None:
             assert pos != (0.0, 0.0)
+
+
+# ---------------------------------------------------------------------------
+# LayoutService — accessed via model.layout
+# ---------------------------------------------------------------------------
 
 
 class TestPolyline:
     def test_get_polyline_pipe_with_bends(self):
         m = Model(CWC_KDF)
-        # CWC has pipes with BEND=1 and waypoints in XY records
         pipe = m.pipes[1]
-        pts = m.get_polyline(pipe)
+        pts = m.layout.get_polyline(pipe)
         assert isinstance(pts, list)
-        # CWC pipe 1 has two waypoints
         assert len(pts) >= 1
         for x, y in pts:
             assert isinstance(x, float)
@@ -80,23 +85,22 @@ class TestPolyline:
 
     def test_get_polyline_no_waypoints(self):
         m = Model(PUMP_KDF)
-        # Pipe 1 in Pumpcases has duplicate start point then waypoints
         pipe = m.pipes[1]
-        pts = m.get_polyline(pipe)
+        pts = m.layout.get_polyline(pipe)
         assert isinstance(pts, list)
 
     def test_set_polyline_roundtrip(self):
         m = Model(CWC_KDF)
         pipe = m.pipes[1]
         new_pts = [(1500.0, 4700.0), (2000.0, 4700.0), (2000.0, 5200.0)]
-        m.set_polyline(pipe, new_pts)
-        got = m.get_polyline(pipe)
+        m.layout.set_polyline(pipe, new_pts)
+        got = m.layout.get_polyline(pipe)
         assert got == new_pts
 
     def test_set_polyline_sets_bend_flag(self):
         m = Model(CWC_KDF)
         pipe = m.pipes[1]
-        m.set_polyline(pipe, [(1000.0, 2000.0), (3000.0, 2000.0)])
+        m.layout.set_polyline(pipe, [(1000.0, 2000.0), (3000.0, 2000.0)])
         rec = pipe.get_param("BEND")
         if rec and rec.values:
             assert int(rec.values[0]) == 1
@@ -104,7 +108,7 @@ class TestPolyline:
     def test_set_polyline_empty_clears_bend_flag(self):
         m = Model(CWC_KDF)
         pipe = m.pipes[1]
-        m.set_polyline(pipe, [])
+        m.layout.set_polyline(pipe, [])
         rec = pipe.get_param("BEND")
         if rec and rec.values:
             assert int(rec.values[0]) == 0
@@ -114,139 +118,117 @@ class TestAddBend:
     def test_add_bend_creates_corner(self):
         m = Model(CWC_KDF)
         pipe = m.pipes[1]
-        pts_before = m.get_polyline(pipe)
-        m.add_bend(pipe, 9999.0, 1111.0)
-        pts_after = m.get_polyline(pipe)
-        # One more point than before (or at least one point)
+        pts_before = m.layout.get_polyline(pipe)
+        m.layout.add_bend(pipe, 9999.0, 1111.0)
+        pts_after = m.layout.get_polyline(pipe)
         assert len(pts_after) >= max(1, len(pts_before))
-        # The new waypoint must appear somewhere
         assert (9999.0, 1111.0) in pts_after
 
     def test_add_bend_index_zero_prepends(self):
         m = Model(CWC_KDF)
         pipe = m.pipes[1]
-        m.set_polyline(pipe, [(1000.0, 2000.0), (3000.0, 2000.0)])
-        m.add_bend(pipe, 500.0, 2000.0, index=0)
-        pts = m.get_polyline(pipe)
+        m.layout.set_polyline(pipe, [(1000.0, 2000.0), (3000.0, 2000.0)])
+        m.layout.add_bend(pipe, 500.0, 2000.0, index=0)
+        pts = m.layout.get_polyline(pipe)
         assert pts[0] == (500.0, 2000.0)
 
     def test_add_bend_l_shape(self):
-        # Orthogonal L-shape: start (1000,2000) → corner (3000,2000) → end (3000,5000)
         m = Model(CWC_KDF)
         pipe = m.pipes[1]
-        m.set_polyline(pipe, [(1000.0, 2000.0), (3000.0, 5000.0)])
-        # Horizontal-first corner
-        m.add_bend(pipe, 3000.0, 2000.0)
-        pts = m.get_polyline(pipe)
+        m.layout.set_polyline(pipe, [(1000.0, 2000.0), (3000.0, 5000.0)])
+        m.layout.add_bend(pipe, 3000.0, 2000.0)
+        pts = m.layout.get_polyline(pipe)
         assert (3000.0, 2000.0) in pts
 
 
 class TestRoutePipe:
+    def _first_two_endpoint_pipe(self, m: Model):
+        pipe_to_elems = m.layout._build_pipe_to_elems()
+        idx = next((i for i, ns in pipe_to_elems.items() if len(ns) == 2), None)
+        if idx is None:
+            return None, None
+        return m.pipes[idx], pipe_to_elems[idx]
+
     def test_route_pipe_straight_horizontal(self):
         m = Model(CWC_KDF)
-        # Find a pipe with exactly 2 connected elements
-        pipe_to_elems = m._layout_service._build_pipe_to_elems()
-        target_idx = next((idx for idx, names in pipe_to_elems.items() if len(names) == 2), None)
-        if target_idx is None:
+        pipe, _ = self._first_two_endpoint_pipe(m)
+        if pipe is None:
             return
-        pipe = m.pipes[target_idx]
-        m.route_pipe(pipe, bend="h")
-        pts = m.get_polyline(pipe)
+        m.layout.route_pipe(pipe, bend="h")
+        pts = m.layout.get_polyline(pipe)
         assert len(pts) >= 2
 
     def test_route_pipe_h_bend(self):
         m = Model(CWC_KDF)
-        # Place two elements at a diagonal and route between them
-        pipe_to_elems = m._layout_service._build_pipe_to_elems()
-        target_idx = next((idx for idx, names in pipe_to_elems.items() if len(names) == 2), None)
-        if target_idx is None:
+        pipe, names = self._first_two_endpoint_pipe(m)
+        if pipe is None:
             return
-        pipe = m.pipes[target_idx]
-        names = pipe_to_elems[target_idx]
-        # Force a diagonal position
         m.set_position(m[names[0]], 2000.0, 2000.0)
         m.set_position(m[names[1]], 5000.0, 5000.0)
-        m.route_pipe(pipe, bend="h")
-        pts = m.get_polyline(pipe)
-        # Should have 3 points for the L-shape
+        m.layout.route_pipe(pipe, bend="h")
+        pts = m.layout.get_polyline(pipe)
         assert len(pts) == 3
-        # Corner should be at (5000, 2000) for horizontal-first
         assert pts[1] == (5000.0, 2000.0)
 
     def test_route_pipe_v_bend(self):
         m = Model(CWC_KDF)
-        pipe_to_elems = m._layout_service._build_pipe_to_elems()
-        target_idx = next((idx for idx, names in pipe_to_elems.items() if len(names) == 2), None)
-        if target_idx is None:
+        pipe, names = self._first_two_endpoint_pipe(m)
+        if pipe is None:
             return
-        pipe = m.pipes[target_idx]
-        names = pipe_to_elems[target_idx]
         m.set_position(m[names[0]], 2000.0, 2000.0)
         m.set_position(m[names[1]], 5000.0, 5000.0)
-        m.route_pipe(pipe, bend="v")
-        pts = m.get_polyline(pipe)
+        m.layout.route_pipe(pipe, bend="v")
+        pts = m.layout.get_polyline(pipe)
         assert len(pts) == 3
-        # Corner should be at (2000, 5000) for vertical-first
         assert pts[1] == (2000.0, 5000.0)
 
-    def test_route_pipe_auto_chooses_h_when_dx_dominant(self):
+    def test_route_pipe_auto_h_when_dx_dominant(self):
         m = Model(CWC_KDF)
-        pipe_to_elems = m._layout_service._build_pipe_to_elems()
-        target_idx = next((idx for idx, names in pipe_to_elems.items() if len(names) == 2), None)
-        if target_idx is None:
+        pipe, names = self._first_two_endpoint_pipe(m)
+        if pipe is None:
             return
-        pipe = m.pipes[target_idx]
-        names = pipe_to_elems[target_idx]
-        # dx >> dy  => horizontal-first
         m.set_position(m[names[0]], 1000.0, 2000.0)
         m.set_position(m[names[1]], 6000.0, 2100.0)
-        m.route_pipe(pipe, bend="auto")
-        pts = m.get_polyline(pipe)
-        # Since dy is small but nonzero, we get 3 points; corner Y == start Y
+        m.layout.route_pipe(pipe, bend="auto")
+        pts = m.layout.get_polyline(pipe)
         if len(pts) == 3:
             assert pts[1][1] == 2000.0  # horizontal-first: corner keeps start Y
 
     def test_route_all_pipes_smoke(self):
         m = Model(CWC_KDF)
-        m.route_all_pipes()
-        # All connected pipes should now have polylines
-        pipe_to_elems = m._layout_service._build_pipe_to_elems()
+        m.layout.route_all_pipes()
+        pipe_to_elems = m.layout._build_pipe_to_elems()
         for idx, pipe in m.pipes.items():
             if idx == 0 or not pipe.name:
                 continue
             if len(pipe_to_elems.get(idx, [])) == 2:
-                pts = m.get_polyline(pipe)
-                assert len(pts) >= 2, f"Pipe {pipe.name} should have polyline"
+                pts = m.layout.get_polyline(pipe)
+                assert len(pts) >= 2, f"Pipe {pipe.name} should have a polyline"
 
     def test_route_all_pipes_pump(self):
         m = Model(PUMP_KDF)
-        m.route_all_pipes()  # should not raise
+        m.layout.route_all_pipes()  # should not raise
 
     def test_auto_layout_with_route_pipes(self):
         m = Model(PUMP_KDF)
         for elem in m.elements:
             m.set_position(elem, 0.0, 0.0)
-        m.auto_layout(strategy="flow", route_pipes=True)
-        # Pipes should have polylines
-        pipe_to_elems = m._layout_service._build_pipe_to_elems()
-        routed = 0
-        for idx, pipe in m.pipes.items():
-            if idx == 0 or not pipe.name:
-                continue
-            if len(pipe_to_elems.get(idx, [])) == 2:
-                pts = m.get_polyline(pipe)
-                if pts:
-                    routed += 1
+        m.layout.auto_layout(strategy="flow", route_pipes=True)
+        pipe_to_elems = m.layout._build_pipe_to_elems()
+        routed = sum(
+            1
+            for idx, pipe in m.pipes.items()
+            if idx != 0 and pipe.name and len(pipe_to_elems.get(idx, [])) == 2
+            and m.layout.get_polyline(pipe)
+        )
         assert routed > 0
 
 
 class TestAutoLayoutFlow:
     def test_auto_layout_flow_does_not_crash(self):
         m = Model(CWC_KDF)
-        # Reset all positions to unplaced
         for elem in m.elements:
-            pos = m.get_position(elem)
-            if pos is not None:
+            if m.get_position(elem) is not None:
                 m.set_position(elem, 0.0, 0.0)
         m.auto_layout(strategy="flow")
 
@@ -270,19 +252,19 @@ class TestAutoLayoutFlow:
 class TestSnapOrthogonal:
     def test_snap_orthogonal_does_not_crash(self):
         m = Model(PUMP_KDF)
-        m.snap_orthogonal()  # should not raise
+        m.layout.snap_orthogonal()
 
     def test_snap_orthogonal_cwc(self):
         m = Model(CWC_KDF)
-        m.snap_orthogonal()  # smoke test on more complex model
+        m.layout.snap_orthogonal()
 
     def test_snap_orthogonal_custom_threshold(self):
         m = Model(PUMP_KDF)
-        m.snap_orthogonal(threshold_deg=5.0)  # narrower threshold, should not raise
+        m.layout.snap_orthogonal(threshold_deg=5.0)
 
     def test_snap_orthogonal_positions_remain_valid(self):
         m = Model(CWC_KDF)
-        m.snap_orthogonal()
+        m.layout.snap_orthogonal()
         for elem in m.elements:
             pos = m.get_position(elem)
             if pos is not None:
@@ -294,14 +276,14 @@ class TestAlignElements:
     def test_align_horizontal_smoke(self):
         m = Model(CWC_KDF)
         names = [e.name for e in m.elements if m.get_position(e) is not None][:4]
-        m.align_horizontal(names)
+        m.layout.align_horizontal(names)
         ys = {m.get_position(m[n])[1] for n in names if m.get_position(m[n]) is not None}
         assert len(ys) == 1
 
     def test_align_horizontal_anchor(self):
         m = Model(CWC_KDF)
         names = [e.name for e in m.elements if m.get_position(e) is not None][:3]
-        m.align_horizontal(names, anchor_y=3000.0)
+        m.layout.align_horizontal(names, anchor_y=3000.0)
         for n in names:
             pos = m.get_position(m[n])
             if pos is not None:
@@ -310,14 +292,14 @@ class TestAlignElements:
     def test_align_vertical_smoke(self):
         m = Model(CWC_KDF)
         names = [e.name for e in m.elements if m.get_position(e) is not None][:4]
-        m.align_vertical(names)
+        m.layout.align_vertical(names)
         xs = {m.get_position(m[n])[0] for n in names if m.get_position(m[n]) is not None}
         assert len(xs) == 1
 
     def test_align_vertical_anchor(self):
         m = Model(CWC_KDF)
         names = [e.name for e in m.elements if m.get_position(e) is not None][:3]
-        m.align_vertical(names, anchor_x=5000.0)
+        m.layout.align_vertical(names, anchor_x=5000.0)
         for n in names:
             pos = m.get_position(m[n])
             if pos is not None:
@@ -325,8 +307,8 @@ class TestAlignElements:
 
     def test_align_empty_list_no_crash(self):
         m = Model(PUMP_KDF)
-        m.align_horizontal([])
-        m.align_vertical([])
+        m.layout.align_horizontal([])
+        m.layout.align_vertical([])
 
 
 class TestDistributeElements:
@@ -336,7 +318,7 @@ class TestDistributeElements:
         if len(positioned) < 3:
             return
         names = [e.name for e in positioned[:5]]
-        m.distribute_horizontal(names)
+        m.layout.distribute_horizontal(names)
         xs = sorted(m.get_position(m[n])[0] for n in names if m.get_position(m[n]))
         gaps = [xs[i + 1] - xs[i] for i in range(len(xs) - 1)]
         assert all(abs(g - gaps[0]) < 0.01 for g in gaps)
@@ -347,7 +329,7 @@ class TestDistributeElements:
         if len(positioned) < 3:
             return
         names = [e.name for e in positioned[:5]]
-        m.distribute_vertical(names)
+        m.layout.distribute_vertical(names)
         ys = sorted(m.get_position(m[n])[1] for n in names if m.get_position(m[n]))
         gaps = [ys[i + 1] - ys[i] for i in range(len(ys) - 1)]
         assert all(abs(g - gaps[0]) < 0.01 for g in gaps)
@@ -357,7 +339,7 @@ class TestDistributeElements:
         positioned = [e for e in m.elements if m.get_position(e) is not None]
         names = [e.name for e in positioned[:2]]
         before = [m.get_position(m[n]) for n in names]
-        m.distribute_horizontal(names)
+        m.layout.distribute_horizontal(names)
         after = [m.get_position(m[n]) for n in names]
         assert before == after
 
@@ -365,7 +347,7 @@ class TestDistributeElements:
 class TestSnapToGrid:
     def test_snap_to_grid_smoke(self):
         m = Model(CWC_KDF)
-        m.snap_to_grid(500.0)
+        m.layout.snap_to_grid(500.0)
         for elem in m.elements:
             pos = m.get_position(elem)
             if pos is not None and pos != (0.0, 0.0):
@@ -373,22 +355,25 @@ class TestSnapToGrid:
                 assert pos[1] % 500.0 == 0.0
 
     def test_snap_to_grid_invalid(self):
-        m = Model(PUMP_KDF)
         import pytest
+        m = Model(PUMP_KDF)
         with pytest.raises(ValueError):
-            m.snap_to_grid(0)
+            m.layout.snap_to_grid(0)
 
 
 class TestCenterLayout:
     def test_center_layout_smoke(self):
+        from pykorf.model.services.layout import X_MAX, X_MIN, Y_MAX, Y_MIN
         m = Model(CWC_KDF)
-        m.center_layout()
-        positioned = [m.get_position(e) for e in m.elements if m.get_position(e) is not None and m.get_position(e) != (0.0, 0.0)]
+        m.layout.center_layout()
+        positioned = [
+            m.get_position(e) for e in m.elements
+            if m.get_position(e) not in (None, (0.0, 0.0))
+        ]
         if not positioned:
             return
         xs = [p[0] for p in positioned]
         ys = [p[1] for p in positioned]
-        from pykorf.model.services.layout import X_MAX, X_MIN, Y_MAX, Y_MIN
         canvas_cx = (X_MIN + X_MAX) / 2
         canvas_cy = (Y_MIN + Y_MAX) / 2
         bbox_cx = (min(xs) + max(xs)) / 2
@@ -398,7 +383,7 @@ class TestCenterLayout:
 
     def test_center_layout_pump(self):
         m = Model(PUMP_KDF)
-        m.center_layout()  # should not raise
+        m.layout.center_layout()
 
 
 class TestVisualize:
