@@ -123,7 +123,7 @@ REM Create bat_version.txt from BAT_VERSION constant in pykorf.bat
 echo.
 echo Creating bat_version.txt...
 set "BAT_VER="
-for /f "tokens=2 delims==" %%v in ('findstr /b /c:"set \"BAT_VERSION" pykorf.bat') do (
+for /f "tokens=2 delims==" %%v in ('findstr /r /c:"^set .BAT_VERSION=" pykorf.bat') do (
     if not defined BAT_VER set "BAT_VER=%%v"
 )
 set "BAT_VER=%BAT_VER:"=%"
