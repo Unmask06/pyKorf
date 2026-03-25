@@ -398,6 +398,175 @@ class LayoutService:
                 # Almost vertical — align elem2's X to elem1's X
                 self.__set_position_on_element(elem2, pos1[0], pos2[1])
 
+    # ------------------------------------------------------------------
+    # Alignment helpers
+    # ------------------------------------------------------------------
+
+    def align_horizontal(self, names: list[str], anchor_y: float | None = None) -> None:
+        """Align all named elements to the same Y coordinate.
+
+        Elements are moved vertically so they share a common Y.  If
+        *anchor_y* is not given the average Y of the named elements is used.
+
+        Args:
+            names: Element names to align.
+            anchor_y: Target Y coordinate. Defaults to the mean Y of the group.
+        """
+        positioned = []
+        for name in names:
+            try:
+                elem = self.model.get_element(name)
+            except Exception:
+                continue
+            pos = self.get_position(elem)
+            if pos is not None:
+                positioned.append((elem, pos))
+
+        if not positioned:
+            return
+
+        target_y = anchor_y if anchor_y is not None else sum(p[1] for _, p in positioned) / len(positioned)
+        for elem, pos in positioned:
+            self.__set_position_on_element(elem, pos[0], target_y)
+
+    def align_vertical(self, names: list[str], anchor_x: float | None = None) -> None:
+        """Align all named elements to the same X coordinate.
+
+        Elements are moved horizontally so they share a common X.  If
+        *anchor_x* is not given the average X of the named elements is used.
+
+        Args:
+            names: Element names to align.
+            anchor_x: Target X coordinate. Defaults to the mean X of the group.
+        """
+        positioned = []
+        for name in names:
+            try:
+                elem = self.model.get_element(name)
+            except Exception:
+                continue
+            pos = self.get_position(elem)
+            if pos is not None:
+                positioned.append((elem, pos))
+
+        if not positioned:
+            return
+
+        target_x = anchor_x if anchor_x is not None else sum(p[0] for _, p in positioned) / len(positioned)
+        for elem, pos in positioned:
+            self.__set_position_on_element(elem, target_x, pos[1])
+
+    # ------------------------------------------------------------------
+    # Distribution helpers
+    # ------------------------------------------------------------------
+
+    def distribute_horizontal(self, names: list[str]) -> None:
+        """Space named elements evenly along the X axis.
+
+        The leftmost and rightmost elements stay fixed; everything in between
+        is repositioned with equal gaps.  At least three elements are needed
+        for the distribution to have any effect.
+
+        Args:
+            names: Element names to distribute (order does not matter).
+        """
+        positioned = []
+        for name in names:
+            try:
+                elem = self.model.get_element(name)
+            except Exception:
+                continue
+            pos = self.get_position(elem)
+            if pos is not None:
+                positioned.append((elem, pos))
+
+        if len(positioned) < 3:
+            return
+
+        positioned.sort(key=lambda ep: ep[1][0])
+        x_min = positioned[0][1][0]
+        x_max = positioned[-1][1][0]
+        step = (x_max - x_min) / (len(positioned) - 1)
+        for i, (elem, pos) in enumerate(positioned):
+            self.__set_position_on_element(elem, x_min + i * step, pos[1])
+
+    def distribute_vertical(self, names: list[str]) -> None:
+        """Space named elements evenly along the Y axis.
+
+        The topmost and bottommost elements stay fixed; everything in between
+        is repositioned with equal gaps.  At least three elements are needed
+        for the distribution to have any effect.
+
+        Args:
+            names: Element names to distribute (order does not matter).
+        """
+        positioned = []
+        for name in names:
+            try:
+                elem = self.model.get_element(name)
+            except Exception:
+                continue
+            pos = self.get_position(elem)
+            if pos is not None:
+                positioned.append((elem, pos))
+
+        if len(positioned) < 3:
+            return
+
+        positioned.sort(key=lambda ep: ep[1][1])
+        y_min = positioned[0][1][1]
+        y_max = positioned[-1][1][1]
+        step = (y_max - y_min) / (len(positioned) - 1)
+        for i, (elem, pos) in enumerate(positioned):
+            self.__set_position_on_element(elem, pos[0], y_min + i * step)
+
+    # ------------------------------------------------------------------
+    # Grid snapping and centering
+    # ------------------------------------------------------------------
+
+    def snap_to_grid(self, grid_size: float = 500.0) -> None:
+        """Round every placed element's position to the nearest grid point.
+
+        Args:
+            grid_size: Grid cell size in model units. Defaults to 500.
+        """
+        if grid_size <= 0:
+            raise ValueError(f"grid_size must be positive, got {grid_size}")
+        for elem in self.model.elements:
+            pos = self.get_position(elem)
+            if pos is None or pos == (0.0, 0.0):
+                continue
+            snapped_x = round(pos[0] / grid_size) * grid_size
+            snapped_y = round(pos[1] / grid_size) * grid_size
+            self.__set_position_on_element(elem, snapped_x, snapped_y)
+
+    def center_layout(self) -> None:
+        """Translate all placed elements so the bounding box is centred on the canvas.
+
+        The canvas centre is ``((X_MIN + X_MAX) / 2, (Y_MIN + Y_MAX) / 2)``.
+        All elements are shifted by the same offset so that the mid-point of
+        their collective bounding box coincides with the canvas centre.
+        """
+        positioned = [
+            (elem, pos)
+            for elem in self.model.elements
+            for pos in (self.get_position(elem),)
+            if pos is not None and pos != (0.0, 0.0)
+        ]
+        if not positioned:
+            return
+
+        xs = [p[0] for _, p in positioned]
+        ys = [p[1] for _, p in positioned]
+        bbox_cx = (min(xs) + max(xs)) / 2
+        bbox_cy = (min(ys) + max(ys)) / 2
+        canvas_cx = (X_MIN + X_MAX) / 2
+        canvas_cy = (Y_MIN + Y_MAX) / 2
+        dx = canvas_cx - bbox_cx
+        dy = canvas_cy - bbox_cy
+        for elem, pos in positioned:
+            self.__set_position_on_element(elem, pos[0] + dx, pos[1] + dy)
+
     def auto_layout(self, spacing: float | None = None) -> None:
         """Automatically arrange all unplaced elements in a logical flow."""
         spacing = spacing or COMFORT_SPACING_X

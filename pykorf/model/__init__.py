@@ -550,6 +550,70 @@ class Model(_ModelBase):
         """
         return self._layout_service.snap_orthogonal(threshold_deg)
 
+    def align_horizontal(self, names: list[str], anchor_y: float | None = None) -> None:
+        """Align named elements to the same Y coordinate.
+
+        Parameters
+        ----------
+        names:
+            Element names to align.
+        anchor_y:
+            Target Y. If omitted, the mean Y of the group is used.
+        """
+        return self._layout_service.align_horizontal(names, anchor_y)
+
+    def align_vertical(self, names: list[str], anchor_x: float | None = None) -> None:
+        """Align named elements to the same X coordinate.
+
+        Parameters
+        ----------
+        names:
+            Element names to align.
+        anchor_x:
+            Target X. If omitted, the mean X of the group is used.
+        """
+        return self._layout_service.align_vertical(names, anchor_x)
+
+    def distribute_horizontal(self, names: list[str]) -> None:
+        """Space named elements evenly along the X axis.
+
+        The leftmost and rightmost elements stay fixed; everything in between
+        is redistributed with equal gaps.
+
+        Parameters
+        ----------
+        names:
+            Element names to distribute (at least 3 required for effect).
+        """
+        return self._layout_service.distribute_horizontal(names)
+
+    def distribute_vertical(self, names: list[str]) -> None:
+        """Space named elements evenly along the Y axis.
+
+        The topmost and bottommost elements stay fixed; everything in between
+        is redistributed with equal gaps.
+
+        Parameters
+        ----------
+        names:
+            Element names to distribute (at least 3 required for effect).
+        """
+        return self._layout_service.distribute_vertical(names)
+
+    def snap_to_grid(self, grid_size: float = 500.0) -> None:
+        """Round every placed element's position to the nearest grid point.
+
+        Parameters
+        ----------
+        grid_size:
+            Grid cell size in model units. Defaults to 500.
+        """
+        return self._layout_service.snap_to_grid(grid_size)
+
+    def center_layout(self) -> None:
+        """Translate all placed elements so the bounding box is centred on the canvas."""
+        return self._layout_service.center_layout()
+
     def visualize(self, **kwargs: Any) -> str:
         """Create a text visualization of elements and connections.
 
