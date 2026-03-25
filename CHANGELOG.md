@@ -5,6 +5,14 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2026-03-25
+
+### Fixed
+
+- The in-app auto-update no longer fails with "No module named pip" — it now uses the bundled `uv` tool to reinstall, which works correctly with the lightweight virtual environment created by the installer.
+
+---
+
 ## [0.4.0] - 2026-03-25
 
 ### What's New
