@@ -225,9 +225,23 @@ def install_update(
             return False, f"File copy failed: {exc}"
 
         # ── 4. Reinstall in place ────────────────────────────────────────────
+        # uv venv does not include pip, so prefer `uv pip install` when uv is
+        # on PATH; fall back to ensurepip + pip for non-uv environments.
         try:
+            uv_exe = shutil.which("uv")
+            if uv_exe:
+                cmd = [uv_exe, "pip", "install", "--python", sys.executable, "-e", ".", "--quiet"]
+            else:
+                subprocess.run(
+                    [sys.executable, "-m", "ensurepip", "--upgrade"],
+                    cwd=str(install_root),
+                    capture_output=True,
+                    timeout=30,
+                )
+                cmd = [sys.executable, "-m", "pip", "install", "-e", ".", "--quiet"]
+
             result = subprocess.run(
-                [sys.executable, "-m", "pip", "install", "-e", ".", "--quiet"],
+                cmd,
                 cwd=str(install_root),
                 capture_output=True,
                 text=True,
