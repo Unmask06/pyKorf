@@ -418,18 +418,73 @@ class LayoutService:
     # Flow connectivity helpers
     # ------------------------------------------------------------------
 
+    def _build_pipe_to_elems(self) -> dict[int, list[str]]:
+        """Build an undirected map of pipe index -> element names using that pipe.
+
+        Covers equipment ``CON`` records (both inlet and outlet) and FEED /
+        PRODUCT ``NOZL`` / ``NOZ`` records.
+
+        Returns:
+            Dict mapping pipe index to a list of element names.
+        """
+        from collections import defaultdict
+
+        pipe_to_elems: dict[int, list[str]] = defaultdict(list)
+
+        equip_attrs = (
+            "pumps",
+            "valves",
+            "check_valves",
+            "orifices",
+            "exchangers",
+            "compressors",
+            "misc_equipment",
+            "expanders",
+        )
+        for attr in equip_attrs:
+            for idx, elem in getattr(self.model, attr, {}).items():
+                if idx == 0:
+                    continue
+                rec = elem.get_param("CON")
+                if rec and len(rec.values) >= 2:
+                    for raw in rec.values[:2]:
+                        try:
+                            p = int(raw)
+                            if p:
+                                pipe_to_elems[p].append(elem.name)
+                        except (ValueError, TypeError):
+                            pass
+
+        for attr in ("feeds", "products"):
+            for idx, elem in getattr(self.model, attr, {}).items():
+                if idx == 0:
+                    continue
+                for noz in ("NOZL", "NOZ"):
+                    rec = elem.get_param(noz)
+                    if rec and rec.values:
+                        try:
+                            p = int(rec.values[0])
+                            if p:
+                                pipe_to_elems[p].append(elem.name)
+                        except (ValueError, TypeError):
+                            pass
+                        break
+
+        return dict(pipe_to_elems)
+
     def _build_flow_graph(self) -> dict[str, list[str]]:
         """Build a directed element-to-element adjacency from flow connectivity.
 
-        Uses ``CON`` records (equipment outlet pipe) and ``NOZL``/``NOZ``
-        records (FEED outgoing pipe) to establish direction.
+        Uses the undirected pipe-to-element map from :meth:`_build_pipe_to_elems`
+        combined with each element's *outlet* pipe (``CON[1]`` for equipment,
+        ``NOZL`` for FEEDs) to determine flow direction.
 
         Returns:
             Dict mapping each element name to downstream element names.
         """
         from collections import defaultdict
 
-        pipe_to_elems: dict[int, list[str]] = defaultdict(list)
+        pipe_to_elems = self._build_pipe_to_elems()
         elem_out_pipe: dict[str, int] = {}
 
         equip_attrs = (
@@ -449,32 +504,25 @@ class LayoutService:
                 rec = elem.get_param("CON")
                 if rec and len(rec.values) >= 2:
                     try:
-                        in_p = int(rec.values[0])
                         out_p = int(rec.values[1])
-                        if in_p:
-                            pipe_to_elems[in_p].append(elem.name)
                         if out_p:
-                            pipe_to_elems[out_p].append(elem.name)
                             elem_out_pipe[elem.name] = out_p
                     except (ValueError, TypeError):
                         pass
 
-        for attr in ("feeds", "products"):
-            for idx, elem in getattr(self.model, attr, {}).items():
-                if idx == 0:
-                    continue
-                for noz in ("NOZL", "NOZ"):
-                    rec = elem.get_param(noz)
-                    if rec and rec.values:
-                        try:
-                            pipe_idx = int(rec.values[0])
-                            if pipe_idx:
-                                pipe_to_elems[pipe_idx].append(elem.name)
-                                if attr == "feeds":
-                                    elem_out_pipe[elem.name] = pipe_idx
-                        except (ValueError, TypeError):
-                            pass
-                        break
+        for idx, elem in getattr(self.model, "feeds", {}).items():
+            if idx == 0:
+                continue
+            for noz in ("NOZL", "NOZ"):
+                rec = elem.get_param(noz)
+                if rec and rec.values:
+                    try:
+                        p = int(rec.values[0])
+                        if p:
+                            elem_out_pipe[elem.name] = p
+                    except (ValueError, TypeError):
+                        pass
+                    break
 
         graph: dict[str, list[str]] = defaultdict(list)
         for elem_name, out_p in elem_out_pipe.items():
@@ -595,54 +643,13 @@ class LayoutService:
                 existing.append((x, y))
 
     def _get_connected_pairs(self) -> list[tuple[str, str]]:
-        """Return connected element pairs via pipe indices.
+        """Return unique connected element pairs that share a common pipe.
 
-        Builds a map of pipe index -> elements using that pipe (from CON /
-        NOZL / NOZ records) and returns unique pairs of elements that share
-        a common pipe.
+        Returns:
+            List of ``(name_a, name_b)`` tuples for each pair of elements
+            connected via the same pipe index.
         """
-        from collections import defaultdict
-
-        pipe_to_elems: dict[int, list[str]] = defaultdict(list)
-
-        equip_attrs = (
-            "pumps",
-            "valves",
-            "check_valves",
-            "orifices",
-            "exchangers",
-            "compressors",
-            "misc_equipment",
-            "expanders",
-        )
-        for attr in equip_attrs:
-            for idx, elem in getattr(self.model, attr, {}).items():
-                if idx == 0:
-                    continue
-                rec = elem.get_param("CON")
-                if rec and len(rec.values) >= 2:
-                    for raw in rec.values[:2]:
-                        try:
-                            pipe_idx = int(raw)
-                            if pipe_idx:
-                                pipe_to_elems[pipe_idx].append(elem.name)
-                        except (ValueError, TypeError):
-                            pass
-
-        for attr in ("feeds", "products"):
-            for idx, elem in getattr(self.model, attr, {}).items():
-                if idx == 0:
-                    continue
-                for noz in ("NOZL", "NOZ"):
-                    rec = elem.get_param(noz)
-                    if rec and rec.values:
-                        try:
-                            pipe_idx = int(rec.values[0])
-                            if pipe_idx:
-                                pipe_to_elems[pipe_idx].append(elem.name)
-                        except (ValueError, TypeError):
-                            pass
-                        break
+        pipe_to_elems = self._build_pipe_to_elems()
 
         pairs: list[tuple[str, str]] = []
         seen: set[frozenset[str]] = set()
@@ -691,6 +698,89 @@ class LayoutService:
             elif angle_deg > (90.0 - threshold_deg):
                 # Almost vertical — align elem2's X to elem1's X
                 self.__set_position_on_element(elem2, pos1[0], pos2[1])
+
+    # ------------------------------------------------------------------
+    # Orthogonal pipe routing
+    # ------------------------------------------------------------------
+
+    def route_pipe(self, pipe: BaseElement, bend: str = "auto") -> None:
+        """Route a single pipe as an orthogonal polyline between its endpoints.
+
+        Looks up the two elements connected by *pipe*, reads their positions,
+        and writes a 2- or 3-point polyline:
+
+        - Straight line (2 points) when the connection is already horizontal
+          or vertical.
+        - L-shape (3 points) otherwise, with one 90-degree corner.
+
+        The corner direction is controlled by *bend*:
+
+        - ``"h"`` - horizontal-first: ``start -> (x_end, y_start) -> end``
+        - ``"v"`` - vertical-first:   ``start -> (x_start, y_end) -> end``
+        - ``"auto"`` (default) - horizontal-first when ``|dx| >= |dy|``,
+          vertical-first otherwise.
+
+        Args:
+            pipe: A PIPE element to route.
+            bend: Corner direction. One of ``"h"``, ``"v"``, or ``"auto"``.
+        """
+        pipe_to_elems = self._build_pipe_to_elems()
+        endpoint_names = pipe_to_elems.get(pipe.index, [])
+        if len(endpoint_names) != 2:
+            return
+
+        try:
+            elem1 = self.model.get_element(endpoint_names[0])
+            elem2 = self.model.get_element(endpoint_names[1])
+        except Exception:
+            return
+
+        pos1 = self.get_position(elem1)
+        pos2 = self.get_position(elem2)
+        if pos1 is None or pos2 is None:
+            return
+
+        x1, y1 = pos1
+        x2, y2 = pos2
+        dx = x2 - x1
+        dy = y2 - y1
+
+        if dx == 0.0 or dy == 0.0:
+            # Already orthogonal — straight two-point line
+            points: list[tuple[float, float]] = [(x1, y1), (x2, y2)]
+        else:
+            if bend == "auto":
+                effective = "h" if abs(dx) >= abs(dy) else "v"
+            else:
+                effective = bend
+
+            if effective == "h":
+                # Horizontal first: travel along X to align, then along Y
+                points = [(x1, y1), (x2, y1), (x2, y2)]
+            else:
+                # Vertical first: travel along Y to align, then along X
+                points = [(x1, y1), (x1, y2), (x2, y2)]
+
+        # Update the pipe's primary position (icon anchor) to the start point
+        self.__set_position_on_element(pipe, x1, y1)
+        self.set_polyline(pipe, points)
+
+    def route_all_pipes(self, bend: str = "auto") -> None:
+        """Route every pipe with two connected elements as an orthogonal polyline.
+
+        Iterates over all non-template pipes in the model and calls
+        :meth:`route_pipe` on each one that connects exactly two elements.
+        Pipes with zero or one connected element (stubs) are silently skipped.
+
+        Args:
+            bend: Corner direction applied to all pipes.
+                ``"h"`` - horizontal-first, ``"v"`` - vertical-first,
+                ``"auto"`` (default) - chosen per-pipe by dominant displacement.
+        """
+        for idx, pipe in self.model.pipes.items():
+            if idx == 0 or not pipe.name:
+                continue
+            self.route_pipe(pipe, bend)
 
     # ------------------------------------------------------------------
     # Alignment helpers
@@ -861,7 +951,12 @@ class LayoutService:
         for elem, pos in positioned:
             self.__set_position_on_element(elem, pos[0] + dx, pos[1] + dy)
 
-    def auto_layout(self, spacing: float | None = None, strategy: str = "grid") -> None:
+    def auto_layout(
+        self,
+        spacing: float | None = None,
+        strategy: str = "grid",
+        route_pipes: bool = False,
+    ) -> None:
         """Automatically arrange all unplaced elements.
 
         Args:
@@ -872,7 +967,10 @@ class LayoutService:
                 ``"grid"`` (default) - simple rectangular grid.
 
                 ``"flow"`` - topological left-to-right placement ordered by
-                element connectivity (FEED → equipment → PROD).
+                element connectivity (FEED -> equipment -> PROD).
+            route_pipes: When ``True``, call :meth:`route_all_pipes` after
+                placing elements so every pipe gets an orthogonal polyline
+                drawn between its endpoint elements. Defaults to ``False``.
         """
         spacing = spacing or COMFORT_SPACING_X
 
@@ -895,6 +993,9 @@ class LayoutService:
             self._auto_layout_grid(unplaced, existing, spacing)
 
         self.snap_orthogonal()
+
+        if route_pipes:
+            self.route_all_pipes()
 
     def visualize_network(self, path: str | Path = "network.html") -> None:
         """Generate an interactive PyVis HTML visualization."""

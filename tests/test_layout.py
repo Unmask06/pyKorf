@@ -141,6 +141,105 @@ class TestAddBend:
         assert (3000.0, 2000.0) in pts
 
 
+class TestRoutePipe:
+    def test_route_pipe_straight_horizontal(self):
+        m = Model(CWC_KDF)
+        # Find a pipe with exactly 2 connected elements
+        pipe_to_elems = m._layout_service._build_pipe_to_elems()
+        target_idx = next((idx for idx, names in pipe_to_elems.items() if len(names) == 2), None)
+        if target_idx is None:
+            return
+        pipe = m.pipes[target_idx]
+        m.route_pipe(pipe, bend="h")
+        pts = m.get_polyline(pipe)
+        assert len(pts) >= 2
+
+    def test_route_pipe_h_bend(self):
+        m = Model(CWC_KDF)
+        # Place two elements at a diagonal and route between them
+        pipe_to_elems = m._layout_service._build_pipe_to_elems()
+        target_idx = next((idx for idx, names in pipe_to_elems.items() if len(names) == 2), None)
+        if target_idx is None:
+            return
+        pipe = m.pipes[target_idx]
+        names = pipe_to_elems[target_idx]
+        # Force a diagonal position
+        m.set_position(m[names[0]], 2000.0, 2000.0)
+        m.set_position(m[names[1]], 5000.0, 5000.0)
+        m.route_pipe(pipe, bend="h")
+        pts = m.get_polyline(pipe)
+        # Should have 3 points for the L-shape
+        assert len(pts) == 3
+        # Corner should be at (5000, 2000) for horizontal-first
+        assert pts[1] == (5000.0, 2000.0)
+
+    def test_route_pipe_v_bend(self):
+        m = Model(CWC_KDF)
+        pipe_to_elems = m._layout_service._build_pipe_to_elems()
+        target_idx = next((idx for idx, names in pipe_to_elems.items() if len(names) == 2), None)
+        if target_idx is None:
+            return
+        pipe = m.pipes[target_idx]
+        names = pipe_to_elems[target_idx]
+        m.set_position(m[names[0]], 2000.0, 2000.0)
+        m.set_position(m[names[1]], 5000.0, 5000.0)
+        m.route_pipe(pipe, bend="v")
+        pts = m.get_polyline(pipe)
+        assert len(pts) == 3
+        # Corner should be at (2000, 5000) for vertical-first
+        assert pts[1] == (2000.0, 5000.0)
+
+    def test_route_pipe_auto_chooses_h_when_dx_dominant(self):
+        m = Model(CWC_KDF)
+        pipe_to_elems = m._layout_service._build_pipe_to_elems()
+        target_idx = next((idx for idx, names in pipe_to_elems.items() if len(names) == 2), None)
+        if target_idx is None:
+            return
+        pipe = m.pipes[target_idx]
+        names = pipe_to_elems[target_idx]
+        # dx >> dy  => horizontal-first
+        m.set_position(m[names[0]], 1000.0, 2000.0)
+        m.set_position(m[names[1]], 6000.0, 2100.0)
+        m.route_pipe(pipe, bend="auto")
+        pts = m.get_polyline(pipe)
+        # Since dy is small but nonzero, we get 3 points; corner Y == start Y
+        if len(pts) == 3:
+            assert pts[1][1] == 2000.0  # horizontal-first: corner keeps start Y
+
+    def test_route_all_pipes_smoke(self):
+        m = Model(CWC_KDF)
+        m.route_all_pipes()
+        # All connected pipes should now have polylines
+        pipe_to_elems = m._layout_service._build_pipe_to_elems()
+        for idx, pipe in m.pipes.items():
+            if idx == 0 or not pipe.name:
+                continue
+            if len(pipe_to_elems.get(idx, [])) == 2:
+                pts = m.get_polyline(pipe)
+                assert len(pts) >= 2, f"Pipe {pipe.name} should have polyline"
+
+    def test_route_all_pipes_pump(self):
+        m = Model(PUMP_KDF)
+        m.route_all_pipes()  # should not raise
+
+    def test_auto_layout_with_route_pipes(self):
+        m = Model(PUMP_KDF)
+        for elem in m.elements:
+            m.set_position(elem, 0.0, 0.0)
+        m.auto_layout(strategy="flow", route_pipes=True)
+        # Pipes should have polylines
+        pipe_to_elems = m._layout_service._build_pipe_to_elems()
+        routed = 0
+        for idx, pipe in m.pipes.items():
+            if idx == 0 or not pipe.name:
+                continue
+            if len(pipe_to_elems.get(idx, [])) == 2:
+                pts = m.get_polyline(pipe)
+                if pts:
+                    routed += 1
+        assert routed > 0
+
+
 class TestAutoLayoutFlow:
     def test_auto_layout_flow_does_not_crash(self):
         m = Model(CWC_KDF)

@@ -526,7 +526,12 @@ class Model(_ModelBase):
         """
         return self._layout_service.auto_place(elem)
 
-    def auto_layout(self, spacing: float | None = None, strategy: str = "grid") -> None:
+    def auto_layout(
+        self,
+        spacing: float | None = None,
+        strategy: str = "grid",
+        route_pipes: bool = False,
+    ) -> None:
         """Automatically arrange all unplaced elements.
 
         Parameters
@@ -536,9 +541,36 @@ class Model(_ModelBase):
         strategy:
             ``"grid"`` (default) - simple rectangular grid.
             ``"flow"`` - topological left-to-right placement ordered by
-            element connectivity (FEED → equipment → PROD).
+            element connectivity (FEED -> equipment -> PROD).
+        route_pipes:
+            When True, route every pipe as an orthogonal polyline after
+            placement. Combines layout + routing in one call. Default False.
         """
-        return self._layout_service.auto_layout(spacing, strategy)
+        return self._layout_service.auto_layout(spacing, strategy, route_pipes)
+
+    def route_pipe(self, pipe: BaseElement, bend: str = "auto") -> None:
+        """Route a single pipe as an orthogonal polyline between its endpoints.
+
+        Parameters
+        ----------
+        pipe:
+            A PIPE element.
+        bend:
+            Corner direction: ``"h"`` horizontal-first, ``"v"`` vertical-first,
+            ``"auto"`` (default) chosen by dominant displacement.
+        """
+        return self._layout_service.route_pipe(pipe, bend)
+
+    def route_all_pipes(self, bend: str = "auto") -> None:
+        """Route every pipe with two connected elements as an orthogonal polyline.
+
+        Parameters
+        ----------
+        bend:
+            Corner direction applied to all pipes.
+            ``"h"``, ``"v"``, or ``"auto"`` (default).
+        """
+        return self._layout_service.route_all_pipes(bend)
 
     def get_polyline(self, pipe: BaseElement) -> list[tuple[float, float]]:
         """Get the drawn waypoints from a pipe's XY record.
