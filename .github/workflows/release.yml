@@ -31,8 +31,10 @@ jobs:
         shell: pwsh
         run: |
           $VERSION = uv run python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])"
+          $MAJOR = $VERSION.Split('.')[0]
           echo "VERSION=$VERSION" >> $env:GITHUB_OUTPUT
-          echo "Target version: $VERSION"
+          echo "MAJOR=$MAJOR" >> $env:GITHUB_OUTPUT
+          echo "Target version: $VERSION (major: $MAJOR)"
 
       - name: Check if Tag Exists
         id: check_tag
@@ -62,14 +64,19 @@ jobs:
           name: pyKorf v${{ steps.get_version.outputs.VERSION }}
           body: |
             ## pyKorf Windows Distribution
-            
+
             This is an automated release of the pyKorf Windows build.
-            
-            ### Installation
-            1. Download the `pykorf-${{ steps.get_version.outputs.VERSION }}-trial.zip` asset below.
-            2. Extract all files to a folder.
-            3. Run `pykorf.bat` to launch the application.
+
+            ### How to Get pyKorf
+            Download `pykorf.bat` from the assets below (only needed once —
+            or when a new major version is released).
+
+            Run `pykorf.bat` — it downloads and installs pyKorf automatically on first run.
+            Subsequent updates are handled automatically from within the application.
           draft: false
           prerelease: false
-          files: dist/pykorf-${{ steps.get_version.outputs.VERSION }}-trial.zip
+          files: |
+            dist/pykorf-v${{ steps.get_version.outputs.MAJOR }}.zip
+            dist/pykorf.bat
+            dist/bat_version.txt
           generate_release_notes: true

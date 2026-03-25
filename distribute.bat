@@ -98,6 +98,12 @@ if exist pykorf\py.typed (
     copy /y pykorf\py.typed %DIST_DIR%\pykorf\
 )
 
+REM Copy JSON data files (excluded from PyArmor obfuscation, must be copied manually)
+if exist pykorf\reports (
+    mkdir %DIST_DIR%\pykorf\reports 2>nul
+    copy /y pykorf\reports\*.json %DIST_DIR%\pykorf\reports\ >nul
+)
+
 REM Copy pyproject.toml and strip dev dependencies (only keep runtime deps)
 echo.
 echo Preparing pyproject.toml (stripping dev dependencies)...
@@ -113,21 +119,37 @@ echo.
 echo Creating launcher...
 copy /y pykorf.bat %DIST_DIR%\
 
-REM Step 4: Create distribution zip with version suffix (trial)
+REM Create bat_version.txt from BAT_VERSION constant in pykorf.bat
+echo.
+echo Creating bat_version.txt...
+set "BAT_VER="
+for /f "tokens=2 delims==" %%v in ('findstr /b /c:"set \"BAT_VERSION" pykorf.bat') do (
+    if not defined BAT_VER set "BAT_VER=%%v"
+)
+set "BAT_VER=%BAT_VER:"=%"
+set "BAT_VER=%BAT_VER: =%"
+if "%BAT_VER%"=="" (
+    echo ERROR: Could not extract BAT_VERSION from pykorf.bat
+    exit /b 1
+)
+echo %BAT_VER%> %DIST_DIR%\bat_version.txt
+echo BAT_VERSION: %BAT_VER%
+
+REM Step 4: Create distribution zip
 echo.
 echo Creating distribution package...
-uv run python -c "import zipfile, os; z = zipfile.ZipFile(r'%DIST_DIR%/%PACKAGE_NAME%-%VERSION%-trial.zip', 'w', zipfile.ZIP_DEFLATED); base = r'%DIST_DIR%'; [z.write(os.path.join(root, f), os.path.relpath(os.path.join(root, f), base)) for root, dirs, files in os.walk(base) for f in files if not f.endswith('.zip')]; z.close()"
+uv run python -c "import zipfile, os; z = zipfile.ZipFile(r'%DIST_DIR%/pykorf-v%MAJOR%.zip', 'w', zipfile.ZIP_DEFLATED); base = r'%DIST_DIR%'; [z.write(os.path.join(root, f), os.path.relpath(os.path.join(root, f), base)) for root, dirs, files in os.walk(base) for f in files if not f.endswith('.zip')]; z.close()"
 
-REM Clean up unzipped content (keep only the zip)
+REM Clean up unzipped content
+REM Keep pykorf.bat and bat_version.txt — uploaded as separate release assets
 echo Cleaning up...
 for /d %%d in (%DIST_DIR%\*) do rd /s /q "%%d"
 del /q %DIST_DIR%\pyproject.toml 2>nul
-del /q %DIST_DIR%\pykorf.bat 2>nul
 del /q %DIST_DIR%\VERSION 2>nul
 
 echo.
 echo === Build Complete ===
-echo Distribution package: %DIST_DIR%\%PACKAGE_NAME%-%VERSION%-trial.zip
+echo Distribution package: %DIST_DIR%\pykorf-v%MAJOR%.zip
 echo.
 echo Contents:
 echo   - pykorf/          (obfuscated package)
