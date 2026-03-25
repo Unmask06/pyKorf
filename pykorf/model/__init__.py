@@ -526,15 +526,80 @@ class Model(_ModelBase):
         """
         return self._layout_service.auto_place(elem)
 
-    def auto_layout(self, spacing: float | None = None) -> None:
-        """Automatically arrange all unplaced elements in a logical flow.
+    def auto_layout(self, spacing: float | None = None, strategy: str = "grid") -> None:
+        """Automatically arrange all unplaced elements.
 
         Parameters
         ----------
         spacing:
             Spacing between elements. If None, uses default comfort spacing.
+        strategy:
+            ``"grid"`` (default) - simple rectangular grid.
+            ``"flow"`` - topological left-to-right placement ordered by
+            element connectivity (FEED → equipment → PROD).
         """
-        return self._layout_service.auto_layout(spacing)
+        return self._layout_service.auto_layout(spacing, strategy)
+
+    def get_polyline(self, pipe: BaseElement) -> list[tuple[float, float]]:
+        """Get the drawn waypoints from a pipe's XY record.
+
+        Parameters
+        ----------
+        pipe:
+            A PIPE element.
+
+        Returns:
+        -------
+        list[tuple[float, float]]
+            Ordered list of (x, y) waypoint tuples.  Empty if none are set.
+        """
+        return self._layout_service.get_polyline(pipe)
+
+    def set_polyline(self, pipe: BaseElement, points: list[tuple[float, float]]) -> None:
+        """Write waypoints into a pipe's XY record.
+
+        Parameters
+        ----------
+        pipe:
+            A PIPE element.
+        points:
+            Ordered list of (x, y) waypoints.
+        """
+        return self._layout_service.set_polyline(pipe, points)
+
+    def add_bend(
+        self,
+        pipe: BaseElement,
+        x: float,
+        y: float,
+        index: int | None = None,
+    ) -> None:
+        """Insert a bend waypoint into a pipe's polyline.
+
+        Creates an angular corner in the pipe drawing.  The most common
+        use-case is making an L-shaped route::
+
+            start ──► corner ──► end
+
+        For an orthogonal L from ``(x1, y1)`` to ``(x2, y2)``:
+
+        - horizontal-first: ``add_bend(pipe, x2, y1)``
+        - vertical-first:   ``add_bend(pipe, x1, y2)``
+
+        Parameters
+        ----------
+        pipe:
+            A PIPE element.
+        x:
+            X coordinate of the new waypoint.
+        y:
+            Y coordinate of the new waypoint.
+        index:
+            Position in the waypoints list to insert at.  ``None`` (default)
+            inserts before the last point, making the new point the corner
+            of a start → corner → end L-shape.
+        """
+        return self._layout_service.add_bend(pipe, x, y, index)
 
     def snap_orthogonal(self, threshold_deg: float = 10.0) -> None:
         """Snap near-orthogonal connections to exactly horizontal or vertical.

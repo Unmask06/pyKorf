@@ -65,6 +65,109 @@ class TestAutoPlace:
             assert pos != (0.0, 0.0)
 
 
+class TestPolyline:
+    def test_get_polyline_pipe_with_bends(self):
+        m = Model(CWC_KDF)
+        # CWC has pipes with BEND=1 and waypoints in XY records
+        pipe = m.pipes[1]
+        pts = m.get_polyline(pipe)
+        assert isinstance(pts, list)
+        # CWC pipe 1 has two waypoints
+        assert len(pts) >= 1
+        for x, y in pts:
+            assert isinstance(x, float)
+            assert isinstance(y, float)
+
+    def test_get_polyline_no_waypoints(self):
+        m = Model(PUMP_KDF)
+        # Pipe 1 in Pumpcases has duplicate start point then waypoints
+        pipe = m.pipes[1]
+        pts = m.get_polyline(pipe)
+        assert isinstance(pts, list)
+
+    def test_set_polyline_roundtrip(self):
+        m = Model(CWC_KDF)
+        pipe = m.pipes[1]
+        new_pts = [(1500.0, 4700.0), (2000.0, 4700.0), (2000.0, 5200.0)]
+        m.set_polyline(pipe, new_pts)
+        got = m.get_polyline(pipe)
+        assert got == new_pts
+
+    def test_set_polyline_sets_bend_flag(self):
+        m = Model(CWC_KDF)
+        pipe = m.pipes[1]
+        m.set_polyline(pipe, [(1000.0, 2000.0), (3000.0, 2000.0)])
+        rec = pipe.get_param("BEND")
+        if rec and rec.values:
+            assert int(rec.values[0]) == 1
+
+    def test_set_polyline_empty_clears_bend_flag(self):
+        m = Model(CWC_KDF)
+        pipe = m.pipes[1]
+        m.set_polyline(pipe, [])
+        rec = pipe.get_param("BEND")
+        if rec and rec.values:
+            assert int(rec.values[0]) == 0
+
+
+class TestAddBend:
+    def test_add_bend_creates_corner(self):
+        m = Model(CWC_KDF)
+        pipe = m.pipes[1]
+        pts_before = m.get_polyline(pipe)
+        m.add_bend(pipe, 9999.0, 1111.0)
+        pts_after = m.get_polyline(pipe)
+        # One more point than before (or at least one point)
+        assert len(pts_after) >= max(1, len(pts_before))
+        # The new waypoint must appear somewhere
+        assert (9999.0, 1111.0) in pts_after
+
+    def test_add_bend_index_zero_prepends(self):
+        m = Model(CWC_KDF)
+        pipe = m.pipes[1]
+        m.set_polyline(pipe, [(1000.0, 2000.0), (3000.0, 2000.0)])
+        m.add_bend(pipe, 500.0, 2000.0, index=0)
+        pts = m.get_polyline(pipe)
+        assert pts[0] == (500.0, 2000.0)
+
+    def test_add_bend_l_shape(self):
+        # Orthogonal L-shape: start (1000,2000) → corner (3000,2000) → end (3000,5000)
+        m = Model(CWC_KDF)
+        pipe = m.pipes[1]
+        m.set_polyline(pipe, [(1000.0, 2000.0), (3000.0, 5000.0)])
+        # Horizontal-first corner
+        m.add_bend(pipe, 3000.0, 2000.0)
+        pts = m.get_polyline(pipe)
+        assert (3000.0, 2000.0) in pts
+
+
+class TestAutoLayoutFlow:
+    def test_auto_layout_flow_does_not_crash(self):
+        m = Model(CWC_KDF)
+        # Reset all positions to unplaced
+        for elem in m.elements:
+            pos = m.get_position(elem)
+            if pos is not None:
+                m.set_position(elem, 0.0, 0.0)
+        m.auto_layout(strategy="flow")
+
+    def test_auto_layout_flow_places_elements(self):
+        m = Model(PUMP_KDF)
+        for elem in m.elements:
+            m.set_position(elem, 0.0, 0.0)
+        m.auto_layout(strategy="flow")
+        placed = [e for e in m.elements if m.get_position(e) not in (None, (0.0, 0.0))]
+        assert len(placed) > 0
+
+    def test_auto_layout_grid_still_works(self):
+        m = Model(PUMP_KDF)
+        for elem in m.elements:
+            m.set_position(elem, 0.0, 0.0)
+        m.auto_layout(strategy="grid")
+        placed = [e for e in m.elements if m.get_position(e) not in (None, (0.0, 0.0))]
+        assert len(placed) > 0
+
+
 class TestSnapOrthogonal:
     def test_snap_orthogonal_does_not_crash(self):
         m = Model(PUMP_KDF)
