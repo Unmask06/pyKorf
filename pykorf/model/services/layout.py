@@ -974,10 +974,13 @@ class LayoutService:
         """
         spacing = spacing or COMFORT_SPACING_X
 
-        unplaced = [
-            elem for elem in self.model.elements
-            if elem.name and ((p := self.get_position(elem)) is None or p == (0.0, 0.0))
-        ]
+        unplaced = []
+        for elem in self.model.elements:
+            if not elem.name:
+                continue
+            pos = self.get_position(elem)
+            if pos is None or pos == (0.0, 0.0):
+                unplaced.append(elem)
         if not unplaced:
             return
 
