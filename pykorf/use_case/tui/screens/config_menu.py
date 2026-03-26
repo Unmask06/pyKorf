@@ -213,6 +213,7 @@ class ConfigMenuScreen(Screen):
     @on(Input.Changed, "#stream-excel-input")
     def on_stream_input_changed(self, event: Input.Changed) -> None:
         """Update Stream file info when input changes."""
+        self._update_file_info(event.value, "stream-file-info")
 
     @on(Button.Pressed, "#btn-import-pms")
     def import_pms(self) -> None:
@@ -221,6 +222,7 @@ class ConfigMenuScreen(Screen):
             get_last_interaction,
             import_pms_from_excel,
             set_last_interaction,
+            set_pms_excel_last_imported,
             set_pms_excel_path,
         )
 
@@ -242,6 +244,7 @@ class ConfigMenuScreen(Screen):
             log_success(results, "Imported PMS from Excel:")
             log_info(results, f"  {path}")
             set_pms_excel_path(excel_path)
+            set_pms_excel_last_imported(datetime.datetime.now().isoformat())
             # Merge with existing data, only update non-empty values
             data = get_last_interaction()
             data["pms_excel_path"] = excel_path
@@ -257,6 +260,7 @@ class ConfigMenuScreen(Screen):
             get_last_interaction,
             import_stream_from_excel,
             set_last_interaction,
+            set_stream_excel_last_imported,
         )
 
         results = self.query_one("#config-results", RichLog)
@@ -280,6 +284,7 @@ class ConfigMenuScreen(Screen):
             path = import_stream_from_excel(excel_path, output_name)
             log_success(results, "Imported Stream Data from Excel:")
             log_info(results, f"  {path}")
+            set_stream_excel_last_imported(datetime.datetime.now().isoformat())
             # Merge with existing data, only update non-empty values
             data = get_last_interaction()
             data["stream_excel_path"] = excel_path

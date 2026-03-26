@@ -96,6 +96,14 @@ class FilePickerScreen(Screen):
     #file-picker-buttons Button {
         margin: 0 1;
     }
+    #tip-label {
+        color: $text-muted;
+        text-style: italic dim;
+        height: auto;
+        margin-top: 1;
+        border-top: dashed $surface;
+        padding-top: 1;
+    }
     """
 
     def __init__(self, debug_mode: bool = False) -> None:
@@ -126,6 +134,7 @@ class FilePickerScreen(Screen):
                 yield Button("Load", variant="primary", id="btn-load")
                 yield Button("Clear", variant="warning", id="btn-clear")
                 yield Button("Quit", variant="error", id="btn-quit")
+            yield Label("", id="tip-label")
         yield Footer()
 
     def on_mount(self) -> None:
@@ -135,6 +144,10 @@ class FilePickerScreen(Screen):
             input_widget.text = str(last_path)
 
         self._populate_recent_files()
+
+        from pykorf.use_case.tui.tips import get_random_tip
+
+        self.query_one("#tip-label", Label).update(get_random_tip())
 
     def _populate_recent_files(self) -> None:
         recent = get_recent_files()

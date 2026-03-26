@@ -266,3 +266,45 @@ def set_last_excel_import_path(path: str | Path) -> None:
     config = load_config()
     config["last_excel_import_path"] = str(path)
     save_config(config)
+
+
+def get_pms_excel_last_imported() -> str | None:
+    """Get the ISO timestamp of when PMS data was last imported from Excel.
+
+    Returns:
+        ISO format timestamp string, or None if PMS has never been imported.
+    """
+    config = load_config()
+    return config.get("pms_excel_last_imported")
+
+
+def set_pms_excel_last_imported(timestamp: str) -> None:
+    """Save the ISO timestamp of when PMS data was last imported from Excel.
+
+    Args:
+        timestamp: ISO format timestamp string (e.g. from datetime.isoformat()).
+    """
+    config = load_config()
+    config["pms_excel_last_imported"] = timestamp
+    save_config(config)
+
+
+def get_stream_excel_last_imported() -> str | None:
+    """Get the ISO timestamp of when Stream data was last imported from Excel.
+
+    Returns:
+        ISO format timestamp string, or None if Stream data has never been imported.
+    """
+    config = load_config()
+    return config.get("stream_excel_last_imported")
+
+
+def set_stream_excel_last_imported(timestamp: str) -> None:
+    """Save the ISO timestamp of when Stream data was last imported from Excel.
+
+    Args:
+        timestamp: ISO format timestamp string (e.g. from datetime.isoformat()).
+    """
+    config = load_config()
+    config["stream_excel_last_imported"] = timestamp
+    save_config(config)

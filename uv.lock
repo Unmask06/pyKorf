@@ -1745,7 +1745,7 @@ wheels = [
 
 [[package]]
 name = "pykorf"
-version = "0.4.0"
+version = "0.4.1"
 source = { editable = "." }
 dependencies = [
     { name = "appdirs" },
@@ -1837,7 +1837,7 @@ docs = [
     { name = "mkdocs-awesome-pages-plugin", specifier = ">=2.9" },
     { name = "mkdocs-git-committers-plugin-2", specifier = ">=2.3" },
     { name = "mkdocs-git-revision-date-localized-plugin", specifier = ">=1.2" },
-    { name = "mkdocs-material", specifier = ">=9.5,<9.7" },
+    { name = "mkdocs-material", specifier = ">=9.5,<9.8" },
     { name = "mkdocs-minify-plugin", specifier = ">=0.8" },
     { name = "mkdocs-redirects", specifier = ">=1.2" },
     { name = "mkdocstrings", extras = ["python"], specifier = ">=0.25" },

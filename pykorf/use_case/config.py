@@ -58,8 +58,10 @@ from pykorf.use_case.preferences import (
     get_last_hmb_path,
     get_last_interaction,
     get_last_kdf_path,
+    get_pms_excel_last_imported,
     get_pms_excel_path,
     get_recent_files,
+    get_stream_excel_last_imported,
     load_config,
     record_opened_file,
     save_config,
@@ -70,7 +72,9 @@ from pykorf.use_case.preferences import (
     set_last_hmb_path,
     set_last_interaction,
     set_last_kdf_path,
+    set_pms_excel_last_imported,
     set_pms_excel_path,
+    set_stream_excel_last_imported,
 )
 
 __all__ = [
@@ -97,9 +101,11 @@ __all__ = [
     "get_last_hmb_path",
     "get_last_interaction",
     "get_last_kdf_path",
+    "get_pms_excel_last_imported",
     "get_pms_excel_path",
     "get_pms_path",
     "get_recent_files",
+    "get_stream_excel_last_imported",
     "get_stream_path",
     "import_pms_from_excel",
     "import_stream_from_excel",
@@ -118,5 +124,7 @@ __all__ = [
     "set_last_hmb_path",
     "set_last_interaction",
     "set_last_kdf_path",
+    "set_pms_excel_last_imported",
     "set_pms_excel_path",
+    "set_stream_excel_last_imported",
 ]

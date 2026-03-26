@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import datetime
+from pathlib import Path
+
 from textual import on
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
@@ -9,6 +12,40 @@ from textual.screen import Screen
 from textual.widgets import Button, Footer, Label, Static
 
 from pykorf import __version__
+
+
+def _check_excel_needs_reimport() -> tuple[bool, bool]:
+    """Check whether the PMS or Stream Excel sources have been modified since last import.
+
+    Compares each Excel file's modification time against the stored last-imported
+    timestamp.  Returns a pair of booleans: (pms_stale, stream_stale).
+    """
+    from pykorf.use_case.preferences import (
+        get_last_interaction,
+        get_pms_excel_last_imported,
+        get_pms_excel_path,
+        get_stream_excel_last_imported,
+    )
+
+    def _is_stale(excel_path_str: str | None, last_imported_str: str | None) -> bool:
+        if not excel_path_str or not last_imported_str:
+            return False
+        try:
+            p = Path(excel_path_str)
+            if not p.is_file():
+                return False
+            file_mtime = datetime.datetime.fromtimestamp(p.stat().st_mtime)
+            last_imported = datetime.datetime.fromisoformat(last_imported_str)
+            return file_mtime > last_imported
+        except (OSError, ValueError):
+            return False
+
+    pms_stale = _is_stale(get_pms_excel_path(), get_pms_excel_last_imported())
+
+    stream_path = get_last_interaction().get("stream_excel_path")
+    stream_stale = _is_stale(stream_path, get_stream_excel_last_imported())
+
+    return pms_stale, stream_stale
 
 
 class MainMenuScreen(Screen):
@@ -185,6 +222,22 @@ class MainMenuScreen(Screen):
 
             validation_issues = model.validate()
 
+        pms_stale, stream_stale = _check_excel_needs_reimport()
+        config_btn_label = "⚙ Config Menu"
+        config_btn_variant = "default"
+        config_description = "Manage PMS and stream data files"
+        if pms_stale or stream_stale:
+            config_btn_label = "⚙ Config Menu ▲"
+            config_btn_variant = "warning"
+            stale_names = []
+            if pms_stale:
+                stale_names.append("PMS")
+            if stream_stale:
+                stale_names.append("Stream")
+            config_description = (
+                f"▲ {'/'.join(stale_names)} Excel updated — re-import recommended"
+            )
+
         with Vertical(id="menu-container"):
             yield Label(f"pyKorf Use Case Tool V{__version__}", id="file-label")
             yield Label(f"📄 {file_name}", id="file-path-label")
@@ -225,8 +278,12 @@ class MainMenuScreen(Screen):
                         yield Label("▸ Configuration", classes="menu-section-header")
                         yield Static("─" * 35, classes="menu-section-divider")
                         with Horizontal(classes="menu-item"):
-                            yield Button("⚙ Config Menu", variant="default", id="btn-config")
-                            yield Label("Manage PMS and stream data files")
+                            yield Button(
+                                config_btn_label,
+                                variant=config_btn_variant,
+                                id="btn-config",
+                            )
+                            yield Label(config_description)
                         with Horizontal(classes="menu-item"):
                             yield Button(
                                 "⇄ Import/Export", variant="primary", id="btn-import-export"
