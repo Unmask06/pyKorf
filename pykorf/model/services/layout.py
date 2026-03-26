@@ -680,7 +680,7 @@ class LayoutService:
             try:
                 elem1 = self.model.get_element(name1)
                 elem2 = self.model.get_element(name2)
-            except Exception:
+            except KeyError:
                 continue
             pos1 = self.get_position(elem1)
             pos2 = self.get_position(elem2)
