@@ -104,10 +104,10 @@ if exist pykorf\reports (
     copy /y pykorf\reports\*.json %DIST_DIR%\pykorf\reports\ >nul
 )
 
-REM Copy pyproject.toml and strip dev dependencies (only keep runtime deps)
+REM Copy pyproject.toml — keep only runtime deps and setuptools config
 echo.
-echo Preparing pyproject.toml (stripping dev dependencies)...
-uv run python -c "import re; c=open('pyproject.toml','r').read(); c=re.sub(r'\n\[tool\.uv\].*?(?=\n\[)','',c,flags=re.DOTALL); c=re.sub(r'\n\[dependency-groups\].*?(?=\n\[)','',c,flags=re.DOTALL); open('dist/pyproject.toml','w').write(c)"
+echo Preparing pyproject.toml (stripping dev/docs dependencies)...
+uv run python -c "import re; c=open('pyproject.toml','r').read(); subs=[(r'\n\[tool\.uv\].*?(?=\n\[)',''),(r'\n\[dependency-groups\].*?(?=\n\[)',''),(r'\n\[project\.optional-dependencies\].*?(?=\n\[)',''),(r'\n\[tool\.(?!setuptools)[^\]]+\].*?(?=\n\[|\Z)',''),(r'\n\[\[tool\.[^\]]+\]\].*?(?=\n\[|\Z)',''),(r',?\s*\"setuptools-scm[^\"]*\"','')]; [c:=re.sub(p,r,c,flags=re.DOTALL) for p,r in subs]; open('dist/pyproject.toml','w').write(c)"
 
 REM Create VERSION file for version tracking
 echo.
@@ -145,7 +145,6 @@ REM Keep pykorf.bat and bat_version.txt — uploaded as separate release assets
 echo Cleaning up...
 for /d %%d in (%DIST_DIR%\*) do rd /s /q "%%d"
 del /q %DIST_DIR%\pyproject.toml 2>nul
-del /q %DIST_DIR%\VERSION 2>nul
 
 echo.
 echo === Build Complete ===

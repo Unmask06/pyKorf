@@ -30,6 +30,12 @@ set "WHITE=%ESC%[97m"
 set "RESET=%ESC%[0m"
 
 REM ============================================
+REM Uninstall flag check
+REM ============================================
+if /i "%~1"=="/uninstall" goto :uninstall
+if /i "%~1"=="--uninstall" goto :uninstall
+
+REM ============================================
 REM Launcher self-update check
 REM (silent network check; skipped gracefully if offline)
 REM ============================================
@@ -115,6 +121,60 @@ if not "!INST_MAJOR!"=="!BAT_MAJOR!" (
     pause
     exit /b 1
 )
+
+REM ============================================
+REM App version update check
+REM ============================================
+set "APP_VER_URL=https://github.com/Unmask06/pykorf/releases/latest/download/VERSION"
+set "APP_VER_TMP=%TEMP%\pk_app_ver.txt"
+set "APP_ZIP_URL=https://github.com/Unmask06/pykorf/releases/latest/download/pykorf-v!BAT_MAJOR!.zip"
+
+curl -L --fail --silent --max-time 10 -o "!APP_VER_TMP!" "!APP_VER_URL!" 2>nul
+if %errorlevel% neq 0 goto :app_update_done
+
+set "REMOTE_APP_VER="
+set /p REMOTE_APP_VER=<"!APP_VER_TMP!"
+del "!APP_VER_TMP!" >nul 2>&1
+if "!REMOTE_APP_VER!"=="" goto :app_update_done
+if "!INST_VER!"=="!REMOTE_APP_VER!" goto :app_update_done
+
+REM Versions differ — download and apply update
+echo %CYAN%  Updating pyKorf !INST_VER! → !REMOTE_APP_VER!...%RESET%
+echo.
+
+set "UPD_ZIP=%TEMP%\pykorf_update.zip"
+set "UPD_DIR=%TEMP%\pykorf_upd"
+
+curl -L --fail --silent --max-time 120 -o "!UPD_ZIP!" "!APP_ZIP_URL!" 2>nul
+if %errorlevel% neq 0 (
+    echo %YELLOW%  Update download failed — launching existing version%RESET%
+    echo.
+    goto :app_update_done
+)
+
+if exist "!UPD_DIR!" rd /s /q "!UPD_DIR!"
+mkdir "!UPD_DIR!"
+tar -xf "!UPD_ZIP!" -C "!UPD_DIR!" >nul 2>&1
+del "!UPD_ZIP!" >nul 2>&1
+
+REM Overlay new files onto APPDATA_DIR, preserving data/ and config.json
+robocopy "!UPD_DIR!" "%APPDATA_DIR%" /E /XD "data" /XF "config.json" /NFL /NDL /NJH /NJS >nul 2>&1
+rd /s /q "!UPD_DIR!" >nul 2>&1
+
+REM Reinstall package into existing venv
+cd /d "%APPDATA_DIR%"
+set "VENV_UV=%APPDATA_DIR%\.venv\Scripts\uv.exe"
+if exist "!VENV_UV!" (
+    "!VENV_UV!" pip install -e . --quiet
+) else (
+    ".venv\Scripts\python.exe" -m uv pip install -e . --quiet 2>nul
+    if %errorlevel% neq 0 ".venv\Scripts\python.exe" -m pip install -e . --quiet
+)
+
+echo %GREEN%  ✓  Updated to !REMOTE_APP_VER!%RESET%
+echo.
+
+:app_update_done
 
 cd /d "%APPDATA_DIR%"
 ".venv\Scripts\python.exe" -m pykorf
@@ -333,3 +393,111 @@ echo.
 ".venv\Scripts\python.exe" -m pykorf
 
 endlocal
+goto :eof
+
+REM ============================================
+REM Uninstall
+REM ============================================
+:uninstall
+cls
+echo.
+echo %CYAN%        ######  #     # #    # ####### ######  ####### %RESET%
+echo %CYAN%        #     #  #   #  #   #  #     # #     # #       %RESET%
+echo %CYAN%        #     #   # #   #  #   #     # #     # #       %RESET%
+echo %CYAN%        ######     #    ####   #     # ######  #####   %RESET%
+echo %CYAN%        #          #    #  #   #     # #   #   #       %RESET%
+echo %CYAN%        #          #    #   #  #     # #    #  #       %RESET%
+echo %CYAN%        #          #    #    # ####### #     # #       %RESET%
+echo.
+echo %GRAY%  ────────────────────────────────────────────────────────%RESET%
+echo %WHITE%    Uninstall pyKorf%RESET%
+echo %GRAY%  ────────────────────────────────────────────────────────%RESET%
+echo.
+
+if not exist "%APPDATA_DIR%" (
+    echo %YELLOW%  pyKorf is not installed.%RESET%
+    echo.
+    pause
+    exit /b 0
+)
+
+echo %WHITE%  Choose what to remove:%RESET%
+echo.
+echo %WHITE%    [1]  App only          %GRAY%(keeps your saved data and settings)%RESET%
+echo %WHITE%    [2]  Complete uninstall %GRAY%(removes everything including saved data)%RESET%
+echo %WHITE%    [0]  Cancel%RESET%
+echo.
+set /p UNINST_CHOICE=  Enter choice:
+
+if "!UNINST_CHOICE!"=="0" (
+    echo.
+    echo %GRAY%  Cancelled.%RESET%
+    echo.
+    pause
+    exit /b 0
+)
+
+if "!UNINST_CHOICE!"=="1" goto :uninstall_app_only
+if "!UNINST_CHOICE!"=="2" goto :uninstall_complete
+
+echo %YELLOW%  Invalid choice. Exiting.%RESET%
+echo.
+pause
+exit /b 1
+
+:uninstall_app_only
+echo.
+echo %WHITE%  This will remove the pyKorf application but keep your saved data.%RESET%
+echo.
+set /p CONFIRM=  Are you sure? (Y/N):
+if /i not "!CONFIRM!"=="Y" (
+    echo.
+    echo %GRAY%  Cancelled.%RESET%
+    echo.
+    pause
+    exit /b 0
+)
+echo.
+echo %GRAY%  Removing application...%RESET%
+REM Preserve data/ and config.json — move them out, wipe dir, restore
+if exist "%APPDATA_DIR%\data" (
+    robocopy "%APPDATA_DIR%\data" "%TEMP%\pykorf_data_bak" /E /MOVE /NFL /NDL /NJH /NJS >nul 2>&1
+)
+if exist "%APPDATA_DIR%\config.json" (
+    copy /y "%APPDATA_DIR%\config.json" "%TEMP%\pykorf_cfg_bak.json" >nul 2>&1
+)
+rd /s /q "%APPDATA_DIR%" >nul 2>&1
+mkdir "%APPDATA_DIR%" >nul 2>&1
+if exist "%TEMP%\pykorf_data_bak" (
+    robocopy "%TEMP%\pykorf_data_bak" "%APPDATA_DIR%\data" /E /MOVE /NFL /NDL /NJH /NJS >nul 2>&1
+)
+if exist "%TEMP%\pykorf_cfg_bak.json" (
+    copy /y "%TEMP%\pykorf_cfg_bak.json" "%APPDATA_DIR%\config.json" >nul 2>&1
+    del "%TEMP%\pykorf_cfg_bak.json" >nul 2>&1
+)
+echo %GREEN%  ✓  Application removed. Your saved data is intact.%RESET%
+echo %WHITE%     Run pykorf.bat again to reinstall.%RESET%
+echo.
+pause
+exit /b 0
+
+:uninstall_complete
+echo.
+echo %RED%  This will permanently remove pyKorf and all saved data.%RESET%
+echo.
+set /p CONFIRM=  Are you sure? (Y/N):
+if /i not "!CONFIRM!"=="Y" (
+    echo.
+    echo %GRAY%  Cancelled.%RESET%
+    echo.
+    pause
+    exit /b 0
+)
+echo.
+echo %GRAY%  Removing all pyKorf data...%RESET%
+rd /s /q "%APPDATA_DIR%" >nul 2>&1
+echo %GREEN%  ✓  pyKorf has been completely removed.%RESET%
+echo %WHITE%     You can delete pykorf.bat manually.%RESET%
+echo.
+pause
+exit /b 0
