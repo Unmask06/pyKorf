@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime
+import os
 from pathlib import Path
 
 from textual import on
@@ -39,6 +40,11 @@ class FilePickerScreen(Screen):
     }
     #file-picker-box > Label {
         margin-bottom: 1;
+    }
+    #greeting-label {
+        color: $accent;
+        text-style: bold;
+        margin-bottom: 0;
     }
     #file-name-label {
         color: $success;
@@ -116,8 +122,10 @@ class FilePickerScreen(Screen):
         self.debug_mode = debug_mode
 
     def compose(self) -> ComposeResult:
+        username = os.environ.get("USERNAME") or os.environ.get("USER") or "there"
         yield Header()
         with Vertical(id="file-picker-box"):
+            yield Label(f"Hello, {username}!", id="greeting-label")
             yield Label("Drag & drop a KDF file onto this window  —  or enter the path manually:")
             yield Label("", id="file-name-label")
             yield TextArea(
