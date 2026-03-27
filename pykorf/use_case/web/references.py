@@ -1,7 +1,8 @@
 """Reference documents manager for pyKorf web UI.
 
 Stores design-basis notes and reference document links (SharePoint URLs or
-local file paths) in a JSON sidecar file next to the KDF file.
+local file paths) in a ``.pykorf`` sidecar file next to the KDF file.  The
+sidecar is JSON and may grow to hold other per-model metadata in the future.
 
 For each reference a Windows Internet Shortcut (``.url``) is created in a
 ``reference/`` sub-folder next to the KDF file.  ``.url`` files are plain
@@ -12,7 +13,7 @@ Storage layout::
 
     project/
       model.kdf
-      model.references.json   ← basis text + reference list
+      model.pykorf            ← basis text + reference list (JSON)
       reference/
         P&ID-001.url          ← Internet Shortcut → SharePoint link
         Datasheet-HX-01.url
@@ -100,7 +101,19 @@ class ReferencesStore:
 
     @classmethod
     def _sidecar_path(cls, kdf_path: Path) -> Path:
-        """Return the JSON sidecar path for *kdf_path*.
+        """Return the ``.pykorf`` sidecar path for *kdf_path*.
+
+        Args:
+            kdf_path: Path to the .kdf file.
+
+        Returns:
+            Path of the form ``{stem}.pykorf`` beside the KDF.
+        """
+        return kdf_path.parent / f"{kdf_path.stem}.pykorf"
+
+    @classmethod
+    def _legacy_sidecar_path(cls, kdf_path: Path) -> Path:
+        """Return the old ``.references.json`` sidecar path (migration only).
 
         Args:
             kdf_path: Path to the .kdf file.
@@ -112,7 +125,10 @@ class ReferencesStore:
 
     @classmethod
     def load(cls, kdf_path: Path) -> ReferencesStore:
-        """Load from the JSON sidecar, or return an empty store if none exists.
+        """Load from the ``.pykorf`` sidecar, or return an empty store.
+
+        If no ``.pykorf`` file exists but the legacy ``.references.json`` file
+        is present, it is loaded and immediately migrated to the new format.
 
         Args:
             kdf_path: Path to the .kdf file.
@@ -121,17 +137,37 @@ class ReferencesStore:
             Populated ReferencesStore.
         """
         sidecar = cls._sidecar_path(kdf_path)
+
+        # Migrate from old .references.json if needed
         if not sidecar.is_file():
+            legacy = cls._legacy_sidecar_path(kdf_path)
+            if legacy.is_file():
+                store = cls._parse_json(legacy)
+                store.save(kdf_path)  # write new .pykorf
+                return store
             return cls()
+
+        return cls._parse_json(sidecar)
+
+    @classmethod
+    def _parse_json(cls, path: Path) -> ReferencesStore:
+        """Parse a JSON sidecar file into a ReferencesStore.
+
+        Args:
+            path: JSON file to read.
+
+        Returns:
+            Populated ReferencesStore, or empty store on parse error.
+        """
         try:
-            data: dict[str, Any] = json.loads(sidecar.read_text(encoding="utf-8"))
+            data: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
             refs = [Reference(**r) for r in data.get("references", [])]
             return cls(basis=data.get("basis", ""), references=refs)
         except (json.JSONDecodeError, TypeError, KeyError):
             return cls()
 
     def save(self, kdf_path: Path) -> None:
-        """Persist to the JSON sidecar beside the KDF file.
+        """Persist to the ``.pykorf`` sidecar beside the KDF file.
 
         Args:
             kdf_path: Path to the .kdf file; sidecar is written next to it.
