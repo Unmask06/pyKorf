@@ -714,16 +714,34 @@ def api_browse():
         target = Path.home()
         entries = list(target.iterdir())
 
+    from pykorf.use_case.web.sharepoint import get_sharepoint_url, is_sharepoint_synced
+
+    # Is the current directory itself inside a synced SharePoint folder?
+    current_sp_url = get_sharepoint_url(target)
+
     dirs: list[dict] = []
     files: list[dict] = []
 
     for entry in sorted(entries, key=lambda e: (not e.is_dir(), e.name.lower())):
         try:
             if entry.is_dir() and not entry.name.startswith("."):
-                dirs.append({"name": entry.name, "path": str(entry)})
+                dirs.append(
+                    {
+                        "name": entry.name,
+                        "path": str(entry),
+                        "synced": is_sharepoint_synced(entry),
+                    }
+                )
             elif entry.is_file():
                 if not ext_filter or entry.suffix.lower() in ext_filter:
-                    files.append({"name": entry.name, "path": str(entry)})
+                    sp_url = get_sharepoint_url(entry)
+                    files.append(
+                        {
+                            "name": entry.name,
+                            "path": str(entry),
+                            "sharepoint_url": sp_url,
+                        }
+                    )
         except PermissionError:
             continue
 
@@ -743,6 +761,7 @@ def api_browse():
     return jsonify(
         {
             "current": str(target),
+            "current_sp_url": current_sp_url,
             "parent": parent,
             "drives": drives,
             "dirs": dirs,

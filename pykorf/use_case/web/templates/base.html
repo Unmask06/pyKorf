@@ -29,6 +29,18 @@
     .pipe-table th, .pipe-table td { font-size: .85rem; }
     .sidebar { min-width: 220px; max-width: 220px; }
 
+    /* ── SharePoint sync badge ────────────────────────────────────────── */
+    .pb-sp-badge {
+      font-size: .68rem; padding: .1rem .35rem;
+      cursor: default; flex-shrink: 0;
+    }
+    #pb-sp-banner {
+      font-size: .78rem; background: rgba(13,110,253,.15);
+      border: 1px solid rgba(13,110,253,.4);
+      border-radius: .375rem; padding: .25rem .6rem;
+    }
+    #pb-sp-toggle .btn { font-size: .75rem; padding: .15rem .5rem; }
+
     /* ── Path browser modal ────────────────────────────────────────────── */
     #pathBrowser .pb-breadcrumb {
       font-family: monospace;
@@ -132,6 +144,12 @@
 
       <div class="modal-body p-3">
 
+        <!-- SharePoint sync banner (hidden until a synced folder is opened) -->
+        <div id="pb-sp-banner" class="d-none mb-2 d-flex align-items-center gap-2">
+          <i class="bi bi-cloud-check-fill text-primary"></i>
+          <span class="text-primary fw-semibold small">SharePoint synced folder</span>
+        </div>
+
         <!-- Drives (Windows only, populated dynamically) -->
         <div id="pb-drives-row" class="d-none mb-2">
           <span class="text-secondary small me-2">Drives:</span>
@@ -158,16 +176,34 @@
 
       </div>
 
-      <div class="modal-footer py-2">
-        <div class="text-secondary small me-auto" id="pb-selection-label">
-          No file selected
+      <div class="modal-footer py-2 flex-column align-items-stretch gap-2">
+
+        <!-- Selected path display -->
+        <div class="d-flex align-items-center gap-2 w-100">
+          <span class="text-secondary small" id="pb-selection-label">No file selected</span>
         </div>
-        <button type="button" class="btn btn-outline-secondary btn-sm"
-                data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-primary btn-sm"
-                id="pb-select-btn" disabled>
-          <i class="bi bi-check2 me-1"></i>Select
-        </button>
+
+        <!-- SharePoint / local toggle (shown only when a synced file is selected) -->
+        <div id="pb-sp-toggle" class="d-none d-flex align-items-center gap-2 w-100">
+          <span class="text-secondary small me-1"><i class="bi bi-arrow-left-right"></i> Use as:</span>
+          <div class="btn-group btn-group-sm" role="group">
+            <button type="button" class="btn btn-outline-primary" id="pb-sp-use-btn">
+              <i class="bi bi-cloud me-1"></i>SharePoint URL
+            </button>
+            <button type="button" class="btn btn-outline-secondary active" id="pb-local-use-btn">
+              <i class="bi bi-folder me-1"></i>Local Path
+            </button>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2 w-100 justify-content-end">
+          <button type="button" class="btn btn-outline-secondary btn-sm"
+                  data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary btn-sm"
+                  id="pb-select-btn" disabled>
+            <i class="bi bi-check2 me-1"></i>Select
+          </button>
+        </div>
       </div>
 
     </div>

@@ -122,8 +122,10 @@
                   <input type="text" class="form-control font-monospace" name="link" id="add-link"
                          placeholder="https://… or C:\path\to\file" required autocomplete="off" />
                   <button type="button" class="btn btn-outline-secondary"
-                          data-browse-target="add-link" data-browse-filter="any"
-                          title="Browse local file">
+                          data-browse-target="add-link"
+                          data-browse-filter="any"
+                          data-browse-pref-sp="true"
+                          title="Browse — SharePoint URL auto-detected for synced folders">
                     <i class="bi bi-folder2-open"></i>
                   </button>
                 </div>
@@ -249,8 +251,10 @@
             <div class="input-group">
               <input type="text" class="form-control font-monospace" name="link" id="edit-link" required />
               <button type="button" class="btn btn-outline-secondary"
-                      data-browse-target="edit-link" data-browse-filter="any"
-                      title="Browse">
+                      data-browse-target="edit-link"
+                      data-browse-filter="any"
+                      data-browse-pref-sp="true"
+                      title="Browse — SharePoint URL auto-detected">
                 <i class="bi bi-folder2-open"></i>
               </button>
             </div>
