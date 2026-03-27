@@ -431,11 +431,34 @@ def generate_report():
         try:
             import pandas as pd
 
+            from pykorf.use_case.web.references import ReferencesStore
+
             dfs = model.io.to_dataframes()
+
+            # Prepend a clean References sheet if any exist
+            refs_store = ReferencesStore.load(report_path.parent) if report_path else ReferencesStore()
+            kdf_path_for_refs = _sess.get_kdf_path()
+            if kdf_path_for_refs:
+                refs_store = ReferencesStore.load(kdf_path_for_refs)
+
             with pd.ExcelWriter(report_path, engine="openpyxl") as writer:
+                # References sheet first (most useful at the front)
+                refs_df = refs_store.to_dataframe()
+                if not refs_df.empty:
+                    refs_df.to_excel(writer, sheet_name="References", index=False)
+
+                # Basis text as a plain sheet if present
+                if refs_store.basis.strip():
+                    basis_df = pd.DataFrame({"Design Basis": [refs_store.basis]})
+                    basis_df.to_excel(writer, sheet_name="Basis", index=False)
+
+                # Model element sheets
                 for sheet_name, df in dfs.items():
                     df.to_excel(writer, sheet_name=sheet_name[:31], index=False)
-            result_lines.append(("success", f"Report saved to: {report_path}"))
+
+            n_refs = len(refs_store.references)
+            ref_note = f" (+{n_refs} reference(s))" if n_refs else ""
+            result_lines.append(("success", f"Report saved to: {report_path}{ref_note}"))
         except Exception as exc:
             errors.append(f"Error generating report: {exc}")
 
@@ -462,6 +485,186 @@ def save_model():
     if kdf_path:
         model.io.save(kdf_path)
     return redirect(url_for("main_menu"))
+
+
+# ---------------------------------------------------------------------------
+# References
+# ---------------------------------------------------------------------------
+
+
+def _load_refs() -> Any:
+    """Load the ReferencesStore for the active model.
+
+    Returns:
+        ReferencesStore instance (empty if no model or no sidecar yet).
+    """
+    from pykorf.use_case.web.references import ReferencesStore
+
+    kdf_path = _sess.get_kdf_path()
+    if kdf_path is None:
+        return ReferencesStore()
+    return ReferencesStore.load(kdf_path)
+
+
+def _refs_context(kdf_path: Path, store: Any, **extra: Any) -> dict[str, Any]:
+    """Build the common template context for the references page.
+
+    Args:
+        kdf_path: Active KDF path.
+        store: Current ReferencesStore.
+        **extra: Additional context variables.
+
+    Returns:
+        Template context dict.
+    """
+    from pykorf.use_case.web.references import CATEGORIES
+
+    return {
+        "kdf_path": str(kdf_path),
+        "store": store,
+        "categories": CATEGORIES,
+        "ref_dir": str(kdf_path.parent / "reference"),
+        "flash": None,
+        "shortcut_result": None,
+        **extra,
+    }
+
+
+@app.route("/model/references")
+def references_page() -> Any:
+    """Render the References manager page.
+
+    Returns:
+        HTML response with the references template.
+    """
+    model = _require_model()
+    if not hasattr(model, "num_pipes"):
+        return model
+    kdf_path = _sess.get_kdf_path()
+    store = _load_refs()
+    return render_template("references.html", **_refs_context(kdf_path, store))
+
+
+@app.route("/model/references/basis", methods=["POST"])
+def references_save_basis() -> Any:
+    """Save only the design basis text.
+
+    Returns:
+        Redirect to the references page.
+    """
+    model = _require_model()
+    if not hasattr(model, "num_pipes"):
+        return model
+    kdf_path = _sess.get_kdf_path()
+    store = _load_refs()
+    store.basis = request.form.get("basis", "")
+    store.save(kdf_path)
+    return redirect(url_for("references_page"))
+
+
+@app.route("/model/references/add", methods=["POST"])
+def references_add() -> Any:
+    """Add a new reference entry and save.
+
+    Returns:
+        Redirect to the references page.
+    """
+    model = _require_model()
+    if not hasattr(model, "num_pipes"):
+        return model
+
+    from pykorf.use_case.web.references import Reference
+
+    kdf_path = _sess.get_kdf_path()
+    store = _load_refs()
+
+    name = (request.form.get("name") or "").strip()
+    link = (request.form.get("link") or "").strip()
+    description = (request.form.get("description") or "").strip()
+    category = (request.form.get("category") or "Other").strip()
+
+    if name and link:
+        store.add(Reference.new(name=name, link=link, description=description, category=category))
+        store.save(kdf_path)
+
+    return redirect(url_for("references_page"))
+
+
+@app.route("/model/references/update", methods=["POST"])
+def references_update() -> Any:
+    """Update an existing reference by ID and save.
+
+    Returns:
+        Redirect to the references page.
+    """
+    model = _require_model()
+    if not hasattr(model, "num_pipes"):
+        return model
+
+    kdf_path = _sess.get_kdf_path()
+    store = _load_refs()
+
+    ref_id = (request.form.get("ref_id") or "").strip()
+    if ref_id:
+        store.update(
+            ref_id,
+            name=(request.form.get("name") or "").strip(),
+            link=(request.form.get("link") or "").strip(),
+            description=(request.form.get("description") or "").strip(),
+            category=(request.form.get("category") or "Other").strip(),
+        )
+        store.save(kdf_path)
+
+    return redirect(url_for("references_page"))
+
+
+@app.route("/model/references/delete", methods=["POST"])
+def references_delete() -> Any:
+    """Delete a reference by ID and save.
+
+    Returns:
+        Redirect to the references page.
+    """
+    model = _require_model()
+    if not hasattr(model, "num_pipes"):
+        return model
+
+    kdf_path = _sess.get_kdf_path()
+    store = _load_refs()
+    ref_id = (request.form.get("ref_id") or "").strip()
+    if ref_id:
+        store.delete(ref_id)
+        store.save(kdf_path)
+
+    return redirect(url_for("references_page"))
+
+
+@app.route("/model/references/shortcuts", methods=["POST"])
+def references_create_shortcuts() -> Any:
+    """Create .url shortcut files in the reference/ folder and reload page.
+
+    Returns:
+        HTML response with shortcut creation results.
+    """
+    model = _require_model()
+    if not hasattr(model, "num_pipes"):
+        return model
+
+    kdf_path = _sess.get_kdf_path()
+    store = _load_refs()
+    shortcut_result: dict[str, Any] = {}
+
+    try:
+        count, ref_dir = store.create_shortcuts(kdf_path)
+        shortcut_result = {"count": count, "path": str(ref_dir)}
+    except Exception as exc:
+        shortcut_result = {"error": str(exc)}
+
+
+    return render_template(
+        "references.html",
+        **_refs_context(kdf_path, store, shortcut_result=shortcut_result),
+    )
 
 
 # ---------------------------------------------------------------------------

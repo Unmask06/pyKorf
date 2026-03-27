@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+{% block title %}References{% endblock %}
+
+{% block head_extra %}
+<style>
+  .ref-row td { vertical-align: middle; }
+  .ref-row .ref-link { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cat-badge { font-size: .72rem; }
+  /* Edit modal */
+  #editModal .input-group-text { min-width: 2.2rem; justify-content: center; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+
+  <!-- ── Left: Design Basis ──────────────────────────────────────────────── -->
+  <div class="col-lg-4">
+
+    <div class="card shadow-sm mb-3">
+      <div class="card-header fw-semibold d-flex align-items-center gap-2">
+        <i class="bi bi-journal-text text-primary"></i>Design Basis
+        <span class="badge bg-secondary ms-auto small">Saved with model</span>
+      </div>
+      <div class="card-body p-3">
+        <form method="post" action="/model/references/basis" id="basis-form">
+          <textarea
+            class="form-control font-monospace"
+            id="basis"
+            name="basis"
+            rows="12"
+            placeholder="Enter design basis, project notes, assumptions, or any free-text context for this model…"
+            style="resize: vertical; font-size: .85rem;"
+          >{{ store.basis }}</textarea>
+          <button type="submit" class="btn btn-sm btn-primary mt-2 w-100">
+            <i class="bi bi-floppy me-1"></i>Save Basis
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Quick stats -->
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold"><i class="bi bi-bar-chart me-1 text-info"></i>Summary</div>
+      <ul class="list-group list-group-flush small">
+        <li class="list-group-item d-flex justify-content-between">
+          <span>Total references</span>
+          <span class="badge bg-primary rounded-pill">{{ store.references | length }}</span>
+        </li>
+        {% set cats = store.references | map(attribute='category') | list | unique | list %}
+        <li class="list-group-item d-flex justify-content-between">
+          <span>Categories used</span>
+          <span class="badge bg-secondary rounded-pill">{{ cats | length }}</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between">
+          <span>Shortcut folder</span>
+          <code class="text-truncate small">{{ ref_dir }}</code>
+        </li>
+      </ul>
+      <div class="card-footer">
+        <form method="post" action="/model/references/shortcuts" id="shortcuts-form">
+          <button type="submit" class="btn btn-sm btn-outline-success w-100" id="btn-shortcuts">
+            <span class="spinner-border spinner-border-sm d-none me-1" id="sc-spinner"></span>
+            <i class="bi bi-link-45deg me-1"></i>Create / Refresh Shortcuts
+          </button>
+        </form>
+        {% if shortcut_result %}
+        <div class="mt-2 small
+          {% if shortcut_result.error %}text-danger{% else %}text-success{% endif %}">
+          {% if shortcut_result.error %}
+          <i class="bi bi-x-circle me-1"></i>{{ shortcut_result.error }}
+          {% else %}
+          <i class="bi bi-check-circle me-1"></i>{{ shortcut_result.count }} shortcut(s) written to
+          <code>…/reference/</code>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Right: References table + Add form ─────────────────────────────── -->
+  <div class="col-lg-8">
+
+    <!-- Flash message -->
+    {% if flash %}
+    <div class="alert alert-{{ flash.type }} alert-dismissible fade show py-2" role="alert">
+      <i class="bi bi-{% if flash.type == 'success' %}check-circle{% else %}exclamation-triangle{% endif %} me-1"></i>
+      {{ flash.msg }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+
+    <!-- Add reference form (collapsible) -->
+    <div class="card shadow-sm mb-3">
+      <div class="card-header fw-semibold d-flex align-items-center gap-2" style="cursor:pointer"
+           data-bs-toggle="collapse" data-bs-target="#add-form-body">
+        <i class="bi bi-plus-circle text-success"></i>Add Reference
+        <i class="bi bi-chevron-down ms-auto small"></i>
+      </div>
+      <div class="collapse show" id="add-form-body">
+        <div class="card-body p-3">
+          <form method="post" action="/model/references/add" id="add-form">
+            <div class="row g-2 mb-2">
+              <div class="col-md-5">
+                <label class="form-label small fw-semibold mb-1">Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control form-control-sm" name="name"
+                       placeholder="e.g. P&amp;ID-001" required autocomplete="off" />
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small fw-semibold mb-1">Category</label>
+                <select class="form-select form-select-sm" name="category">
+                  {% for cat in categories %}
+                  <option value="{{ cat }}">{{ cat }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-semibold mb-1">Link / URL <span class="text-danger">*</span></label>
+                <div class="input-group input-group-sm">
+                  <input type="text" class="form-control font-monospace" name="link" id="add-link"
+                         placeholder="https://… or C:\path\to\file" required autocomplete="off" />
+                  <button type="button" class="btn btn-outline-secondary"
+                          data-browse-target="add-link" data-browse-filter="any"
+                          title="Browse local file">
+                    <i class="bi bi-folder2-open"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold mb-1">Description</label>
+              <input type="text" class="form-control form-control-sm" name="description"
+                     placeholder="Brief note about this reference (optional)" autocomplete="off" />
+            </div>
+            <button type="submit" class="btn btn-sm btn-success">
+              <i class="bi bi-plus me-1"></i>Add Reference
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- References table -->
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold d-flex align-items-center gap-2">
+        <i class="bi bi-list-ul text-primary"></i>References
+        <span class="badge bg-primary rounded-pill ms-1">{{ store.references | length }}</span>
+        <input type="text" class="form-control form-control-sm ms-auto"
+               id="ref-filter" placeholder="Filter…" style="max-width:180px" />
+      </div>
+
+      {% if store.references %}
+      <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0" id="ref-table">
+          <thead class="table-dark">
+            <tr>
+              <th style="width:28%">Name</th>
+              <th style="width:12%">Category</th>
+              <th>Link</th>
+              <th style="width:22%">Description</th>
+              <th style="width:6rem"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ref in store.references %}
+            <tr class="ref-row" data-id="{{ ref.id }}">
+              <td class="fw-semibold">{{ ref.name }}</td>
+              <td>
+                <span class="badge cat-badge
+                  {% if ref.category == 'P&ID' %}bg-info text-dark
+                  {% elif ref.category == 'PFD' %}bg-primary
+                  {% elif ref.category == 'Datasheet' %}bg-success
+                  {% elif ref.category == 'Specification' %}bg-warning text-dark
+                  {% elif ref.category == 'Calculation' %}bg-danger
+                  {% elif ref.category == 'Drawing' %}bg-secondary
+                  {% elif ref.category == 'Report' %}bg-dark border
+                  {% elif ref.category == 'Standard' %}bg-light text-dark border
+                  {% else %}bg-secondary{% endif %}">
+                  {{ ref.category }}
+                </span>
+              </td>
+              <td>
+                <a href="{{ ref.link }}" target="_blank" rel="noopener"
+                   class="ref-link d-inline-block" title="{{ ref.link }}">
+                  <i class="bi bi-box-arrow-up-right me-1 small"></i>{{ ref.link }}
+                </a>
+              </td>
+              <td class="text-secondary small">{{ ref.description }}</td>
+              <td class="text-end">
+                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-1 me-1"
+                        title="Edit"
+                        onclick="openEdit('{{ ref.id }}', {{ ref | tojson }})">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <form method="post" action="/model/references/delete" class="d-inline"
+                      onsubmit="return confirm('Delete this reference?')">
+                  <input type="hidden" name="ref_id" value="{{ ref.id }}" />
+                  <button type="submit" class="btn btn-xs btn-outline-danger py-0 px-1" title="Delete">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="card-body text-center text-secondary py-5">
+        <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+        No references yet. Use the form above to add your first reference.
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- Edit Reference Modal                                                     -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-label="Edit reference">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title"><i class="bi bi-pencil me-2 text-warning"></i>Edit Reference</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="/model/references/update" id="edit-form">
+        <div class="modal-body">
+          <input type="hidden" name="ref_id" id="edit-id" />
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Name</label>
+            <input type="text" class="form-control" name="name" id="edit-name" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Category</label>
+            <select class="form-select" name="category" id="edit-category">
+              {% for cat in categories %}
+              <option value="{{ cat }}">{{ cat }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Link / URL</label>
+            <div class="input-group">
+              <input type="text" class="form-control font-monospace" name="link" id="edit-link" required />
+              <button type="button" class="btn btn-outline-secondary"
+                      data-browse-target="edit-link" data-browse-filter="any"
+                      title="Browse">
+                <i class="bi bi-folder2-open"></i>
+              </button>
+            </div>
+          </div>
+          <div class="mb-1">
+            <label class="form-label fw-semibold small">Description</label>
+            <input type="text" class="form-control" name="description" id="edit-description" />
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="bi bi-floppy me-1"></i>Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Live filter on reference table
+  document.getElementById('ref-filter').addEventListener('input', function () {
+    var q = this.value.toLowerCase();
+    document.querySelectorAll('#ref-table tbody tr').forEach(function (row) {
+      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+
+  // Open edit modal and pre-fill fields
+  function openEdit(id, ref) {
+    document.getElementById('edit-id').value   = id;
+    document.getElementById('edit-name').value = ref.name;
+    document.getElementById('edit-link').value = ref.link;
+    document.getElementById('edit-description').value = ref.description || '';
+    var sel = document.getElementById('edit-category');
+    for (var i = 0; i < sel.options.length; i++) {
+      if (sel.options[i].value === ref.category) { sel.selectedIndex = i; break; }
+    }
+    new bootstrap.Modal(document.getElementById('editModal')).show();
+  }
+
+  // Shortcuts form spinner
+  document.getElementById('shortcuts-form').addEventListener('submit', function () {
+    document.getElementById('btn-shortcuts').disabled = true;
+    document.getElementById('sc-spinner').classList.remove('d-none');
+  });
+</script>
+{% endblock %}
