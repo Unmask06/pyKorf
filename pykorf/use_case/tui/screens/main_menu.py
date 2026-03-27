@@ -191,6 +191,17 @@ class MainMenuScreen(Screen):
         color: $accent-darken-2;
         margin-bottom: 0;
     }
+    #config-stale-warning {
+        width: 100%;
+        height: auto;
+        color: $warning;
+        text-style: bold;
+        padding: 0 1;
+        display: none;
+    }
+    #config-stale-warning.visible {
+        display: block;
+    }
     """
 
     def compose(self) -> ComposeResult:
@@ -223,20 +234,11 @@ class MainMenuScreen(Screen):
             validation_issues = model.validate()
 
         pms_stale, stream_stale = _check_excel_needs_reimport()
-        config_btn_label = "⚙ Config Menu"
-        config_btn_variant = "default"
-        config_description = "Manage PMS and stream data files"
-        if pms_stale or stream_stale:
-            config_btn_label = "⚙ Config Menu ▲"
-            config_btn_variant = "warning"
-            stale_names = []
-            if pms_stale:
-                stale_names.append("PMS")
-            if stream_stale:
-                stale_names.append("Stream")
-            config_description = (
-                f"▲ {'/'.join(stale_names)} Excel updated — re-import recommended"
-            )
+        stale_names = []
+        if pms_stale:
+            stale_names.append("PMS")
+        if stream_stale:
+            stale_names.append("Stream")
 
         with Vertical(id="menu-container"):
             yield Label(f"pyKorf Use Case Tool V{__version__}", id="file-label")
@@ -279,11 +281,19 @@ class MainMenuScreen(Screen):
                         yield Static("─" * 35, classes="menu-section-divider")
                         with Horizontal(classes="menu-item"):
                             yield Button(
-                                config_btn_label,
-                                variant=config_btn_variant,
+                                "⚙ Config Menu",
+                                variant="default",
                                 id="btn-config",
                             )
-                            yield Label(config_description)
+                            yield Label("Manage PMS and stream data files")
+                        if stale_names:
+                            yield Label(
+                                f"▲ {'/'.join(stale_names)} Excel updated since last import — re-import recommended",
+                                id="config-stale-warning",
+                                classes="visible",
+                            )
+                        else:
+                            yield Label("", id="config-stale-warning")
                         with Horizontal(classes="menu-item"):
                             yield Button(
                                 "⇄ Import/Export", variant="primary", id="btn-import-export"

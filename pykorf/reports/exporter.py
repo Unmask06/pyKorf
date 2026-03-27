@@ -158,7 +158,11 @@ class ResultExporter:
                 worksheet, start_table_row + 2, end_row, num_cols, start_col
             )
 
-            current_row = end_row + 3
+            # 4. Pipe stats block (max/min DP/DL and Velocity)
+            if element_type == "Pipes":
+                current_row = self._write_pipe_stats(worksheet, df, end_row + 2, start_col)
+            else:
+                current_row = end_row + 3
             if is_right_side:
                 current_row_right = current_row
             else:
@@ -330,6 +334,54 @@ class ResultExporter:
             except (ValueError, TypeError, IndexError):
                 continue
         return ""
+
+    def _write_pipe_stats(
+        self, ws: Any, df: Any, row: int, start_col: int
+    ) -> int:
+        """Writes a single Min - Max summary row below the pipe table."""
+        import pandas as pd
+
+        dpdl_col = next(
+            (c for c in df.columns if "DP / DL" in c and "Criteria" not in c), None
+        )
+        vel_col = next(
+            (c for c in df.columns if "Velocity" in c and "Criteria" not in c), None
+        )
+        if dpdl_col is None and vel_col is None:
+            return row + 3
+
+        col_names = list(df.columns)
+
+        def _fmt(col: str) -> str | None:
+            try:
+                numeric = pd.to_numeric(df[col], errors="coerce")
+                lo = numeric.min()
+                hi = numeric.max()
+                if pd.isna(lo) or pd.isna(hi):
+                    return None
+                lo_s = f"{lo:.4g}"
+                hi_s = f"{hi:.4g}"
+                return f"{lo_s} - {hi_s}"
+            except Exception:
+                return None
+
+        # Label cell
+        lc = ws.cell(row=row, column=start_col, value="Min - Max")
+        lc.font = Font(bold=True, size=10)
+
+        # DP/DL min-max
+        if dpdl_col:
+            val = _fmt(dpdl_col)
+            c_idx = start_col + col_names.index(dpdl_col)
+            ws.cell(row=row, column=c_idx, value=val).font = self._styles["data"]
+
+        # Velocity min-max
+        if vel_col:
+            val = _fmt(vel_col)
+            c_idx = start_col + col_names.index(vel_col)
+            ws.cell(row=row, column=c_idx, value=val).font = self._styles["data"]
+
+        return row + 3
 
     # =========================================================
     # ELEMENT EXTRACTORS

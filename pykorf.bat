@@ -157,17 +157,18 @@ mkdir "!UPD_DIR!"
 tar -xf "!UPD_ZIP!" -C "!UPD_DIR!" >nul 2>&1
 del "!UPD_ZIP!" >nul 2>&1
 
-REM Overlay new files onto APPDATA_DIR, preserving data/ and config.json
-robocopy "!UPD_DIR!" "%APPDATA_DIR%" /E /XD "data" /XF "config.json" /NFL /NDL /NJH /NJS >nul 2>&1
+REM Overlay new files onto APPDATA_DIR, preserving data/, config.json and .venv
+robocopy "!UPD_DIR!" "%APPDATA_DIR%" /E /XD "data" ".venv" /XF "config.json" /NFL /NDL /NJH /NJS >nul 2>&1
 rd /s /q "!UPD_DIR!" >nul 2>&1
 
-REM Reinstall package into existing venv
+REM Sync deps into existing venv via lockfile (faster — reuses cached packages)
 cd /d "%APPDATA_DIR%"
 set "VENV_UV=%APPDATA_DIR%\.venv\Scripts\uv.exe"
 if exist "!VENV_UV!" (
-    "!VENV_UV!" pip install -e . --quiet
+    "!VENV_UV!" sync --quiet
+    if %errorlevel% neq 0 "!VENV_UV!" pip install -e . --quiet
 ) else (
-    ".venv\Scripts\python.exe" -m uv pip install -e . --quiet 2>nul
+    ".venv\Scripts\python.exe" -m uv sync --quiet 2>nul
     if %errorlevel% neq 0 ".venv\Scripts\python.exe" -m pip install -e . --quiet
 )
 

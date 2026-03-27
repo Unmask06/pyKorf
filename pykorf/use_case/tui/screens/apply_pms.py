@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import datetime
+from pathlib import Path
+
 from textual import on, work
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
@@ -9,7 +12,11 @@ from textual.screen import Screen
 from textual.widgets import Button, Footer, Label, LoadingIndicator, RichLog, Static
 
 from pykorf.log import get_log_file
-from pykorf.use_case.config import get_pms_path
+from pykorf.use_case.config import (
+    get_pms_excel_last_imported,
+    get_pms_excel_path,
+    get_pms_path,
+)
 from pykorf.use_case.tui.logging import (
     display_log_entries,
     log_error,
@@ -76,6 +83,15 @@ class ApplyPmsScreen(Screen):
         text-style: bold;
         color: $accent;
     }
+    #stale-warning {
+        color: $warning;
+        text-style: bold;
+        height: auto;
+        display: none;
+    }
+    #stale-warning.visible {
+        display: block;
+    }
     """
 
     def compose(self) -> ComposeResult:
@@ -86,6 +102,7 @@ class ApplyPmsScreen(Screen):
                 yield Label("Apply PMS Specifications", classes="info-section")
                 yield Static("─" * 30)
                 yield Label(f"PMS file: {pms_path}")
+                yield Label("", id="stale-warning")
                 yield RichLog(id="pms-results", wrap=True)
                 with Horizontal(id="pms-buttons"):
                     yield Button("Apply", variant="primary", id="btn-apply")
@@ -109,6 +126,24 @@ class ApplyPmsScreen(Screen):
                     yield Static("via Configuration menu")
                     yield Static("if file not found.")
         yield Footer()
+
+    def on_mount(self) -> None:
+        excel_path_str = get_pms_excel_path()
+        last_imported_str = get_pms_excel_last_imported()
+        stale = False
+        if excel_path_str and last_imported_str:
+            p = Path(excel_path_str)
+            try:
+                if p.exists():
+                    file_mtime = datetime.datetime.fromtimestamp(p.stat().st_mtime)
+                    last_imported = datetime.datetime.fromisoformat(last_imported_str)
+                    stale = file_mtime > last_imported
+            except (OSError, ValueError):
+                pass
+        if stale:
+            warning = self.query_one("#stale-warning", Label)
+            warning.update("▲ PMS Excel updated since last import — re-import recommended")
+            warning.add_class("visible")
 
     @on(Button.Pressed, "#btn-apply")
     def apply(self) -> None:
@@ -171,7 +206,9 @@ class ApplyPmsScreen(Screen):
         except Exception as exc:
             self.app.call_from_thread(lambda e=exc: log_error(results, f"Error: {e}"))
         finally:
+
             def _finish_pms():
                 self.query_one("#btn-apply", Button).disabled = False
                 self.query_one("#apply-loading").remove_class("active")
+
             self.app.call_from_thread(_finish_pms)

@@ -32,7 +32,7 @@ class FilePickerScreen(Screen):
         align: center middle;
     }
     #file-picker-box {
-        width: 80;
+        width: 110;
         height: auto;
         max-height: 44;
         border: round $accent;
@@ -109,6 +109,7 @@ class FilePickerScreen(Screen):
         margin-top: 1;
         border-top: dashed $surface;
         padding-top: 1;
+        width: 1fr;
     }
     """
 

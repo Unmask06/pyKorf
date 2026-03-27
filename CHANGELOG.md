@@ -5,6 +5,25 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-03-27
+
+### What's New
+
+- The file picker now shows a rotating tip at the bottom of the screen each time you open it — helpful hints about features you may not have discovered yet.
+- The main menu now displays a warning when your configuration file is out of date, so you know to review your settings before running operations.
+
+### Improved
+
+- The file picker layout is now wider, giving more room to read long file paths without truncation.
+- The tip text in the file picker wraps correctly on narrower terminals instead of overflowing off-screen.
+- App updates now reuse the existing virtual environment and sync only changed packages, making updates noticeably faster.
+
+### Fixed
+
+- The auto-update no longer recreates the virtual environment from scratch on every update — the `.venv` folder is preserved across updates.
+
+---
+
 ## [0.4.1] - 2026-03-25
 
 ### Fixed

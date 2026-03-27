@@ -28,7 +28,15 @@ Write the changelog for **end users**, not developers:
 - Example good entry: "Reports now include the model title and source file at the top."
 - Example bad entry: "feat(exporter): add model_title from SYMBOL FSIZ=2 to export_to_excel"
 
-## Step 4 — Verify CI passes
+## Step 4 — Refresh lockfile
+
+After updating the version in `pyproject.toml`, regenerate the lockfile so the release zip ships an up-to-date `uv.lock`:
+
+```
+uv lock
+```
+
+## Step 5 — Verify CI passes
 
 Run:
 ```
@@ -39,14 +47,14 @@ uv run pytest -q
 
 Fix any failures before proceeding.
 
-## Step 5 — Commit on dev
+## Step 6 — Commit on dev
 
 ```
-git add pyproject.toml CHANGELOG.md
+git add pyproject.toml CHANGELOG.md uv.lock
 git commit -m "release: vX.Y.Z"
 ```
 
-## Step 6 — Merge to main and push
+## Step 7 — Merge to main and push
 
 ```
 git checkout main
@@ -56,7 +64,7 @@ git push origin dev
 git checkout dev
 ```
 
-## Step 7 — Report back
+## Step 8 — Report back
 
 Show the user:
 - The new version number
