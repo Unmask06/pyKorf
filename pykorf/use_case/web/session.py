@@ -1,0 +1,62 @@
+"""Single-user in-process model state for the local web UI.
+
+No cookies, no sessions — the server holds exactly one model at a time,
+matching how the terminal TUI works.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pykorf import Model
+
+_model: Model | None = None
+_kdf_path: Path | None = None
+
+
+def load(model: Model, kdf_path: Path) -> None:
+    """Store *model* as the active model.
+
+    Args:
+        model: Loaded KorfModel instance.
+        kdf_path: Source .kdf file path.
+    """
+    global _model, _kdf_path
+    _model = model
+    _kdf_path = kdf_path
+
+
+def get_model() -> Model | None:
+    """Return the active model, or ``None`` if none is loaded.
+
+    Returns:
+        Active KorfModel or None.
+    """
+    return _model
+
+
+def get_kdf_path() -> Path | None:
+    """Return the active model's source path, or ``None``.
+
+    Returns:
+        Path to the .kdf file or None.
+    """
+    return _kdf_path
+
+
+def has_model() -> bool:
+    """Return True if a model is currently loaded.
+
+    Returns:
+        True when a model is in memory.
+    """
+    return _model is not None
+
+
+def clear() -> None:
+    """Unload the current model."""
+    global _model, _kdf_path
+    _model = None
+    _kdf_path = None

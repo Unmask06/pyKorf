@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Apply PMS{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold d-flex align-items-center gap-2">
+        <i class="bi bi-layers text-info"></i>Apply Piping Material Spec (PMS)
+      </div>
+      <div class="card-body">
+        <form method="post" action="/model/pms" id="pms-form">
+
+          <div class="mb-3">
+            <label for="pms_source" class="form-label fw-semibold">PMS Data File</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-file-earmark-code"></i></span>
+              <input
+                type="text"
+                class="form-control font-monospace"
+                id="pms_source"
+                name="pms_source"
+                placeholder="C:/config/pms_data.json"
+                value="{{ pms_json_path }}"
+                autocomplete="off"
+              />
+            </div>
+            <div class="form-text">
+              Path to the PMS JSON or Excel file. Leave blank to use the configured default
+              {% if pms_json_path %}(<code>{{ pms_json_path }}</code>){% endif %}.
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="btn-apply-pms">
+            <span id="pms-spinner" class="spinner-border spinner-border-sm d-none me-1" role="status"></span>
+            <i class="bi bi-play-fill me-1"></i>Apply PMS
+          </button>
+          <a href="/model" class="btn btn-outline-secondary ms-2">Cancel</a>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    {% if result %}
+    <div class="card shadow-sm mb-3">
+      <div class="card-header fw-semibold"><i class="bi bi-terminal me-1"></i>Results</div>
+      <div class="card-body p-3" style="font-family:monospace; font-size:.82rem; max-height:300px; overflow-y:auto;">
+        {% for err in result.errors %}
+        <div class="result-line-error"><i class="bi bi-x-circle me-1"></i>{{ err }}</div>
+        {% endfor %}
+        {% for level, msg in result.lines %}
+        <div class="result-line-{{ level }}">
+          {% if level == "success" %}<i class="bi bi-check-circle me-1"></i>{% endif %}{{ msg }}
+        </div>
+        {% endfor %}
+        {% if not result.errors and result.lines %}
+        <div class="text-info mt-2">
+          <i class="bi bi-info-circle me-1"></i>Model updated in memory. Use <strong>Save</strong> to persist.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold"><i class="bi bi-lightbulb me-1"></i>About PMS</div>
+      <div class="card-body small text-secondary">
+        <p class="mb-1">PMS applies pipe schedule, wall thickness, and material to all matching pipes.</p>
+        <p class="mb-0">Line numbers are read from each pipe's <code>NOTES</code> field and matched against the PMS lookup table.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById('pms-form').addEventListener('submit', function() {
+    document.getElementById('btn-apply-pms').disabled = true;
+    document.getElementById('pms-spinner').classList.remove('d-none');
+  });
+</script>
+{% endblock %}

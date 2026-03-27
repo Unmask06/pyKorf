@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Generate Report{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold d-flex align-items-center gap-2">
+        <i class="bi bi-file-earmark-excel text-success"></i>Generate Excel Report
+      </div>
+      <div class="card-body">
+        <form method="post" action="/model/report" id="report-form">
+
+          <div class="mb-3">
+            <label for="report_path" class="form-label fw-semibold">Output File Path</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-file-earmark-spreadsheet"></i></span>
+              <input
+                type="text"
+                class="form-control font-monospace"
+                id="report_path"
+                name="report_path"
+                placeholder="C:/reports/model_report.xlsx"
+                value="{{ last_report_path }}"
+                required
+                autocomplete="off"
+              />
+            </div>
+            <div class="form-text">Full path including filename (must end in <code>.xlsx</code>).</div>
+          </div>
+
+          <button type="submit" class="btn btn-success" id="btn-report">
+            <span id="report-spinner" class="spinner-border spinner-border-sm d-none me-1" role="status"></span>
+            <i class="bi bi-download me-1"></i>Generate Report
+          </button>
+          <a href="/model" class="btn btn-outline-secondary ms-2">Cancel</a>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    {% if result %}
+    <div class="card shadow-sm mb-3">
+      <div class="card-header fw-semibold"><i class="bi bi-terminal me-1"></i>Results</div>
+      <div class="card-body p-3" style="font-family:monospace; font-size:.82rem;">
+        {% for err in result.errors %}
+        <div class="result-line-error"><i class="bi bi-x-circle me-1"></i>{{ err }}</div>
+        {% endfor %}
+        {% for level, msg in result.lines %}
+        <div class="result-line-{{ level }}">
+          {% if level == "success" %}<i class="bi bi-check-circle me-1"></i>{% endif %}{{ msg }}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold"><i class="bi bi-lightbulb me-1"></i>About Reports</div>
+      <div class="card-body small text-secondary">
+        <p class="mb-1">Creates a multi-sheet Excel workbook — one sheet per element type (Pipes, Pumps, Valves, …).</p>
+        <p class="mb-0">The output directory must exist before generating the report.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById('report-form').addEventListener('submit', function() {
+    document.getElementById('btn-report').disabled = true;
+    document.getElementById('report-spinner').classList.remove('d-none');
+  });
+</script>
+{% endblock %}

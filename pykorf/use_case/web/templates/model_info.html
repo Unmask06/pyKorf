@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Model Info{% endblock %}
+
+{% block head_extra %}
+<!-- Bootstrap Table for sortable columns -->
+<link rel="stylesheet"
+  href="https://unpkg.com/bootstrap-table@1.22.5/dist/bootstrap-table.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+
+  <!-- Summary cards -->
+  <div class="col-12">
+    <h2 class="h5 fw-bold mb-3">
+      <i class="bi bi-info-circle text-primary me-1"></i>Model Summary
+    </h2>
+    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-6 g-2 mb-4">
+      {% set stat_items = [
+        ("Pipes",     summary.num_pipes,     "bi-pipe",           "primary"),
+        ("Junctions", summary.num_junctions, "bi-node-plus",      "secondary"),
+        ("Pumps",     summary.num_pumps,     "bi-gear",           "info"),
+        ("Valves",    summary.num_valves,    "bi-funnel",         "warning"),
+        ("Feeds",     summary.num_feeds,     "bi-arrow-down-circle", "success"),
+        ("Products",  summary.num_products,  "bi-arrow-up-circle",  "danger"),
+      ] %}
+      {% for label, count, icon, color in stat_items %}
+      <div class="col">
+        <div class="card text-center shadow-sm h-100">
+          <div class="card-body py-3">
+            <i class="bi {{ icon }} fs-4 text-{{ color }}"></i>
+            <div class="fs-4 fw-bold mt-1">{{ count }}</div>
+            <div class="text-secondary small">{{ label }}</div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Pipe table -->
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold d-flex align-items-center gap-2">
+        <i class="bi bi-table text-primary"></i>Pipe List
+        <span class="badge bg-primary rounded-pill ms-auto">{{ pipes | length }}</span>
+      </div>
+      <div class="card-body p-0">
+        <div class="p-3 border-bottom">
+          <input type="text" id="pipe-search" class="form-control form-control-sm"
+                 placeholder="Filter pipes…" />
+        </div>
+        <div style="max-height: 480px; overflow-y: auto;">
+          <table class="table table-sm table-hover mb-0 pipe-table" id="pipe-table">
+            <thead class="table-dark sticky-top">
+              <tr>
+                <th style="width:3rem">#</th>
+                <th>Pipe Name</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for name in pipes %}
+              <tr>
+                <td class="text-secondary">{{ loop.index }}</td>
+                <td class="font-monospace">{{ name }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Live filter for pipe table
+  document.getElementById('pipe-search').addEventListener('input', function() {
+    var q = this.value.toLowerCase();
+    document.querySelectorAll('#pipe-table tbody tr').forEach(function(row) {
+      var name = row.cells[1].textContent.toLowerCase();
+      row.style.display = name.includes(q) ? '' : 'none';
+    });
+  });
+</script>
+{% endblock %}
