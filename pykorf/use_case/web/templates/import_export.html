@@ -40,6 +40,12 @@
                   <input type="text" class="form-control font-monospace" id="export_path" name="file_path"
                          placeholder="C:/output/model_export.xlsx"
                          value="{{ last_export_path }}" required autocomplete="off" />
+                  <button type="button" class="btn btn-outline-secondary"
+                          data-browse-target="export_path"
+                          data-browse-filter="excel"
+                          title="Browse">
+                    <i class="bi bi-folder2-open"></i>
+                  </button>
                 </div>
                 <div class="form-text">All element parameters will be exported to separate sheets.</div>
               </div>
@@ -61,6 +67,12 @@
                   <input type="text" class="form-control font-monospace" id="import_path" name="file_path"
                          placeholder="C:/input/model_edited.xlsx"
                          value="{{ last_import_path }}" required autocomplete="off" />
+                  <button type="button" class="btn btn-outline-secondary"
+                          data-browse-target="import_path"
+                          data-browse-filter="excel"
+                          title="Browse">
+                    <i class="bi bi-folder2-open"></i>
+                  </button>
                 </div>
                 <div class="form-text">Import previously exported (and edited) pipe parameters back into the model.</div>
               </div>
