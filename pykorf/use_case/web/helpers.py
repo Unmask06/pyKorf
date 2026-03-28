@@ -68,4 +68,5 @@ def is_redirect(obj: Any) -> bool:
     Returns:
         True when the value should be returned directly to Flask.
     """
-    return not hasattr(obj, "num_pipes")
+    from flask import Response
+    return isinstance(obj, Response)
