@@ -69,14 +69,14 @@
           <i class="bi bi-file-earmark-text text-secondary"></i>
           <a
             href="#"
-            class="text-truncate font-monospace small flex-grow-1"
-            onclick="document.getElementById('kdf_path').value='{{ f }}'; return false;"
+            class="text-truncate font-monospace small flex-grow-1 recent-file-link"
+            data-path="{{ f }}"
             title="{{ f }}"
           >{{ f }}</a>
           <button
             type="button"
-            class="btn btn-sm btn-outline-primary py-0"
-            onclick="document.getElementById('kdf_path').value='{{ f }}'; document.getElementById('open-form').submit();"
+            class="btn btn-sm btn-outline-primary py-0 recent-file-open-btn"
+            data-path="{{ f }}"
           >Open</button>
         </li>
         {% endfor %}
@@ -93,6 +93,25 @@
   document.getElementById('open-form').addEventListener('submit', function () {
     document.getElementById('open-btn').disabled = true;
     document.getElementById('open-spinner').classList.remove('d-none');
+  });
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const kdfPathInput = document.getElementById('kdf_path');
+    const openForm = document.getElementById('open-form');
+
+    document.querySelectorAll('.recent-file-link').forEach(link => {
+      link.addEventListener('click', function (e) {
+        e.preventDefault();
+        kdfPathInput.value = this.dataset.path;
+      });
+    });
+
+    document.querySelectorAll('.recent-file-open-btn').forEach(button => {
+      button.addEventListener('click', function () {
+        kdfPathInput.value = this.dataset.path;
+        openForm.submit();
+      });
+    });
   });
 </script>
 {% endblock %}
