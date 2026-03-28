@@ -1,1 +1,1 @@
-"""Local web UI for pyKorf — FastAPI + HTMX + Jinja2 + Bootstrap 5."""
+"""Local web UI for pyKorf — Flask + Jinja2 + Bootstrap 5."""
