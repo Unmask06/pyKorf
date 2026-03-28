@@ -114,18 +114,6 @@ class ReferencesStore:
         return kdf_path.parent / f"{kdf_path.stem}.pykorf"
 
     @classmethod
-    def _legacy_sidecar_path(cls, kdf_path: Path) -> Path:
-        """Return the old ``.references.json`` sidecar path (migration only).
-
-        Args:
-            kdf_path: Path to the .kdf file.
-
-        Returns:
-            Path of the form ``{stem}.references.json`` beside the KDF.
-        """
-        return kdf_path.parent / f"{kdf_path.stem}.references.json"
-
-    @classmethod
     def _parse_json(cls, path: Path) -> ReferencesStore:
         """Parse JSON sidecar file.
         
@@ -148,9 +136,6 @@ class ReferencesStore:
     def load(cls, kdf_path: Path) -> ReferencesStore:
         """Load from the ``.pykorf`` sidecar, or return an empty store.
 
-        If no ``.pykorf`` file exists but the legacy ``.references.json`` file
-        is present, it is loaded and immediately migrated to the new format.
-
         Args:
             kdf_path: Path to the .kdf file.
 
@@ -159,13 +144,7 @@ class ReferencesStore:
         """
         sidecar = cls._sidecar_path(kdf_path)
 
-        # Migrate from old .references.json if needed
         if not sidecar.is_file():
-            legacy = cls._legacy_sidecar_path(kdf_path)
-            if legacy.is_file():
-                store = cls._parse_json(legacy)
-                store.save(kdf_path)  # write new .pykorf
-                return store
             return cls()
 
         return cls._parse_json(sidecar)

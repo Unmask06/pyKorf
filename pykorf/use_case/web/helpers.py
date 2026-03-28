@@ -21,14 +21,7 @@ def model_summary(model: Any) -> dict[str, int]:
     Returns:
         Dict of element type to count.
     """
-    return {
-        "num_pipes": model.num_pipes,
-        "num_junctions": model.num_junctions,
-        "num_pumps": model.num_pumps,
-        "num_valves": model.num_valves,
-        "num_feeds": model.num_feeds,
-        "num_products": model.num_products,
-    }
+    return model.summary()
 
 
 def pipe_names(model: Any) -> list[str]:
