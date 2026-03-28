@@ -243,6 +243,24 @@ def main():
             show_update_prompt(update_info)
 
     if args.web:
+        try:
+            import flask  # noqa: F401
+        except ImportError:
+            console.print(
+                Panel(
+                    "[red bold]Flask not installed[/red bold]\n\n"
+                    "The web UI requires Flask. Install it with:\n"
+                    "[cyan]uv add flask>=3.0[/cyan]\n\n"
+                    "Or install all web dependencies:\n"
+                    "[cyan]uv add --optional web[/cyan]",
+                    title="Missing Dependency",
+                    border_style="red",
+                    padding=(1, 2),
+                ),
+                justify="center",
+            )
+            return
+
         from pykorf.use_case.web.app import run_server
 
         run_server(port=args.port)
