@@ -24,6 +24,8 @@ import os
 import time
 from pathlib import Path
 
+import structlog
+
 
 # ── Registry helpers ──────────────────────────────────────────────────────────
 
@@ -46,6 +48,8 @@ def _read_sync_roots() -> list[tuple[str, str]]:
     """
     global _sync_roots_cache, _cache_timestamp
     
+    logger = structlog.get_logger()
+    
     now = time.time()
     if _sync_roots_cache is not None and (now - _cache_timestamp) < _CACHE_TTL_SECONDS:
         return _sync_roots_cache
@@ -57,7 +61,8 @@ def _read_sync_roots() -> list[tuple[str, str]]:
     results: list[tuple[str, str]] = []
     try:
         root = winreg.OpenKey(winreg.HKEY_CURRENT_USER, _SYNC_ENGINES_KEY)
-    except OSError:
+    except OSError as exc:
+        logger.debug("sharepoint._read_sync_roots registry access failed", error=str(exc))
         return []
 
     try:

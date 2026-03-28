@@ -29,6 +29,8 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
+import structlog
+
 
 # ── Data model ────────────────────────────────────────────────────────────────
 
@@ -124,6 +126,25 @@ class ReferencesStore:
         return kdf_path.parent / f"{kdf_path.stem}.references.json"
 
     @classmethod
+    def _parse_json(cls, path: Path) -> ReferencesStore:
+        """Parse JSON sidecar file.
+        
+        Args:
+            path: Path to JSON file.
+            
+        Returns:
+            ReferencesStore instance.
+        """
+        logger = structlog.get_logger()
+        try:
+            data: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
+            refs = [Reference(**r) for r in data.get("references", [])]
+            return cls(basis=data.get("basis", ""), references=refs)
+        except (json.JSONDecodeError, TypeError, KeyError) as exc:
+            logger.warning("references._parse_json failed", path=str(path), error=str(exc))
+            return cls()
+
+    @classmethod
     def load(cls, kdf_path: Path) -> ReferencesStore:
         """Load from the ``.pykorf`` sidecar, or return an empty store.
 
@@ -148,23 +169,6 @@ class ReferencesStore:
             return cls()
 
         return cls._parse_json(sidecar)
-
-    @classmethod
-    def _parse_json(cls, path: Path) -> ReferencesStore:
-        """Parse a JSON sidecar file into a ReferencesStore.
-
-        Args:
-            path: JSON file to read.
-
-        Returns:
-            Populated ReferencesStore, or empty store on parse error.
-        """
-        try:
-            data: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
-            refs = [Reference(**r) for r in data.get("references", [])]
-            return cls(basis=data.get("basis", ""), references=refs)
-        except (json.JSONDecodeError, TypeError, KeyError):
-            return cls()
 
     def save(self, kdf_path: Path) -> None:
         """Persist to the ``.pykorf`` sidecar beside the KDF file.
