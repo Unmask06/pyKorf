@@ -116,10 +116,10 @@ class ReferencesStore:
     @classmethod
     def _parse_json(cls, path: Path) -> ReferencesStore:
         """Parse JSON sidecar file.
-        
+
         Args:
             path: Path to JSON file.
-            
+
         Returns:
             ReferencesStore instance.
         """

@@ -247,6 +247,27 @@ def set_pms_excel_path(path: str | Path) -> None:
     save_config(config)
 
 
+def get_last_report_path() -> str | None:
+    """Get the last used report output path.
+
+    Returns:
+        The last used report path, or None if not set.
+    """
+    config = load_config()
+    return config.get("last_report_path")
+
+
+def set_last_report_path(path: str | Path) -> None:
+    """Save the last used report output path.
+
+    Args:
+        path: The report path to save.
+    """
+    config = load_config()
+    config["last_report_path"] = str(path)
+    save_config(config)
+
+
 def get_last_excel_import_path() -> str | None:
     """Get the last used Excel import path.
 

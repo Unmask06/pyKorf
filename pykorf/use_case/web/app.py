@@ -17,6 +17,15 @@ from pathlib import Path
 
 from flask import Flask
 
+from pykorf.use_case.web.routes.browse import bp as browse_bp
+from pykorf.use_case.web.routes.data import bp as data_bp
+from pykorf.use_case.web.routes.file_picker import bp as file_picker_bp
+from pykorf.use_case.web.routes.model_core import bp as model_core_bp
+from pykorf.use_case.web.routes.model_info import bp as model_info_bp
+from pykorf.use_case.web.routes.references import bp as references_bp
+from pykorf.use_case.web.routes.report import bp as report_bp
+from pykorf.use_case.web.routes.settings import bp as settings_bp
+
 _TEMPLATES_DIR = Path(__file__).parent / "templates"
 _STATIC_DIR = Path(__file__).parent / "static"
 
@@ -33,27 +42,16 @@ def create_app() -> Flask:
         static_folder=str(_STATIC_DIR),
     )
 
-    from pykorf.use_case.web.routes.browse import bp as browse_bp
-    from pykorf.use_case.web.routes.file_picker import bp as file_picker_bp
-    from pykorf.use_case.web.routes.hmb import bp as hmb_bp
-    from pykorf.use_case.web.routes.import_export import bp as import_export_bp
-    from pykorf.use_case.web.routes.model_core import bp as model_core_bp
-    from pykorf.use_case.web.routes.model_info import bp as model_info_bp
-    from pykorf.use_case.web.routes.pms import bp as pms_bp
-    from pykorf.use_case.web.routes.references import bp as references_bp
-    from pykorf.use_case.web.routes.report import bp as report_bp
-    from pykorf.use_case.web.routes.settings import bp as settings_bp
-
     app.register_blueprint(file_picker_bp)
     app.register_blueprint(model_core_bp)
     app.register_blueprint(settings_bp)
-    app.register_blueprint(pms_bp)
-    app.register_blueprint(hmb_bp)
+    app.register_blueprint(data_bp)
     app.register_blueprint(model_info_bp)
-    app.register_blueprint(import_export_bp)
     app.register_blueprint(report_bp)
     app.register_blueprint(references_bp)
     app.register_blueprint(browse_bp)
+
+    app.jinja_env.filters["split"] = lambda s, sep: s.split(sep)
 
     return app
 
@@ -64,10 +62,15 @@ def run_server(port: int = 8000) -> None:
     Args:
         port: TCP port to listen on (default 8000).
     """
+    import os
+
     app = create_app()
     url = f"http://localhost:{port}"
     print(f"\n  pyKorf Web UI → {url}\n  Press Ctrl+C to stop.\n")
 
-    threading.Timer(0.8, webbrowser.open, args=[url]).start()
+    # Only open the browser from the parent process; the reloader child sets
+    # WERKZEUG_RUN_MAIN=true, so this guard prevents a double-open on reload.
+    if os.environ.get("WERKZEUG_RUN_MAIN") != "true":
+        threading.Timer(0.8, webbrowser.open, args=[url]).start()
 
-    app.run(host="127.0.0.1", port=port, debug=False, use_reloader=False)
+    app.run(host="127.0.0.1", port=port, debug=True, use_reloader=True)

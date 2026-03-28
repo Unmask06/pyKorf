@@ -7,21 +7,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from flask import redirect, url_for
+from flask import Response, redirect, url_for
 
 from pykorf.use_case.web import session as _sess
-
-
-def model_summary(model: Any) -> dict[str, int]:
-    """Build element-count summary for template context.
-
-    Args:
-        model: Loaded KorfModel.
-
-    Returns:
-        Dict of element type to count.
-    """
-    return model.summary()
 
 
 def pipe_names(model: Any) -> list[str]:
@@ -61,5 +49,4 @@ def is_redirect(obj: Any) -> bool:
     Returns:
         True when the value should be returned directly to Flask.
     """
-    from flask import Response
     return isinstance(obj, Response)

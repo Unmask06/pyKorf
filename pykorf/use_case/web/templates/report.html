@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Generate Report{% endblock %}
+{% block title %}Reports{% endblock %}
 
 {% block content %}
 <div class="row g-4">
@@ -7,41 +7,121 @@
   <div class="col-lg-8">
     <div class="card shadow-sm">
       <div class="card-header fw-semibold d-flex align-items-center gap-2">
-        <i class="bi bi-file-earmark-excel text-success"></i>Generate Excel Report
+        <i class="bi bi-file-earmark-excel text-success"></i>Reports
       </div>
       <div class="card-body">
-        <form method="post" action="/model/report" id="report-form">
 
-          <div class="mb-3">
-            <label for="report_path" class="form-label fw-semibold">Output File Path</label>
-            <div class="input-group">
-              <span class="input-group-text"><i class="bi bi-file-earmark-spreadsheet"></i></span>
-              <input
-                type="text"
-                class="form-control font-monospace"
-                id="report_path"
-                name="report_path"
-                placeholder="C:/reports/model_report.xlsx"
-                value="{{ last_report_path }}"
-                required
-                autocomplete="off"
-              />
-              <button type="button" class="btn btn-outline-secondary"
-                      data-browse-target="report_path"
-                      data-browse-filter="excel"
-                      title="Browse for output folder">
-                <i class="bi bi-folder2-open"></i>
+        <!-- Mode tabs -->
+        <ul class="nav nav-tabs mb-4" id="reportTabs" role="tablist" data-active-tab="{{ active_tab }}">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link {{ 'active' if active_tab == 'report' else '' }}" id="report-tab" data-bs-toggle="tab" data-bs-target="#report-pane"
+                    type="button" role="tab">
+              <i class="bi bi-file-earmark-text me-1"></i>Report
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link {{ 'active' if active_tab == 'export' else '' }}" id="export-tab" data-bs-toggle="tab" data-bs-target="#export-pane"
+                    type="button" role="tab">
+              <i class="bi bi-box-arrow-up-right me-1"></i>Export
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link {{ 'active' if active_tab == 'import' else '' }}" id="import-tab" data-bs-toggle="tab" data-bs-target="#import-pane"
+                    type="button" role="tab">
+              <i class="bi bi-box-arrow-in-down me-1"></i>Import
+            </button>
+          </li>
+        </ul>
+
+        <div class="tab-content" id="report-tab-content">
+
+          <!-- Report -->
+          <div class="tab-pane fade {{ 'show active' if active_tab == 'report' else '' }}" id="report-pane" role="tabpanel">
+            <form method="post" action="/model/report" id="report-form">
+              <input type="hidden" name="action" value="generate_report" />
+              <div class="mb-3">
+                <label for="report_path" class="form-label fw-semibold">Output Report File</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-file-earmark-spreadsheet"></i></span>
+                  <input type="text" class="form-control font-monospace" id="report_path" name="file_path"
+                         placeholder="C:/reports/model_report.xlsx"
+                         value="{{ last_report_path }}" required autocomplete="off" />
+                  <button type="button" class="btn btn-outline-secondary"
+                          data-browse-target="report_path"
+                          data-browse-filter="excel"
+                          title="Browse for output folder">
+                    <i class="bi bi-folder2-open"></i>
+                  </button>
+                </div>
+                <div class="form-text">Full path including filename (must end in <code>.xlsx</code>).</div>
+              </div>
+              <button type="submit" class="btn btn-success" id="btn-report">
+                <span class="spinner-border spinner-border-sm d-none me-1" id="report-spinner"></span>
+                <i class="bi bi-download me-1"></i>Generate Report
               </button>
-            </div>
-            <div class="form-text">Full path including filename (must end in <code>.xlsx</code>).</div>
+              <a href="/model" class="btn btn-outline-secondary ms-2">Cancel</a>
+            </form>
           </div>
 
-          <button type="submit" class="btn btn-success" id="btn-report">
-            <span id="report-spinner" class="spinner-border spinner-border-sm d-none me-1" role="status"></span>
-            <i class="bi bi-download me-1"></i>Generate Report
-          </button>
-          <a href="/model" class="btn btn-outline-secondary ms-2">Cancel</a>
-        </form>
+          <!-- Export -->
+          <div class="tab-pane fade {{ 'show active' if active_tab == 'export' else '' }}" id="export-pane" role="tabpanel">
+            <form method="post" action="/model/report" id="export-form">
+              <input type="hidden" name="action" value="export" />
+              <div class="mb-3">
+                <label for="export_path" class="form-label fw-semibold">Output Excel File</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-file-earmark-spreadsheet"></i></span>
+                  <input type="text" class="form-control font-monospace" id="export_path" name="file_path"
+                         placeholder="C:/output/model_export.xlsx"
+                         value="{{ last_export_path }}" required autocomplete="off" />
+                  <button type="button" class="btn btn-outline-secondary"
+                          data-browse-target="export_path"
+                          data-browse-filter="excel"
+                          title="Browse">
+                    <i class="bi bi-folder2-open"></i>
+                  </button>
+                </div>
+                <div class="form-text">All element parameters will be exported to separate sheets.</div>
+              </div>
+              <button type="submit" class="btn btn-primary" id="btn-export">
+                <span class="spinner-border spinner-border-sm d-none me-1" id="export-spinner"></span>
+                <i class="bi bi-download me-1"></i>Export to Excel
+              </button>
+            </form>
+          </div>
+
+          <!-- Import -->
+          <div class="tab-pane fade {{ 'show active' if active_tab == 'import' else '' }}" id="import-pane" role="tabpanel">
+            <form method="post" action="/model/report" id="import-form">
+              <input type="hidden" name="action" value="import" />
+              <div class="mb-3">
+                <label for="import_path" class="form-label fw-semibold">Source Excel File</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-file-earmark-spreadsheet"></i></span>
+                  <input type="text" class="form-control font-monospace" id="import_path" name="file_path"
+                         placeholder="C:/input/model_edited.xlsx"
+                         value="{{ last_import_path }}" required autocomplete="off" />
+                  <button type="button" class="btn btn-outline-secondary"
+                          data-browse-target="import_path"
+                          data-browse-filter="excel"
+                          title="Browse">
+                    <i class="bi bi-folder2-open"></i>
+                  </button>
+                </div>
+                <div class="form-text">Import previously exported (and edited) pipe parameters back into the model.</div>
+              </div>
+              <div class="alert alert-warning d-flex align-items-center py-2" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <small>Import overwrites the in-memory model. Save a backup first.</small>
+              </div>
+              <button type="submit" class="btn btn-warning" id="btn-import">
+                <span class="spinner-border spinner-border-sm d-none me-1" id="import-spinner"></span>
+                <i class="bi bi-upload me-1"></i>Import from Excel
+              </button>
+            </form>
+          </div>
+
+        </div><!-- tab-content -->
       </div>
     </div>
   </div>
@@ -64,10 +144,22 @@
     {% endif %}
 
     <div class="card shadow-sm">
-      <div class="card-header fw-semibold"><i class="bi bi-lightbulb me-1"></i>About Reports</div>
+      <div class="card-header fw-semibold"><i class="bi bi-lightbulb me-1"></i>About Report</div>
       <div class="card-body small text-secondary">
-        <p class="mb-1">Creates a multi-sheet Excel workbook — one sheet per element type (Pipes, Pumps, Valves, …).</p>
-        <p class="mb-0">The output directory must exist before generating the report.</p>
+        <p class="mb-1">Creates a multi-sheet Excel workbook with References, Basis, and element sheets.</p>
+        <p class="mb-0">The output directory must exist before generating.</p>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mt-3">
+      <div class="card-header fw-semibold"><i class="bi bi-lightbulb me-1"></i>About Export/Import</div>
+      <div class="card-body small text-secondary">
+        <ol class="mb-0 ps-3">
+          <li>Export the model to Excel.</li>
+          <li>Edit pipe parameters in Excel.</li>
+          <li>Import the edited file back.</li>
+          <li>Click <em>Save</em> to write the <code>.kdf</code>.</li>
+        </ol>
       </div>
     </div>
   </div>
@@ -77,9 +169,16 @@
 
 {% block scripts %}
 <script>
-  document.getElementById('report-form').addEventListener('submit', function() {
-    document.getElementById('btn-report').disabled = true;
-    document.getElementById('report-spinner').classList.remove('d-none');
+  document.addEventListener('DOMContentLoaded', function () {
+    // Spinner on submit
+    ['report-form', 'export-form', 'import-form'].forEach(function (id) {
+      document.getElementById(id).addEventListener('submit', function () {
+        var btn = this.querySelector('button[type="submit"]');
+        var spinner = this.querySelector('.spinner-border');
+        if (btn) btn.disabled = true;
+        if (spinner) spinner.classList.remove('d-none');
+      });
+    });
   });
 </script>
 {% endblock %}

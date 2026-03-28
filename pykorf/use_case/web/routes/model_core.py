@@ -5,7 +5,7 @@ from __future__ import annotations
 from flask import Blueprint, redirect, render_template, url_for
 
 from pykorf.use_case.web import session as _sess
-from pykorf.use_case.web.helpers import is_redirect, model_summary, require_model
+from pykorf.use_case.web.helpers import is_redirect, require_model
 
 bp = Blueprint("model_core", __name__)
 
@@ -19,7 +19,7 @@ def main_menu():
     return render_template(
         "main_menu.html",
         kdf_path=str(_sess.get_kdf_path() or ""),
-        summary=model_summary(model),
+        summary=model.summary(),
     )
 
 

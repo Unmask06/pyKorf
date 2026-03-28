@@ -22,14 +22,14 @@ _EXT_MAP: dict[str, set[str]] = {
 
 def _is_safe_path(path: Path) -> bool:
     """Check if path is within allowed browsing roots.
-    
+
     Prevents path traversal attacks by restricting browsing to:
     - User's home directory
     - Windows drive roots (on Windows)
-    
+
     Args:
         path: Resolved Path to validate.
-        
+
     Returns:
         True if path is within allowed roots.
     """
@@ -37,21 +37,21 @@ def _is_safe_path(path: Path) -> bool:
         resolved = path.resolve()
     except (OSError, ValueError):
         return False
-    
+
     home = Path.home().resolve()
-    
+
     if os.name == "nt":
         allowed_roots = [home] + [Path(f"{d}:\\") for d in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" if Path(f"{d}:\\").exists()]
     else:
         allowed_roots = [home, Path("/")]
-    
+
     for root in allowed_roots:
         try:
             resolved.relative_to(root.resolve())
             return True
         except ValueError:
             continue
-    
+
     return False
 
 

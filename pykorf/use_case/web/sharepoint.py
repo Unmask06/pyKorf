@@ -23,6 +23,7 @@ from __future__ import annotations
 import os
 import time
 from pathlib import Path
+from urllib.parse import quote
 
 import structlog
 
@@ -47,9 +48,9 @@ def _read_sync_roots() -> list[tuple[str, str]]:
         sorted longest-first so the most specific match wins.
     """
     global _sync_roots_cache, _cache_timestamp
-    
+
     logger = structlog.get_logger()
-    
+
     now = time.time()
     if _sync_roots_cache is not None and (now - _cache_timestamp) < _CACHE_TTL_SECONDS:
         return _sync_roots_cache
@@ -144,8 +145,6 @@ def get_sharepoint_url(local_path: str | Path) -> str | None:
             # URL-encode only characters that must be encoded in a URL path;
             # keep slashes, hyphens, dots, and most printable chars intact so
             # the URL remains readable.
-            from urllib.parse import quote
-
             relative_encoded = quote(relative, safe="/.-_~")
             url = url_namespace.rstrip("/") + relative_encoded
             return url

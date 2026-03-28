@@ -5,7 +5,7 @@ from __future__ import annotations
 from flask import Blueprint, render_template
 
 from pykorf.use_case.web import session as _sess
-from pykorf.use_case.web.helpers import is_redirect, model_summary, pipe_names, require_model
+from pykorf.use_case.web.helpers import is_redirect, pipe_names, require_model
 
 bp = Blueprint("model_info", __name__)
 
@@ -19,6 +19,6 @@ def model_info():
     return render_template(
         "model_info.html",
         kdf_path=str(_sess.get_kdf_path() or ""),
-        summary=model_summary(model),
+        summary=model.summary(),
         pipes=pipe_names(model),
     )
