@@ -214,6 +214,17 @@ def main():
         action="store_true",
         help="Enable debug mode (DEBUG log level, saves to {kdf-name}-debug.log)",
     )
+    parser.add_argument(
+        "--web",
+        action="store_true",
+        help="Launch the local web UI instead of the terminal TUI",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Port for the web UI server (default: 8000, only used with --web)",
+    )
     args = parser.parse_args()
 
     show_splash()
@@ -230,6 +241,30 @@ def main():
         update_info = check_for_update(pkg_version)
         if update_info:
             show_update_prompt(update_info)
+
+    if args.web:
+        try:
+            import flask  # noqa: F401
+        except ImportError:
+            console.print(
+                Panel(
+                    "[red bold]Flask not installed[/red bold]\n\n"
+                    "The web UI requires Flask. Install it with:\n"
+                    "[cyan]uv add flask>=3.0[/cyan]\n\n"
+                    "Or install all web dependencies:\n"
+                    "[cyan]uv add --optional web[/cyan]",
+                    title="Missing Dependency",
+                    border_style="red",
+                    padding=(1, 2),
+                ),
+                justify="center",
+            )
+            return
+
+        from pykorf.use_case.web.app import run_server
+
+        run_server(port=args.port)
+        return
 
     show_loading("Initializing...", 0.8)
 

@@ -247,6 +247,27 @@ def set_pms_excel_path(path: str | Path) -> None:
     save_config(config)
 
 
+def get_last_report_path() -> str | None:
+    """Get the last used report output path.
+
+    Returns:
+        The last used report path, or None if not set.
+    """
+    config = load_config()
+    return config.get("last_report_path")
+
+
+def set_last_report_path(path: str | Path) -> None:
+    """Save the last used report output path.
+
+    Args:
+        path: The report path to save.
+    """
+    config = load_config()
+    config["last_report_path"] = str(path)
+    save_config(config)
+
+
 def get_last_excel_import_path() -> str | None:
     """Get the last used Excel import path.
 
@@ -286,6 +307,31 @@ def set_pms_excel_last_imported(timestamp: str) -> None:
     """
     config = load_config()
     config["pms_excel_last_imported"] = timestamp
+    save_config(config)
+
+
+def get_sp_overrides() -> dict[str, str]:
+    """Get user-configured SharePoint path overrides.
+
+    Returns a mapping of local folder paths to their correct SharePoint URLs.
+    Used when OneDrive stores only the library root in the registry but the
+    synced folder is actually a subfolder (IsFolderScope = 1).
+
+    Returns:
+        Dict mapping local path strings to SharePoint URL strings.
+    """
+    config = load_config()
+    return config.get("sp_overrides", {})
+
+
+def set_sp_overrides(overrides: dict[str, str]) -> None:
+    """Save user-configured SharePoint path overrides.
+
+    Args:
+        overrides: Dict mapping local path strings to SharePoint URL strings.
+    """
+    config = load_config()
+    config["sp_overrides"] = overrides
     save_config(config)
 
 

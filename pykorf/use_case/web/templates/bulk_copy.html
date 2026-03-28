@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% block title %}Bulk Copy Fluids{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold d-flex align-items-center gap-2">
+        <i class="bi bi-copy text-primary"></i>Bulk Copy Fluids
+      </div>
+      <div class="card-body">
+
+        {% if error %}
+        <div class="alert alert-danger" role="alert">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error }}
+        </div>
+        {% endif %}
+
+        {% if result == "success" %}
+        <div class="alert alert-success" role="alert">
+          <i class="bi bi-check-circle-fill me-2"></i>
+          Copied fluid properties from <strong>{{ ref_pipe }}</strong> to {{ updated_count }} pipe(s).
+          {% if updated_pipes %}
+          <div class="mt-2 small font-monospace">
+            {% for pipe in updated_pipes %}
+            <div>• {{ pipe }}</div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        <form method="post" action="/model/bulk-copy" id="copy-form">
+
+          <div class="mb-3">
+            <label for="ref_pipe" class="form-label fw-semibold">Reference Pipe (copy FROM)</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-file-earmark-text"></i></span>
+              <input type="text" class="form-control font-monospace" id="ref_pipe" name="ref_pipe"
+                     placeholder="e.g. L1" value="{{ ref_pipe }}" autocomplete="off" />
+            </div>
+            <div class="form-text">The pipe whose fluid properties will be copied.</div>
+          </div>
+
+          <div class="mb-3">
+            <label for="target_pipes" class="form-label fw-semibold">Target Pipes (copy TO)</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-files"></i></span>
+              <input type="text" class="form-control font-monospace" id="target_pipes" name="target_pipes"
+                     placeholder="e.g. L2, L3, L4 (leave empty for ALL pipes)"
+                     value="{{ target_pipes }}" autocomplete="off" />
+              <button type="button" class="btn btn-outline-secondary" id="clear-targets"
+                      title="Clear targets">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+            <div class="form-text">
+              Comma-separated list. Leave empty to copy to ALL pipes (except reference).
+            </div>
+          </div>
+
+          <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="exclude" name="exclude"
+                   {% if exclude %}checked{% endif %} />
+            <label class="form-check-label" for="exclude">
+              <strong>Exclude mode</strong> — Copy to all pipes EXCEPT those listed
+            </label>
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="btn-execute">
+            <span id="execute-spinner" class="spinner-border spinner-border-sm d-none me-1" role="status"></span>
+            <i class="bi bi-play-fill me-1"></i>Execute Copy
+          </button>
+          <a href="/model" class="btn btn-outline-secondary ms-2">Cancel</a>
+
+        </form>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-list-check me-1"></i>Available Pipes
+        <span class="badge bg-primary rounded-pill ms-2">{{ pipes | length }}</span>
+      </div>
+      <div class="card-body p-0">
+        <div class="p-2 border-bottom">
+          <input type="text" id="pipe-filter" class="form-control form-control-sm"
+                 placeholder="Filter pipes..." />
+        </div>
+        <div style="max-height: 400px; overflow-y: auto;">
+          <div class="list-group list-group-flush" id="pipe-list">
+            {% for pipe in pipes %}
+            <button type="button" class="list-group-item list-group-item-action py-1 pipe-btn"
+                    data-pipe="{{ pipe }}">
+              <i class="bi bi-pipe me-1 text-secondary"></i>{{ pipe }}
+            </button>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mt-3">
+      <div class="card-header fw-semibold"><i class="bi bi-lightbulb me-1"></i>How to Use</div>
+      <div class="card-body small text-secondary">
+        <ol class="mb-0 ps-3">
+          <li>Enter a <strong>Reference pipe</strong> (source of fluid properties)</li>
+          <li>Enter <strong>Target pipes</strong> or leave empty for ALL</li>
+          <li>Check <strong>Exclude</strong> to copy to all EXCEPT listed pipes</li>
+          <li>Click <strong>Execute Copy</strong</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mt-3">
+      <div class="card-header fw-semibold"><i class="bi bi-lightbulb me-1"></i>Examples</div>
+      <div class="card-body small text-secondary">
+        <p class="mb-1"><strong>Ref:</strong> L1, <strong>Targets:</strong> L2,L3</p>
+        <p class="mb-2">→ Copy L1 fluid to L2,L3</p>
+        <p class="mb-1"><strong>Ref:</strong> L1, <strong>Targets:</strong> (empty)</p>
+        <p class="mb-2">→ Copy L1 fluid to ALL pipes</p>
+        <p class="mb-1"><strong>Ref:</strong> L1, <strong>Targets:</strong> L2, <strong>Exclude:</strong> ✓</p>
+        <p class="mb-0">→ Copy to all pipes EXCEPT L2</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const refInput = document.getElementById('ref_pipe');
+    const targetInput = document.getElementById('target_pipes');
+    const pipeFilter = document.getElementById('pipe-filter');
+    const pipeList = document.getElementById('pipe-list');
+    const form = document.getElementById('copy-form');
+    const clearBtn = document.getElementById('clear-targets');
+
+    // Filter pipe list
+    pipeFilter.addEventListener('input', function() {
+      const q = this.value.toLowerCase();
+      pipeList.querySelectorAll('.pipe-btn').forEach(function(btn) {
+        const name = btn.dataset.pipe.toLowerCase();
+        btn.style.display = name.includes(q) ? '' : 'none';
+      });
+    });
+
+    // Click pipe to fill reference or add to targets
+    pipeList.addEventListener('click', function(e) {
+      const btn = e.target.closest('.pipe-btn');
+      if (!btn) return;
+      const pipeName = btn.dataset.pipe;
+
+      // If reference is empty, fill it; otherwise add to targets
+      if (!refInput.value.trim()) {
+        refInput.value = pipeName;
+      } else {
+        const current = targetInput.value.trim();
+        const targets = current ? current.split(',').map(s => s.trim()).filter(Boolean) : [];
+        if (!targets.includes(pipeName)) {
+          targets.push(pipeName);
+          targetInput.value = targets.join(', ');
+        }
+      }
+    });
+
+    // Clear targets button
+    clearBtn.addEventListener('click', function() {
+      targetInput.value = '';
+      targetInput.focus();
+    });
+
+    // Spinner on submit
+    form.addEventListener('submit', function() {
+      const btn = document.getElementById('btn-execute');
+      const spinner = document.getElementById('execute-spinner');
+      btn.disabled = true;
+      spinner.classList.remove('d-none');
+    });
+  });
+</script>
+{% endblock %}
