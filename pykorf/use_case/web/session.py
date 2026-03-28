@@ -6,6 +6,7 @@ matching how the terminal TUI works.
 
 from __future__ import annotations
 
+import threading
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -14,6 +15,7 @@ if TYPE_CHECKING:
 
 _model: Model | None = None
 _kdf_path: Path | None = None
+_lock = threading.Lock()
 
 
 def load(model: Model, kdf_path: Path) -> None:
@@ -24,8 +26,9 @@ def load(model: Model, kdf_path: Path) -> None:
         kdf_path: Source .kdf file path.
     """
     global _model, _kdf_path
-    _model = model
-    _kdf_path = kdf_path
+    with _lock:
+        _model = model
+        _kdf_path = kdf_path
 
 
 def get_model() -> Model | None:
@@ -34,7 +37,8 @@ def get_model() -> Model | None:
     Returns:
         Active KorfModel or None.
     """
-    return _model
+    with _lock:
+        return _model
 
 
 def get_kdf_path() -> Path | None:
@@ -43,7 +47,8 @@ def get_kdf_path() -> Path | None:
     Returns:
         Path to the .kdf file or None.
     """
-    return _kdf_path
+    with _lock:
+        return _kdf_path
 
 
 def has_model() -> bool:
@@ -52,11 +57,13 @@ def has_model() -> bool:
     Returns:
         True when a model is in memory.
     """
-    return _model is not None
+    with _lock:
+        return _model is not None
 
 
 def clear() -> None:
     """Unload the current model."""
     global _model, _kdf_path
-    _model = None
-    _kdf_path = None
+    with _lock:
+        _model = None
+        _kdf_path = None
