@@ -12,7 +12,7 @@ Each sub-key contains:
 This module reads those mappings and translates any local path that falls
 inside a synced folder to its equivalent SharePoint URL.  On non-Windows
 platforms or when OneDrive is not installed every function returns ``None``
-gracefully.
+gradually.
 
 No third-party packages required — only the standard library ``winreg``
 module (available on CPython for Windows).
@@ -21,25 +21,34 @@ module (available on CPython for Windows).
 from __future__ import annotations
 
 import os
-from functools import lru_cache
+import time
 from pathlib import Path
 
 
 # ── Registry helpers ──────────────────────────────────────────────────────────
 
 _SYNC_ENGINES_KEY = r"SOFTWARE\SyncEngines\Providers\OneDrive"
+_CACHE_TTL_SECONDS = 300
+
+_sync_roots_cache: list[tuple[str, str]] | None = None
+_cache_timestamp: float = 0.0
 
 
-@lru_cache(maxsize=1)
 def _read_sync_roots() -> list[tuple[str, str]]:
     """Read all (MountPoint, UrlNamespace) pairs from the OneDrive registry key.
 
+    Uses TTL-based caching (5 minute default) to avoid repeated registry reads.
     Returns an empty list on non-Windows or when OneDrive is not installed.
 
     Returns:
         List of ``(local_mount_point, sharepoint_url_namespace)`` tuples,
         sorted longest-first so the most specific match wins.
     """
+    global _sync_roots_cache, _cache_timestamp
+    
+    now = time.time()
+    if _sync_roots_cache is not None and (now - _cache_timestamp) < _CACHE_TTL_SECONDS:
+        return _sync_roots_cache
     if os.name != "nt":
         return []
 
@@ -77,8 +86,9 @@ def _read_sync_roots() -> list[tuple[str, str]]:
     finally:
         root.Close()
 
-    # Longest mount-point first → most specific match wins
-    return sorted(results, key=lambda t: -len(t[0]))
+    _sync_roots_cache = sorted(results, key=lambda t: -len(t[0]))
+    _cache_timestamp = time.time()
+    return _sync_roots_cache
 
 
 def is_sharepoint_synced(local_path: str | Path) -> bool:
@@ -144,4 +154,6 @@ def clear_cache() -> None:
     Call this if you suspect the OneDrive sync configuration changed
     during the server's lifetime (rare, but possible).
     """
-    _read_sync_roots.cache_clear()
+    global _sync_roots_cache, _cache_timestamp
+    _sync_roots_cache = None
+    _cache_timestamp = 0.0
