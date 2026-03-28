@@ -131,12 +131,23 @@ def get_sharepoint_url(local_path: str | Path) -> str | None:
         url = get_sharepoint_url(r"C:\Users\alice\Contoso\ProjectA\Documents\P&ID-001.pdf")
         # "https://contoso.sharepoint.com/sites/ProjectA/Documents/P%26ID-001.pdf"
     """
+    # Normalise to forward-slash string for comparison
+    lp = str(local_path).replace("\\", "/").rstrip("/")
+
+    # User-configured overrides take priority over registry entries.
+    # Used when OneDrive stores only the library root (IsFolderScope=1) but
+    # the synced folder is actually a subfolder deep in the library.
+    from pykorf.use_case.preferences import get_sp_overrides
+
+    for local_root, sp_url in sorted(get_sp_overrides().items(), key=lambda t: -len(t[0])):
+        mp = local_root.replace("\\", "/").rstrip("/")
+        if lp.lower().startswith(mp.lower()):
+            relative = lp[len(mp):]
+            return sp_url.rstrip("/") + quote(relative, safe="/.-_~")
+
     sync_roots = _read_sync_roots()
     if not sync_roots:
         return None
-
-    # Normalise to forward-slash string for comparison
-    lp = str(local_path).replace("\\", "/").rstrip("/")
 
     for mount_point, url_namespace in sync_roots:
         mp = mount_point.replace("\\", "/").rstrip("/")

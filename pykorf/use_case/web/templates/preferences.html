@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Preferences{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold d-flex align-items-center gap-2">
+        <i class="bi bi-cloud-check text-primary"></i>SharePoint Path Overrides
+      </div>
+      <div class="card-body">
+
+        {% if flash %}
+        <div class="alert alert-{{ flash.type }} alert-dismissible fade show py-2" role="alert">
+          <i class="bi bi-{% if flash.type == 'success' %}check-circle{% else %}exclamation-triangle{% endif %} me-1"></i>
+          {{ flash.msg }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endif %}
+
+        <!-- Add override form -->
+        <form method="post" action="/preferences" class="mb-4">
+          <input type="hidden" name="action" value="add" />
+          <div class="mb-2">
+            <label class="form-label small fw-semibold mb-1">Local Folder Path</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text"><i class="bi bi-folder2"></i></span>
+              <input type="text" class="form-control font-monospace" name="local_path" id="local_path"
+                     placeholder="C:\Users\you\Company\Project - SiteName"
+                     required autocomplete="off" />
+              <button type="button" class="btn btn-outline-secondary"
+                      data-browse-target="local_path"
+                      data-browse-filter="any"
+                      title="Browse for local folder">
+                <i class="bi bi-folder2-open"></i>
+              </button>
+            </div>
+            <div class="form-text">The OneDrive-synced local folder root (e.g. the folder shown in Explorer).</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold mb-1">SharePoint URL</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text"><i class="bi bi-cloud"></i></span>
+              <input type="text" class="form-control font-monospace" name="sp_url"
+                     placeholder="https://tenant.sharepoint.com/sites/Site/Shared Documents/Subfolder"
+                     required autocomplete="off" />
+            </div>
+            <div class="form-text">
+              The corresponding SharePoint folder URL. From SharePoint, open the folder → copy the
+              <code>id=</code> value from the URL and decode it, or paste the direct folder URL.
+            </div>
+          </div>
+          <button type="submit" class="btn btn-sm btn-success">
+            <i class="bi bi-plus-circle me-1"></i>Add Override
+          </button>
+        </form>
+
+        <!-- Existing overrides table -->
+        {% if overrides %}
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-dark">
+              <tr>
+                <th>Local Folder</th>
+                <th>SharePoint URL</th>
+                <th style="width:4rem"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for local, sp_url in overrides.items() %}
+              <tr>
+                <td class="font-monospace small text-break">{{ local }}</td>
+                <td class="font-monospace small text-break">
+                  <a href="{{ sp_url }}" target="_blank" rel="noopener" title="{{ sp_url }}">
+                    <i class="bi bi-box-arrow-up-right me-1 small"></i>{{ sp_url }}
+                  </a>
+                </td>
+                <td>
+                  <form method="post" action="/preferences"
+                        onsubmit="return confirm('Remove this override?')">
+                    <input type="hidden" name="action" value="delete" />
+                    <input type="hidden" name="local_path" value="{{ local }}" />
+                    <button type="submit" class="btn btn-xs btn-outline-danger py-0 px-1" title="Delete">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center text-secondary py-4">
+          <i class="bi bi-cloud-slash fs-2 d-block mb-2"></i>
+          No overrides configured. Add one above if SharePoint URLs are resolving incorrectly.
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold"><i class="bi bi-lightbulb me-1"></i>When to use this</div>
+      <div class="card-body small text-secondary">
+        <p class="mb-2">OneDrive sometimes syncs a <strong>subfolder</strong> of a SharePoint library
+        but only records the library root URL in Windows. This causes the Browse button to generate
+        an incorrect SharePoint URL missing the intermediate folders.</p>
+        <p class="mb-2"><strong>How to find the correct URL:</strong></p>
+        <ol class="ps-3 mb-0">
+          <li>Open the folder in SharePoint via your browser.</li>
+          <li>Copy the URL — it contains an <code>id=</code> parameter.</li>
+          <li>URL-decode the <code>id</code> value (replace <code>%2F</code>→<code>/</code>, etc.).</li>
+          <li>Prefix with <code>https://tenant.sharepoint.com</code> to form the direct URL.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -52,6 +52,8 @@ from pykorf.use_case.pms import (
 from pykorf.use_case.preferences import (
     add_recent_file,
     get_global_settings_selected,
+    get_sp_overrides,
+    set_sp_overrides,
     get_last_batch_folder_path,
     get_last_excel_export_path,
     get_last_excel_import_path,
@@ -108,6 +110,7 @@ __all__ = [
     "get_pms_excel_path",
     "get_pms_path",
     "get_recent_files",
+    "get_sp_overrides",
     "get_stream_excel_last_imported",
     "get_stream_path",
     "import_pms_from_excel",
@@ -130,5 +133,6 @@ __all__ = [
     "set_last_report_path",
     "set_pms_excel_last_imported",
     "set_pms_excel_path",
+    "set_sp_overrides",
     "set_stream_excel_last_imported",
 ]
