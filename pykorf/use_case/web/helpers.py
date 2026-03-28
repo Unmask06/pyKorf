@@ -40,11 +40,11 @@ def pipe_names(model: Any) -> list[str]:
     Returns:
         Sorted list of non-empty pipe names.
     """
-    return sorted([
+    return sorted(
         model.pipes[idx].name
         for idx in range(1, model.num_pipes + 1)
         if model.pipes[idx].name
-    ])
+    )
 
 
 def require_model() -> Any:
