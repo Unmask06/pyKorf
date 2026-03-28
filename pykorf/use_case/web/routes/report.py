@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from flask import Blueprint, render_template, request
@@ -38,37 +39,46 @@ def generate_report():
         errors.append("Output file path is required.")
     else:
         report_path = Path(report_path_str)
-        try:
-            import pandas as pd
+        report_dir = report_path.parent
+        
+        if not report_dir.exists():
+            errors.append(f"Output directory does not exist: {report_dir}")
+        elif not report_dir.is_dir():
+            errors.append(f"Output path is not a directory: {report_dir}")
+        elif not os.access(report_dir, os.W_OK):
+            errors.append(f"Output directory is not writable: {report_dir}")
+        else:
+            try:
+                import pandas as pd
 
-            from pykorf.use_case.web.references import ReferencesStore
+                from pykorf.use_case.web.references import ReferencesStore
 
-            dfs = model.io.to_dataframes()
+                dfs = model.io.to_dataframes()
 
-            kdf_path_for_refs = _sess.get_kdf_path()
-            refs_store = (
-                ReferencesStore.load(kdf_path_for_refs)
-                if kdf_path_for_refs
-                else ReferencesStore()
-            )
+                kdf_path_for_refs = _sess.get_kdf_path()
+                refs_store = (
+                    ReferencesStore.load(kdf_path_for_refs)
+                    if kdf_path_for_refs
+                    else ReferencesStore()
+                )
 
-            with pd.ExcelWriter(report_path, engine="openpyxl") as writer:
-                refs_df = refs_store.to_dataframe()
-                if not refs_df.empty:
-                    refs_df.to_excel(writer, sheet_name="References", index=False)
+                with pd.ExcelWriter(report_path, engine="openpyxl") as writer:
+                    refs_df = refs_store.to_dataframe()
+                    if not refs_df.empty:
+                        refs_df.to_excel(writer, sheet_name="References", index=False)
 
-                if refs_store.basis.strip():
-                    basis_df = pd.DataFrame({"Design Basis": [refs_store.basis]})
-                    basis_df.to_excel(writer, sheet_name="Basis", index=False)
+                    if refs_store.basis.strip():
+                        basis_df = pd.DataFrame({"Design Basis": [refs_store.basis]})
+                        basis_df.to_excel(writer, sheet_name="Basis", index=False)
 
-                for sheet_name, df in dfs.items():
-                    df.to_excel(writer, sheet_name=sheet_name[:31], index=False)
+                    for sheet_name, df in dfs.items():
+                        df.to_excel(writer, sheet_name=sheet_name[:31], index=False)
 
-            n_refs = len(refs_store.references)
-            ref_note = f" (+{n_refs} reference(s))" if n_refs else ""
-            result_lines.append(("success", f"Report saved to: {report_path}{ref_note}"))
-        except Exception as exc:
-            errors.append(f"Error generating report: {exc}")
+                n_refs = len(refs_store.references)
+                ref_note = f" (+{n_refs} reference(s))" if n_refs else ""
+                result_lines.append(("success", f"Report saved to: {report_path}{ref_note}"))
+            except Exception as exc:
+                errors.append(f"Error generating report: {exc}")
 
     return render_template(
         "report.html",
