@@ -7,6 +7,8 @@ from pathlib import Path
 
 from flask import Blueprint, jsonify, request
 
+from pykorf.use_case.web.sharepoint import get_sharepoint_url, is_sharepoint_synced
+
 bp = Blueprint("browse", __name__)
 
 # File extensions surfaced per filter mode
@@ -49,8 +51,6 @@ def api_browse():
     except PermissionError:
         target = Path.home()
         entries = list(target.iterdir())
-
-    from pykorf.use_case.web.sharepoint import get_sharepoint_url, is_sharepoint_synced
 
     current_sp_url = get_sharepoint_url(target)
 
