@@ -13,6 +13,7 @@ from pykorf.use_case.web.helpers import is_redirect, require_model
 bp = Blueprint("report", __name__)
 
 
+
 @bp.route("/model/report", methods=["GET", "POST"])
 def generate_report():
     """Render and handle the Reports page (Report, Export, Import)."""
@@ -30,19 +31,37 @@ def generate_report():
     )
 
     kdf_path = _sess.get_kdf_path()
+
+    # Default paths based on KDF file
+    kdf_folder = str(kdf_path.parent) if kdf_path else ""
+    kdf_stem = kdf_path.stem if kdf_path else "model"
+
+    default_report_name = f"{kdf_stem}_report.xlsx"
+    default_export_name = f"{kdf_stem}_export.xlsx"
+
+    # Report folder (use last used or KDF folder)
     last_report = get_last_report_path()
-    default_report = last_report or (
-        str(kdf_path.with_name(f"{kdf_path.stem}_report.xlsx")) if kdf_path else ""
-    )
+    report_folder = str(Path(last_report).parent) if last_report else kdf_folder
+
+    # Export path — only pre-fill if user has previously exported (no synthetic defaults)
+    last_export = get_last_excel_export_path()
+    export_path = str(last_export) if last_export else ""
+    export_exists = Path(last_export).is_file() if last_export else False
+
+    # Import path — follows the last export path
+    last_import = get_last_excel_import_path()
+    import_path = str(last_import) if last_import else export_path
 
     if request.method == "GET":
         return render_template(
             "report.html",
             kdf_path=str(kdf_path or ""),
-            last_report_path=default_report,
-            last_export_path=str(get_last_excel_export_path() or ""),
-            last_import_path=str(get_last_excel_import_path() or ""),
-            active_tab="report",
+            report_folder=report_folder,
+            default_report_name=default_report_name,
+            default_export_name=default_export_name,
+            export_path=export_path,
+            import_path=import_path,
+            export_exists=export_exists,
             result=None,
         )
 
@@ -52,83 +71,62 @@ def generate_report():
     result_lines: list[tuple[str, str]] = []
     errors: list[str] = []
 
-    if not file_path_str:
-        errors.append("File path is required.")
-    else:
-        file_path = Path(file_path_str)
-
-        if action == "generate_report":
-            report_dir = file_path.parent
-            if not report_dir.exists():
-                errors.append(f"Output directory does not exist: {report_dir}")
-            elif not report_dir.is_dir():
-                errors.append(f"Output path is not a directory: {report_dir}")
-            elif not os.access(report_dir, os.W_OK):
-                errors.append(f"Output directory is not writable: {report_dir}")
-            else:
-                try:
-                    import pandas as pd
-
-                    from pykorf.use_case.web.references import ReferencesStore
-
-                    dfs = model.io.to_dataframes()
-
-                    kdf_path_for_refs = _sess.get_kdf_path()
-                    refs_store = (
-                        ReferencesStore.load(kdf_path_for_refs)
-                        if kdf_path_for_refs
-                        else ReferencesStore()
-                    )
-
-                    with pd.ExcelWriter(file_path, engine="openpyxl") as writer:
-                        refs_df = refs_store.to_dataframe()
-                        if not refs_df.empty:
-                            refs_df.to_excel(writer, sheet_name="References", index=False)
-
-                        if refs_store.basis.strip():
-                            basis_df = pd.DataFrame({"Design Basis": [refs_store.basis]})
-                            basis_df.to_excel(writer, sheet_name="Basis", index=False)
-
-                        for sheet_name, df in dfs.items():
-                            df.to_excel(writer, sheet_name=sheet_name[:31], index=False)
-
-                    set_last_report_path(str(file_path))
-                    n_refs = len(refs_store.references)
-                    ref_note = f" (+{n_refs} reference(s))" if n_refs else ""
-                    result_lines.append(("success", f"Report saved to: {file_path}{ref_note}"))
-                except Exception as exc:
-                    errors.append(f"Error generating report: {exc}")
-
-        elif action == "export":
-            try:
-                model.io.to_excel(file_path)
-                set_last_excel_export_path(str(file_path))
-                result_lines.append(("success", f"Exported to: {file_path}"))
-            except Exception as exc:
-                errors.append(f"Error during export: {exc}")
-
-        elif action == "import":
-            if not file_path.is_file():
-                errors.append(f"File not found: {file_path}")
-            else:
-                try:
-                    model.io.from_excel(file_path)
-                    set_last_excel_import_path(str(file_path))
-                    result_lines.append(("success", f"Imported from: {file_path}"))
-                except Exception as exc:
-                    errors.append(f"Error during import: {exc}")
-
+    if action == "generate_report":
+        # For report, file_path_str is the folder
+        report_dir = Path(file_path_str) if file_path_str else Path(kdf_folder)
+        if not report_dir.exists():
+            errors.append(f"Output directory does not exist: {report_dir}")
+        elif not report_dir.is_dir():
+            errors.append(f"Output path is not a directory: {report_dir}")
+        elif not os.access(report_dir, os.W_OK):
+            errors.append(f"Output directory is not writable: {report_dir}")
         else:
-            errors.append(f"Unknown action: {action}")
+            try:
+                from pykorf.reports.exporter import ResultExporter
 
-    active_tab = action if action in ("report", "export", "import") else "report"
+                report_file = report_dir / default_report_name
+                exporter = ResultExporter(model)
+                exporter.export_to_excel(str(report_file))
+                set_last_report_path(str(report_file))
+                result_lines.append(("success", f"Report saved to: {report_file}"))
+            except Exception as exc:
+                errors.append(f"Error generating report: {exc}")
+
+    elif action == "export":
+        file_path = Path(file_path_str) if file_path_str else Path(kdf_folder) / default_export_name
+        try:
+            model.io.to_excel(file_path)
+            set_last_excel_export_path(str(file_path))
+            export_path = str(file_path)
+            export_exists = True
+            result_lines.append(("success", f"Exported to: {file_path}"))
+        except Exception as exc:
+            errors.append(f"Error during export: {exc}")
+
+    elif action == "import":
+        file_path = Path(file_path_str) if file_path_str else Path(export_path)
+        if not file_path.is_file():
+            errors.append(f"File not found: {file_path}. Please export first before importing.")
+        else:
+            try:
+                model.io.from_excel(file_path)
+                set_last_excel_import_path(str(file_path))
+                import_path = str(file_path)
+                result_lines.append(("success", f"Imported from: {file_path}"))
+            except Exception as exc:
+                errors.append(f"Error during import: {exc}")
+
+    else:
+        errors.append(f"Unknown action: {action}")
 
     return render_template(
         "report.html",
         kdf_path=str(kdf_path or ""),
-        last_report_path=default_report if action != "generate_report" else str(file_path or ""),
-        last_export_path=str(get_last_excel_export_path() or ""),
-        last_import_path=str(get_last_excel_import_path() or ""),
-        active_tab=active_tab,
+        report_folder=report_folder,
+        default_report_name=default_report_name,
+        default_export_name=default_export_name,
+        export_path=export_path,
+        import_path=import_path,
+        export_exists=export_exists,
         result={"lines": result_lines, "errors": errors},
     )

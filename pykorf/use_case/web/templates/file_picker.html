@@ -23,11 +23,11 @@
       <div class="card-body p-4">
         <form method="post" action="/open" id="open-form">
           <div class="mb-3">
+            <label id="filename-label" class="form-label fw-bold text-primary d-block mb-2">{{ filename }}</label>
             <label for="kdf_path" class="form-label fw-semibold">File Path</label>
             <div class="input-group">
               <span class="input-group-text"><i class="bi bi-file-earmark-text"></i></span>
-              <input
-                type="text"
+              <textarea
                 class="form-control font-monospace"
                 id="kdf_path"
                 name="kdf_path"
@@ -35,8 +35,9 @@
                 autocomplete="off"
                 required
                 list="recent-paths"
-                value="{{ default_path }}"
-              />
+                rows="2"
+                style="resize: none;"
+              >{{ default_path }}</textarea>
               <datalist id="recent-paths">
                 {% for f in recent_files %}
                 <option value="{{ f }}"></option>
@@ -86,12 +87,35 @@
     </div>
     {% endif %}
 
+    <div class="card mt-3 shadow-sm">
+      <div class="card-header fw-semibold"><i class="bi bi-lightbulb me-1"></i>How to Use</div>
+      <div class="card-body small text-secondary">
+        <ol class="ps-3 mb-0">
+          <li>Type or paste the full path to a <code>.kdf</code> file, or use the <i class="bi bi-folder2-open"></i> browse button.</li>
+          <li>Click <strong>Open Model</strong> to load it.</li>
+          <li>Recent files appear below for quick access.</li>
+        </ol>
+      </div>
+    </div>
+
   </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
+  function getFilename(path) {
+    if (!path) return '';
+    // Use Path-like logic: split by both / and \ and get last part
+    const parts = path.split(/[/\\]/);
+    return parts[parts.length - 1] || '';
+  }
+
+  function updateFilenameLabel() {
+    const path = document.getElementById('kdf_path').value;
+    document.getElementById('filename-label').textContent = getFilename(path);
+  }
+
   document.getElementById('open-form').addEventListener('submit', function () {
     document.getElementById('open-btn').disabled = true;
     document.getElementById('open-spinner').classList.remove('d-none');
@@ -101,16 +125,21 @@
     const kdfPathInput = document.getElementById('kdf_path');
     const openForm = document.getElementById('open-form');
 
+    // Update filename label on input
+    kdfPathInput.addEventListener('input', updateFilenameLabel);
+
     document.querySelectorAll('.recent-file-link').forEach(link => {
       link.addEventListener('click', function (e) {
         e.preventDefault();
         kdfPathInput.value = this.dataset.path;
+        updateFilenameLabel();
       });
     });
 
     document.querySelectorAll('.recent-file-open-btn').forEach(button => {
       button.addEventListener('click', function () {
         kdfPathInput.value = this.dataset.path;
+        updateFilenameLabel();
         openForm.submit();
       });
     });

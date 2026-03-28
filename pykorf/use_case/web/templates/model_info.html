@@ -34,6 +34,52 @@
     </div>
   </div>
 
+  <!-- Validation panel -->
+  <div class="col-12">
+    <div class="card shadow-sm {{ 'border-danger' if has_errors else 'border-success' }}">
+      <div class="card-header fw-semibold d-flex align-items-center gap-2 {{ 'bg-danger text-white' if has_errors else 'bg-success text-white' }}">
+        <i class="bi {{ 'bi-exclamation-triangle-fill' if has_errors else 'bi-check-circle-fill' }}"></i>
+        Validation: {{ 'FAILED' if has_errors else 'PASSED' }} ({{ error_count }} issue{{ 's' if error_count != 1 else '' }})
+      </div>
+      {% if has_errors %}
+      <div class="card-body p-0">
+        <div style="max-height: 300px; overflow-y: auto;">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-light sticky-top">
+              <tr>
+                <th style="width: 6rem">Category</th>
+                <th>Issue</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for issue in validation_issues %}
+              <tr>
+                <td><span class="badge bg-secondary">{{ issue.category }}</span></td>
+                <td class="font-monospace small">{{ issue.message }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% else %}
+      <div class="card-body">
+        <p class="text-success mb-0"><i class="bi bi-check-lg me-1"></i>Model is valid. No issues found.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- How to Use tip -->
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold"><i class="bi bi-lightbulb me-1"></i>How to Use</div>
+      <div class="card-body small text-secondary py-2">
+        <span>Summary cards show element counts. The validation table lists any model errors. Use the pipe filter to search by name.</span>
+      </div>
+    </div>
+  </div>
+
   <!-- Pipe table -->
   <div class="col-12">
     <div class="card shadow-sm">

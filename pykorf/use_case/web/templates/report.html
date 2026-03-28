@@ -11,117 +11,116 @@
       </div>
       <div class="card-body">
 
-        <!-- Mode tabs -->
-        <ul class="nav nav-tabs mb-4" id="reportTabs" role="tablist" data-active-tab="{{ active_tab }}">
-          <li class="nav-item" role="presentation">
-            <button class="nav-link {{ 'active' if active_tab == 'report' else '' }}" id="report-tab" data-bs-toggle="tab" data-bs-target="#report-pane"
-                    type="button" role="tab">
-              <i class="bi bi-file-earmark-text me-1"></i>Report
-            </button>
-          </li>
-          <li class="nav-item" role="presentation">
-            <button class="nav-link {{ 'active' if active_tab == 'export' else '' }}" id="export-tab" data-bs-toggle="tab" data-bs-target="#export-pane"
-                    type="button" role="tab">
-              <i class="bi bi-box-arrow-up-right me-1"></i>Export
-            </button>
-          </li>
-          <li class="nav-item" role="presentation">
-            <button class="nav-link {{ 'active' if active_tab == 'import' else '' }}" id="import-tab" data-bs-toggle="tab" data-bs-target="#import-pane"
-                    type="button" role="tab">
-              <i class="bi bi-box-arrow-in-down me-1"></i>Import
-            </button>
-          </li>
-        </ul>
-
-        <div class="tab-content" id="report-tab-content">
-
-          <!-- Report -->
-          <div class="tab-pane fade {{ 'show active' if active_tab == 'report' else '' }}" id="report-pane" role="tabpanel">
-            <form method="post" action="/model/report" id="report-form">
-              <input type="hidden" name="action" value="generate_report" />
-              <div class="mb-3">
-                <label for="report_path" class="form-label fw-semibold">Output Report File</label>
-                <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-file-earmark-spreadsheet"></i></span>
-                  <input type="text" class="form-control font-monospace" id="report_path" name="file_path"
-                         placeholder="C:/reports/model_report.xlsx"
-                         value="{{ last_report_path }}" required autocomplete="off" />
-                  <button type="button" class="btn btn-outline-secondary"
-                          data-browse-target="report_path"
-                          data-browse-filter="excel"
-                          title="Browse for output folder">
-                    <i class="bi bi-folder2-open"></i>
-                  </button>
-                </div>
-                <div class="form-text">Full path including filename (must end in <code>.xlsx</code>).</div>
-              </div>
-              <button type="submit" class="btn btn-success" id="btn-report">
-                <span class="spinner-border spinner-border-sm d-none me-1" id="report-spinner"></span>
-                <i class="bi bi-download me-1"></i>Generate Report
+        <!-- Report Section -->
+        <form method="post" action="/model/report" id="report-form" class="mb-4 pb-4 border-bottom">
+          <input type="hidden" name="action" value="generate_report" />
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <i class="bi bi-file-earmark-text text-success fs-5"></i>
+            <h5 class="mb-0 fw-semibold">Generate Report</h5>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold text-success d-block mb-2">{{ default_report_name }}</label>
+            <label for="report_path" class="form-label fw-semibold">Output Folder</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-folder"></i></span>
+              <textarea class="form-control font-monospace" id="report_path" name="file_path"
+                     placeholder="Leave empty to use KDF folder" autocomplete="off" readonly
+                     rows="2" style="resize: none; background-color: var(--bs-secondary-bg);"
+                  >{{ report_folder }}</textarea>
+              <button type="button" class="btn btn-outline-secondary"
+                      data-browse-target="report_path"
+                      data-browse-filter="folder"
+                      title="Browse for output folder">
+                <i class="bi bi-folder2-open"></i>
               </button>
-              <a href="/model" class="btn btn-outline-secondary ms-2">Cancel</a>
-            </form>
+            </div>
+            <div class="form-text">Report will be saved as <code>{{ default_report_name }}</code> in this folder.</div>
+          </div>
+          <button type="submit" class="btn btn-success" id="btn-report">
+            <span class="spinner-border spinner-border-sm d-none me-1" id="report-spinner"></span>
+            <i class="bi bi-download me-1"></i>Generate Report
+          </button>
+        </form>
+
+        <!-- Export Section -->
+        <form method="post" action="/model/report" id="export-form" class="mb-4 pb-4 border-bottom">
+          <input type="hidden" name="action" value="export" />
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <i class="bi bi-box-arrow-up-right text-primary fs-5"></i>
+            <h5 class="mb-0 fw-semibold">Export to Excel</h5>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold text-primary d-block mb-2">{{ default_export_name }}</label>
+            <label for="export_path" class="form-label fw-semibold">Output Excel File</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-file-earmark-spreadsheet"></i></span>
+              <textarea class="form-control font-monospace" id="export_path" name="file_path"
+                     placeholder="Leave empty for {{ default_export_name }}" autocomplete="off" readonly
+                     rows="2" style="resize: none; background-color: var(--bs-secondary-bg);"
+               >{{ export_path }}</textarea>
+              <button type="button" class="btn btn-outline-secondary"
+                      data-browse-target="export_path"
+                      data-browse-filter="excel"
+                      title="Browse">
+                <i class="bi bi-folder2-open"></i>
+              </button>
+            </div>
+            <div class="form-text">All element parameters will be exported to <code>{{ default_export_name }}</code>.</div>
+          </div>
+          <button type="submit" class="btn btn-primary" id="btn-export">
+            <span class="spinner-border spinner-border-sm d-none me-1" id="export-spinner"></span>
+            <i class="bi bi-download me-1"></i>Export to Excel
+          </button>
+        </form>
+
+        <!-- Import Section -->
+        <form method="post" action="/model/report" id="import-form">
+          <input type="hidden" name="action" value="import" />
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <i class="bi bi-box-arrow-in-down text-warning fs-5"></i>
+            <h5 class="mb-0 fw-semibold">Import from Excel</h5>
           </div>
 
-          <!-- Export -->
-          <div class="tab-pane fade {{ 'show active' if active_tab == 'export' else '' }}" id="export-pane" role="tabpanel">
-            <form method="post" action="/model/report" id="export-form">
-              <input type="hidden" name="action" value="export" />
-              <div class="mb-3">
-                <label for="export_path" class="form-label fw-semibold">Output Excel File</label>
-                <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-file-earmark-spreadsheet"></i></span>
-                  <input type="text" class="form-control font-monospace" id="export_path" name="file_path"
-                         placeholder="C:/output/model_export.xlsx"
-                         value="{{ last_export_path }}" required autocomplete="off" />
-                  <button type="button" class="btn btn-outline-secondary"
-                          data-browse-target="export_path"
-                          data-browse-filter="excel"
-                          title="Browse">
-                    <i class="bi bi-folder2-open"></i>
-                  </button>
-                </div>
-                <div class="form-text">All element parameters will be exported to separate sheets.</div>
-              </div>
-              <button type="submit" class="btn btn-primary" id="btn-export">
-                <span class="spinner-border spinner-border-sm d-none me-1" id="export-spinner"></span>
-                <i class="bi bi-download me-1"></i>Export to Excel
+          {% if export_exists %}
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Source Excel File</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-file-earmark-spreadsheet"></i></span>
+              <textarea class="form-control font-monospace" id="import_path" name="file_path"
+                     autocomplete="off" readonly rows="2"
+                     style="resize: none; background-color: var(--bs-secondary-bg);"
+               >{{ import_path }}</textarea>
+              <button type="button" class="btn btn-outline-secondary"
+                      data-browse-target="import_path"
+                      data-browse-filter="excel"
+                      title="Browse">
+                <i class="bi bi-folder2-open"></i>
               </button>
-            </form>
+            </div>
+            <div class="form-text">Import previously exported pipe parameters back into the model.</div>
           </div>
-
-          <!-- Import -->
-          <div class="tab-pane fade {{ 'show active' if active_tab == 'import' else '' }}" id="import-pane" role="tabpanel">
-            <form method="post" action="/model/report" id="import-form">
-              <input type="hidden" name="action" value="import" />
-              <div class="mb-3">
-                <label for="import_path" class="form-label fw-semibold">Source Excel File</label>
-                <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-file-earmark-spreadsheet"></i></span>
-                  <input type="text" class="form-control font-monospace" id="import_path" name="file_path"
-                         placeholder="C:/input/model_edited.xlsx"
-                         value="{{ last_import_path }}" required autocomplete="off" />
-                  <button type="button" class="btn btn-outline-secondary"
-                          data-browse-target="import_path"
-                          data-browse-filter="excel"
-                          title="Browse">
-                    <i class="bi bi-folder2-open"></i>
-                  </button>
-                </div>
-                <div class="form-text">Import previously exported (and edited) pipe parameters back into the model.</div>
-              </div>
-              <div class="alert alert-warning d-flex align-items-center py-2" role="alert">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                <small>Import overwrites the in-memory model. Save a backup first.</small>
-              </div>
-              <button type="submit" class="btn btn-warning" id="btn-import">
-                <span class="spinner-border spinner-border-sm d-none me-1" id="import-spinner"></span>
-                <i class="bi bi-upload me-1"></i>Import from Excel
-              </button>
-            </form>
+          <div class="alert alert-warning d-flex align-items-center py-2" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <small>Import overwrites the in-memory model. Save a backup first.</small>
           </div>
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-warning" id="btn-import">
+              <span class="spinner-border spinner-border-sm d-none me-1" id="import-spinner"></span>
+              <i class="bi bi-upload me-1"></i>Import from Excel
+            </button>
+            <a href="/model" class="btn btn-outline-secondary">Cancel</a>
+          </div>
+          {% else %}
+          <div class="alert alert-secondary d-flex align-items-center gap-2" role="alert">
+            <i class="bi bi-slash-circle fs-5"></i>
+            <div>
+              <strong>No export file available.</strong>
+              Use <em>Export to Excel</em> above first, then come back to import.
+            </div>
+          </div>
+          {% endif %}
+        </form>
 
-        </div><!-- tab-content -->
       </div>
     </div>
   </div>
@@ -146,8 +145,8 @@
     <div class="card shadow-sm">
       <div class="card-header fw-semibold"><i class="bi bi-lightbulb me-1"></i>About Report</div>
       <div class="card-body small text-secondary">
-        <p class="mb-1">Creates a multi-sheet Excel workbook with References, Basis, and element sheets.</p>
-        <p class="mb-0">The output directory must exist before generating.</p>
+        <p class="mb-1">Creates a formatted Excel summary report with all model elements.</p>
+        <p class="mb-0">Output filename is automatically based on the KDF file name.</p>
       </div>
     </div>
 
@@ -169,6 +168,17 @@
 
 {% block scripts %}
 <script>
+  function getFilename(path) {
+    if (!path) return '';
+    const parts = path.split(/[\/\\]/);
+    return parts[parts.length - 1] || '';
+  }
+
+  function updateFilenameLabel(inputId, labelId) {
+    const path = document.getElementById(inputId).value;
+    document.getElementById(labelId).textContent = getFilename(path);
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     // Spinner on submit
     ['report-form', 'export-form', 'import-form'].forEach(function (id) {
@@ -177,6 +187,15 @@
         var spinner = this.querySelector('.spinner-border');
         if (btn) btn.disabled = true;
         if (spinner) spinner.classList.remove('d-none');
+      });
+    });
+
+    // Filename label updates
+    ['report_path', 'export_path'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('input', function() {
+        var label = document.getElementById(id.replace('_path', '-filename-label'));
+        if (label) label.textContent = getFilename(el.value);
       });
     });
   });

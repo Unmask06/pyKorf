@@ -110,12 +110,17 @@
         but only records the library root URL in Windows. This causes the Browse button to generate
         an incorrect SharePoint URL missing the intermediate folders.</p>
         <p class="mb-2"><strong>How to find the correct URL:</strong></p>
-        <ol class="ps-3 mb-0">
+        <ol class="ps-3 mb-2">
           <li>Open the folder in SharePoint via your browser.</li>
           <li>Copy the URL — it contains an <code>id=</code> parameter.</li>
           <li>URL-decode the <code>id</code> value (replace <code>%2F</code>→<code>/</code>, etc.).</li>
           <li>Prefix with <code>https://tenant.sharepoint.com</code> to form the direct URL.</li>
         </ol>
+        <p class="mb-1"><strong>Example:</strong></p>
+        <p class="mb-1 text-body-secondary" style="font-size:.78rem">Local folder:</p>
+        <code style="font-size:.72rem; word-break:break-all;">C:\Users\UserName\CC7\25002 TAZIZ SALT PVC - ADNOC UAE - 2A-PROCESS</code>
+        <p class="mt-2 mb-1 text-body-secondary" style="font-size:.78rem">SharePoint URL:</p>
+        <code style="font-size:.72rem; word-break:break-all;">https://cc7ges.sharepoint.com/sites/25002TAZIZSALT-ADNOCUAE/Shared Documents/2 EXECUTION/2. ENG/2A-PROCESS</code>
       </div>
     </div>
   </div>

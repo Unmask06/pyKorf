@@ -44,6 +44,18 @@
         </form>
       </div>
     </div>
+
+    <div class="card shadow-sm mt-3">
+      <div class="card-header fw-semibold"><i class="bi bi-lightbulb me-1"></i>How to Use</div>
+      <div class="card-body small text-secondary">
+        <ol class="ps-3 mb-0">
+          <li>Apply <strong>Data</strong> (PMS / HMB) to populate pipe specs and fluid data.</li>
+          <li>Use <strong>Global Settings</strong> to set sizing criteria and dummy pipes.</li>
+          <li>Generate a <strong>Report</strong> or export to Excel for review.</li>
+          <li>Click <strong>Save</strong> to write changes back to the <code>.kdf</code>.</li>
+        </ol>
+      </div>
+    </div>
   </div>
 
   <!-- Action cards -->
@@ -65,22 +77,22 @@
       </div>
 
       <div class="col">
-        <a href="/model/pms" class="text-decoration-none">
+        <a href="/model/data" class="text-decoration-none">
           <div class="card shadow-sm h-100 setting-card border border-2">
             <div class="card-body">
-              <h5 class="card-title"><i class="bi bi-layers text-info me-2"></i>Apply PMS</h5>
-              <p class="card-text text-secondary small">Apply Piping Material Spec data (schedule, material) to pipe elements.</p>
+              <h5 class="card-title"><i class="bi bi-layers text-info me-2"></i>Apply Data</h5>
+              <p class="card-text text-secondary small">Apply PMS (pipe specs) and HMB (stream data) from Excel files.</p>
             </div>
           </div>
         </a>
       </div>
 
       <div class="col">
-        <a href="/model/hmb" class="text-decoration-none">
+        <a href="/model/bulk-copy" class="text-decoration-none">
           <div class="card shadow-sm h-100 setting-card border border-2">
             <div class="card-body">
-              <h5 class="card-title"><i class="bi bi-thermometer-half text-danger me-2"></i>Apply HMB</h5>
-              <p class="card-text text-secondary small">Apply Heat &amp; Mass Balance data (temperature, pressure) from stream tables.</p>
+              <h5 class="card-title"><i class="bi bi-copy text-primary me-2"></i>Bulk Copy Fluids</h5>
+              <p class="card-text text-secondary small">Copy fluid properties from one pipe to multiple others. Supports include/exclude modes.</p>
             </div>
           </div>
         </a>
@@ -90,19 +102,8 @@
         <a href="/model/report" class="text-decoration-none">
           <div class="card shadow-sm h-100 setting-card border border-2">
             <div class="card-body">
-              <h5 class="card-title"><i class="bi bi-file-earmark-excel text-success me-2"></i>Generate Report</h5>
-              <p class="card-text text-secondary small">Export model data as a multi-sheet Excel workbook.</p>
-            </div>
-          </div>
-        </a>
-      </div>
-
-      <div class="col">
-        <a href="/model/import-export" class="text-decoration-none">
-          <div class="card shadow-sm h-100 setting-card border border-2">
-            <div class="card-body">
-              <h5 class="card-title"><i class="bi bi-arrow-left-right text-primary me-2"></i>Import / Export</h5>
-              <p class="card-text text-secondary small">Import pipe parameters from Excel or export the model to Excel for external editing.</p>
+              <h5 class="card-title"><i class="bi bi-file-earmark-excel text-success me-2"></i>Reports</h5>
+              <p class="card-text text-secondary small">Generate reports, export to Excel, or import edited parameters back.</p>
             </div>
           </div>
         </a>
@@ -125,17 +126,6 @@
             <div class="card-body">
               <h5 class="card-title"><i class="bi bi-journal-bookmark text-primary me-2"></i>References</h5>
               <p class="card-text text-secondary small">Design basis notes, SharePoint links and reference documents. Shortcuts auto-created next to the KDF.</p>
-            </div>
-          </div>
-        </a>
-      </div>
-
-      <div class="col">
-        <a href="/" class="text-decoration-none">
-          <div class="card shadow-sm h-100 setting-card border border-2">
-            <div class="card-body">
-              <h5 class="card-title"><i class="bi bi-folder2-open text-secondary me-2"></i>Load Different File</h5>
-              <p class="card-text text-secondary small">Close the current model and open a different <code>.kdf</code> file.</p>
             </div>
           </div>
         </a>
