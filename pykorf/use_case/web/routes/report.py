@@ -22,9 +22,11 @@ def generate_report():
         return model
 
     from pykorf.use_case.config import (
+        get_last_batch_folder_path,
         get_last_excel_export_path,
         get_last_excel_import_path,
         get_last_report_path,
+        set_last_batch_folder_path,
         set_last_excel_export_path,
         set_last_excel_import_path,
         set_last_report_path,
@@ -43,6 +45,10 @@ def generate_report():
     last_report = get_last_report_path()
     report_folder = str(Path(last_report).parent) if last_report else kdf_folder
     last_report_file = str(last_report) if last_report and Path(last_report).is_file() else ""
+
+    # Batch report folder
+    last_batch = get_last_batch_folder_path()
+    batch_folder_path = str(last_batch) if last_batch else kdf_folder
 
     # Export path — only pre-fill if user has previously exported (no synthetic defaults)
     last_export = get_last_excel_export_path()
@@ -64,6 +70,7 @@ def generate_report():
             import_path=import_path,
             export_exists=export_exists,
             last_report_file=last_report_file,
+            batch_folder_path=batch_folder_path,
             result=None,
         )
 
@@ -135,6 +142,29 @@ def generate_report():
             except Exception as exc:
                 errors.append(f"Error during import: {exc}")
 
+    elif action == "batch_report":
+        batch_folder_str = (request.form.get("batch_folder") or "").strip()
+        batch_folder = Path(batch_folder_str) if batch_folder_str else Path(kdf_folder)
+        if not batch_folder.exists():
+            errors.append(f"Batch folder not found: {batch_folder}")
+        elif not batch_folder.is_dir():
+            errors.append(f"Batch path is not a directory: {batch_folder}")
+        else:
+            try:
+                from pykorf.use_case.batch_report import BatchReportGenerator
+
+                generator = BatchReportGenerator(batch_folder)
+                output_path = generator.generate_report()
+                set_last_batch_folder_path(str(batch_folder))
+                batch_folder_path = str(batch_folder)
+                set_last_report_path(output_path)
+                last_report_file = output_path
+                result_lines.append(("success", f"Batch report saved to: {output_path}"))
+                for err in generator.errors:
+                    result_lines.append(("warning", err))
+            except Exception as exc:
+                errors.append(f"Error generating batch report: {exc}")
+
     else:
         errors.append(f"Unknown action: {action}")
 
@@ -148,6 +178,7 @@ def generate_report():
         import_path=import_path,
         export_exists=export_exists,
         last_report_file=last_report_file,
+        batch_folder_path=batch_folder_path,
         result={"lines": result_lines, "errors": errors},
     )
 

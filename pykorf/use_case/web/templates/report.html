@@ -83,6 +83,36 @@
           </button>
         </form>
 
+        <!-- Batch Report Section -->
+        <form method="post" action="/model/report" id="batch-form" class="mb-4 pb-4 border-bottom">
+          <input type="hidden" name="action" value="batch_report" />
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <i class="bi bi-layers text-secondary fs-5"></i>
+            <h5 class="mb-0 fw-semibold">Batch Report</h5>
+          </div>
+          <div class="mb-3">
+            <label for="batch_folder" class="form-label fw-semibold">KDF Folder</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-folder"></i></span>
+              <textarea class="form-control font-monospace" id="batch_folder" name="batch_folder"
+                     placeholder="Folder containing .kdf files" autocomplete="off" readonly
+                     rows="2" style="resize: none; background-color: var(--bs-secondary-bg);"
+                  >{{ batch_folder_path }}</textarea>
+              <button type="button" class="btn btn-outline-secondary"
+                      data-browse-target="batch_folder"
+                      data-browse-filter="folder"
+                      title="Browse for KDF folder">
+                <i class="bi bi-folder2-open"></i>
+              </button>
+            </div>
+            <div class="form-text">All <code>.kdf</code> files in this folder will be processed into a single <code>{folder}_batch_report.xlsx</code>.</div>
+          </div>
+          <button type="submit" class="btn btn-secondary" id="btn-batch">
+            <span class="spinner-border spinner-border-sm d-none me-1" id="batch-spinner"></span>
+            <i class="bi bi-layers me-1"></i>Generate Batch Report
+          </button>
+        </form>
+
         <!-- Import Section -->
         <form method="post" action="/model/report" id="import-form">
           <input type="hidden" name="action" value="import" />
@@ -161,6 +191,14 @@
     </div>
 
     <div class="card shadow-sm mt-3">
+      <div class="card-header fw-semibold"><i class="bi bi-lightbulb me-1"></i>About Batch Report</div>
+      <div class="card-body small text-secondary">
+        <p class="mb-1">Scans a folder recursively for all <code>.kdf</code> files and consolidates them into one Excel workbook with a sheet per element type.</p>
+        <p class="mb-0">Existing custom sheets (e.g. Dashboard) are preserved on re-run.</p>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mt-3">
       <div class="card-header fw-semibold"><i class="bi bi-lightbulb me-1"></i>About Export/Import</div>
       <div class="card-body small text-secondary">
         <ol class="mb-0 ps-3">
@@ -191,7 +229,7 @@
 
   document.addEventListener('DOMContentLoaded', function () {
     // Spinner on submit
-    ['report-form', 'export-form', 'import-form'].forEach(function (id) {
+    ['report-form', 'export-form', 'batch-form', 'import-form'].forEach(function (id) {
       document.getElementById(id).addEventListener('submit', function () {
         var btn = this.querySelector('button[type="submit"]');
         var spinner = this.querySelector('.spinner-border');

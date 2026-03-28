@@ -22,11 +22,15 @@
           <i class="bi bi-check-circle-fill me-2"></i>
           Copied fluid properties from <strong>{{ ref_pipe }}</strong> to {{ updated_count }} pipe(s).
           {% if updated_pipes %}
-          <div class="mt-2 small font-monospace">
+          <div class="mt-2 small font-monospace" id="copy-log-text">
             {% for pipe in updated_pipes %}
             <div>• {{ pipe }}</div>
             {% endfor %}
           </div>
+          <button type="button" class="btn btn-sm btn-outline-success mt-2" id="btn-clipboard"
+                  title="Copy pipe list to clipboard">
+            <i class="bi bi-clipboard me-1"></i>Copy Log
+          </button>
           {% endif %}
         </div>
         {% endif %}
@@ -175,6 +179,21 @@
       targetInput.value = '';
       targetInput.focus();
     });
+
+    // Clipboard copy for results log
+    const clipboardBtn = document.getElementById('btn-clipboard');
+    if (clipboardBtn) {
+      clipboardBtn.addEventListener('click', function() {
+        const logEl = document.getElementById('copy-log-text');
+        const text = logEl ? logEl.innerText.trim() : '';
+        navigator.clipboard.writeText(text).then(function() {
+          clipboardBtn.innerHTML = '<i class="bi bi-clipboard-check me-1"></i>Copied!';
+          setTimeout(function() {
+            clipboardBtn.innerHTML = '<i class="bi bi-clipboard me-1"></i>Copy Log';
+          }, 2000);
+        });
+      });
+    }
 
     // Spinner on submit
     form.addEventListener('submit', function() {

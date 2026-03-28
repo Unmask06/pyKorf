@@ -76,7 +76,6 @@ from pykorf.use_case.pms import (
 )
 from pykorf.use_case.processor import PipedataProcessor, PipeUpdateResult, ProcessResult
 from pykorf.use_case.settings import SettingsReader, UseCaseSettings
-from pykorf.use_case.tui import run_tui
 
 __all__ = [
     "BatchReportGenerator",
@@ -109,6 +108,5 @@ __all__ = [
     "lookup_schedule",
     "lookup_stream",
     "parse_stream_from_notes",
-    "run_tui",
     "set_pipe_criteria",
 ]

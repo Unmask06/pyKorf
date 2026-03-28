@@ -1,12 +1,9 @@
-from unittest.mock import MagicMock, patch
-
 import pytest
 
 from pykorf.exceptions import ExportError
 from pykorf.model import Model
 from pykorf.use_case.config import get_pms_path, get_stream_path
 from pykorf.use_case.line_number import MAX_LINE_NUMBER_LENGTH, LineNumber
-from pykorf.use_case.tui.screens.file_picker import FilePickerScreen
 from pykorf.utils import MAX_FIELD_COUNT, MAX_LINE_LENGTH, parse_line
 
 
@@ -99,33 +96,3 @@ def test_export_overwrite_protection(tmp_path):
         model.io.export_to_csv(csv_dir, overwrite=False)
 
 
-def test_file_picker_kdf_validation(tmp_path):
-    # Test that FilePickerScreen._try_load rejects non-.kdf files
-    screen = FilePickerScreen()
-
-    # Mock query_one to return MagicMocks for the input and error label
-    mock_input = MagicMock()
-    mock_error_label = MagicMock()
-
-    def mock_query_one(selector, type=None):
-        if selector == "#file-path-input":
-            return mock_input
-        if selector == "#file-error":
-            return mock_error_label
-        return MagicMock()
-
-    with (
-        patch.object(FilePickerScreen, "app", new_callable=MagicMock),
-        patch.object(screen, "query_one", side_effect=mock_query_one),
-    ):
-        # Case 1: Non-kdf file
-        invalid_file = tmp_path / "test.txt"
-        invalid_file.write_text("not a kdf")
-        mock_input.text = str(invalid_file)
-
-        screen._try_load()
-
-        # Verify error message was updated
-        mock_error_label.update.assert_called_with(
-            "Invalid file type: .txt. Please select a .kdf file."
-        )
