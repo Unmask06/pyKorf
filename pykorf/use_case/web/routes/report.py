@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from flask import Blueprint, render_template, request
+from flask import Blueprint, redirect, render_template, request
 
 from pykorf.use_case.web import session as _sess
 from pykorf.use_case.web.helpers import is_redirect, require_model
@@ -39,9 +39,10 @@ def generate_report():
     default_report_name = f"{kdf_stem}_report.xlsx"
     default_export_name = f"{kdf_stem}_export.xlsx"
 
-    # Report folder (use last used or KDF folder)
+    # Report folder and last generated file
     last_report = get_last_report_path()
     report_folder = str(Path(last_report).parent) if last_report else kdf_folder
+    last_report_file = str(last_report) if last_report and Path(last_report).is_file() else ""
 
     # Export path — only pre-fill if user has previously exported (no synthetic defaults)
     last_export = get_last_excel_export_path()
@@ -62,6 +63,7 @@ def generate_report():
             export_path=export_path,
             import_path=import_path,
             export_exists=export_exists,
+            last_report_file=last_report_file,
             result=None,
         )
 
@@ -83,11 +85,28 @@ def generate_report():
         else:
             try:
                 from pykorf.reports.exporter import ResultExporter
+                from pykorf.use_case.web.references import ReferencesStore
 
+                ref_store = ReferencesStore.load(kdf_path) if kdf_path else None
+                basis = ref_store.basis if ref_store else ""
+                references = (
+                    [
+                        {
+                            "name": r.name,
+                            "category": r.category,
+                            "link": r.link,
+                            "description": r.description,
+                        }
+                        for r in ref_store.references
+                    ]
+                    if ref_store
+                    else []
+                )
                 report_file = report_dir / default_report_name
-                exporter = ResultExporter(model)
+                exporter = ResultExporter(model, basis=basis, references=references)
                 exporter.export_to_excel(str(report_file))
                 set_last_report_path(str(report_file))
+                last_report_file = str(report_file)
                 result_lines.append(("success", f"Report saved to: {report_file}"))
             except Exception as exc:
                 errors.append(f"Error generating report: {exc}")
@@ -128,5 +147,15 @@ def generate_report():
         export_path=export_path,
         import_path=import_path,
         export_exists=export_exists,
+        last_report_file=last_report_file,
         result={"lines": result_lines, "errors": errors},
     )
+
+
+@bp.route("/model/report/open-file", methods=["POST"])
+def open_report_file():
+    """Open the last generated report Excel file with the system default application."""
+    file_path = (request.form.get("file_path") or "").strip()
+    if file_path and Path(file_path).is_file():
+        os.startfile(file_path)
+    return redirect("/model/report")

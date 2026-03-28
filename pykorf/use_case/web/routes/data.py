@@ -12,6 +12,13 @@ from pykorf.use_case.web.helpers import is_redirect, require_model
 bp = Blueprint("data", __name__)
 
 
+def _get_filename(path_str: str) -> str:
+    """Extract filename from path using Pathlib."""
+    if not path_str:
+        return ""
+    return Path(path_str).name
+
+
 @bp.route("/model/data", methods=["GET", "POST"])
 def apply_data():
     """Render and handle the Apply PMS/HMB Data form."""
@@ -40,6 +47,8 @@ def apply_data():
             kdf_path=str(kdf_path or ""),
             pms_excel_path=default_pms,
             hmb_excel_path=default_hmb,
+            pms_filename=_get_filename(default_pms),
+            hmb_filename=_get_filename(default_hmb),
             active_tab=active_tab,
             result=None,
         )
@@ -70,6 +79,8 @@ def apply_data():
             kdf_path=str(kdf_path or ""),
             pms_excel_path=str(pms_source or ""),
             hmb_excel_path=default_hmb,
+            pms_filename=_get_filename(str(pms_source or "")),
+            hmb_filename=_get_filename(default_hmb),
             active_tab=active_tab,
             result={"lines": result_lines, "errors": errors},
         )
@@ -94,6 +105,8 @@ def apply_data():
             kdf_path=str(kdf_path or ""),
             pms_excel_path=default_pms,
             hmb_excel_path=str(hmb_source or ""),
+            pms_filename=_get_filename(default_pms),
+            hmb_filename=_get_filename(str(hmb_source or "")),
             active_tab=active_tab,
             result={"lines": result_lines, "errors": errors},
         )
@@ -104,6 +117,8 @@ def apply_data():
         kdf_path=str(kdf_path or ""),
         pms_excel_path=default_pms,
         hmb_excel_path=default_hmb,
+        pms_filename=_get_filename(default_pms),
+        hmb_filename=_get_filename(default_hmb),
         active_tab=active_tab,
         result={"lines": result_lines, "errors": errors},
     )

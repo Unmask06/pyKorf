@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from flask import Blueprint, redirect, render_template, request, url_for
@@ -11,6 +12,18 @@ from pykorf.use_case.web import session as _sess
 bp = Blueprint("file_picker", __name__)
 
 
+def _get_filename(path_str: str) -> str:
+    """Extract filename from path using Pathlib."""
+    if not path_str:
+        return ""
+    return Path(path_str).name
+
+
+def _get_username() -> str:
+    """Get the current username from environment variables."""
+    return os.environ.get("USERNAME") or os.environ.get("USER") or "there"
+
+
 @bp.route("/", methods=["GET"])
 def file_picker_page():
     """Render the KDF file picker page."""
@@ -18,7 +31,13 @@ def file_picker_page():
 
     recent: list[str] = get_recent_files() or []
     default_path: str = recent[0] if recent else ""
-    return render_template("file_picker.html", recent_files=recent, default_path=default_path)
+    return render_template(
+        "file_picker.html",
+        recent_files=recent,
+        default_path=default_path,
+        filename=_get_filename(default_path),
+        username=_get_username(),
+    )
 
 
 @bp.route("/open", methods=["POST"])
@@ -35,7 +54,9 @@ def open_file():
         return render_template(
             "file_picker.html",
             recent_files=recent,
-            default_path=recent[0] if recent else "",
+            default_path=kdf_path_str,
+            filename=_get_filename(kdf_path_str),
+            username=_get_username(),
             error=f"File not found: {path}",
         ), 400
 
@@ -46,7 +67,9 @@ def open_file():
         return render_template(
             "file_picker.html",
             recent_files=recent,
-            default_path=recent[0] if recent else "",
+            default_path=kdf_path_str,
+            filename=_get_filename(kdf_path_str),
+            username=_get_username(),
             error=f"Failed to load model: {exc}",
         ), 400
 

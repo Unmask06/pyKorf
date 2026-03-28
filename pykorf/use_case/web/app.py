@@ -18,6 +18,7 @@ from pathlib import Path
 from flask import Flask
 
 from pykorf.use_case.web.routes.browse import bp as browse_bp
+from pykorf.use_case.web.routes.bulk_copy import bp as bulk_copy_bp
 from pykorf.use_case.web.routes.preferences import bp as preferences_bp
 from pykorf.use_case.web.routes.data import bp as data_bp
 from pykorf.use_case.web.routes.file_picker import bp as file_picker_bp
@@ -52,8 +53,14 @@ def create_app() -> Flask:
     app.register_blueprint(references_bp)
     app.register_blueprint(browse_bp)
     app.register_blueprint(preferences_bp)
+    app.register_blueprint(bulk_copy_bp)
+
+    from pathlib import Path as _Path
 
     app.jinja_env.filters["split"] = lambda s, sep: s.split(sep)
+    app.jinja_env.filters["basename"] = lambda s: _Path(s).name if s else ""
+    app.jinja_env.filters["dirname"] = lambda s: str(_Path(s).parent) if s else ""
+    app.jinja_env.filters["ternary"] = lambda c, t, f: t if c else f
 
     return app
 

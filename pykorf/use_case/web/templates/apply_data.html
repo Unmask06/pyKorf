@@ -33,18 +33,20 @@
           <div class="tab-pane fade {{ 'show active' if active_tab == 'pms' else '' }}" id="pms-pane" role="tabpanel">
             <form method="post" action="/model/data" id="pms-form">
               <div class="mb-3">
+                <label id="pms-filename-label" class="form-label fw-bold text-info d-block mb-2">{{ pms_filename }}</label>
                 <label for="pms_source" class="form-label fw-semibold">PMS Excel File</label>
                 <div class="input-group">
                   <span class="input-group-text"><i class="bi bi-file-earmark-spreadsheet"></i></span>
-                  <input
-                    type="text"
+                  <textarea
                     class="form-control font-monospace"
                     id="pms_source"
                     name="pms_source"
                     placeholder="C:/config/pms_data.xlsx"
-                    value="{{ pms_excel_path }}"
                     autocomplete="off"
-                  />
+                    rows="2"
+                    style="resize: none;"
+                    required
+                  >{{ pms_excel_path }}</textarea>
                   <button type="button" class="btn btn-outline-secondary"
                           data-browse-target="pms_source"
                           data-browse-filter="excel"
@@ -53,8 +55,7 @@
                   </button>
                 </div>
                 <div class="form-text">
-                  Path to the PMS Excel file. Leave blank to use the configured default
-                  {% if pms_excel_path %}(<code>{{ pms_excel_path }}</code>){% endif %}.
+                  Path to the PMS Excel file.
                 </div>
               </div>
               <button type="submit" class="btn btn-primary" id="btn-apply-pms">
@@ -69,18 +70,20 @@
           <div class="tab-pane fade {{ 'show active' if active_tab == 'hmb' else '' }}" id="hmb-pane" role="tabpanel">
             <form method="post" action="/model/data" id="hmb-form">
               <div class="mb-3">
+                <label id="hmb-filename-label" class="form-label fw-bold text-danger d-block mb-2">{{ hmb_filename }}</label>
                 <label for="hmb_source" class="form-label fw-semibold">HMB Excel File</label>
                 <div class="input-group">
                   <span class="input-group-text"><i class="bi bi-file-earmark-spreadsheet"></i></span>
-                  <input
-                    type="text"
+                  <textarea
                     class="form-control font-monospace"
                     id="hmb_source"
                     name="hmb_source"
                     placeholder="C:/config/stream_data.xlsx"
-                    value="{{ hmb_excel_path }}"
                     autocomplete="off"
-                  />
+                    rows="2"
+                    style="resize: none;"
+                    required
+                  >{{ hmb_excel_path }}</textarea>
                   <button type="button" class="btn btn-outline-secondary"
                           data-browse-target="hmb_source"
                           data-browse-filter="excel"
@@ -89,8 +92,7 @@
                   </button>
                 </div>
                 <div class="form-text">
-                  Path to the HMB/Stream Excel file. Leave blank to use the configured default
-                  {% if hmb_excel_path %}(<code>{{ hmb_excel_path }}</code>){% endif %}.
+                  Path to the HMB/Stream Excel file.
                 </div>
               </div>
               <button type="submit" class="btn btn-primary" id="btn-apply-hmb">
@@ -150,6 +152,17 @@
 
 {% block scripts %}
 <script>
+  function getFilename(path) {
+    if (!path) return '';
+    const parts = path.split(/[\/\\]/);
+    return parts[parts.length - 1] || '';
+  }
+
+  function updateFilenameLabel(inputId, labelId) {
+    const path = document.getElementById(inputId).value;
+    document.getElementById(labelId).textContent = getFilename(path);
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     // Spinner on submit
     ['pms-form', 'hmb-form'].forEach(function (id) {
@@ -159,6 +172,14 @@
         if (btn) btn.disabled = true;
         if (spinner) spinner.classList.remove('d-none');
       });
+    });
+
+    // Filename label updates
+    document.getElementById('pms_source').addEventListener('input', function() {
+      updateFilenameLabel('pms_source', 'pms-filename-label');
+    });
+    document.getElementById('hmb_source').addEventListener('input', function() {
+      updateFilenameLabel('hmb_source', 'hmb-filename-label');
     });
   });
 </script>

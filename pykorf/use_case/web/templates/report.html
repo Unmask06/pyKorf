@@ -36,10 +36,20 @@
             </div>
             <div class="form-text">Report will be saved as <code>{{ default_report_name }}</code> in this folder.</div>
           </div>
-          <button type="submit" class="btn btn-success" id="btn-report">
-            <span class="spinner-border spinner-border-sm d-none me-1" id="report-spinner"></span>
-            <i class="bi bi-download me-1"></i>Generate Report
-          </button>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <button type="submit" class="btn btn-success" id="btn-report">
+              <span class="spinner-border spinner-border-sm d-none me-1" id="report-spinner"></span>
+              <i class="bi bi-download me-1"></i>Generate Report
+            </button>
+            {% if last_report_file %}
+            <form method="post" action="/model/report/open-file" class="d-inline">
+              <input type="hidden" name="file_path" value="{{ last_report_file }}" />
+              <button type="submit" class="btn btn-outline-success">
+                <i class="bi bi-file-earmark-excel me-1"></i>Open Last Report
+              </button>
+            </form>
+            {% endif %}
+          </div>
         </form>
 
         <!-- Export Section -->
