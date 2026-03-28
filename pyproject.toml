@@ -101,7 +101,7 @@ include-package-data = true
 [tool.setuptools.package-data]
 pykorf = [
     "library/*.kdf", "library/*.lib", "library/*.csv",
-    "py.typed", "reports/*.json",
+    "py.typed", "reports/*.json", "reports/*.toml",
     "use_case/web/templates/*.html",
     "use_case/web/static/**/*",
     "use_case/web/static/vendor/fonts/*",

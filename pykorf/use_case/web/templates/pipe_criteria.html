@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+{% block title %}Pipe Sizing Criteria{% endblock %}
+
+{% block content %}
+
+{% if result %}
+<div class="alert alert-success d-flex align-items-center gap-2 mb-3" role="alert">
+  <i class="bi bi-check-circle-fill fs-5 flex-shrink-0"></i>
+  <div>Saved sizing criteria for <strong>{{ result.saved }}</strong> pipe(s) to <code>.pykorf</code> file.</div>
+</div>
+{% endif %}
+
+{% if set_result %}
+<div class="alert alert-{% if set_result.skipped %}warning{% else %}success{% endif %} d-flex align-items-start gap-2 mb-3" role="alert">
+  <i class="bi bi-{% if set_result.skipped %}exclamation-triangle-fill{% else %}check-circle-fill{% endif %} fs-5 flex-shrink-0 mt-1"></i>
+  <div>
+    Applied SIZ criteria to <strong>{{ set_result.applied }}</strong> pipe(s) in model.
+    {% if set_result.skipped %}
+      <br><span class="small">Skipped (no criteria assigned): {{ set_result.skipped | join(", ") }}</span>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% if predict_result %}
+<div class="alert alert-info d-flex align-items-center gap-2 mb-3" role="alert">
+  <i class="bi bi-magic fs-5 flex-shrink-0"></i>
+  <div>
+    Auto-filled <strong>{{ predict_result.filled }}</strong> pipe(s). Review the predictions below, then click <strong>Save Criteria</strong> to confirm.
+  </div>
+</div>
+{% endif %}
+
+<div class="card shadow-sm">
+  <div class="card-header fw-semibold d-flex align-items-center justify-content-between">
+    <span>
+      <i class="bi bi-rulers text-primary me-1"></i>Pipe Sizing Criteria
+      <span class="badge bg-primary rounded-pill ms-2">{{ pipes | length }} pipes</span>
+    </span>
+    <a href="/model" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Back
+    </a>
+  </div>
+
+  <div class="card-body pb-0">
+
+    <!-- Bulk-set toolbar -->
+    <div class="row g-2 align-items-end mb-3">
+      <div class="col-auto">
+        <input type="text" id="pipe-filter" class="form-control form-control-sm"
+               placeholder="Filter pipes…" style="width:180px;" />
+      </div>
+      <div class="col-auto">
+        <form method="post" action="/model/pipe-criteria" id="predict-form">
+          <button type="submit" name="action" value="predict" class="btn btn-sm btn-outline-info" id="btn-predict"
+                  title="Auto-fill state from liquid fraction (LF) and predict criteria where possible">
+            <span class="spinner-border spinner-border-sm d-none me-1" id="predict-spinner"></span>
+            <i class="bi bi-magic me-1"></i>Auto-predict
+          </button>
+        </form>
+      </div>
+      <div class="col-auto ms-auto d-flex align-items-center gap-2">
+        <span class="small text-secondary">Set visible rows:</span>
+        <select id="bulk-state" class="form-select form-select-sm" style="width:140px;">
+          <option value="">— State —</option>
+          {% for ft, label in fluid_labels.items() %}
+          <option value="{{ ft }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+        <select id="bulk-criteria" class="form-select form-select-sm" style="width:220px;" disabled>
+          <option value="">— Criteria —</option>
+        </select>
+        <button type="button" id="btn-bulk-apply" class="btn btn-sm btn-outline-secondary">
+          Apply to visible
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /card-body toolbar -->
+
+  <form method="post" action="/model/pipe-criteria" id="criteria-form">
+    <div style="max-height:65vh; overflow-y:auto;">
+      <table class="table table-sm table-hover mb-0 align-middle" id="criteria-table">
+        <thead class="table-light sticky-top">
+          <tr>
+            <th style="width:60px;">#</th>
+            <th style="width:130px;">Pipe</th>
+            <th style="width:160px;">State</th>
+            <th>Criteria</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for idx, pipe_name in pipes %}
+          {% set saved = existing.get(pipe_name, {}) %}
+          {% set saved_state = saved.get('state', '') %}
+          {% set saved_criteria = saved.get('criteria', '') %}
+          <tr class="pipe-row" data-pipe="{{ pipe_name }}">
+            <td class="text-secondary font-monospace small">{{ idx }}</td>
+            <td class="font-monospace fw-semibold">{{ pipe_name }}</td>
+            <td>
+              <select name="state_{{ pipe_name }}"
+                      class="form-select form-select-sm state-select"
+                      data-pipe="{{ pipe_name }}"
+                      data-saved-criteria="{{ saved_criteria }}">
+                <option value="">—</option>
+                {% for ft, label in fluid_labels.items() %}
+                <option value="{{ ft }}" {% if saved_state == ft %}selected{% endif %}>
+                  {{ label }}
+                </option>
+                {% endfor %}
+              </select>
+            </td>
+            <td>
+              <select name="criteria_{{ pipe_name }}"
+                      class="form-select form-select-sm criteria-select"
+                      data-pipe="{{ pipe_name }}">
+                <option value="">—</option>
+                {# Options populated by JS based on state; static fallback for saved state #}
+                {% if saved_state and saved_criteria %}
+                <option value="{{ saved_criteria }}" selected>{{ saved_criteria }}</option>
+                {% endif %}
+              </select>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card-footer d-flex align-items-center justify-content-between">
+      <div class="small text-secondary">
+        Saved to <code>{{ kdf_path | basename | replace('.kdf', '.pykorf') }}</code>
+        alongside the KDF file.
+      </div>
+      <div class="d-flex gap-2">
+        <button type="button" id="btn-clear-all" class="btn btn-sm btn-outline-danger">
+          <i class="bi bi-x-circle me-1"></i>Clear All
+        </button>
+        <button type="submit" name="action" value="save_criteria" class="btn btn-sm btn-primary" id="btn-save">
+          <span class="spinner-border spinner-border-sm d-none me-1" id="save-spinner"></span>
+          <i class="bi bi-floppy me-1"></i>Save Criteria
+        </button>
+        <button type="submit" name="action" value="set_criteria" class="btn btn-sm btn-success" id="btn-set">
+          <span class="spinner-border spinner-border-sm d-none me-1" id="set-spinner"></span>
+          <i class="bi bi-lightning-charge me-1"></i>Set Criteria to Model
+        </button>
+      </div>
+    </div>
+
+  </form>
+</div>
+
+{# Criteria options embedded as JSON for JS consumption #}
+<script id="criteria-data" type="application/json">
+{{ codes | tojson }}
+</script>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+  // -----------------------------------------------------------------------
+  // Criteria options from embedded JSON
+  // -----------------------------------------------------------------------
+  const codesRaw = document.getElementById('criteria-data').textContent;
+  const CODES = JSON.parse(codesRaw);
+  // CODES = { "liquid": [["P-SUC-BUB","P-SUC-BUB — ..."], ...], "gas": [...], "two_phase": [...] }
+
+  // Build criteria <option> HTML for a given fluid type
+  function buildOptions(fluidType, selected) {
+    const entries = CODES[fluidType] || [];
+    let html = '<option value="">—</option>';
+    entries.forEach(function([code, label]) {
+      const sel = (code === selected) ? ' selected' : '';
+      html += `<option value="${code}"${sel}>${label}</option>`;
+    });
+    return html;
+  }
+
+  // -----------------------------------------------------------------------
+  // Populate all criteria selects on page load (for saved state)
+  // -----------------------------------------------------------------------
+  document.querySelectorAll('.state-select').forEach(function(stateEl) {
+    const pipe = stateEl.dataset.pipe;
+    const savedCriteria = stateEl.dataset.savedCriteria || '';
+    const criteriaEl = document.querySelector(`.criteria-select[data-pipe="${pipe}"]`);
+    const fluidType = stateEl.value;
+    if (fluidType && criteriaEl) {
+      criteriaEl.innerHTML = buildOptions(fluidType, savedCriteria);
+    }
+  });
+
+  // -----------------------------------------------------------------------
+  // State change → rebuild criteria dropdown
+  // -----------------------------------------------------------------------
+  document.querySelectorAll('.state-select').forEach(function(stateEl) {
+    stateEl.addEventListener('change', function() {
+      const pipe = this.dataset.pipe;
+      const criteriaEl = document.querySelector(`.criteria-select[data-pipe="${pipe}"]`);
+      if (!criteriaEl) return;
+      const fluidType = this.value;
+      criteriaEl.innerHTML = fluidType ? buildOptions(fluidType, '') : '<option value="">—</option>';
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Filter rows by pipe name
+  // -----------------------------------------------------------------------
+  const filterInput = document.getElementById('pipe-filter');
+  filterInput.addEventListener('input', function() {
+    const q = this.value.toLowerCase();
+    document.querySelectorAll('.pipe-row').forEach(function(row) {
+      const name = row.dataset.pipe.toLowerCase();
+      row.style.display = name.includes(q) ? '' : 'none';
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Bulk-set toolbar: state changes → rebuild bulk criteria select
+  // -----------------------------------------------------------------------
+  const bulkState = document.getElementById('bulk-state');
+  const bulkCriteria = document.getElementById('bulk-criteria');
+  const bulkApplyBtn = document.getElementById('btn-bulk-apply');
+
+  bulkState.addEventListener('change', function() {
+    const ft = this.value;
+    if (ft) {
+      bulkCriteria.innerHTML = buildOptions(ft, '');
+      bulkCriteria.disabled = false;
+    } else {
+      bulkCriteria.innerHTML = '<option value="">— Criteria —</option>';
+      bulkCriteria.disabled = true;
+    }
+  });
+
+  bulkApplyBtn.addEventListener('click', function() {
+    const ft = bulkState.value;
+    const crit = bulkCriteria.value;
+    if (!ft) return;
+
+    document.querySelectorAll('.pipe-row').forEach(function(row) {
+      if (row.style.display === 'none') return;  // skip filtered-out rows
+      const pipe = row.dataset.pipe;
+      const stateEl = row.querySelector('.state-select');
+      const criteriaEl = row.querySelector('.criteria-select');
+      if (!stateEl || !criteriaEl) return;
+      stateEl.value = ft;
+      criteriaEl.innerHTML = buildOptions(ft, crit);
+      criteriaEl.value = crit;
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Clear all
+  // -----------------------------------------------------------------------
+  document.getElementById('btn-clear-all').addEventListener('click', function() {
+    document.querySelectorAll('.state-select').forEach(function(el) {
+      el.value = '';
+    });
+    document.querySelectorAll('.criteria-select').forEach(function(el) {
+      el.innerHTML = '<option value="">—</option>';
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Save / Set spinners
+  // -----------------------------------------------------------------------
+  document.getElementById('criteria-form').addEventListener('submit', function(e) {
+    const action = e.submitter ? e.submitter.value : 'save_criteria';
+    if (action === 'set_criteria') {
+      document.getElementById('btn-set').disabled = true;
+      document.getElementById('set-spinner').classList.remove('d-none');
+    } else {
+      document.getElementById('btn-save').disabled = true;
+      document.getElementById('save-spinner').classList.remove('d-none');
+    }
+  });
+
+  // -----------------------------------------------------------------------
+  // Auto-predict spinner
+  // -----------------------------------------------------------------------
+  document.getElementById('predict-form').addEventListener('submit', function() {
+    document.getElementById('btn-predict').disabled = true;
+    document.getElementById('predict-spinner').classList.remove('d-none');
+  });
+
+});
+</script>
+{% endblock %}

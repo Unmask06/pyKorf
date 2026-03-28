@@ -24,6 +24,7 @@ from pykorf.use_case.web.routes.data import bp as data_bp
 from pykorf.use_case.web.routes.file_picker import bp as file_picker_bp
 from pykorf.use_case.web.routes.model_core import bp as model_core_bp
 from pykorf.use_case.web.routes.model_info import bp as model_info_bp
+from pykorf.use_case.web.routes.pipe_criteria import bp as pipe_criteria_bp
 from pykorf.use_case.web.routes.references import bp as references_bp
 from pykorf.use_case.web.routes.report import bp as report_bp
 from pykorf.use_case.web.routes.settings import bp as settings_bp
@@ -50,6 +51,7 @@ def create_app() -> Flask:
     app.register_blueprint(data_bp)
     app.register_blueprint(model_info_bp)
     app.register_blueprint(report_bp)
+    app.register_blueprint(pipe_criteria_bp)
     app.register_blueprint(references_bp)
     app.register_blueprint(browse_bp)
     app.register_blueprint(preferences_bp)

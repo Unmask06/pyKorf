@@ -61,6 +61,21 @@ def has_model() -> bool:
         return _model is not None
 
 
+def reload() -> None:
+    """Re-parse the active KDF file and replace the in-memory model.
+
+    Call this after any operation that writes the KDF to disk so the
+    displayed state always matches what was actually persisted.
+    Does nothing if no model is currently loaded.
+    """
+    global _model
+    with _lock:
+        if _kdf_path is None:
+            return
+        from pykorf import Model
+        _model = Model(_kdf_path)
+
+
 def clear() -> None:
     """Unload the current model."""
     global _model, _kdf_path

@@ -1,0 +1,362 @@
+# Line Sizing Criteria for Liquid — Table 14-3
+# Source: Engineering Design Criteria
+#
+# Units
+#   velocity  : m/s
+#   dp        : kPa/100m  (source table is bar/100m; values multiplied × 100)
+#   line_size : inch (nominal); 9999 = no upper limit (≥ N")
+#   pressure  : barg; 9999 = no upper pressure limit
+#
+# Lookup: filter by code
+#   → if multiple sizes : sort by line_size → first entry where pipe_size ≤ line_size
+#   → if multiple press : sort by pressure  → first entry where op_pressure ≤ pressure
+# Range format
+#   vel = [min, max]     velocity range in m/s
+#   dp  = [normal, max]  pressure drop range in kPa/100m
+# Missing dp (0.0) = no criterion specified in source table
+
+fluid_type     = "liquid"
+dp_unit        = "kPa/100m"
+velocity_unit  = "m/s"
+line_size_unit = "inch"
+pressure_unit  = "barg"
+
+# ---------------------------------------------------------------------------
+# Pump Suction — Bubble Point  (Note 1, 3)
+# ---------------------------------------------------------------------------
+
+[[criteria]]
+code      = "P-SUC-BUB"
+service   = "Pump Suction, Bubble Point"
+notes     = "Note 1, 3"
+pressure  = 9999
+line_size = 2
+vel = [0.0, 0.6]    # [min, max] m/s
+dp  = [6.0, 9.0]    # [normal, max] kPa/100m
+
+[[criteria]]
+code      = "P-SUC-BUB"
+service   = "Pump Suction, Bubble Point"
+notes     = "Note 1, 3"
+pressure  = 9999
+line_size = 10
+vel = [0.0, 0.6]
+dp  = [6.0, 9.0]
+
+[[criteria]]
+code      = "P-SUC-BUB"
+service   = "Pump Suction, Bubble Point"
+notes     = "Note 1, 3"
+pressure  = 9999
+line_size = 18
+vel = [0.0, 1.2]
+dp  = [6.0, 9.0]
+
+[[criteria]]
+code      = "P-SUC-BUB"
+service   = "Pump Suction, Bubble Point"
+notes     = "Note 1, 3"
+pressure  = 9999
+line_size = 9999    # ≥ 20"
+vel = [0.0, 1.5]
+dp  = [6.0, 9.0]
+
+# ---------------------------------------------------------------------------
+# Pump Suction — Subcooled  (Note 3)
+# ---------------------------------------------------------------------------
+
+[[criteria]]
+code      = "P-SUC-SUB"
+service   = "Pump Suction, Subcooled"
+notes     = "Note 3"
+pressure  = 9999
+line_size = 2
+vel = [0.0, 0.9]
+dp  = [23.0, 35.0]
+
+[[criteria]]
+code      = "P-SUC-SUB"
+service   = "Pump Suction, Subcooled"
+notes     = "Note 3"
+pressure  = 9999
+line_size = 6
+vel = [0.0, 1.2]
+dp  = [23.0, 35.0]
+
+[[criteria]]
+code      = "P-SUC-SUB"
+service   = "Pump Suction, Subcooled"
+notes     = "Note 3"
+pressure  = 9999
+line_size = 18
+vel = [0.0, 1.5]
+dp  = [23.0, 35.0]
+
+[[criteria]]
+code      = "P-SUC-SUB"
+service   = "Pump Suction, Subcooled"
+notes     = "Note 3"
+pressure  = 9999
+line_size = 9999    # ≥ 20"
+vel = [0.0, 1.8]
+dp  = [23.0, 35.0]
+
+# ---------------------------------------------------------------------------
+# Pump Discharge  (pressure-based: ≤ 50 barg | > 50 barg)
+# ---------------------------------------------------------------------------
+
+[[criteria]]
+code      = "P-DIS"
+service   = "Pump Discharge"
+notes     = "P ≤ 50 barg"
+pressure  = 50
+line_size = 9999
+vel = [1.5, 4.0]
+dp  = [35.0, 45.0]
+
+[[criteria]]
+code      = "P-DIS"
+service   = "Pump Discharge"
+notes     = "P > 50 barg"
+pressure  = 9999
+line_size = 9999
+vel = [1.5, 4.0]
+dp  = [70.0, 90.0]
+
+# ---------------------------------------------------------------------------
+# Re-boiler Lines
+# ---------------------------------------------------------------------------
+
+[[criteria]]
+code      = "RBL-TI"
+service   = "Re-boiler Lines — Trap Out / Inlet"
+notes     = ""
+pressure  = 9999
+line_size = 9999
+vel = [0.9, 1.5]
+dp  = [3.0, 7.0]
+
+[[criteria]]
+code      = "RBL-RET"
+service   = "Re-boiler Lines — Return"
+notes     = "Velocity and normal dP per Note 5; only max dP specified here"
+pressure  = 9999
+line_size = 9999
+vel = [0.0, 0.0]    # see Note 5
+dp  = [0.0, 7.0]
+
+[[criteria]]
+code      = "RBL-GRV"
+service   = "Re-boiler Lines — Gravity Flow"
+notes     = ""
+pressure  = 9999
+line_size = 9999
+vel = [0.0, 0.6]
+dp  = [2.5, 4.5]
+
+# ---------------------------------------------------------------------------
+# Column Side-stream Draw-off  (Note 2)
+# ---------------------------------------------------------------------------
+
+[[criteria]]
+code      = "COL-DRAW"
+service   = "Column Side-stream Draw-off"
+notes     = "Note 2"
+pressure  = 9999
+line_size = 2
+vel = [0.0, 0.6]
+dp  = [6.0, 9.0]
+
+[[criteria]]
+code      = "COL-DRAW"
+service   = "Column Side-stream Draw-off"
+notes     = "Note 2"
+pressure  = 9999
+line_size = 9999    # > 3"
+vel = [0.0, 0.9]
+dp  = [6.0, 9.0]
+
+# ---------------------------------------------------------------------------
+# Cooling Water / Seawater  (Note 6)
+# ---------------------------------------------------------------------------
+
+[[criteria]]
+code      = "CW-CLOSED"
+service   = "Cooling Water — Closed Loop"
+notes     = "Note 6"
+pressure  = 9999
+line_size = 9999
+vel = [1.0, 4.0]
+dp  = [11.0, 34.0]
+
+[[criteria]]
+code      = "CW-OPEN"
+service   = "Cooling Water — Open Loop"
+notes     = "Note 6"
+pressure  = 9999
+line_size = 9999
+vel = [1.5, 4.0]
+dp  = [11.0, 34.0]
+
+[[criteria]]
+code      = "CSW"
+service   = "Cooling Seawater"
+notes     = "Note 6"
+pressure  = 9999
+line_size = 9999
+vel = [0.0, 4.0]
+dp  = [0.0, 999]    # no dP criterion specified
+
+# ---------------------------------------------------------------------------
+# Boiler Feed Water
+# ---------------------------------------------------------------------------
+
+[[criteria]]
+code      = "BFW"
+service   = "Boiler Feed Water"
+notes     = ""
+pressure  = 9999
+line_size = 9999
+vel = [0.0, 6.0]
+dp  = [35.0, 45.0]
+
+# ---------------------------------------------------------------------------
+# Service Water
+# ---------------------------------------------------------------------------
+
+[[criteria]]
+code      = "SVC"
+service   = "Service Water"
+notes     = ""
+pressure  = 9999
+line_size = 4
+vel = [0.0, 3.0]
+dp  = [0.0, 0.0]
+
+[[criteria]]
+code      = "SVC"
+service   = "Service Water"
+notes     = ""
+pressure  = 9999
+line_size = 9999    # ≥ 6"
+vel = [0.0, 4.0]
+dp  = [0.0, 0.0]
+
+# ---------------------------------------------------------------------------
+# Sea Water / Injection Water
+# ---------------------------------------------------------------------------
+
+[[criteria]]
+code      = "SEA-INJ"
+service   = "Sea Water / Injection Water"
+notes     = ""
+pressure  = 9999
+line_size = 9999
+vel = [0.0, 2.1]
+dp  = [0.0, 0.0]
+
+# ---------------------------------------------------------------------------
+# Brackish Water
+# ---------------------------------------------------------------------------
+
+[[criteria]]
+code      = "BRK-W"
+service   = "Brackish Water"
+notes     = ""
+pressure  = 9999
+line_size = 9999
+vel = [0.0, 2.1]
+dp  = [0.0, 0.0]
+
+# ---------------------------------------------------------------------------
+# Sour Water
+# ---------------------------------------------------------------------------
+
+[[criteria]]
+code      = "SW-GT120-CS"
+service   = "Sour Water, > 120 °C, Carbon Steel"
+notes     = ""
+pressure  = 9999
+line_size = 9999
+vel = [0.0, 1.5]
+dp  = [0.0, 0.0]
+
+[[criteria]]
+code      = "SW-GT120-SS"
+service   = "Sour Water, > 120 °C, Stainless Steel"
+notes     = ""
+pressure  = 9999
+line_size = 9999
+vel = [0.0, 3.0]
+dp  = [0.0, 0.0]
+
+[[criteria]]
+code      = "SW-LT120-CS"
+service   = "Sour Water, < 120 °C, Carbon Steel"
+notes     = ""
+pressure  = 9999
+line_size = 9999
+vel = [0.0, 3.0]
+dp  = [0.0, 0.0]
+
+[[criteria]]
+code      = "SW-LT120-SS"
+service   = "Sour Water, < 120 °C, Stainless Steel"
+notes     = ""
+pressure  = 9999
+line_size = 9999
+vel = [0.0, 4.6]
+dp  = [0.0, 0.0]
+
+# ---------------------------------------------------------------------------
+# Amine Solution  (Note 4)
+# ---------------------------------------------------------------------------
+
+[[criteria]]
+code      = "AMN-RA-SS"
+service   = "Amine Solution — Rich Amine, Stainless Steel"
+notes     = "Note 4"
+pressure  = 9999
+line_size = 9999
+vel = [0.0, 6.0]
+dp  = [0.0, 0.0]
+
+[[criteria]]
+code      = "AMN-RA-CS"
+service   = "Amine Solution — Rich Amine, Carbon Steel"
+notes     = "Note 4"
+pressure  = 9999
+line_size = 9999
+vel = [0.0, 1.5]
+dp  = [0.0, 0.0]
+
+[[criteria]]
+code      = "AMN-LA-SS"
+service   = "Amine Solution — Lean Amine, Stainless Steel"
+notes     = "Note 4"
+pressure  = 9999
+line_size = 9999
+vel = [0.0, 6.0]
+dp  = [0.0, 0.0]
+
+[[criteria]]
+code      = "AMN-LA-CS"
+service   = "Amine Solution — Lean Amine, Carbon Steel"
+notes     = "Note 4"
+pressure  = 9999
+line_size = 9999
+vel = [0.0, 2.0]
+dp  = [0.0, 0.0]
+
+# ---------------------------------------------------------------------------
+# Potassium Hydroxide (KOH)
+# ---------------------------------------------------------------------------
+
+[[criteria]]
+code      = "KOH-66"
+service   = "Potassium Hydroxide (KOH) Solution, 40–60 wt% @ 66 °C"
+notes     = ""
+pressure  = 9999
+line_size = 9999
+vel = [0.0, 1.8]
+dp  = [0.0, 0.0]
