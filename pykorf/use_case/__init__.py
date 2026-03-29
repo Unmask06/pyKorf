@@ -49,7 +49,7 @@ from pykorf.use_case.exceptions import (
     UseCaseError,
     ValidationError,
 )
-from pykorf.use_case.global_settings import (
+from pykorf.use_case.global_parameters import (
     apply_global_settings,
     get_global_setting,
     get_global_settings,

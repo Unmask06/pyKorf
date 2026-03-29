@@ -16,7 +16,7 @@ Global Settings:
 
 Usage:
     >>> from pykorf import Model
-    >>> from pykorf.use_case.global_settings import apply_global_settings
+    >>> from pykorf.use_case.global_parameters import apply_global_settings
     >>>
     >>> model = Model("model.kdf")
     >>> results = apply_global_settings(model, ["dummy_pipe", "dp_margin"])
@@ -457,7 +457,7 @@ def apply_global_settings(
 
     Example:
         >>> from pykorf import Model
-        >>> from pykorf.use_case.global_settings import apply_global_settings
+        >>> from pykorf.use_case.global_parameters import apply_global_settings
         >>>
         >>> model = Model("model.kdf")
         >>> results = apply_global_settings(model, ["dummy_pipe", "dp_margin"])

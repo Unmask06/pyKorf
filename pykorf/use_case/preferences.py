@@ -136,21 +136,21 @@ def set_last_interaction(screen_name: str, data: dict[str, Any]) -> None:
     save_config(config)
 
 
-def get_global_settings_selected() -> list[str]:
-    """Get the list of selected global settings IDs.
+def get_global_parameters_selected() -> list[str]:
+    """Get the list of selected global parameters IDs.
 
     Returns:
-        List of setting IDs that were last selected.
+        List of parameter IDs that were last selected.
     """
     config = load_config()
     return config.get("global_settings_selected", [])
 
 
-def set_global_settings_selected(setting_ids: list[str]) -> None:
-    """Save the selected global settings IDs.
+def set_global_parameters_selected(setting_ids: list[str]) -> None:
+    """Save the selected global parameters IDs.
 
     Args:
-        setting_ids: List of setting IDs to save as selected.
+        setting_ids: List of parameter IDs to save as selected.
     """
     config = load_config()
     config["global_settings_selected"] = setting_ids
