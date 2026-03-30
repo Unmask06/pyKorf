@@ -5,15 +5,14 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+import structlog
 from flask import Blueprint, render_template, request
 
 from pykorf.use_case.web import session as _sess
 from pykorf.use_case.web.helpers import is_redirect, require_model
 
-import structlog
 logger = structlog.get_logger(__name__)
 bp = Blueprint("report", __name__)
-
 
 
 @bp.route("/model/report", methods=["GET", "POST"])
@@ -85,7 +84,9 @@ def generate_report():
     errors: list[str] = []
 
     if action == "generate_report":
-        report_file = Path(file_path_str) if file_path_str else Path(kdf_folder) / default_report_name
+        report_file = (
+            Path(file_path_str) if file_path_str else Path(kdf_folder) / default_report_name
+        )
         report_dir = report_file.parent
         if not report_dir.exists():
             errors.append(f"Output directory does not exist: {report_dir}")
@@ -181,5 +182,3 @@ def generate_report():
         batch_folder_path=batch_folder_path,
     )
     return render_template("report.html", **ctx, result={"lines": result_lines, "errors": errors})
-
-

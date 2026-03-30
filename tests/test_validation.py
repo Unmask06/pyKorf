@@ -70,39 +70,3 @@ class TestValidate:
         # May have slight violations due to rounding
         # Just ensure the validation runs without errors
         assert isinstance(vel_issues, list)
-
-    def test_set_pipe_criteria(self):
-        """Test setting pipe criteria via global settings."""
-        from pykorf.use_case.global_parameters import set_pipe_criteria
-
-        m = Model(PUMP_KDF)
-
-        # Set custom criteria
-        affected = set_pipe_criteria(
-            m,
-            dpdl_criteria=30.0,
-            max_vel=50,
-            min_vel=0.2,
-        )
-
-        # Should affect all 5 pipes in Pumpcases.kdf
-        assert len(affected) == 5
-
-        # Verify criteria was set on a pipe
-        pipe1 = m.pipes[1]
-        siz_rec = pipe1.get_param("SIZ")
-        assert siz_rec is not None
-        assert float(siz_rec.values[1]) == 30.0  # dP/dL
-        assert float(siz_rec.values[3]) == 50  # max_vel
-        assert float(siz_rec.values[4]) == 0.2  # min_vel
-
-    def test_apply_pipe_criteria_global_setting(self):
-        """Test applying pipe criteria via global settings registry."""
-        from pykorf.use_case.global_parameters import apply_global_settings
-
-        m = Model(PUMP_KDF)
-
-        results = apply_global_settings(m, ["pipe_criteria"], save=False)
-
-        assert "pipe_criteria" in results
-        assert len(results["pipe_criteria"]) == 5

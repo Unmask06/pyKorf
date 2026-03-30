@@ -95,6 +95,7 @@ def references_add() -> Any:
     if name and link:
         store.add(Reference.new(name=name, link=link, description=description, category=category))
         store.save(kdf_path)
+        store.create_shortcuts(kdf_path)
 
     return redirect(url_for("references.references_page"))
 
@@ -119,6 +120,7 @@ def references_update() -> Any:
             category=(request.form.get("category") or "Other").strip(),
         )
         store.save(kdf_path)
+        store.create_shortcuts(kdf_path)
 
     return redirect(url_for("references.references_page"))
 

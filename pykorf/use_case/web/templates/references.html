@@ -57,24 +57,8 @@
           <code class="text-truncate small">{{ ref_dir }}</code>
         </li>
       </ul>
-      <div class="card-footer">
-        <form method="post" action="/model/references/shortcuts" id="shortcuts-form">
-          <button type="submit" class="btn btn-sm btn-outline-success w-100" id="btn-shortcuts">
-            <span class="spinner-border spinner-border-sm d-none me-1" id="sc-spinner"></span>
-            <i class="bi bi-link-45deg me-1"></i>Create / Refresh Shortcuts
-          </button>
-        </form>
-        {% if shortcut_result %}
-        <div class="mt-2 small
-          {% if shortcut_result.error %}text-danger{% else %}text-success{% endif %}">
-          {% if shortcut_result.error %}
-          <i class="bi bi-x-circle me-1"></i>{{ shortcut_result.error }}
-          {% else %}
-          <i class="bi bi-check-circle me-1"></i>{{ shortcut_result.count }} shortcut(s) written to
-          <code>…/reference/</code>
-          {% endif %}
-        </div>
-        {% endif %}
+      <div class="card-footer small text-success">
+        <i class="bi bi-check-circle me-1"></i>Shortcuts auto-created in <code>reference/</code> folder
       </div>
     </div>
 
@@ -84,7 +68,7 @@
         <ol class="ps-3 mb-0">
           <li>Write design basis notes in the text area and click <strong>Save Basis</strong>.</li>
           <li>Add document references (P&amp;IDs, datasheets, specs) with their SharePoint or local links.</li>
-          <li>Click <strong>Create / Refresh Shortcuts</strong> to generate <code>.url</code> shortcut files next to the <code>.kdf</code> for quick access in Explorer.</li>
+          <li>Shortcuts are <strong>auto-created</strong> in the <code>reference/</code> folder when you add, edit, or delete references.</li>
           <li>Use the browse button on the Link field to auto-detect SharePoint URLs for synced folders.</li>
         </ol>
       </div>
@@ -310,11 +294,5 @@
     }
     new bootstrap.Modal(document.getElementById('editModal')).show();
   }
-
-  // Shortcuts form spinner
-  document.getElementById('shortcuts-form').addEventListener('submit', function () {
-    document.getElementById('btn-shortcuts').disabled = true;
-    document.getElementById('sc-spinner').classList.remove('d-none');
-  });
 </script>
 {% endblock %}

@@ -370,7 +370,7 @@ class ResultExporter:
             for line in self._basis.splitlines():
                 basis_cell = ref_ws.cell(row=row, column=1, value=line)
                 basis_cell.font = Font(size=10)
-                basis_cell.alignment = Alignment(wrap_text=False)
+                basis_cell.alignment = Alignment(wrap_text=False, horizontal="left")
                 ref_ws.row_dimensions[row].height = 15
                 row += 1
             row += 1  # blank separator
@@ -414,18 +414,12 @@ class ResultExporter:
             # Outer border around the table
             self._apply_table_formatting(ref_ws, header_row, row - 1, len(headers), 1)
 
-    def _write_pipe_stats(
-        self, ws: Any, df: Any, row: int, start_col: int
-    ) -> int:
+    def _write_pipe_stats(self, ws: Any, df: Any, row: int, start_col: int) -> int:
         """Writes a single Min - Max summary row below the pipe table."""
         import pandas as pd
 
-        dpdl_col = next(
-            (c for c in df.columns if "DP / DL" in c and "Criteria" not in c), None
-        )
-        vel_col = next(
-            (c for c in df.columns if "Velocity" in c and "Criteria" not in c), None
-        )
+        dpdl_col = next((c for c in df.columns if "DP / DL" in c and "Criteria" not in c), None)
+        vel_col = next((c for c in df.columns if "Velocity" in c and "Criteria" not in c), None)
         if dpdl_col is None and vel_col is None:
             return row + 3
 

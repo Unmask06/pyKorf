@@ -57,7 +57,7 @@
                       />
                       <span class="input-group-text">×</span>
                       <span class="input-group-text" id="dp-margin-pct">
-                        {{ ((saved_dp_margin | float - 1) * 100) | int }}% margin
+                        {{ ((saved_dp_margin | float - 1) * 100) | round | int }}% margin
                       </span>
                     </div>
                   </div>
@@ -163,7 +163,7 @@
     dpInput.addEventListener('input', function() {
       var v = parseFloat(this.value);
       if (!isNaN(v) && v >= 1) {
-        dpPctSpan.textContent = Math.round((v - 1) * 100) + '% margin';
+        dpPctSpan.textContent = ((v - 1) * 100).toFixed(0) + '% margin';
       }
     });
   }
