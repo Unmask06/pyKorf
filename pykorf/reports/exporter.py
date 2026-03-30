@@ -370,7 +370,7 @@ class ResultExporter:
             for line in self._basis.splitlines():
                 basis_cell = ref_ws.cell(row=row, column=1, value=line)
                 basis_cell.font = Font(size=10)
-                basis_cell.alignment = Alignment(wrap_text=True)
+                basis_cell.alignment = Alignment(wrap_text=False)
                 ref_ws.row_dimensions[row].height = 15
                 row += 1
             row += 1  # blank separator
