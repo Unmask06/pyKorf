@@ -5,6 +5,19 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] - 2026-03-30
+
+### What's New
+
+- A new **Pump Shut-Off Margin** global parameter sets the raise shut-off margin factor on all pumps in one click.
+
+### Improved
+
+- All operations (Apply PMS, Apply HMB, Bulk Copy Fluids, Global Parameters) now save the model automatically — no separate Save step needed.
+- The **Save** button has been removed from the navbar since saving is now handled by each operation.
+- Global parameter setting descriptions use plain language instead of raw KDF parameter codes.
+- The KDF filename badge in the navbar now uses a clean, minimal style that blends with the UI.
+
 ## [0.6.0] - 2026-03-30
 
 ### What's New

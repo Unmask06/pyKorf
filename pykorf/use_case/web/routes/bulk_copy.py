@@ -46,6 +46,8 @@ def bulk_copy():
                 updated_pipes = copy_fluids(model, ref_pipe, target_list, exclude)
                 updated_count = len(updated_pipes)
                 result = "success"
+                model.io.save()
+                _sess.reload()
             except Exception as exc:
                 error = f"Error: {exc}"
 
