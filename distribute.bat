@@ -114,10 +114,14 @@ if exist pykorf\reports (
     copy /y pykorf\reports\*.toml  %DIST_DIR%\pykorf\reports\ >nul
 )
 
-REM Copy pyproject.toml — keep only runtime deps and setuptools config
+REM Copy pyproject.toml (full file — uv pip install -e . only uses [project].dependencies)
 echo.
-echo Preparing pyproject.toml (stripping dev/docs dependencies)...
-uv run python -c "import re; c=open('pyproject.toml','r').read(); subs=[(r'\n\[tool\.uv\].*?(?=\n\[)',''),(r'\n\[dependency-groups\].*?(?=\n\[)',''),(r'\n\[project\.optional-dependencies\].*?(?=\n\[)',''),(r'\n\[tool\.(?!setuptools)[^\]]+\].*?(?=\n\[|\Z)',''),(r'\n\[\[tool\.[^\]]+\]\].*?(?=\n\[|\Z)',''),(r',?\s*\"setuptools-scm[^\"]*\"','')]; [c:=re.sub(p,r,c,flags=re.DOTALL) for p,r in subs]; open('dist/pyproject.toml','w').write(c)"
+echo Copying pyproject.toml...
+copy /y pyproject.toml %DIST_DIR%\pyproject.toml >nul
+if errorlevel 1 (
+    echo ERROR: Failed to copy pyproject.toml
+    exit /b 1
+)
 
 REM Create VERSION file for version tracking
 echo.
