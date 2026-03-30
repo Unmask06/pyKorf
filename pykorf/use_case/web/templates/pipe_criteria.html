@@ -3,13 +3,6 @@
 
 {% block content %}
 
-{% if result %}
-<div class="alert alert-success d-flex align-items-center gap-2 mb-3" role="alert">
-  <i class="bi bi-check-circle-fill fs-5 flex-shrink-0"></i>
-  <div>Saved sizing criteria for <strong>{{ result.saved }}</strong> pipe(s) to <code>.pykorf</code> file.</div>
-</div>
-{% endif %}
-
 {% if set_result %}
 <div class="alert alert-{% if set_result.skipped %}warning{% else %}success{% endif %} d-flex align-items-start gap-2 mb-3" role="alert">
   <i class="bi bi-{% if set_result.skipped %}exclamation-triangle-fill{% else %}check-circle-fill{% endif %} fs-5 flex-shrink-0 mt-1"></i>
@@ -23,11 +16,22 @@
 {% endif %}
 
 {% if predict_result %}
-<div class="alert alert-info d-flex align-items-center gap-2 mb-3" role="alert">
-  <i class="bi bi-magic fs-5 flex-shrink-0"></i>
-  <div>
-    Auto-filled <strong>{{ predict_result.filled }}</strong> pipe(s). Review the predictions below, then click <strong>Save Criteria</strong> to confirm.
+<div class="alert alert-{% if predict_result.errors %}warning{% else %}info{% endif %} mb-3" role="alert">
+  <div class="d-flex align-items-center gap-2">
+    <i class="bi bi-magic fs-5 flex-shrink-0"></i>
+    <div>
+      Predicted <strong>{{ predict_result.filled_state }}</strong> state(s)
+      and <strong>{{ predict_result.filled_criteria }}</strong> criteria code(s).
+      Review below, then click <strong>Set Criteria to Model</strong> to apply.
+    </div>
   </div>
+  {% if predict_result.errors %}
+  <ul class="mb-0 mt-2 ps-4 small">
+    {% for err in predict_result.errors %}
+    <li>{{ err }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
 </div>
 {% endif %}
 
@@ -52,7 +56,8 @@
       </div>
       <div class="col-auto">
         <form method="post" action="/model/pipe-criteria" id="predict-form">
-          <button type="submit" name="action" value="predict" class="btn btn-sm btn-outline-info" id="btn-predict"
+          <input type="hidden" name="action" value="predict" />
+          <button type="submit" class="btn btn-sm btn-outline-info" id="btn-predict"
                   title="Auto-fill state from liquid fraction (LF) and predict criteria where possible">
             <span class="spinner-border spinner-border-sm d-none me-1" id="predict-spinner"></span>
             <i class="bi bi-magic me-1"></i>Auto-predict
@@ -86,7 +91,14 @@
             <th style="width:60px;">#</th>
             <th style="width:130px;">Pipe</th>
             <th style="width:160px;">State</th>
-            <th>Criteria</th>
+            <th style="min-width:180px;">Criteria</th>
+            <th style="width:100px;" class="text-center text-nowrap">dP max<br><small class="fw-normal text-secondary">kPa/100m</small></th>
+            <th style="width:80px;" class="text-center text-nowrap">v min<br><small class="fw-normal text-secondary">m/s</small></th>
+            <th style="width:80px;" class="text-center text-nowrap">v max<br><small class="fw-normal text-secondary">m/s</small></th>
+            <th style="width:120px;" class="text-center text-nowrap">ρV² range<br><small class="fw-normal text-secondary">Pa</small></th>
+            <th style="width:90px;" class="text-center text-nowrap">ρV² calc<br><small class="fw-normal text-secondary">Pa</small></th>
+            <th style="width:90px;" class="text-center text-nowrap">dP/DL calc<br><small class="fw-normal text-secondary">kPa/100m</small></th>
+            <th style="width:80px;" class="text-center text-nowrap">vel calc<br><small class="fw-normal text-secondary">m/s</small></th>
           </tr>
         </thead>
         <tbody>
@@ -121,6 +133,13 @@
                 {% endif %}
               </select>
             </td>
+            <td class="text-center font-monospace small crit-dp" data-pipe="{{ pipe_name }}">—</td>
+            <td class="text-center font-monospace small crit-vmin" data-pipe="{{ pipe_name }}">—</td>
+            <td class="text-center font-monospace small crit-vmax" data-pipe="{{ pipe_name }}">—</td>
+            <td class="text-center font-monospace small crit-rhov2" data-pipe="{{ pipe_name }}">—</td>
+            <td class="text-center font-monospace small calc-rhov2" data-pipe="{{ pipe_name }}">—</td>
+            <td class="text-center font-monospace small calc-dp" data-pipe="{{ pipe_name }}">—</td>
+            <td class="text-center font-monospace small calc-vel" data-pipe="{{ pipe_name }}">—</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -135,10 +154,6 @@
       <div class="d-flex gap-2">
         <button type="button" id="btn-clear-all" class="btn btn-sm btn-outline-danger">
           <i class="bi bi-x-circle me-1"></i>Clear All
-        </button>
-        <button type="submit" name="action" value="save_criteria" class="btn btn-sm btn-primary" id="btn-save">
-          <span class="spinner-border spinner-border-sm d-none me-1" id="save-spinner"></span>
-          <i class="bi bi-floppy me-1"></i>Save Criteria
         </button>
         <button type="submit" name="action" value="set_criteria" class="btn btn-sm btn-success" id="btn-set">
           <span class="spinner-border spinner-border-sm d-none me-1" id="set-spinner"></span>
@@ -155,6 +170,16 @@
 {{ codes | tojson }}
 </script>
 
+{# Precomputed CriteriaValues per pipe: {pipe_name: {"state:code": {max_dp, max_vel, min_vel, rho_v2_min, rho_v2_max}}} #}
+<script id="pipe-criteria-values" type="application/json">
+{{ pipe_criteria_values | tojson }}
+</script>
+
+{# Per-pipe calculated results from model: {pipe_name: {dp_calc, vel_calc, rho_v2_calc}} #}
+<script id="pipe-calcs" type="application/json">
+{{ pipe_calcs | tojson }}
+</script>
+
 {% endblock %}
 
 {% block scripts %}
@@ -168,6 +193,12 @@ document.addEventListener('DOMContentLoaded', function () {
   const CODES = JSON.parse(codesRaw);
   // CODES = { "liquid": [["P-SUC-BUB","P-SUC-BUB — ..."], ...], "gas": [...], "two_phase": [...] }
 
+  const PIPE_CRITERIA = JSON.parse(document.getElementById('pipe-criteria-values').textContent);
+  // PIPE_CRITERIA = { pipe_name: { "state:code": { max_dp, max_vel, min_vel, rho_v2_min, rho_v2_max } } }
+
+  const PIPE_CALCS = JSON.parse(document.getElementById('pipe-calcs').textContent);
+  // PIPE_CALCS = { pipe_name: { dp_calc, vel_calc, rho_v2_calc } }
+
   // Build criteria <option> HTML for a given fluid type
   function buildOptions(fluidType, selected) {
     const entries = CODES[fluidType] || [];
@@ -179,8 +210,45 @@ document.addEventListener('DOMContentLoaded', function () {
     return html;
   }
 
+  // Format rho_v2 criteria range: "≤ max" for gas (min=0), "min – max" for two-phase, "—" if null
+  function fmtRhoV2Range(min, max) {
+    if (min == null || max == null) return '—';
+    const fmtK = (v) => v >= 1000 ? (v / 1000).toFixed(1) + 'k' : v.toFixed(0);
+    return min === 0.0 ? '\u2264 ' + fmtK(max) : fmtK(min) + ' \u2013 ' + fmtK(max);
+  }
+
+  // Update the read-only criteria value cells for a pipe
+  function updateCriteriaDisplay(pipe) {
+    const stateEl = document.querySelector(`.state-select[data-pipe="${pipe}"]`);
+    const criteriaEl = document.querySelector(`.criteria-select[data-pipe="${pipe}"]`);
+    const dpEl = document.querySelector(`.crit-dp[data-pipe="${pipe}"]`);
+    const vminEl = document.querySelector(`.crit-vmin[data-pipe="${pipe}"]`);
+    const vmaxEl = document.querySelector(`.crit-vmax[data-pipe="${pipe}"]`);
+    const rhov2El = document.querySelector(`.crit-rhov2[data-pipe="${pipe}"]`);
+    if (!stateEl || !criteriaEl || !dpEl) return;
+
+    const state = stateEl.value;
+    const code = criteriaEl.value;
+    const key = state + ':' + code;
+    const vals = (PIPE_CRITERIA[pipe] || {})[key];
+
+    const fmt = (v) => (v == null || v >= 9999) ? '—' : v.toFixed(1);
+
+    if (vals && state && code) {
+      dpEl.textContent = fmt(vals.max_dp);
+      vminEl.textContent = vals.min_vel.toFixed(1);
+      vmaxEl.textContent = fmt(vals.max_vel);
+      if (rhov2El) rhov2El.textContent = fmtRhoV2Range(vals.rho_v2_min, vals.rho_v2_max);
+    } else {
+      dpEl.textContent = '—';
+      vminEl.textContent = '—';
+      vmaxEl.textContent = '—';
+      if (rhov2El) rhov2El.textContent = '—';
+    }
+  }
+
   // -----------------------------------------------------------------------
-  // Populate all criteria selects on page load (for saved state)
+  // Populate all criteria selects and value cells on page load
   // -----------------------------------------------------------------------
   document.querySelectorAll('.state-select').forEach(function(stateEl) {
     const pipe = stateEl.dataset.pipe;
@@ -190,10 +258,32 @@ document.addEventListener('DOMContentLoaded', function () {
     if (fluidType && criteriaEl) {
       criteriaEl.innerHTML = buildOptions(fluidType, savedCriteria);
     }
+    updateCriteriaDisplay(pipe);
   });
 
   // -----------------------------------------------------------------------
-  // State change → rebuild criteria dropdown
+  // Populate calculated values (dp_calc, vel_calc, rho_v2_calc) on page load
+  // -----------------------------------------------------------------------
+  (function () {
+    const fmtCalc = (v) => (v == null || v === 0) ? '—' : v.toFixed(1);
+    const fmtRhoV2Calc = (v) => {
+      if (v == null) return '—';
+      return v >= 1000 ? (v / 1000).toFixed(1) + 'k' : v.toFixed(0);
+    };
+    document.querySelectorAll('.pipe-row').forEach(function (row) {
+      const pipe = row.dataset.pipe;
+      const c = PIPE_CALCS[pipe] || {};
+      const rhov2CalcEl = row.querySelector('.calc-rhov2');
+      const dpCalcEl = row.querySelector('.calc-dp');
+      const velCalcEl = row.querySelector('.calc-vel');
+      if (rhov2CalcEl) rhov2CalcEl.textContent = fmtRhoV2Calc(c.rho_v2_calc);
+      if (dpCalcEl) dpCalcEl.textContent = fmtCalc(c.dp_calc);
+      if (velCalcEl) velCalcEl.textContent = fmtCalc(c.vel_calc);
+    });
+  })();
+
+  // -----------------------------------------------------------------------
+  // State change → rebuild criteria dropdown + clear value cells
   // -----------------------------------------------------------------------
   document.querySelectorAll('.state-select').forEach(function(stateEl) {
     stateEl.addEventListener('change', function() {
@@ -202,6 +292,16 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!criteriaEl) return;
       const fluidType = this.value;
       criteriaEl.innerHTML = fluidType ? buildOptions(fluidType, '') : '<option value="">—</option>';
+      updateCriteriaDisplay(pipe);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Criteria change → update value cells
+  // -----------------------------------------------------------------------
+  document.querySelectorAll('.criteria-select').forEach(function(criteriaEl) {
+    criteriaEl.addEventListener('change', function() {
+      updateCriteriaDisplay(this.dataset.pipe);
     });
   });
 
@@ -249,6 +349,7 @@ document.addEventListener('DOMContentLoaded', function () {
       stateEl.value = ft;
       criteriaEl.innerHTML = buildOptions(ft, crit);
       criteriaEl.value = crit;
+      updateCriteriaDisplay(pipe);
     });
   });
 
@@ -262,20 +363,17 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.criteria-select').forEach(function(el) {
       el.innerHTML = '<option value="">—</option>';
     });
+    document.querySelectorAll('.crit-dp, .crit-vmin, .crit-vmax, .crit-rhov2').forEach(function(el) {
+      el.textContent = '—';
+    });
   });
 
   // -----------------------------------------------------------------------
   // Save / Set spinners
   // -----------------------------------------------------------------------
   document.getElementById('criteria-form').addEventListener('submit', function(e) {
-    const action = e.submitter ? e.submitter.value : 'save_criteria';
-    if (action === 'set_criteria') {
-      document.getElementById('btn-set').disabled = true;
-      document.getElementById('set-spinner').classList.remove('d-none');
-    } else {
-      document.getElementById('btn-save').disabled = true;
-      document.getElementById('save-spinner').classList.remove('d-none');
-    }
+    document.getElementById('btn-set').disabled = true;
+    document.getElementById('set-spinner').classList.remove('d-none');
   });
 
   // -----------------------------------------------------------------------

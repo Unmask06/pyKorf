@@ -68,20 +68,18 @@
       </div>
       <ul class="list-group list-group-flush">
         {% for f in recent_files %}
-        <li class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2">
-          <i class="bi bi-file-earmark-text text-secondary"></i>
+        <li class="list-group-item p-0">
           <a
             href="#"
-            class="font-monospace small flex-grow-1 recent-file-link"
-            style="overflow:hidden;white-space:nowrap;direction:rtl;text-overflow:ellipsis"
+            class="d-flex align-items-center gap-2 py-2 px-3 text-decoration-none recent-file-open-btn"
             data-path="{{ f }}"
             title="{{ f }}"
-          >{{ f }}</a>
-          <button
-            type="button"
-            class="btn btn-sm btn-outline-primary py-0 recent-file-open-btn"
-            data-path="{{ f }}"
-          >Open</button>
+          >
+            <i class="bi bi-file-earmark-text text-secondary flex-shrink-0"></i>
+            <span class="font-monospace small flex-grow-1 text-body">{{ f | basename }}</span>
+            <span class="text-secondary" style="font-size:.75rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-width:45%;">{{ f }}</span>
+            <i class="bi bi-box-arrow-in-right text-primary flex-shrink-0 small"></i>
+          </a>
         </li>
         {% endfor %}
       </ul>
@@ -129,16 +127,9 @@
     // Update filename label on input
     kdfPathInput.addEventListener('input', updateFilenameLabel);
 
-    document.querySelectorAll('.recent-file-link').forEach(link => {
+    document.querySelectorAll('.recent-file-open-btn').forEach(link => {
       link.addEventListener('click', function (e) {
         e.preventDefault();
-        kdfPathInput.value = this.dataset.path;
-        updateFilenameLabel();
-      });
-    });
-
-    document.querySelectorAll('.recent-file-open-btn').forEach(button => {
-      button.addEventListener('click', function () {
         kdfPathInput.value = this.dataset.path;
         updateFilenameLabel();
         openForm.submit();

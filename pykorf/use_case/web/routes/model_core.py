@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from flask import Blueprint, redirect, render_template, url_for
+import structlog
+from flask import Blueprint, redirect, render_template, request, url_for
 
 from pykorf.use_case.web import session as _sess
 from pykorf.use_case.web.helpers import is_redirect, require_model
 
+logger = structlog.get_logger(__name__)
 bp = Blueprint("model_core", __name__)
 
 
@@ -62,6 +64,21 @@ def main_menu():
     )
 
 
+@bp.route("/model/reload", methods=["POST"])
+def reload_model():
+    """Re-parse the KDF from disk and redirect back to the calling page."""
+    model = require_model()
+    if is_redirect(model):
+        return model
+    kdf_path = _sess.get_kdf_path()
+    if kdf_path:
+        logger.info("reload_model", kdf_path=str(kdf_path))
+        _sess.reload()
+        logger.info("reload_model_complete", kdf_path=str(kdf_path))
+    next_url = request.form.get("next", "").strip()
+    return redirect(next_url or url_for("model_core.main_menu"))
+
+
 @bp.route("/model/save", methods=["POST"])
 def save_model():
     """Save the in-memory model back to its source .kdf file."""
@@ -70,6 +87,8 @@ def save_model():
         return model
     kdf_path = _sess.get_kdf_path()
     if kdf_path:
+        logger.info("save_model", kdf_path=str(kdf_path))
         model.io.save(kdf_path)
         _sess.reload()
+        logger.info("save_model_complete", kdf_path=str(kdf_path))
     return redirect(url_for("model_core.main_menu"))

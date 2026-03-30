@@ -14,7 +14,7 @@ import platform
 import shutil
 from pathlib import Path
 
-logger = logging.getLogger("PathManager")
+logger = logging.getLogger(__name__)
 
 APP_NAME = "pyKorf"
 CONFIG_FILENAME = "config.json"

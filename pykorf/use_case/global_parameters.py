@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 if TYPE_CHECKING:
     from pykorf.model import Model
 
-logger = logging.getLogger("GlobalSettings")
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -357,6 +357,7 @@ def set_pipe_criteria(
                 min_vel,
                 max_vel,
             )
+            logger.debug("Pipe %s: SIZ values applied: %s", pipe_name, siz_values)
         except ParameterError as e:
             error_msg = f"Validation error on {pipe_name}: {e}"
             logger.error(error_msg)

@@ -36,7 +36,7 @@ from pykorf.use_case.line_number import (
 from pykorf.use_case.pms import apply_pms
 from pykorf.use_case.settings import SettingsReader, UseCaseSettings
 
-logger = logging.getLogger("BatchProcessor")
+logger = logging.getLogger(__name__)
 
 
 @dataclass

@@ -13,7 +13,7 @@ REM              Bump on any launcher fix/improvement; enables auto-update.
 REM AUTO_UPDATE: TRUE = silently self-update when a newer launcher is on GitHub.
 REM              FALSE = never self-update; user must get new bat from administrator.
 set "BAT_MAJOR=0"
-set "BAT_VERSION=0.4"
+set "BAT_VERSION=0.5"
 set "AUTO_UPDATE=TRUE"
 
 chcp 65001 > nul

@@ -10,6 +10,22 @@ from __future__ import annotations
 
 import tomllib
 from pathlib import Path
+from typing import NamedTuple
+
+
+class CriteriaValues(NamedTuple):
+    """Resolved sizing criteria bounds for a single pipe lookup.
+
+    All values use SI/engineering units as stored in the TOML tables.
+    9999.0 means no upper limit (KORF convention for unbounded criteria).
+    None means the criterion is not defined for that fluid type / code.
+    """
+
+    max_dp: float  # kPa/100m
+    max_vel: float  # m/s; 9999.0 = no limit
+    min_vel: float  # m/s
+    rho_v2_min: float | None = None  # Pa; None = not applicable
+    rho_v2_max: float | None = None  # Pa; None = not applicable
 
 _CRITERIA_DIR = Path(__file__).parent.parent / "reports"
 
@@ -111,12 +127,38 @@ def predict_criteria(fluid_type: str, pipe_name: str) -> str | None:
     return None
 
 
+def _entry_to_criteria(entry: dict) -> CriteriaValues:
+    """Convert a raw TOML entry dict to a CriteriaValues NamedTuple."""
+    dp_max = entry["dp"][1] if entry["dp"][1] != 0.0 else 9999.0
+    vel_max = entry["vel"][1] if entry["vel"][1] != 0.0 else 9999.0
+    vel_min = entry["vel"][0]
+
+    raw = entry.get("rho_v2")
+    if raw is None:
+        rho_v2_min, rho_v2_max = None, None
+    elif isinstance(raw, list):
+        # Two-phase: [min, max]
+        rho_v2_min, rho_v2_max = float(raw[0]), float(raw[1])
+    else:
+        # Gas: single upper-limit value; 0 = not specified
+        v = float(raw)
+        rho_v2_min, rho_v2_max = (0.0, v) if v > 0.0 else (None, None)
+
+    return CriteriaValues(
+        max_dp=dp_max,
+        max_vel=vel_max,
+        min_vel=vel_min,
+        rho_v2_min=rho_v2_min,
+        rho_v2_max=rho_v2_max,
+    )
+
+
 def lookup_criteria(
     fluid_type: str,
     code: str,
     pipe_size_inch: float = 9999.0,
     pressure_barg: float = 9999.0,
-) -> dict | None:
+) -> CriteriaValues | None:
     """Find the best matching criteria entry for a pipe.
 
     For liquid/two_phase: match is determined by ``line_size`` (first entry
@@ -131,7 +173,7 @@ def lookup_criteria(
         pressure_barg: Operating pressure in barg (default 9999 = no limit).
 
     Returns:
-        Matching criteria dict, or None if the code is not found.
+        CriteriaValues(max_dp, max_vel, min_vel), or None if code not found.
     """
     entries = [e for e in load_criteria(fluid_type) if e["code"] == code]
     if not entries:
@@ -141,11 +183,11 @@ def lookup_criteria(
         entries_sorted = sorted(entries, key=lambda e: e.get("pressure", 9999))
         for entry in entries_sorted:
             if pressure_barg <= entry.get("pressure", 9999):
-                return entry
-        return entries_sorted[-1]
+                return _entry_to_criteria(entry)
+        return _entry_to_criteria(entries_sorted[-1])
     else:
         entries_sorted = sorted(entries, key=lambda e: e.get("line_size", 9999))
         for entry in entries_sorted:
             if pipe_size_inch <= entry.get("line_size", 9999):
-                return entry
-        return entries_sorted[-1]
+                return _entry_to_criteria(entry)
+        return _entry_to_criteria(entries_sorted[-1])

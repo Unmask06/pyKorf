@@ -107,10 +107,11 @@ if exist pykorf\py.typed (
     copy /y pykorf\py.typed %DIST_DIR%\pykorf\
 )
 
-REM Copy JSON data files (excluded from PyArmor obfuscation, must be copied manually)
+REM Copy JSON and TOML data files (excluded from PyArmor obfuscation, must be copied manually)
 if exist pykorf\reports (
     mkdir %DIST_DIR%\pykorf\reports 2>nul
-    copy /y pykorf\reports\*.json %DIST_DIR%\pykorf\reports\ >nul
+    copy /y pykorf\reports\*.json  %DIST_DIR%\pykorf\reports\ >nul
+    copy /y pykorf\reports\*.toml  %DIST_DIR%\pykorf\reports\ >nul
 )
 
 REM Copy pyproject.toml — keep only runtime deps and setuptools config

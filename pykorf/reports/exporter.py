@@ -11,7 +11,7 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 from pykorf import Model
 from pykorf.reports.unit_converter import UnitConverter
 
-_logger = logging.getLogger("ResultExporter")
+_logger = logging.getLogger(__name__)
 
 
 class ResultExporter:

@@ -9,6 +9,9 @@ from flask import Blueprint, redirect, render_template, request, url_for
 
 from pykorf.use_case.web import session as _sess
 
+import structlog
+
+logger = structlog.get_logger(__name__)
 bp = Blueprint("file_picker", __name__)
 
 
@@ -47,6 +50,9 @@ def open_file():
     from pykorf.use_case.config import get_recent_files, record_opened_file
 
     kdf_path_str = (request.form.get("kdf_path") or "").strip()
+    # Strip surrounding double quotes if present
+    if kdf_path_str.startswith('"') and kdf_path_str.endswith('"'):
+        kdf_path_str = kdf_path_str[1:-1]
     path = Path(kdf_path_str)
 
     if not path.is_file():

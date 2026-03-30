@@ -13,7 +13,19 @@
   <style>
     body { min-height: 100vh; }
     .navbar-brand { font-weight: 700; letter-spacing: .05em; }
-    .kdf-badge { font-family: monospace; font-size: .75rem; }
+    .kdf-badge {
+      font-family: 'Courier New', monospace;
+      font-size: .85rem;
+      font-weight: 600;
+      letter-spacing: .04em;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      color: #e0e7ff !important;
+      border: 1px solid rgba(99,179,255,.35);
+      border-radius: 6px;
+      padding: .3rem .75rem;
+      box-shadow: 0 0 10px rgba(99,179,255,.2), inset 0 1px 0 rgba(255,255,255,.07);
+      text-shadow: 0 0 8px rgba(147,197,253,.6);
+    }
     .result-line-success { color: var(--bs-success); }
     .result-line-error   { color: var(--bs-danger); }
     .result-line-info    { color: var(--bs-secondary); }
@@ -83,10 +95,23 @@
     <i class="bi bi-diagram-3-fill me-1"></i>pyKorf
   </a>
   {% if kdf_path is defined and kdf_path %}
-  <span class="badge bg-secondary kdf-badge ms-2 text-truncate" style="max-width:40vw"
+  <span class="kdf-badge ms-3 text-truncate d-inline-flex align-items-center gap-1" style="max-width:40vw"
         title="{{ kdf_path }}">
-    <i class="bi bi-file-earmark-text me-1"></i>{{ kdf_path | replace("\\", "/") | split("/") | last }}
+    <i class="bi bi-file-earmark-code" style="font-size:.9rem; opacity:.8;"></i>
+    {{ kdf_path | replace("\\", "/") | split("/") | last }}
   </span>
+  {% if kdf_mtime_str %}
+  <span class="text-secondary ms-2" style="font-size:.72rem;" title="KDF file last modified on disk">
+    <i class="bi bi-clock me-1" style="font-size:.7rem;"></i>{{ kdf_mtime_str }}
+  </span>
+  {% endif %}
+  <form method="post" action="/model/reload" class="d-inline ms-1">
+    <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}" />
+    <button type="submit" class="btn btn-sm btn-outline-secondary border-0 py-0 px-1"
+            title="Reload model from disk" id="btn-reload-model">
+      <i class="bi bi-arrow-clockwise"></i>
+    </button>
+  </form>
   {% endif %}
   <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse"
           data-bs-target="#navContent">
@@ -94,13 +119,10 @@
   </button>
   <div class="collapse navbar-collapse" id="navContent">
     <ul class="navbar-nav ms-auto gap-1">
+      <li class="nav-item"><a class="nav-link" href="/about"><i class="bi bi-info-circle me-1"></i>About</a></li>
       <li class="nav-item"><a class="nav-link" href="/preferences"><i class="bi bi-gear me-1"></i>Preferences</a></li>
       {% if kdf_path is defined and kdf_path %}
       <li class="nav-item"><a class="nav-link" href="/model"><i class="bi bi-house me-1"></i>Menu</a></li>
-      <li class="nav-item"><a class="nav-link" href="/model/info"><i class="bi bi-info-circle me-1"></i>Info</a></li>
-      <li class="nav-item"><a class="nav-link" href="/model/settings"><i class="bi bi-sliders me-1"></i>Settings</a></li>
-      <li class="nav-item"><a class="nav-link" href="/model/data"><i class="bi bi-layers me-1"></i>Data</a></li>
-      <li class="nav-item"><a class="nav-link" href="/model/bulk-copy"><i class="bi bi-copy me-1"></i>Copy</a></li>
       <li class="nav-item"><a class="nav-link" href="/model/report"><i class="bi bi-file-earmark-excel me-1"></i>Report</a></li>
       <li class="nav-item"><a class="nav-link" href="/model/references"><i class="bi bi-journal-bookmark me-1"></i>Refs</a></li>
       <li class="nav-item">
