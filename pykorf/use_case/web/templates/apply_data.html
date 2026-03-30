@@ -120,14 +120,11 @@
         {% endfor %}
         {% for level, msg in result.lines %}
         <div class="result-line-{{ level }}">
-          {% if level == "success" %}<i class="bi bi-check-circle me-1"></i>{% endif %}{{ msg }}
+          {% if level == "success" %}<i class="bi bi-check-circle me-1"></i>
+          {% elif level == "info" %}<i class="bi bi-file-earmark-check me-1 text-info"></i>
+          {% endif %}{{ msg }}
         </div>
         {% endfor %}
-        {% if not result.errors and result.lines %}
-        <div class="text-info mt-2">
-          <i class="bi bi-info-circle me-1"></i>Model updated in memory. Use <strong>Save</strong> to persist.
-        </div>
-        {% endif %}
       </div>
     </div>
     {% endif %}

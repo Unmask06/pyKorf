@@ -41,7 +41,7 @@
                   {% if setting.id == "dp_margin" %}
                   <div class="mt-2" id="dp-margin-group">
                     <label for="dp_margin" class="form-label small fw-semibold mb-1">
-                      dP/dL Margin Factor
+                      Pressure Drop Margin
                     </label>
                     <div class="input-group input-group-sm">
                       <input
@@ -58,6 +58,31 @@
                       <span class="input-group-text">×</span>
                       <span class="input-group-text" id="dp-margin-pct">
                         {{ ((saved_dp_margin | float - 1) * 100) | round | int }}% margin
+                      </span>
+                    </div>
+                  </div>
+                  {% endif %}
+
+                  {% if setting.id == "pump_shutoff" %}
+                  <div class="mt-2" id="shutoff-margin-group">
+                    <label for="shutoff_margin" class="form-label small fw-semibold mb-1">
+                      Raise-Shutoff Margin
+                    </label>
+                    <div class="input-group input-group-sm">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="1.0"
+                        max="3.0"
+                        class="form-control"
+                        id="shutoff_margin"
+                        name="shutoff_margin"
+                        value="{{ saved_shutoff_margin }}"
+                        placeholder="1.20"
+                      />
+                      <span class="input-group-text">×</span>
+                      <span class="input-group-text" id="shutoff-margin-pct">
+                        {{ ((saved_shutoff_margin | float - 1) * 100) | round | int }}% margin
                       </span>
                     </div>
                   </div>
@@ -105,11 +130,6 @@
             {{ msg }}
           </div>
         {% endfor %}
-        {% if not result.errors and result.lines %}
-        <div class="text-info mt-2">
-          <i class="bi bi-info-circle me-1"></i>Model updated in memory. Use <strong>Save</strong> to persist.
-        </div>
-        {% endif %}
       </div>
     </div>
     {% endif %}
@@ -119,7 +139,7 @@
       <div class="card-body small text-secondary">
         <ul class="mb-0 ps-3">
           <li>Toggle each setting card on or off with the switch.</li>
-          <li>Changes are applied <strong>in memory</strong> — click <em>Save</em> in the navbar to write back to the <code>.kdf</code>.</li>
+          <li>Clicking <em>Apply Selected</em> applies changes and <strong>saves</strong> the model immediately.</li>
           <li>Use <em>Select All</em> to enable every setting at once.</li>
         </ul>
       </div>
@@ -156,17 +176,21 @@
     });
   });
 
-  // Live dP margin % display
-  var dpInput  = document.getElementById('dp_margin');
-  var dpPctSpan = document.getElementById('dp-margin-pct');
-  if (dpInput && dpPctSpan) {
-    dpInput.addEventListener('input', function() {
-      var v = parseFloat(this.value);
-      if (!isNaN(v) && v >= 1) {
-        dpPctSpan.textContent = ((v - 1) * 100).toFixed(0) + '% margin';
-      }
-    });
+  // Live margin % display
+  function bindMarginPct(inputId, spanId) {
+    var inp = document.getElementById(inputId);
+    var span = document.getElementById(spanId);
+    if (inp && span) {
+      inp.addEventListener('input', function() {
+        var v = parseFloat(this.value);
+        if (!isNaN(v) && v >= 1) {
+          span.textContent = ((v - 1) * 100).toFixed(0) + '% margin';
+        }
+      });
+    }
   }
+  bindMarginPct('dp_margin', 'dp-margin-pct');
+  bindMarginPct('shutoff_margin', 'shutoff-margin-pct');
 
   // Loading spinner on submit
   document.getElementById('settings-form').addEventListener('submit', function() {

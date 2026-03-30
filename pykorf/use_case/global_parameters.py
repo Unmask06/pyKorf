@@ -181,6 +181,54 @@ def apply_dp_margin_settings(model: Model, margin: float = 1.25) -> list[str]:
     return affected_pipes
 
 
+def apply_pump_shutoff_margin(model: Model, margin: float = 1.20) -> list[str]:
+    """Apply shut-off margin to all pumps via the PZRAT parameter.
+
+    Sets PZRAT = ["dPcalc", margin, 1] on every pump, configuring the
+    shut-off differential pressure calculation method and margin factor.
+
+    Args:
+        model: Loaded KDF model.
+        margin: Shut-off margin factor (default 1.20 for 20% margin).
+
+    Returns:
+        List of pump names that were modified.
+    """
+    from pykorf.elements import Pump
+    from pykorf.exceptions import ParameterError
+
+    affected_pumps: list[str] = []
+    errors: list[str] = []
+
+    for idx in range(1, model.num_pumps + 1):
+        pump = model.pumps[idx]
+        pump_name = pump.name
+
+        params: dict[str, Any] = {
+            Pump.PZRAT: ["dPcalc", margin, 1],
+        }
+
+        try:
+            model.set_params(pump_name, params)
+            affected_pumps.append(pump_name)
+            logger.info(
+                "Pump %s: PZRAT=[dPcalc, %s, 1] (%s%% shut-off margin)",
+                pump_name,
+                margin,
+                int((margin - 1) * 100),
+            )
+        except ParameterError as e:
+            error_msg = f"Validation error on {pump_name}: {e}"
+            logger.error(error_msg)
+            errors.append(error_msg)
+        except Exception as e:
+            error_msg = f"Error setting PZRAT on {pump_name}: {e}"
+            logger.error(error_msg)
+            errors.append(error_msg)
+
+    return affected_pumps
+
+
 def apply_rename_line_settings(model: Model) -> list[str]:
     """Rename pipes using fluid code and serial number from NOTES field.
 
@@ -294,20 +342,26 @@ _GLOBAL_SETTINGS: dict[str, GlobalSetting] = {
     "dummy_pipe": GlobalSetting(
         id="dummy_pipe",
         name="Dummy Pipe & Junction Labels",
-        description='Pipes starting with "d": LEN=0.1m, ID=1500mm, LBL=OFF. Junctions: LBL=OFF',
+        description='Pipes starting with "d": set length 0.1 m, bore 1500 mm, hide labels. Hide all junction labels.',
         apply_func=apply_dummy_pipe_settings,
     ),
     "dp_margin": GlobalSetting(
         id="dp_margin",
         name="Margin in dP/dL",
-        description="Set DP_DES_FAC on all pipes for pressure drop design margin",
+        description="Apply a pressure drop design margin factor to all pipes.",
         apply_func=apply_dp_margin_settings,
     ),
     "rename_line": GlobalSetting(
         id="rename_line",
         name="Rename Line from NOTES",
-        description="Extract fluid code + serial number from NOTES, update pipe name",
+        description="Rename each pipe using the line number extracted from its notes field.",
         apply_func=apply_rename_line_settings,
+    ),
+    "pump_shutoff": GlobalSetting(
+        id="pump_shutoff",
+        name="Pump Shut-Off Margin",
+        description="Set raise shut-off margin on all pumps. Method is automatically set to calculated dP.",
+        apply_func=apply_pump_shutoff_margin,
     ),
 }
 
@@ -339,6 +393,7 @@ def apply_global_settings(
     *,
     save: bool = True,
     dp_margin: float = 1.25,
+    shutoff_margin: float = 1.20,
 ) -> dict[str, list[str]]:
     """Apply selected global settings to a model.
 
@@ -372,9 +427,11 @@ def apply_global_settings(
             continue
 
         try:
-            # Pass dp_margin parameter to the dp_margin setting
+            # Pass margin parameters to settings that accept them
             if setting_id == "dp_margin":
                 affected = setting.apply_func(model, margin=dp_margin)
+            elif setting_id == "pump_shutoff":
+                affected = setting.apply_func(model, margin=shutoff_margin)
             else:
                 affected = setting.apply_func(model)
             results[setting_id] = affected

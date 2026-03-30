@@ -4,12 +4,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import structlog
 from flask import Blueprint, render_template, request
 
 from pykorf.use_case.web import session as _sess
 from pykorf.use_case.web.helpers import is_redirect, require_model
-
-import structlog
 
 logger = structlog.get_logger(__name__)
 bp = Blueprint("data", __name__)
@@ -29,7 +28,7 @@ def apply_data():
     if is_redirect(model):
         return model
 
-    from pykorf.use_case.config import get_pms_excel_path, get_last_hmb_path
+    from pykorf.use_case.config import get_last_hmb_path, get_pms_excel_path
 
     kdf_path = _sess.get_kdf_path()
     pms_excel = get_pms_excel_path()
@@ -72,11 +71,21 @@ def apply_data():
             errors.append(f"PMS data file not found: {pms_source}")
         else:
             try:
-                from pykorf.use_case.pms import apply_pms as _apply_pms
+                from pykorf.use_case.pms import apply_pms as _apply_pms, import_pms_from_excel
 
-                _apply_pms(pms_source, model, save=False)
+                # Convert Excel → pms.json in the data dir, then apply from JSON
+                if Path(pms_source).suffix.lower() in (".xlsx", ".xls"):
+                    json_path = import_pms_from_excel(pms_source)
+                    result_lines.append(("info", f"PMS JSON saved: {json_path}"))
+                    _apply_pms(json_path, model, save=False)
+                else:
+                    _apply_pms(pms_source, model, save=False)
+
                 set_pms_excel_path(pms_source)
                 result_lines.append(("success", "PMS data applied successfully."))
+                model.io.save()
+                _sess.reload()
+                result_lines.append(("success", "Model saved."))
             except Exception as exc:
                 errors.append(f"Error applying PMS: {exc}")
 
@@ -101,11 +110,21 @@ def apply_data():
             errors.append(f"HMB data file not found: {hmb_source}")
         else:
             try:
-                from pykorf.use_case.hmb import apply_hmb as _apply_hmb
+                from pykorf.use_case.hmb import apply_hmb as _apply_hmb, import_stream_from_excel
 
-                _apply_hmb(hmb_source, model, save=False)
+                # Convert Excel → stream_data.json in the data dir, then apply from JSON
+                if Path(hmb_source).suffix.lower() in (".xlsx", ".xls"):
+                    json_path = import_stream_from_excel(hmb_source)
+                    result_lines.append(("info", f"Stream JSON saved: {json_path}"))
+                    _apply_hmb(json_path, model, save=False)
+                else:
+                    _apply_hmb(hmb_source, model, save=False)
+
                 set_last_hmb_path(hmb_source)
                 result_lines.append(("success", "HMB data applied successfully."))
+                model.io.save()
+                _sess.reload()
+                result_lines.append(("success", "Model saved."))
             except Exception as exc:
                 errors.append(f"Error applying HMB: {exc}")
 

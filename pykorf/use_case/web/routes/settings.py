@@ -30,6 +30,7 @@ def global_settings():
         saved_selections: list[str] = get_global_parameters_selected() or []
         interaction_data = get_last_interaction()
         saved_dp_margin = interaction_data.get("dp_margin") or "1.25"
+        saved_shutoff_margin = interaction_data.get("shutoff_margin") or "1.20"
         if not saved_selections and "selected_settings" in interaction_data:
             saved_selections = interaction_data.get("selected_settings", [])
         return render_template(
@@ -38,6 +39,7 @@ def global_settings():
             settings=settings,
             saved_selections=saved_selections,
             saved_dp_margin=saved_dp_margin,
+            saved_shutoff_margin=saved_shutoff_margin,
             result=None,
         )
 
@@ -53,6 +55,13 @@ def global_settings():
         dp_margin = 1.25
         dp_margin_str = "1.25"
 
+    shutoff_margin_str = (request.form.get("shutoff_margin") or "1.20").strip()
+    try:
+        shutoff_margin = float(shutoff_margin_str)
+    except ValueError:
+        shutoff_margin = 1.20
+        shutoff_margin_str = "1.20"
+
     result_lines: list[tuple[str, str]] = []
     errors: list[str] = []
 
@@ -62,13 +71,19 @@ def global_settings():
         set_global_parameters_selected(selected_ids)
         interaction_data = {
             "dp_margin": dp_margin_str,
+            "shutoff_margin": shutoff_margin_str,
             "selected_settings": selected_ids,
         }
         set_last_interaction("global_parameters", interaction_data)
-        logger.info("global_settings_apply", selected=selected_ids, dp_margin=dp_margin)
+        logger.info(
+            "global_settings_apply",
+            selected=selected_ids,
+            dp_margin=dp_margin,
+            shutoff_margin=shutoff_margin,
+        )
         try:
             apply_results: dict[str, Any] = apply_global_settings(
-                model, selected_ids, save=False, dp_margin=dp_margin
+                model, selected_ids, save=False, dp_margin=dp_margin, shutoff_margin=shutoff_margin
             )
             errs: list[str] = apply_results.pop("_errors", [])
             errors.extend(errs)
@@ -80,6 +95,10 @@ def global_settings():
                     result_lines.append(("info", f"  - {pipe_name}"))
                 if len(pipes) > 10:
                     result_lines.append(("info", f"  - … and {len(pipes) - 10} more"))
+            if not errors:
+                model.io.save()
+                _sess.reload()
+                result_lines.append(("success", "Model saved."))
         except Exception as exc:
             logger.error("global_settings_error", error=str(exc))
             errors.append(f"Error applying settings: {exc}")
@@ -90,5 +109,6 @@ def global_settings():
         settings=settings,
         saved_selections=selected_ids,
         saved_dp_margin=dp_margin_str,
+        saved_shutoff_margin=shutoff_margin_str,
         result={"lines": result_lines, "errors": errors},
     )

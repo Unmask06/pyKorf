@@ -55,7 +55,7 @@ class Pump(BaseElement):
     NPSHVV = "NPSHVV"  # [npshvv_bool]
     NPSHVT = "NPSHVT"  # ["npshvt_type"]
     PZPRES = "PZPRES"  # [pz_dp, pz_suc, pz_dis, unit]
-    PZRAT = "PZRAT"  # ["pzrat_type", margin, pzrat3]
+    PZRAT = "PZRAT"  # ["dp Method", dPshutoff/dpCalc, dp margin]
     PZVES = "PZVES"  # [vessel_pres, unit, vessel_level, unit]
 
     ALL = (
