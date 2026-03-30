@@ -161,14 +161,13 @@ REM Overlay new files onto APPDATA_DIR, preserving data/, config.json and .venv
 robocopy "!UPD_DIR!" "%APPDATA_DIR%" /E /XD "data" ".venv" /XF "config.json" /NFL /NDL /NJH /NJS >nul 2>&1
 rd /s /q "!UPD_DIR!" >nul 2>&1
 
-REM Sync deps into existing venv via lockfile (faster — reuses cached packages)
+REM Install/update deps from pyproject.toml into existing venv
 cd /d "%APPDATA_DIR%"
 set "VENV_UV=%APPDATA_DIR%\.venv\Scripts\uv.exe"
 if exist "!VENV_UV!" (
-    "!VENV_UV!" sync --quiet
-    if %errorlevel% neq 0 "!VENV_UV!" pip install -e . --quiet
+    "!VENV_UV!" pip install --python ".venv\Scripts\python.exe" -e . --quiet
 ) else (
-    ".venv\Scripts\python.exe" -m uv sync --quiet 2>nul
+    ".venv\Scripts\python.exe" -m uv pip install --python ".venv\Scripts\python.exe" -e . --quiet 2>nul
     if %errorlevel% neq 0 ".venv\Scripts\python.exe" -m pip install -e . --quiet
 )
 
