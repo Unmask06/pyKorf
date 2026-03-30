@@ -82,6 +82,24 @@ def all_codes_by_type() -> dict[str, list[tuple[str, str]]]:
     return {ft: get_codes(ft) for ft in _FILES}
 
 
+def code_to_state(code: str) -> str | None:
+    """Return the fluid type that owns *code*, or None if not found.
+
+    Checks all three criteria tables in order: liquid → gas → two_phase.
+
+    Args:
+        code: Sizing criteria code (e.g. ``"P-DIS"``, ``"P-SUC-BUB"``).
+
+    Returns:
+        One of ``"liquid"``, ``"gas"``, ``"two_phase"``, or ``None``.
+    """
+    for fluid_type in _FILES:
+        for entry in load_criteria(fluid_type):
+            if entry["code"] == code:
+                return fluid_type
+    return None
+
+
 def predict_state(liquid_fractions: list[float]) -> str | None:
     """Predict fluid state from liquid fraction values (``Pipe.LF``).
 

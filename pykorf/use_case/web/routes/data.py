@@ -10,6 +10,7 @@ from pykorf.use_case.web import session as _sess
 from pykorf.use_case.web.helpers import is_redirect, require_model
 
 import structlog
+
 logger = structlog.get_logger(__name__)
 bp = Blueprint("data", __name__)
 
@@ -63,6 +64,8 @@ def apply_data():
 
     if pms_source_str:
         active_tab = "pms"
+        from pykorf.use_case.config import set_pms_excel_path
+
         pms_source = Path(pms_source_str) if pms_source_str else get_pms_excel_path()
 
         if not pms_source or not Path(pms_source).is_file():
@@ -72,6 +75,7 @@ def apply_data():
                 from pykorf.use_case.pms import apply_pms as _apply_pms
 
                 _apply_pms(pms_source, model, save=False)
+                set_pms_excel_path(pms_source)
                 result_lines.append(("success", "PMS data applied successfully."))
             except Exception as exc:
                 errors.append(f"Error applying PMS: {exc}")
@@ -89,6 +93,8 @@ def apply_data():
 
     elif hmb_source_str:
         active_tab = "hmb"
+        from pykorf.use_case.config import set_last_hmb_path
+
         hmb_source = Path(hmb_source_str) if hmb_source_str else get_last_hmb_path()
 
         if not hmb_source or not Path(hmb_source).is_file():
@@ -98,6 +104,7 @@ def apply_data():
                 from pykorf.use_case.hmb import apply_hmb as _apply_hmb
 
                 _apply_hmb(hmb_source, model, save=False)
+                set_last_hmb_path(hmb_source)
                 result_lines.append(("success", "HMB data applied successfully."))
             except Exception as exc:
                 errors.append(f"Error applying HMB: {exc}")

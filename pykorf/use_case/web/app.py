@@ -63,7 +63,10 @@ def create_app() -> Flask:
 
     from pathlib import Path as _Path
 
+    from urllib.parse import quote as _quote
+
     app.jinja_env.filters["split"] = lambda s, sep: s.split(sep)
+    app.jinja_env.filters["quote"] = lambda s: _quote(str(s), safe="")
     app.jinja_env.filters["basename"] = lambda s: _Path(s).name if s else ""
     app.jinja_env.filters["dirname"] = lambda s: str(_Path(s).parent) if s else ""
     app.jinja_env.filters["ternary"] = lambda c, t, f: t if c else f

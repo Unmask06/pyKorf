@@ -157,12 +157,22 @@ mkdir "!UPD_DIR!"
 tar -xf "!UPD_ZIP!" -C "!UPD_DIR!" >nul 2>&1
 del "!UPD_ZIP!" >nul 2>&1
 
-REM Overlay new files onto APPDATA_DIR, preserving data/, config.json and .venv
-robocopy "!UPD_DIR!" "%APPDATA_DIR%" /E /XD "data" ".venv" /XF "config.json" /NFL /NDL /NJH /NJS >nul 2>&1
+REM Overlay new files onto APPDATA_DIR, preserving data/ and config.json
+robocopy "!UPD_DIR!" "%APPDATA_DIR%" /E /XD "data" /XF "config.json" /NFL /NDL /NJH /NJS >nul 2>&1
 rd /s /q "!UPD_DIR!" >nul 2>&1
 
-REM Install/update deps from pyproject.toml into existing venv
+REM Delete .venv and rebuild fresh
 cd /d "%APPDATA_DIR%"
+if exist ".venv" (
+    echo %GRAY%  Removing old virtual environment...%RESET%
+    rd /s /q ".venv" >nul 2>&1
+)
+
+echo %GRAY%  Creating fresh virtual environment...%RESET%
+set "PYTHON_EXE=py -3.13"
+!PYTHON_EXE! -m uv venv .venv --quiet
+
+echo %GRAY%  Installing dependencies...%RESET%
 set "VENV_UV=%APPDATA_DIR%\.venv\Scripts\uv.exe"
 if exist "!VENV_UV!" (
     "!VENV_UV!" pip install --python ".venv\Scripts\python.exe" -e . --quiet

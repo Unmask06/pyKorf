@@ -26,10 +26,14 @@ class ResultExporter:
         self,
         model: Model,
         basis: str = "",
+        remarks: str = "",
+        hold: str = "",
         references: list[dict] | None = None,
     ):
         self.model = model
         self._basis = basis
+        self._remarks = remarks
+        self._hold = hold
         self._references = references or []
 
         self._converter = UnitConverter()
@@ -108,7 +112,7 @@ class ResultExporter:
             worksheet.page_setup.scale = 80
 
         # Insert References & Design Basis sheet as the first sheet (if data present)
-        if self._basis or self._references:
+        if self._basis or self._remarks or self._hold or self._references:
             self._write_references_sheet(workbook)
 
         # Row 1 — Model title from KORF SYMBOL (FSIZ=2)
@@ -144,7 +148,7 @@ class ResultExporter:
 
             is_right_side = element_type in ("Feeds", "Products", "Junctions", "Misc Equipment")
             current_row = current_row_right if is_right_side else current_row_left
-            start_col = 15 if is_right_side else 1
+            start_col = 13 if is_right_side else 1
 
             start_table_row = current_row
 
@@ -347,11 +351,15 @@ class ResultExporter:
         return ""
 
     def _write_references_sheet(self, workbook: Any) -> None:
-        """Creates the 'References & Design Basis' sheet as the first sheet (A4 Portrait 80%)."""
+        """Creates the 'References & Design Basis' sheet as the first sheet (A4 Landscape 80%)."""
         ref_ws = workbook.create_sheet("References & Design Basis", 0)
         ref_ws.page_setup.paperSize = ref_ws.PAPERSIZE_A4
-        ref_ws.page_setup.orientation = ref_ws.ORIENTATION_PORTRAIT
+        ref_ws.page_setup.orientation = ref_ws.ORIENTATION_LANDSCAPE
         ref_ws.page_setup.scale = 80
+
+        # Fixed column widths for all four content columns
+        for col_idx, width in enumerate([50, 15, 15, 50], start=1):
+            ref_ws.column_dimensions[get_column_letter(col_idx)].width = width
 
         row = 1
 
@@ -370,7 +378,35 @@ class ResultExporter:
             for line in self._basis.splitlines():
                 basis_cell = ref_ws.cell(row=row, column=1, value=line)
                 basis_cell.font = Font(size=10)
-                basis_cell.alignment = Alignment(wrap_text=True)
+                basis_cell.alignment = Alignment(wrap_text=False, horizontal="left")
+                ref_ws.row_dimensions[row].height = 15
+                row += 1
+            row += 1  # blank separator
+
+        # ── Remarks section ───────────────────────────────────────────
+        if self._remarks and self._remarks.strip():
+            section_cell = ref_ws.cell(row=row, column=1, value="Remarks")
+            section_cell.font = self._styles["title"]
+            row += 1
+
+            for line in self._remarks.splitlines():
+                cell = ref_ws.cell(row=row, column=1, value=line)
+                cell.font = Font(size=10)
+                cell.alignment = Alignment(wrap_text=False, horizontal="left")
+                ref_ws.row_dimensions[row].height = 15
+                row += 1
+            row += 1  # blank separator
+
+        # ── Hold Items section ────────────────────────────────────────
+        if self._hold and self._hold.strip():
+            section_cell = ref_ws.cell(row=row, column=1, value="Hold Items")
+            section_cell.font = self._styles["title"]
+            row += 1
+
+            for line in self._hold.splitlines():
+                cell = ref_ws.cell(row=row, column=1, value=line)
+                cell.font = Font(size=10)
+                cell.alignment = Alignment(wrap_text=False, horizontal="left")
                 ref_ws.row_dimensions[row].height = 15
                 row += 1
             row += 1  # blank separator
@@ -383,13 +419,11 @@ class ResultExporter:
 
             # Table headers
             headers = ["Name", "Category", "Link", "Description"]
-            col_widths = [30, 15, 60, 40]
             for c_idx, header in enumerate(headers, start=1):
                 cell = ref_ws.cell(row=row, column=c_idx, value=header)
                 cell.font = self._styles["header"]
                 cell.fill = self._styles["fill"]
                 cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
-                ref_ws.column_dimensions[get_column_letter(c_idx)].width = col_widths[c_idx - 1]
             ref_ws.row_dimensions[row].height = 20
             header_row = row
             row += 1
@@ -414,18 +448,12 @@ class ResultExporter:
             # Outer border around the table
             self._apply_table_formatting(ref_ws, header_row, row - 1, len(headers), 1)
 
-    def _write_pipe_stats(
-        self, ws: Any, df: Any, row: int, start_col: int
-    ) -> int:
+    def _write_pipe_stats(self, ws: Any, df: Any, row: int, start_col: int) -> int:
         """Writes a single Min - Max summary row below the pipe table."""
         import pandas as pd
 
-        dpdl_col = next(
-            (c for c in df.columns if "DP / DL" in c and "Criteria" not in c), None
-        )
-        vel_col = next(
-            (c for c in df.columns if "Velocity" in c and "Criteria" not in c), None
-        )
+        dpdl_col = next((c for c in df.columns if "DP / DL" in c and "Criteria" not in c), None)
+        vel_col = next((c for c in df.columns if "Velocity" in c and "Criteria" not in c), None)
         if dpdl_col is None and vel_col is None:
             return row + 3
 

@@ -10,9 +10,6 @@ Global Settings:
     2. 25% margin in dP/dL - Apply DP_DES_FAC = 1.25 to all pipes
     3. Rename Line from NOTES - Extract fluid code and serial number from NOTES
        and update pipe name (e.g., "L4" -> "VCL17-806")
-    4. Set PIPE Sizing Criteria - Apply SIZ criteria to all pipes
-       - Set dP/dL criteria (default: 22.6 kPa/100m)
-       - Set velocity bounds (default: 0.3-100 m/s)
 
 Usage:
     >>> from pykorf import Model
@@ -292,101 +289,6 @@ def apply_rename_line_settings(model: Model) -> list[str]:
     return affected_pipes
 
 
-def set_pipe_criteria(
-    model: Model,
-    dpdl_criteria: float = 22.6,
-    dpdl_unit: str = "kPa/100m",
-    max_vel: float = 100,
-    min_vel: float = 0.3,
-    max_coeff: float = 120,
-    min_coeff: float = 10,
-    vel_unit: str = "m/s",
-) -> list[str]:
-    """Set PIPE sizing criteria (SIZ parameter) for all pipes.
-
-    This function sets the SIZ parameter on all pipes in the model with the specified
-    criteria values. The SIZ parameter defines the validation criteria for pressure
-    drop and velocity checks.
-
-    Args:
-        model: Loaded KDF model.
-        dpdl_criteria: Pressure drop per length criteria (default: 22.6).
-        dpdl_unit: Pressure drop unit (default: "kPa/100m").
-        max_vel: Maximum allowable velocity (default: 100).
-        min_vel: Minimum allowable velocity (default: 0.3).
-        max_coeff: Maximum velocity coefficient (default: 120).
-        min_coeff: Minimum velocity coefficient (default: 10).
-        vel_unit: Velocity unit (default: "m/s").
-
-    Returns:
-        List of pipe names that were modified.
-
-    Example::
-
-        set_pipe_criteria(
-            model,
-            dpdl_criteria=30.0,
-            max_vel=50,
-            min_vel=0.5,
-        )
-    """
-    from pykorf.elements import Pipe
-    from pykorf.exceptions import ParameterError
-
-    affected_pipes: list[str] = []
-    errors: list[str] = []
-
-    siz_values = ["", dpdl_criteria, dpdl_unit, max_vel, min_vel, max_coeff, min_coeff, vel_unit]
-
-    for idx in range(1, model.num_pipes + 1):
-        pipe = model.pipes[idx]
-        pipe_name = pipe.name
-
-        params: dict[str, Any] = {
-            Pipe.SIZ: siz_values,
-        }
-
-        try:
-            model.set_params(pipe_name, params)
-            affected_pipes.append(pipe_name)
-            logger.info(
-                "Pipe %s: SIZ criteria set (dP/dL=%s %s, vel=%.1f-%.1f m/s)",
-                pipe_name,
-                dpdl_criteria,
-                dpdl_unit,
-                min_vel,
-                max_vel,
-            )
-            logger.debug("Pipe %s: SIZ values applied: %s", pipe_name, siz_values)
-        except ParameterError as e:
-            error_msg = f"Validation error on {pipe_name}: {e}"
-            logger.error(error_msg)
-            errors.append(error_msg)
-        except Exception as e:
-            error_msg = f"Error setting params on {pipe_name}: {e}"
-            logger.error(error_msg)
-            errors.append(error_msg)
-
-    return affected_pipes
-
-
-def apply_pipe_criteria_settings(model: Model) -> list[str]:
-    """Apply default PIPE sizing criteria to all pipes.
-
-    Sets SIZ parameter with default criteria:
-    - dP/dL: 22.6 kPa/100m
-    - Max velocity: 100 m/s
-    - Min velocity: 0.3 m/s
-
-    Args:
-        model: Loaded KDF model.
-
-    Returns:
-        List of pipe names that were modified.
-    """
-    return set_pipe_criteria(model)
-
-
 # Registry of all available global settings
 _GLOBAL_SETTINGS: dict[str, GlobalSetting] = {
     "dummy_pipe": GlobalSetting(
@@ -406,12 +308,6 @@ _GLOBAL_SETTINGS: dict[str, GlobalSetting] = {
         name="Rename Line from NOTES",
         description="Extract fluid code + serial number from NOTES, update pipe name",
         apply_func=apply_rename_line_settings,
-    ),
-    "pipe_criteria": GlobalSetting(
-        id="pipe_criteria",
-        name="Set PIPE Sizing Criteria",
-        description="Set default SIZ criteria (dP/dL=22.6 kPa/100m, vel=0.3-100 m/s) on all pipes",
-        apply_func=apply_pipe_criteria_settings,
     ),
 }
 

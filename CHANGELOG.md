@@ -5,6 +5,31 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-03-30
+
+### What's New
+
+- The References page now has **Remarks** and **Hold Items** text areas alongside Design Basis — all three are saved with the model and included in the first sheet of the generated report.
+- The Excel report first sheet now includes Remarks and Hold Items sections, prints in **landscape**, and uses consistent column widths across all text sections.
+- Pipe criteria now **pre-fills State and Criteria from the KDF file** — if a pipe already has a sizing code set in the model (`SIZ` parameter), the table populates automatically on load without needing to run Auto-predict.
+- The Pipe Criteria table has **multi-select checkboxes** — tick individual pipes or use the header checkbox to select all visible rows, then apply a State and Criteria to all selected pipes at once.
+- Calculated dP and velocity values in the Pipe Criteria table are now **highlighted in red** when they breach the assigned criteria limits.
+- The **Auto-predict button is automatically disabled** once every pipe has a State and Criteria assigned, preventing unnecessary re-runs.
+- SharePoint path overrides can now be **edited inline** on the Preferences page — clicking the pencil icon opens an edit form in place without requiring a popup.
+
+### Improved
+
+- Pipe criteria dP and velocity values now display with **two decimal places** for better precision.
+- Right-side content (Feeds, Products, Junctions, Misc Equipment) in the Excel report starts at column M, bringing it closer to the main pipe data.
+- Report and Export file paths on the Reports page are now **read-only and always derived from the open KDF file** — no more stale paths carried over from previous sessions.
+- All path fields on the Reports page are now single-line inputs for a cleaner layout.
+
+### Fixed
+
+- The Preferences page edit button now works correctly — the previous modal-based approach failed silently due to a Bootstrap JS issue; editing now happens inline on the same page.
+
+---
+
 ## [0.5.2] - 2026-03-30
 
 ### Fixed

@@ -75,6 +75,32 @@ def references_save_basis() -> Any:
     return redirect(url_for("references.references_page"))
 
 
+@bp.route("/model/references/remarks", methods=["POST"])
+def references_save_remarks() -> Any:
+    """Save only the remarks text."""
+    model = require_model()
+    if is_redirect(model):
+        return model
+    kdf_path = _sess.get_kdf_path()
+    store = _load_refs()
+    store.remarks = request.form.get("remarks", "")
+    store.save(kdf_path)
+    return redirect(url_for("references.references_page"))
+
+
+@bp.route("/model/references/hold", methods=["POST"])
+def references_save_hold() -> Any:
+    """Save only the hold items text."""
+    model = require_model()
+    if is_redirect(model):
+        return model
+    kdf_path = _sess.get_kdf_path()
+    store = _load_refs()
+    store.hold = request.form.get("hold", "")
+    store.save(kdf_path)
+    return redirect(url_for("references.references_page"))
+
+
 @bp.route("/model/references/add", methods=["POST"])
 def references_add() -> Any:
     """Add a new reference entry and save."""
@@ -95,6 +121,7 @@ def references_add() -> Any:
     if name and link:
         store.add(Reference.new(name=name, link=link, description=description, category=category))
         store.save(kdf_path)
+        store.create_shortcuts(kdf_path)
 
     return redirect(url_for("references.references_page"))
 
@@ -119,6 +146,7 @@ def references_update() -> Any:
             category=(request.form.get("category") or "Other").strip(),
         )
         store.save(kdf_path)
+        store.create_shortcuts(kdf_path)
 
     return redirect(url_for("references.references_page"))
 

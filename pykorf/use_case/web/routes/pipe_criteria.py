@@ -282,6 +282,50 @@ def _handle_set_criteria(
     return {"applied": applied, "skipped": skipped}
 
 
+def _seed_from_kdf(
+    model: Model,
+    pipes: list[tuple[int, str]],
+    existing: dict[str, dict],
+) -> dict[str, dict]:
+    """Pre-fill *existing* from each pipe's SIZ[0] criteria code in the KDF.
+
+    Only fills pipes that have no saved entry (or whose saved entry has both
+    state and criteria empty).  This is non-destructive — user-saved data
+    always takes priority.
+
+    Args:
+        model: Active model.
+        pipes: List of (index, pipe_name) tuples.
+        existing: Saved criteria dict (may be empty).
+
+    Returns:
+        Updated copy of *existing* with KDF-sourced entries merged in.
+    """
+    from pykorf.use_case.sizing_criteria import code_to_state
+
+    pipe_by_name = _build_pipe_lookup(model)
+    merged = {k: dict(v) for k, v in existing.items()}
+
+    for _, pipe_name in pipes:
+        saved = merged.get(pipe_name, {})
+        if saved.get("state") or saved.get("criteria"):
+            continue  # already populated — don't overwrite
+
+        pipe = pipe_by_name.get(pipe_name)
+        if pipe is None:
+            continue
+
+        code = pipe.criteria_code
+        if not code:
+            continue
+
+        state = code_to_state(code)
+        if state:
+            merged[pipe_name] = {"state": state, "criteria": code}
+
+    return merged
+
+
 def _precompute_criteria_values(
     model: Model,
     pipes: list[tuple[int, str]],
@@ -382,6 +426,7 @@ def pipe_criteria():
     pipes = _get_pipes_list(model)
     codes = all_codes_by_type()
     existing = get_pipe_criteria(kdf_path) if kdf_path else {}
+    existing = _seed_from_kdf(model, pipes, existing)
 
     set_result = None
     predict_result = None

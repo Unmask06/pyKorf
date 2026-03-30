@@ -224,27 +224,41 @@ def install_update(
         except Exception as exc:
             return False, f"File copy failed: {exc}"
 
-        # ── 4. Reinstall in place ────────────────────────────────────────────
-        # uv venv does not include pip, so prefer `uv pip install`.
-        # uv lives in the venv Scripts dir (not on system PATH), so check
-        # there first before falling back to PATH / ensurepip.
-        try:
-            venv_scripts = Path(sys.executable).parent
-            uv_in_venv = venv_scripts / ("uv.exe" if sys.platform == "win32" else "uv")
-            uv_exe = str(uv_in_venv) if uv_in_venv.exists() else shutil.which("uv")
-            if uv_exe:
-                cmd = [uv_exe, "pip", "install", "--python", sys.executable, "-e", ".", "--quiet"]
-            else:
-                subprocess.run(
-                    [sys.executable, "-m", "ensurepip", "--upgrade"],
-                    cwd=str(install_root),
-                    capture_output=True,
-                    timeout=30,
-                )
-                cmd = [sys.executable, "-m", "pip", "install", "-e", ".", "--quiet"]
+        # ── 4. Delete .venv and rebuild ──────────────────────────────────────
+        venv_path = install_root / ".venv"
+        if venv_path.exists():
+            try:
+                shutil.rmtree(venv_path, ignore_errors=True)
+            except Exception as exc:
+                return False, f"Failed to remove old venv: {exc}"
 
+        # ── 5. Recreate virtual environment ──────────────────────────────────
+        try:
+            uv_exe = shutil.which("uv")
+            if not uv_exe:
+                return False, "uv not found — please install uv first"
+            subprocess.run(
+                [uv_exe, "venv", str(venv_path)],
+                cwd=str(install_root),
+                capture_output=True,
+                timeout=60,
+                check=True,
+            )
+        except subprocess.CalledProcessError as exc:
+            stderr = exc.stderr.decode() if exc.stderr else "Unknown error"
+            return False, f"Failed to create venv: {stderr}"
+        except Exception as exc:
+            return False, f"Failed to create venv: {exc}"
+
+        # ── 6. Install dependencies into new venv ────────────────────────────
+        try:
+            venv_python = (
+                venv_path / "Scripts" / "python.exe"
+                if sys.platform == "win32"
+                else venv_path / "bin" / "python"
+            )
             result = subprocess.run(
-                cmd,
+                [str(uv_exe), "pip", "install", "--python", str(venv_python), "-e", ".", "--quiet"],
                 cwd=str(install_root),
                 capture_output=True,
                 text=True,

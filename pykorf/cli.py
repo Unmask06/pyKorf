@@ -56,7 +56,6 @@ def show_splash() -> None:
     console.print()
 
 
-
 def check_trial_expired() -> bool:
     """Check if the trial period has expired.
 
@@ -132,8 +131,6 @@ def show_update_prompt(update_info: dict) -> None:
     if release_notes:
         body += "\n[bold]What's new:[/bold]\n"
         body += f"[dim]{release_notes}[/dim]\n"
-    if release_url:
-        body += f"\n[dim]{release_url}[/dim]"
     body += "\n\nInstall now? [Y/n]"
 
     console.print(
