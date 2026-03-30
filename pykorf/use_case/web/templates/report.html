@@ -21,7 +21,6 @@
     <div class="card shadow-sm h-100">
       <div class="card-header fw-semibold">
         <i class="bi bi-file-earmark-text text-success me-1"></i>Generate Report
-        <span class="badge bg-success ms-2 fw-normal" style="font-size:.75rem;">{{ default_report_name }}</span>
       </div>
       <div class="card-body d-flex flex-column">
         <form method="post" action="/model/report" id="report-form" class="flex-grow-1 d-flex flex-column">
@@ -30,15 +29,14 @@
             <label for="report_path" class="form-label fw-semibold">Output File</label>
             <div class="input-group">
               <span class="input-group-text"><i class="bi bi-file-earmark-text"></i></span>
-              <textarea class="form-control font-monospace" id="report_path" name="file_path"
-                        placeholder="Leave empty to use KDF folder"
-                        rows="3" style="resize:none;">{{ report_path }}</textarea>
+              <input type="text" class="form-control font-monospace" id="report_path"
+                     value="{{ report_path }}" readonly />
               <button type="button" class="btn btn-outline-secondary copy-path-btn"
                       data-copy-source="report_path" title="Copy path">
                 <i class="bi bi-clipboard"></i>
               </button>
             </div>
-            <div class="form-text">Full path to output <code>.xlsx</code> file.</div>
+            <div class="form-text">Auto-derived from the open KDF file.</div>
           </div>
           <button type="submit" class="btn btn-success w-100" id="btn-report">
             <span class="spinner-border spinner-border-sm d-none me-1" id="report-spinner"></span>
@@ -62,9 +60,9 @@
             <label for="batch_folder" class="form-label fw-semibold">KDF Folder</label>
             <div class="input-group">
               <span class="input-group-text"><i class="bi bi-folder"></i></span>
-              <textarea class="form-control font-monospace" id="batch_folder" name="batch_folder"
-                        placeholder="Folder containing .kdf files"
-                        rows="3" style="resize:none;">{{ batch_folder_path }}</textarea>
+              <input type="text" class="form-control font-monospace" id="batch_folder"
+                     name="batch_folder" value="{{ batch_folder_path }}"
+                     placeholder="Folder containing .kdf files" />
               <button type="button" class="btn btn-outline-secondary copy-path-btn"
                       data-copy-source="batch_folder" title="Copy path">
                 <i class="bi bi-clipboard"></i>
@@ -91,7 +89,6 @@
     <div class="card shadow-sm h-100">
       <div class="card-header fw-semibold">
         <i class="bi bi-box-arrow-up-right text-primary me-1"></i>Export to Excel
-        <span class="badge bg-primary ms-2 fw-normal" style="font-size:.75rem;">{{ default_export_name }}</span>
       </div>
       <div class="card-body d-flex flex-column">
         <form method="post" action="/model/report" id="export-form" class="flex-grow-1 d-flex flex-column">
@@ -100,19 +97,17 @@
             <label for="export_path" class="form-label fw-semibold">Output Excel File</label>
             <div class="input-group">
               <span class="input-group-text"><i class="bi bi-file-earmark-spreadsheet"></i></span>
-              <textarea class="form-control font-monospace" id="export_path" name="file_path"
-                        placeholder="Leave empty for {{ default_export_name }}"
-                        rows="3" style="resize:none;">{{ export_path }}</textarea>
+              <input type="text" class="form-control font-monospace" id="export_path"
+                     value="{{ export_path }}" readonly />
               <button type="button" class="btn btn-outline-secondary copy-path-btn"
-                      data-copy-source="export_path" title="Copy path"
-                      {% if not export_exists %}disabled{% endif %}>
+                      data-copy-source="export_path" title="Copy path">
                 <i class="bi bi-clipboard"></i>
               </button>
             </div>
             {% if export_exists %}
-              <div class="form-text text-success"><i class="bi bi-check-circle me-1"></i>Last export: <span class="font-monospace">{{ export_path | basename }}</span></div>
+              <div class="form-text text-success"><i class="bi bi-check-circle me-1"></i>File exists: <span class="font-monospace">{{ export_path | basename }}</span></div>
             {% else %}
-              <div class="form-text">Leave empty to use the default filename in the KDF folder.</div>
+              <div class="form-text">Auto-derived from the open KDF file.</div>
             {% endif %}
           </div>
           <button type="submit" class="btn btn-primary w-100" id="btn-export">
@@ -137,9 +132,9 @@
             <label for="import_path" class="form-label fw-semibold">Source Excel File</label>
             <div class="input-group">
               <span class="input-group-text"><i class="bi bi-file-earmark-spreadsheet"></i></span>
-              <textarea class="form-control font-monospace" id="import_path" name="file_path"
-                        placeholder="Paste path to exported Excel file"
-                        rows="3" style="resize:none;">{{ import_path }}</textarea>
+              <input type="text" class="form-control font-monospace" id="import_path"
+                     name="file_path" value="{{ import_path }}"
+                     placeholder="Paste path to exported Excel file" />
               <button type="button" class="btn btn-outline-secondary copy-path-btn"
                       data-copy-source="import_path" title="Copy path"
                       {% if not import_exists %}disabled{% endif %}>

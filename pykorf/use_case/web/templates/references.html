@@ -39,30 +39,51 @@
       </div>
     </div>
 
-    <!-- Quick stats -->
-    <div class="card shadow-sm">
-      <div class="card-header fw-semibold"><i class="bi bi-bar-chart me-1 text-info"></i>Summary</div>
-      <ul class="list-group list-group-flush small">
-        <li class="list-group-item d-flex justify-content-between">
-          <span>Total references</span>
-          <span class="badge bg-primary rounded-pill">{{ store.references | length }}</span>
-        </li>
-        {% set cats = store.references | map(attribute='category') | list | unique | list %}
-        <li class="list-group-item d-flex justify-content-between">
-          <span>Categories used</span>
-          <span class="badge bg-secondary rounded-pill">{{ cats | length }}</span>
-        </li>
-        <li class="list-group-item d-flex justify-content-between">
-          <span>Shortcut folder</span>
-          <code class="text-truncate small">{{ ref_dir }}</code>
-        </li>
-      </ul>
-      <div class="card-footer small text-success">
-        <i class="bi bi-check-circle me-1"></i>Shortcuts auto-created in <code>reference/</code> folder
+    <!-- Remarks -->
+    <div class="card shadow-sm mb-3">
+      <div class="card-header fw-semibold d-flex align-items-center gap-2">
+        <i class="bi bi-chat-left-text text-secondary"></i>Remarks
+        <span class="badge bg-secondary ms-auto small">Saved with model</span>
+      </div>
+      <div class="card-body p-3">
+        <form method="post" action="/model/references/remarks">
+          <textarea
+            class="form-control font-monospace"
+            name="remarks"
+            rows="6"
+            placeholder="General remarks, comments, or observations…"
+            style="resize: vertical; font-size: .85rem;"
+          >{{ store.remarks }}</textarea>
+          <button type="submit" class="btn btn-sm btn-secondary mt-2 w-100">
+            <i class="bi bi-floppy me-1"></i>Save Remarks
+          </button>
+        </form>
       </div>
     </div>
 
-    <div class="card shadow-sm mt-3">
+    <!-- Hold -->
+    <div class="card shadow-sm mb-3">
+      <div class="card-header fw-semibold d-flex align-items-center gap-2">
+        <i class="bi bi-exclamation-triangle text-warning"></i>Hold Items
+        <span class="badge bg-secondary ms-auto small">Saved with model</span>
+      </div>
+      <div class="card-body p-3">
+        <form method="post" action="/model/references/hold">
+          <textarea
+            class="form-control font-monospace"
+            name="hold"
+            rows="6"
+            placeholder="Open actions, holds, or items pending resolution…"
+            style="resize: vertical; font-size: .85rem;"
+          >{{ store.hold }}</textarea>
+          <button type="submit" class="btn btn-sm btn-warning mt-2 w-100">
+            <i class="bi bi-floppy me-1"></i>Save Hold Items
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
       <div class="card-header fw-semibold"><i class="bi bi-lightbulb me-1"></i>How to Use</div>
       <div class="card-body small text-secondary">
         <ol class="ps-3 mb-0">

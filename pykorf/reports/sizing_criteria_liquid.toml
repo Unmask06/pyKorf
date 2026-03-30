@@ -111,8 +111,8 @@ service   = "Pump Discharge"
 notes     = "P ≤ 50 barg"
 pressure  = 50
 line_size = 9999
-vel = [1.5, 4.0]
-dp  = [35.0, 45.0]
+vel = [0.0, 4.0]
+dp  = [0.0, 45.0]
 
 [[criteria]]
 code      = "P-DIS"

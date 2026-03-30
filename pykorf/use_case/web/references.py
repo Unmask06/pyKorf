@@ -93,10 +93,14 @@ class ReferencesStore:
 
     Attributes:
         basis: Free-text design basis / project notes.
+        remarks: Free-text general remarks / comments.
+        hold: Free-text hold items / open actions.
         references: Ordered list of Reference entries.
     """
 
     basis: str = ""
+    remarks: str = ""
+    hold: str = ""
     references: list[Reference] = field(default_factory=list)
 
     # ── Persistence ────────────────────────────────────────────────────────
@@ -127,7 +131,12 @@ class ReferencesStore:
         try:
             data: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
             refs = [Reference(**r) for r in data.get("references", [])]
-            return cls(basis=data.get("basis", ""), references=refs)
+            return cls(
+                basis=data.get("basis", ""),
+                remarks=data.get("remarks", ""),
+                hold=data.get("hold", ""),
+                references=refs,
+            )
         except (json.JSONDecodeError, TypeError, KeyError) as exc:
             logger.warning("references._parse_json failed", path=str(path), error=str(exc))
             return cls()
@@ -158,6 +167,8 @@ class ReferencesStore:
         sidecar = self._sidecar_path(kdf_path)
         payload = {
             "basis": self.basis,
+            "remarks": self.remarks,
+            "hold": self.hold,
             "references": [asdict(r) for r in self.references],
         }
         sidecar.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")

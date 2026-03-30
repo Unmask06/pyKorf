@@ -28,7 +28,10 @@ def preferences_page():
                 clear_cache()
                 flash = {"type": "success", "msg": "Override added."}
             else:
-                flash = {"type": "warning", "msg": "Both local path and SharePoint URL are required."}
+                flash = {
+                    "type": "warning",
+                    "msg": "Both local path and SharePoint URL are required.",
+                }
 
         elif action == "delete":
             local = (request.form.get("local_path") or "").strip()
@@ -38,5 +41,28 @@ def preferences_page():
                 clear_cache()
                 flash = {"type": "success", "msg": "Override removed."}
 
+        elif action == "edit":
+            original_local = (request.form.get("original_local_path") or "").strip().rstrip("\\/")
+            new_local = (request.form.get("local_path") or "").strip().rstrip("\\/")
+            new_sp_url = (request.form.get("sp_url") or "").strip().rstrip("/")
+            if original_local and new_local and new_sp_url:
+                if original_local in overrides:
+                    del overrides[original_local]
+                overrides[new_local] = new_sp_url
+                set_sp_overrides(overrides)
+                clear_cache()
+                flash = {"type": "success", "msg": "Override updated."}
+            else:
+                flash = {
+                    "type": "warning",
+                    "msg": "Both local path and SharePoint URL are required.",
+                }
+
     overrides = get_sp_overrides()
-    return render_template("preferences.html", overrides=overrides, flash=flash)
+    edit_key = request.args.get("edit", "").strip()
+    edit_entry = (
+        {"local": edit_key, "sp_url": overrides.get(edit_key, "")}
+        if edit_key and edit_key in overrides
+        else None
+    )
+    return render_template("preferences.html", overrides=overrides, flash=flash, edit_entry=edit_entry)
