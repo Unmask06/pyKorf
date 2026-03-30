@@ -24,14 +24,15 @@ uv run ruff check pykorf tests
 # Type check
 uv run mypy pykorf
 
-# Run the TUI application
+# Launch the web application
 uv run pykorf
+uv run pykorf --port 9000
 uv run pykorf --debug
 ```
 
 ## Architecture Overview
 
-pyKorf is a toolkit for reading, editing, and writing KORF hydraulic model files (`.kdf`). There are two main layers: a **model API** and a **TUI application**.
+pyKorf is a toolkit for reading, editing, and writing KORF hydraulic model files (`.kdf`). There are two main layers: a **model API** and a **Flask web application**.
 
 ### Model Layer (`pykorf/model/`)
 
@@ -50,35 +51,76 @@ The public surface is `Model` (alias `KorfModel`), a facade that delegates to si
 
 Element types (17 total) are typed wrappers in `pykorf/elements/`. The `ELEMENT_REGISTRY` in `elements/__init__.py` maps KDF tokens (e.g. `\PIPE`) to element classes. Multi-case parameters are stored as semicolon-separated strings.
 
-### TUI Layer (`pykorf/use_case/tui/`)
+### Web Layer (`pykorf/use_case/web/`)
 
-Built with [Textual](https://textual.textualize.io/). Entry point: `pykorf.cli:main` → `run_tui()` → `UseCaseTUI` app.
+Single-user, localhost-only Flask application. Entry point: `pykorf.cli:main` → `run_server()`.
 
-Screen navigation flow:
+#### Session State (`session.py`)
+
+No cookies or database — one model lives in process memory at a time. Key functions:
+- `load(model, kdf_path)` — store model after opening a file
+- `get_model()` / `get_kdf_path()` — retrieve active model
+- `reload()` — re-parse KDF from disk; call this after every `model.io.save()` so the UI reflects what was actually persisted
+- `clear()` — unload model
+
+#### Route Blueprints (`routes/`)
+
+All routes except `/` and `/preferences` require an active session model; `require_model()` + `is_redirect()` in `helpers.py` enforce this. The standard guard is:
+```python
+model = require_model()
+if is_redirect(model):
+    return model
 ```
-FilePickerScreen → MainMenuScreen → [operation screens]
-```
 
-Operation screens in `pykorf/use_case/tui/screens/`:
-- `apply_pms.py` — Apply Piping Material Spec data
-- `apply_hmb.py` — Apply Heat & Material Balance data
-- `generate_report.py` — Batch report generation
-- `bulk_copy.py` — Bulk element copying
-- `global_settings.py` — Global pipe criteria
-- `import_export.py` — Excel/JSON/YAML import/export
-- `config_menu.py` / `model_info.py` — Config and info views
+| Blueprint | URL | Purpose |
+|---|---|---|
+| `file_picker` | `/`, `/open` | KDF file picker; loads model into session |
+| `model_core` | `/model`, `/model/save` | Main menu (summary + prereq checks); save + reload |
+| `data` | `/model/data` | Apply PMS or HMB Excel data to model |
+| `settings` | `/model/settings` | Apply global parameter presets |
+| `report` | `/model/report` | Generate report, batch report, export/import Excel |
+| `model_info` | `/model/info` | Model stats, pipe list, validation issues |
+| `bulk_copy` | `/model/bulk-copy` | Bulk copy fluids between pipes |
+| `references` | `/model/references` | Design basis and reference links manager |
+| `preferences` | `/preferences` | SharePoint path overrides |
+| `browse` | `/api/browse` | Directory listing API for path picker widgets |
+
+#### App Wiring (`app.py`)
+
+`create_app()` registers all 10 blueprints and adds custom Jinja2 filters: `split`, `basename`, `dirname`, `ternary`.
 
 ### Use Case / Preferences Layer (`pykorf/use_case/`)
 
-- `preferences.py` — All user config (JSON via `appdirs`). Functions: `get_recent_files`, `add_recent_file`, `get_last_kdf_path`, `set_last_kdf_path`, etc.
-- `config.py` — Facade that re-exports from `preferences.py`, `paths.py`, `pms.py`, `hmb.py`. **Import from `config.py` in TUI screens, not from the sub-modules directly.**
+- `preferences.py` — All user config (JSON via `appdirs`). Functions: `get_recent_files`, `get_last_kdf_path`, `get_pms_excel_path`, `get_sp_overrides`, `get_global_parameters_selected`, etc.
+- `config.py` — Facade that re-exports from `preferences.py`, `paths.py`, `pms.py`, `hmb.py`. **Import from `config.py` in routes, not sub-modules directly.**
 - `processor.py` — `PipedataProcessor`: main orchestrator for PMS/HMB workflows.
 - `pms.py` / `hmb.py` — Excel readers for Piping Material Spec and Heat & Material Balance data.
-- `batch_report.py` — Batch report generation across multiple `.kdf` files.
+- `batch_report.py` — `BatchReportGenerator`: generates a combined report across multiple `.kdf` files in a folder.
+- `global_parameters.py` — Four preset bulk-modification functions registered in `_GLOBAL_SETTINGS`:
+  1. `dummy_pipe` — Set LEN/ID/SCH/LBL on pipes starting with "d"; hide all junction labels
+  2. `dp_margin` — Apply `DP_DES_FAC` to all pipes (default 1.25)
+  3. `rename_line` — Extract line number from NOTES field and rename pipe; propagates to EQN records
+  4. `pipe_criteria` — Apply SIZ parameter (dP/dL + velocity bounds) to all pipes
+
+### Sizing Criteria Data (`pykorf/reports/`)
+
+Three TOML files (read via stdlib `tomllib`) define hydraulic line sizing lookup tables. Each entry has `code`, `service`, `pressure`, `line_size`, `vel = [min, max]`, `dp = [normal, max]` fields. Lookup pattern: filter by `code` → sort by the filter dimension → first entry where value ≤ threshold (9999 = no upper limit).
+
+| File | Fluid type | Filter dimensions | Extra fields |
+|---|---|---|---|
+| `sizing_criteria_liquid.toml` | Liquid | `line_size`, `pressure` (P-DIS only) | — |
+| `sizing_criteria_gas.toml` | Gas / Steam | `pressure`, `line_size` | `rho_v2` (ρV² momentum limit) |
+| `sizing_criteria_twophase.toml` | Two-phase | none (single entry) | `rho_v2` [min,max], `rho_v3` [min,max] |
+
+dp values are in **kPa/100m** (source tables are bar/100m; multiplied ×100). All three files are included in `package-data` via `"reports/*.toml"`.
 
 ### Parser (`pykorf/parser.py`)
 
 `KdfParser` tokenises raw `.kdf` text into `KdfRecord` objects. The model layer consumes this; you rarely need to touch the parser directly.
+
+### CLI (`pykorf/cli.py`)
+
+Web-only since v0.5.0 (TUI removed). `main()` runs: splash screen → trial check → update check → `run_server(port)`. Arguments: `--port` (default 8000), `--trial`, `--debug`.
 
 ## Test Patterns
 
@@ -97,10 +139,12 @@ Test markers available: `unit`, `integration`, `slow`, `automation` (automation 
 - **Linting**: ruff (isort, pyflakes, pycodestyle, and more — see `pyproject.toml`)
 - **Types**: mypy with relaxed strict mode; new code should be fully typed
 
-## Key Constraints from AGENTS.md
+## Key Constraints
 
 - **Shell**: Git Bash — use Unix syntax even though the OS is Windows.
 - **Zero-destruction policy**: Never delete files to resolve errors.
 - **Global research before refactoring**: Use grep/glob to find all usages before renaming or moving anything.
 - **Full validation before finishing**: `uv run pytest` + `uv run ruff check pykorf tests` + `uv run mypy pykorf` must all pass.
 - **Safe rollbacks**: Use `git stash` or feature branches for complex changes.
+- **Config imports**: Always import preference functions from `pykorf.use_case.config`, not from sub-modules.
+- **Model save + reload**: After `model.io.save()`, always call `_sess.reload()` so the in-memory state matches disk.

@@ -1,0 +1,38 @@
+# Sizing Criteria for Gas/Liquid Two-Phase Lines — Section 14.5.1
+# Source: Engineering Design Criteria
+#
+# Preliminary mixed-phase fluid line sizing is based on three criteria:
+#
+#   vel      : VM   — average mixture velocity             [min, max]  m/s
+#   rho_v2   : ρM × VM²  — momentum flux                  [min, max]  Pa
+#   rho_v3   : ρM × VM³  — erosional / noise criterion    [min, max]  kg/s³
+#
+# Where
+#   VM  = average fluid (mixture) velocity
+#   ρM  = mixed density (gas + liquid)
+#
+# dp = [0.0, 0.0] — no dP criterion; size against the above three ranges
+# All three criteria should be satisfied simultaneously for a valid design.
+
+fluid_type     = "two_phase"
+dp_unit        = "kPa/100m"
+velocity_unit  = "m/s"
+rho_v2_unit    = "Pa"           # kg/(m·s²)
+rho_v3_unit    = "kg/s3"        # ρM × VM³
+line_size_unit = "inch"
+pressure_unit  = "barg"
+
+# ---------------------------------------------------------------------------
+# Gas/Liquid Two-Phase — Mixed Phase  (Section 14.5.1)
+# ---------------------------------------------------------------------------
+
+[[criteria]]
+code         = "TWO-PHASE"
+service      = "Gas/Liquid Two-Phase Flow — Mixed Phase"
+notes        = "Section 14.5.1 — preliminary sizing; all three criteria apply"
+pressure_max = 9999
+line_size    = 9999
+vel    = [0.0,   23.0]         # [min, max] m/s
+dp     = [0.0,     0.0]         # not specified
+rho_v2 = [5000,  10000]         # ρM × VM² [min, max] Pa
+rho_v3 = [100000, 150000]       # ρM × VM³ [min, max] kg/s³

@@ -5,6 +5,35 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-03-30
+
+### What's New
+
+- pyKorf is now a **web application** — the terminal interface has been replaced by a browser-based UI running locally at `http://localhost:8000`. No change to how you launch it; the browser opens automatically.
+- A new **Pipe Sizing Criteria** page lets you assign a sizing code to every pipe in the model (pump suction, pump discharge, general gas line, two-phase, etc.). Criteria values are looked up automatically from the engineering tables.
+- The criteria table now includes a **ρV² (momentum flux)** column so gas and two-phase lines can be checked against all three limits — pressure drop, velocity, and momentum — in one view.
+- The criteria table also shows the **calculated values** from the model (actual dP/100 m, velocity, and ρV²) alongside the limits so you can see pass/fail without opening a separate report.
+- A **References** page lets you store SharePoint links, design-basis documents, and data-source references alongside each model file.
+- **Bulk Copy** lets you copy fluid properties from one reference pipe to many others in a single action — useful when a common process stream feeds multiple lines.
+- A **reload button** (↻) in the header bar re-reads the KDF file from disk instantly, so changes made in the KORF GUI are reflected without restarting pyKorf.
+- The KDF filename in the header now shows the file's last-modified time, confirming when the model on disk was last saved.
+- SharePoint folder path overrides can be configured in Preferences so pyKorf resolves OneDrive-synced local paths to their SharePoint URLs for link sharing with the team.
+
+### Improved
+
+- The main menu groups actions into logical sections — Model Operations, Analysis & Reports, and Configuration — making it easier to find the right tool.
+- The file picker shows recent files as quick-select buttons and displays the file size and modification date as you type a path.
+- Pipe sizing criteria lookup tables for liquid, gas, and two-phase lines are shipped with the application as editable TOML files.
+- Global Parameters (formerly Global Settings) has been reorganised so the available presets are clearer and easier to apply selectively.
+- All browser pages are served with no-cache headers so the UI always reflects the latest model state after a reload or save.
+
+### Fixed
+
+- Navigating back in the browser no longer shows a stale cached page — every visit fetches fresh data from the server.
+- The sizing criteria distribution package now correctly includes the TOML lookup tables (previously only JSON files were bundled, causing a startup error on fresh installs).
+
+---
+
 ## [0.4.1] - 2026-03-25
 
 ### Fixed

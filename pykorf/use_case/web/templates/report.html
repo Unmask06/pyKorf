@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+
+{% block content %}
+
+{% if result %}
+<div class="alert {% if result.errors %}alert-danger{% else %}alert-success{% endif %} d-flex align-items-start gap-2 mb-3" role="alert">
+  <i class="bi {% if result.errors %}bi-x-circle-fill{% else %}bi-check-circle-fill{% endif %} fs-5 mt-1 flex-shrink-0"></i>
+  <div style="font-size:.88rem; font-family:monospace;">
+    {% for err in result.errors %}<div>{{ err }}</div>{% endfor %}
+    {% for level, msg in result.lines %}<div>{{ msg }}</div>{% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Top container: Generate Report + Batch Report -->
+<div class="row g-4 mb-4">
+
+  <!-- Generate Report -->
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-file-earmark-text text-success me-1"></i>Generate Report
+        <span class="badge bg-success ms-2 fw-normal" style="font-size:.75rem;">{{ default_report_name }}</span>
+      </div>
+      <div class="card-body d-flex flex-column">
+        <form method="post" action="/model/report" id="report-form" class="flex-grow-1 d-flex flex-column">
+          <input type="hidden" name="action" value="generate_report" />
+          <div class="mb-3 flex-grow-1">
+            <label for="report_path" class="form-label fw-semibold">Output File</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-file-earmark-text"></i></span>
+              <textarea class="form-control font-monospace" id="report_path" name="file_path"
+                        placeholder="Leave empty to use KDF folder"
+                        rows="3" style="resize:none;">{{ report_path }}</textarea>
+              <button type="button" class="btn btn-outline-secondary copy-path-btn"
+                      data-copy-source="report_path" title="Copy path">
+                <i class="bi bi-clipboard"></i>
+              </button>
+            </div>
+            <div class="form-text">Full path to output <code>.xlsx</code> file.</div>
+          </div>
+          <button type="submit" class="btn btn-success w-100" id="btn-report">
+            <span class="spinner-border spinner-border-sm d-none me-1" id="report-spinner"></span>
+            <i class="bi bi-download me-1"></i>Generate Report
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Batch Report -->
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-layers text-secondary me-1"></i>Batch Report
+      </div>
+      <div class="card-body d-flex flex-column">
+        <form method="post" action="/model/report" id="batch-form" class="flex-grow-1 d-flex flex-column">
+          <input type="hidden" name="action" value="batch_report" />
+          <div class="mb-3 flex-grow-1">
+            <label for="batch_folder" class="form-label fw-semibold">KDF Folder</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-folder"></i></span>
+              <textarea class="form-control font-monospace" id="batch_folder" name="batch_folder"
+                        placeholder="Folder containing .kdf files"
+                        rows="3" style="resize:none;">{{ batch_folder_path }}</textarea>
+              <button type="button" class="btn btn-outline-secondary copy-path-btn"
+                      data-copy-source="batch_folder" title="Copy path">
+                <i class="bi bi-clipboard"></i>
+              </button>
+            </div>
+            <div class="form-text">All <code>.kdf</code> files processed into <code>{folder}_batch_report.xlsx</code>.</div>
+          </div>
+          <button type="submit" class="btn btn-secondary w-100" id="btn-batch">
+            <span class="spinner-border spinner-border-sm d-none me-1" id="batch-spinner"></span>
+            <i class="bi bi-layers me-1"></i>Generate Batch Report
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Bottom container: Export + Import -->
+<div class="row g-4">
+
+  <!-- Export to Excel -->
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-box-arrow-up-right text-primary me-1"></i>Export to Excel
+        <span class="badge bg-primary ms-2 fw-normal" style="font-size:.75rem;">{{ default_export_name }}</span>
+      </div>
+      <div class="card-body d-flex flex-column">
+        <form method="post" action="/model/report" id="export-form" class="flex-grow-1 d-flex flex-column">
+          <input type="hidden" name="action" value="export" />
+          <div class="mb-3 flex-grow-1">
+            <label for="export_path" class="form-label fw-semibold">Output Excel File</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-file-earmark-spreadsheet"></i></span>
+              <textarea class="form-control font-monospace" id="export_path" name="file_path"
+                        placeholder="Leave empty for {{ default_export_name }}"
+                        rows="3" style="resize:none;">{{ export_path }}</textarea>
+              <button type="button" class="btn btn-outline-secondary copy-path-btn"
+                      data-copy-source="export_path" title="Copy path"
+                      {% if not export_exists %}disabled{% endif %}>
+                <i class="bi bi-clipboard"></i>
+              </button>
+            </div>
+            {% if export_exists %}
+              <div class="form-text text-success"><i class="bi bi-check-circle me-1"></i>Last export: <span class="font-monospace">{{ export_path | basename }}</span></div>
+            {% else %}
+              <div class="form-text">Leave empty to use the default filename in the KDF folder.</div>
+            {% endif %}
+          </div>
+          <button type="submit" class="btn btn-primary w-100" id="btn-export">
+            <span class="spinner-border spinner-border-sm d-none me-1" id="export-spinner"></span>
+            <i class="bi bi-download me-1"></i>Export to Excel
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import from Excel -->
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-box-arrow-in-down text-warning me-1"></i>Import from Excel
+      </div>
+      <div class="card-body d-flex flex-column">
+        <form method="post" action="/model/report" id="import-form" class="flex-grow-1 d-flex flex-column">
+          <input type="hidden" name="action" value="import" />
+          <div class="mb-3 flex-grow-1">
+            <label for="import_path" class="form-label fw-semibold">Source Excel File</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-file-earmark-spreadsheet"></i></span>
+              <textarea class="form-control font-monospace" id="import_path" name="file_path"
+                        placeholder="Paste path to exported Excel file"
+                        rows="3" style="resize:none;">{{ import_path }}</textarea>
+              <button type="button" class="btn btn-outline-secondary copy-path-btn"
+                      data-copy-source="import_path" title="Copy path"
+                      {% if not import_exists %}disabled{% endif %}>
+                <i class="bi bi-clipboard"></i>
+              </button>
+            </div>
+            {% if import_exists %}
+              <div class="form-text text-success"><i class="bi bi-check-circle me-1"></i>File ready to import.</div>
+            {% elif export_exists %}
+              <div class="form-text">Export path pre-filled. Edit if needed.</div>
+            {% else %}
+              <div class="form-text">Export the model first, then paste or type the path here.</div>
+            {% endif %}
+          </div>
+          <div class="alert alert-warning d-flex align-items-center py-2 mb-3" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2 flex-shrink-0"></i>
+            <small>Import overwrites the in-memory model. Save a backup first.</small>
+          </div>
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-warning flex-grow-1" id="btn-import">
+              <span class="spinner-border spinner-border-sm d-none me-1" id="import-spinner"></span>
+              <i class="bi bi-upload me-1"></i>Import from Excel
+            </button>
+            <a href="/model" class="btn btn-outline-secondary">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+
+    // Copy path buttons
+    document.querySelectorAll('.copy-path-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var sourceId = this.dataset.copySource;
+        var el = document.getElementById(sourceId);
+        var text = el ? el.value.trim() : '';
+        if (!text) return;
+        navigator.clipboard.writeText(text).then(function() {
+          var icon = btn.querySelector('i');
+          icon.className = 'bi bi-clipboard-check';
+          setTimeout(function() { icon.className = 'bi bi-clipboard'; }, 2000);
+        });
+      });
+    });
+
+    // Spinner on submit
+    ['report-form', 'export-form', 'batch-form', 'import-form'].forEach(function(id) {
+      var form = document.getElementById(id);
+      if (!form) return;
+      form.addEventListener('submit', function() {
+        var btn = this.querySelector('button[type="submit"]');
+        var spinner = this.querySelector('.spinner-border');
+        if (btn) btn.disabled = true;
+        if (spinner) spinner.classList.remove('d-none');
+      });
+    });
+
+  });
+</script>
+{% endblock %}

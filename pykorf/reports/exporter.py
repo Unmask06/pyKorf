@@ -11,7 +11,7 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 from pykorf import Model
 from pykorf.reports.unit_converter import UnitConverter
 
-_logger = logging.getLogger("ResultExporter")
+_logger = logging.getLogger(__name__)
 
 
 class ResultExporter:
@@ -22,8 +22,15 @@ class ResultExporter:
     directly from the underlying KDF records and format them for export.
     """
 
-    def __init__(self, model: Model):
+    def __init__(
+        self,
+        model: Model,
+        basis: str = "",
+        references: list[dict] | None = None,
+    ):
         self.model = model
+        self._basis = basis
+        self._references = references or []
 
         self._converter = UnitConverter()
 
@@ -100,6 +107,10 @@ class ResultExporter:
             worksheet.page_setup.orientation = worksheet.ORIENTATION_LANDSCAPE
             worksheet.page_setup.scale = 80
 
+        # Insert References & Design Basis sheet as the first sheet (if data present)
+        if self._basis or self._references:
+            self._write_references_sheet(workbook)
+
         # Row 1 — Model title from KORF SYMBOL (FSIZ=2)
         model_title = self._get_model_title()
         if model_title:
@@ -158,7 +169,11 @@ class ResultExporter:
                 worksheet, start_table_row + 2, end_row, num_cols, start_col
             )
 
-            current_row = end_row + 3
+            # 4. Pipe stats block (max/min DP/DL and Velocity)
+            if element_type == "Pipes":
+                current_row = self._write_pipe_stats(worksheet, df, end_row + 2, start_col)
+            else:
+                current_row = end_row + 3
             if is_right_side:
                 current_row_right = current_row
             else:
@@ -330,6 +345,122 @@ class ResultExporter:
             except (ValueError, TypeError, IndexError):
                 continue
         return ""
+
+    def _write_references_sheet(self, workbook: Any) -> None:
+        """Creates the 'References & Design Basis' sheet as the first sheet (A4 Portrait 80%)."""
+        ref_ws = workbook.create_sheet("References & Design Basis", 0)
+        ref_ws.page_setup.paperSize = ref_ws.PAPERSIZE_A4
+        ref_ws.page_setup.orientation = ref_ws.ORIENTATION_PORTRAIT
+        ref_ws.page_setup.scale = 80
+
+        row = 1
+
+        # Sheet title
+        title_cell = ref_ws.cell(row=row, column=1, value="References & Design Basis")
+        title_cell.font = self._styles["model_title"]
+        ref_ws.row_dimensions[row].height = 30
+        row += 2
+
+        # ── Design Basis section ──────────────────────────────────────
+        if self._basis and self._basis.strip():
+            section_cell = ref_ws.cell(row=row, column=1, value="Design Basis")
+            section_cell.font = self._styles["title"]
+            row += 1
+
+            for line in self._basis.splitlines():
+                basis_cell = ref_ws.cell(row=row, column=1, value=line)
+                basis_cell.font = Font(size=10)
+                basis_cell.alignment = Alignment(wrap_text=True)
+                ref_ws.row_dimensions[row].height = 15
+                row += 1
+            row += 1  # blank separator
+
+        # ── References table section ──────────────────────────────────
+        if self._references:
+            section_cell = ref_ws.cell(row=row, column=1, value="Reference Documents")
+            section_cell.font = self._styles["title"]
+            row += 1
+
+            # Table headers
+            headers = ["Name", "Category", "Link", "Description"]
+            col_widths = [30, 15, 60, 40]
+            for c_idx, header in enumerate(headers, start=1):
+                cell = ref_ws.cell(row=row, column=c_idx, value=header)
+                cell.font = self._styles["header"]
+                cell.fill = self._styles["fill"]
+                cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+                ref_ws.column_dimensions[get_column_letter(c_idx)].width = col_widths[c_idx - 1]
+            ref_ws.row_dimensions[row].height = 20
+            header_row = row
+            row += 1
+
+            # Table rows
+            for ref in self._references:
+                ref_ws.cell(row=row, column=1, value=ref.get("name", "")).font = Font(
+                    bold=True, size=10
+                )
+                ref_ws.cell(row=row, column=2, value=ref.get("category", "")).font = Font(size=10)
+                raw_link = ref.get("link", "")
+                link_cell = ref_ws.cell(row=row, column=3, value="Open Link" if raw_link else "")
+                if raw_link:
+                    link_cell.hyperlink = raw_link
+                    link_cell.font = Font(size=10, color="0563C1", underline="single")
+                    link_cell.alignment = Alignment(wrap_text=False)
+                ref_ws.cell(row=row, column=4, value=ref.get("description", "")).font = Font(
+                    italic=True, size=10, color="555555"
+                )
+                row += 1
+
+            # Outer border around the table
+            self._apply_table_formatting(ref_ws, header_row, row - 1, len(headers), 1)
+
+    def _write_pipe_stats(
+        self, ws: Any, df: Any, row: int, start_col: int
+    ) -> int:
+        """Writes a single Min - Max summary row below the pipe table."""
+        import pandas as pd
+
+        dpdl_col = next(
+            (c for c in df.columns if "DP / DL" in c and "Criteria" not in c), None
+        )
+        vel_col = next(
+            (c for c in df.columns if "Velocity" in c and "Criteria" not in c), None
+        )
+        if dpdl_col is None and vel_col is None:
+            return row + 3
+
+        col_names = list(df.columns)
+
+        def _fmt(col: str) -> str | None:
+            try:
+                numeric = pd.to_numeric(df[col], errors="coerce")
+                lo = numeric.min()
+                hi = numeric.max()
+                if pd.isna(lo) or pd.isna(hi):
+                    return None
+                lo_s = f"{lo:.4g}"
+                hi_s = f"{hi:.4g}"
+                return f"{lo_s} - {hi_s}"
+            except Exception:
+                return None
+
+        # Label cell
+        lc = ws.cell(row=row, column=start_col, value="Min - Max")
+        lc.font = Font(bold=True, size=10)
+
+        # DP/DL min-max
+        if dpdl_col:
+            val = _fmt(dpdl_col)
+            c_idx = start_col + col_names.index(dpdl_col)
+            ws.cell(row=row, column=c_idx, value=val).font = self._styles["data"]
+
+        # Velocity min-max
+        if vel_col:
+            val = _fmt(vel_col)
+            c_idx = start_col + col_names.index(vel_col)
+            ws.cell(row=row, column=c_idx, value=val).font = self._styles["data"]
+
+        return row + 3
 
     # =========================================================
     # ELEMENT EXTRACTORS

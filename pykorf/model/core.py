@@ -45,7 +45,7 @@ from pykorf.parser import KdfParser
 
 _DEFAULT_TEMPLATE = Path(__file__).resolve().parent.parent / "library" / "New.kdf"
 
-_logger = logging.getLogger("ModelCore")
+_logger = logging.getLogger(__name__)
 
 
 class _ModelBase:
@@ -72,10 +72,6 @@ class _ModelBase:
         _logger.info("── Load Model ── %s", self._parser.path.name)
         self._parser.load()
         self._build_collections()
-        from pykorf.log import set_log_file
-
-        log_file = self._parser.path.with_suffix(".log")
-        set_log_file(log_file)
         self._loaded_mtime = self._parser.path.stat().st_mtime
         _logger.info(
             "   Model ready | pipes=%d  pumps=%d  feeds=%d  products=%d  valves=%d  compressors=%d",

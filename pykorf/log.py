@@ -1,14 +1,12 @@
 """Structured logging for pyKorf.
 
 Provides a centralized logging system with support for:
-- File-based logging (all logs go to file)
-- Dynamic log file switching per model
+- Console-based logging (stderr)
 - Context binding
 - Performance timing
 
 Example:
-    >>> from pykorf.log import get_logger, bind_context, set_log_file
-    >>> set_log_file("model.log")
+    >>> from pykorf.log import get_logger, bind_context
     >>> logger = get_logger()
     >>> with bind_context(model="Pumpcases.kdf"):
     ...     logger.info("Loading model")
@@ -25,7 +23,6 @@ import time
 from collections.abc import Callable
 from contextlib import contextmanager
 from contextvars import ContextVar
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 # Try to import structlog, fall back to stdlib logging
@@ -42,118 +39,6 @@ if TYPE_CHECKING:
 
 # Context variable for request/operation context
 _log_context: ContextVar[dict[str, Any]] = ContextVar("log_context", default={})
-
-# Module-level tracking of current log file
-_current_log_file: str | None = None
-_file_handler: logging.FileHandler | None = None
-
-
-def configure_logging(log_file: str = "pykorf.log") -> None:
-    """Configure logging with file output.
-
-    All logs are written to the specified file. This function sets up
-    the root "pykorf" logger with a file handler.
-
-    Args:
-        log_file: Path to the log file. Defaults to 'pykorf.log'.
-    """
-    global _current_log_file, _file_handler
-
-    root_logger = logging.getLogger("pykorf")
-    root_logger.setLevel(logging.DEBUG)
-    root_logger.handlers = []
-
-    _file_handler = logging.FileHandler(log_file, mode="w", encoding="utf-8")
-    _file_handler.setLevel(logging.DEBUG)
-    file_formatter = logging.Formatter("%(asctime)s | %(name)-20s | %(levelname)-8s | %(message)s")
-    _file_handler.setFormatter(file_formatter)
-    root_logger.addHandler(_file_handler)
-
-    _current_log_file = log_file
-
-    if HAS_STRUCTLOG:
-        _configure_structlog()
-    else:
-        import logging as std_logging
-
-        log_level = os.getenv("PYKORF_LOG_LEVEL", "INFO").upper()
-        std_logging.getLogger("pykorf").setLevel(getattr(std_logging, log_level))
-
-
-def set_log_file(log_file: str | Path) -> None:
-    """Switch the log file to a new path.
-
-    This closes the current file handler and opens a new one,
-    effectively clearing the old log and starting fresh.
-
-    Args:
-        log_file: Path to the new log file.
-
-    Example:
-        >>> set_log_file("Cooling.log")
-        >>> # All subsequent logs go to Cooling.log
-    """
-    global _current_log_file, _file_handler
-
-    log_file_str = str(log_file)
-
-    root_logger = logging.getLogger("pykorf")
-
-    if _file_handler:
-        root_logger.removeHandler(_file_handler)
-        _file_handler.close()
-
-    _file_handler = logging.FileHandler(log_file_str, mode="w", encoding="utf-8")
-    _file_handler.setLevel(logging.DEBUG)
-    file_formatter = logging.Formatter("%(asctime)s | %(name)-20s | %(levelname)-8s | %(message)s")
-    _file_handler.setFormatter(file_formatter)
-    root_logger.addHandler(_file_handler)
-
-    _current_log_file = log_file_str
-
-    logger = logging.getLogger("pykorf.log")
-    logger.debug(f"Log file switched to: {log_file_str}")
-
-
-def get_log_file() -> str | None:
-    """Get the current log file path.
-
-    Returns:
-        Path to the current log file, or None if not configured.
-    """
-    return _current_log_file
-
-
-def enable_debug_mode(log_file: str | Path | None = None) -> None:
-    """Enable debug mode logging.
-
-    Sets the root logger level to DEBUG and ensures all handlers
-    capture DEBUG level messages. Optionally switches to a new
-    log file for debug output.
-
-    Args:
-        log_file: Optional path to a dedicated debug log file.
-                  If provided, switches logging to this file.
-
-    Example:
-        >>> enable_debug_mode()
-        >>> # All loggers now output DEBUG level
-        >>> enable_debug_mode("debug-session.log")
-        >>> # Logs go to debug-session.log at DEBUG level
-    """
-    root_logger = logging.getLogger("pykorf")
-    root_logger.setLevel(logging.DEBUG)
-
-    # Update existing handlers to DEBUG level
-    for handler in root_logger.handlers:
-        handler.setLevel(logging.DEBUG)
-
-    # Switch to debug log file if provided
-    if log_file is not None:
-        set_log_file(log_file)
-
-    logger = logging.getLogger("pykorf.log")
-    logger.debug(f"Debug mode enabled. Log file: {get_log_file() or 'default'}")
 
 
 def _configure_structlog() -> None:
@@ -187,10 +72,8 @@ def _configure_structlog() -> None:
             cache_logger_on_first_use=True,
         )
 
-    import logging as std_logging
-
     log_level = os.getenv("PYKORF_LOG_LEVEL", "INFO").upper()
-    std_logging.getLogger("pykorf").setLevel(getattr(std_logging, log_level))
+    logging.getLogger("pykorf").setLevel(getattr(logging, log_level))
 
 
 class SimpleLogger:
@@ -361,12 +244,8 @@ def timed[F: Callable[..., Any]](func: F) -> F:
 
 __all__ = [
     "bind_context",
-    "configure_logging",
-    "enable_debug_mode",
-    "get_log_file",
     "get_logger",
     "log_operation",
-    "set_log_file",
     "timed",
 ]
 

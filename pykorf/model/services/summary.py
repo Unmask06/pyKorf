@@ -16,7 +16,7 @@ from pykorf.exceptions import ElementNotFound
 if TYPE_CHECKING:
     from pykorf.model import Model
 
-_logger = logging.getLogger("SummaryService")
+_logger = logging.getLogger(__name__)
 
 # Minimum required params per element type (params that must exist at index 0)
 _REQUIRED_PARAMS: dict[str, tuple[str, ...]] = {
@@ -740,6 +740,7 @@ class SummaryService:
             "cases": self.model.general.case_descriptions,
             "num_pipes": self.model.num_pipes,
             "num_pumps": self.model.num_pumps,
+            "num_junctions": self.model._parser.num_instances("JUNC"),
             "num_feeds": self.model._parser.num_instances("FEED"),
             "num_products": self.model._parser.num_instances("PROD"),
             "num_valves": self.model._parser.num_instances("VALVE"),

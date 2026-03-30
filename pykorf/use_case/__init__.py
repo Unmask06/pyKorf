@@ -49,7 +49,7 @@ from pykorf.use_case.exceptions import (
     UseCaseError,
     ValidationError,
 )
-from pykorf.use_case.global_settings import (
+from pykorf.use_case.global_parameters import (
     apply_global_settings,
     get_global_setting,
     get_global_settings,
@@ -76,7 +76,6 @@ from pykorf.use_case.pms import (
 )
 from pykorf.use_case.processor import PipedataProcessor, PipeUpdateResult, ProcessResult
 from pykorf.use_case.settings import SettingsReader, UseCaseSettings
-from pykorf.use_case.tui import run_tui
 
 __all__ = [
     "BatchReportGenerator",
@@ -109,6 +108,5 @@ __all__ = [
     "lookup_schedule",
     "lookup_stream",
     "parse_stream_from_notes",
-    "run_tui",
     "set_pipe_criteria",
 ]

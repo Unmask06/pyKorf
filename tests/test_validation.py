@@ -73,7 +73,7 @@ class TestValidate:
 
     def test_set_pipe_criteria(self):
         """Test setting pipe criteria via global settings."""
-        from pykorf.use_case.global_settings import set_pipe_criteria
+        from pykorf.use_case.global_parameters import set_pipe_criteria
 
         m = Model(PUMP_KDF)
 
@@ -98,7 +98,7 @@ class TestValidate:
 
     def test_apply_pipe_criteria_global_setting(self):
         """Test applying pipe criteria via global settings registry."""
-        from pykorf.use_case.global_settings import apply_global_settings
+        from pykorf.use_case.global_parameters import apply_global_settings
 
         m = Model(PUMP_KDF)
 

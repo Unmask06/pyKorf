@@ -1,11 +1,10 @@
-"""Command-line entry point for pyKorf TUI."""
+"""Command-line entry point for pyKorf."""
 
 from __future__ import annotations
 
 import argparse
 from datetime import datetime, timedelta
 from importlib.metadata import PackageNotFoundError, version
-from time import sleep
 
 from rich.align import Align
 from rich.console import Console
@@ -56,16 +55,6 @@ def show_splash() -> None:
     )
     console.print()
 
-
-def show_loading(message: str, duration: float = 0.5) -> None:
-    """Show a brief loading animation.
-
-    Args:
-        message: Message to display during loading
-        duration: Duration in seconds
-    """
-    with console.status(f"[dim]{message}[/dim]", spinner="dots"):
-        sleep(duration)
 
 
 def check_trial_expired() -> bool:
@@ -199,7 +188,7 @@ def show_update_prompt(update_info: dict) -> None:
 
 
 def main():
-    """Launch the pyKorf TUI application."""
+    """Launch the pyKorf web application."""
     parser = argparse.ArgumentParser(
         prog="pykorf",
         description="Enterprise Python toolkit for KORF hydraulic model files.",
@@ -212,7 +201,13 @@ def main():
     parser.add_argument(
         "--debug",
         action="store_true",
-        help="Enable debug mode (DEBUG log level, saves to {kdf-name}-debug.log)",
+        help="Enable debug mode",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Port for the web UI server (default: 8000)",
     )
     args = parser.parse_args()
 
@@ -231,11 +226,9 @@ def main():
         if update_info:
             show_update_prompt(update_info)
 
-    show_loading("Initializing...", 0.8)
+    from pykorf.use_case.web.app import run_server
 
-    from pykorf.use_case.tui import run_tui
-
-    run_tui(debug=args.debug)
+    run_server(port=args.port)
 
 
 if __name__ == "__main__":

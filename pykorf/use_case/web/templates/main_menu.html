@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+{% block title %}Main Menu{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+
+  <!-- Left sidebar: Model Summary + How to Use -->
+  <div class="col-lg-3 col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-bar-chart-fill me-1 text-primary"></i>Model Summary
+      </div>
+      <ul class="list-group list-group-flush">
+        <li class="list-group-item d-flex justify-content-between">
+          <span><i class="bi bi-pipe me-1 text-secondary"></i>Pipes</span>
+          <span class="badge bg-primary rounded-pill">{{ summary.num_pipes }}</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between">
+          <span><i class="bi bi-node-plus me-1 text-secondary"></i>Junctions</span>
+          <span class="badge bg-secondary rounded-pill">{{ summary.num_junctions }}</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between">
+          <span><i class="bi bi-gear me-1 text-secondary"></i>Pumps</span>
+          <span class="badge bg-secondary rounded-pill">{{ summary.num_pumps }}</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between">
+          <span><i class="bi bi-funnel me-1 text-secondary"></i>Valves</span>
+          <span class="badge bg-secondary rounded-pill">{{ summary.num_valves }}</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between">
+          <span><i class="bi bi-arrow-down-circle me-1 text-secondary"></i>Feeds</span>
+          <span class="badge bg-secondary rounded-pill">{{ summary.num_feeds }}</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between">
+          <span><i class="bi bi-arrow-up-circle me-1 text-secondary"></i>Products</span>
+          <span class="badge bg-secondary rounded-pill">{{ summary.num_products }}</span>
+        </li>
+      </ul>
+      <div class="card-footer">
+        <form method="post" action="/model/save">
+          <button type="submit" class="btn btn-success btn-sm w-100">
+            <i class="bi bi-floppy me-1"></i>Save Model
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mt-3">
+      <div class="card-header fw-semibold"><i class="bi bi-lightbulb me-1"></i>How to Use</div>
+      <div class="card-body small text-secondary">
+        <ol class="ps-3 mb-0">
+          <li>Apply <strong>Data</strong> (PMS / HMB) to populate pipe specs and fluid data.</li>
+          <li>Use <strong>Global Parameters</strong> to set sizing criteria and dummy pipes.</li>
+          <li>Generate a <strong>Report</strong> or export to Excel for review.</li>
+          <li>Click <strong>Save</strong> to write changes back to the <code>.kdf</code>.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right column: Operations + Prerequisites + Validation -->
+  <div class="col-lg-9 col-md-8">
+
+    <!-- Operations -->
+    <h2 class="h5 fw-bold mb-3">
+      <i class="bi bi-grid-3x3-gap-fill me-1 text-primary"></i>Operations
+    </h2>
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-3 g-3">
+
+      <div class="col">
+        <a href="/model/settings" class="text-decoration-none">
+          <div class="card shadow-sm h-100 setting-card border border-2">
+            <div class="card-body">
+              <h5 class="card-title"><i class="bi bi-sliders text-warning me-2"></i>Global Parameters</h5>
+              <p class="card-text text-secondary small">Apply bulk modifications to KORF model based Project Criteria.</p>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div class="col">
+        <a href="/model/data" class="text-decoration-none">
+          <div class="card shadow-sm h-100 setting-card border border-2">
+            <div class="card-body">
+              <h5 class="card-title"><i class="bi bi-layers text-info me-2"></i>Apply Data</h5>
+              <p class="card-text text-secondary small">Apply PMS (pipe specs) and HMB (stream data) from Excel files.</p>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div class="col">
+        <a href="/model/bulk-copy" class="text-decoration-none">
+          <div class="card shadow-sm h-100 setting-card border border-2">
+            <div class="card-body">
+              <h5 class="card-title"><i class="bi bi-copy text-primary me-2"></i>Bulk Copy Fluids</h5>
+              <p class="card-text text-secondary small">Copy fluid properties from one pipe to multiple others. Supports include/exclude modes.</p>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div class="col">
+        <a href="/model/report" class="text-decoration-none">
+          <div class="card shadow-sm h-100 setting-card border border-2">
+            <div class="card-body">
+              <h5 class="card-title"><i class="bi bi-file-earmark-excel text-success me-2"></i>Reports</h5>
+              <p class="card-text text-secondary small">Generate reports, export to Excel, or import edited parameters back.</p>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div class="col">
+        <a href="/model/info" class="text-decoration-none">
+          <div class="card shadow-sm h-100 setting-card border border-2">
+            <div class="card-body">
+              <h5 class="card-title"><i class="bi bi-info-circle text-secondary me-2"></i>Model Info</h5>
+              <p class="card-text text-secondary small">View element statistics and a full sortable pipe list.</p>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div class="col">
+        <a href="/model/pipe-criteria" class="text-decoration-none">
+          <div class="card shadow-sm h-100 setting-card border border-2">
+            <div class="card-body">
+              <h5 class="card-title"><i class="bi bi-rulers text-primary me-2"></i>Pipe Sizing Criteria</h5>
+              <p class="card-text text-secondary small">Assign fluid state and sizing criteria code to each pipe. Stored in <code>.pykorf</code> sidecar file.</p>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div class="col">
+        <a href="/model/references" class="text-decoration-none">
+          <div class="card shadow-sm h-100 setting-card border border-2">
+            <div class="card-body">
+              <h5 class="card-title"><i class="bi bi-journal-bookmark text-primary me-2"></i>References</h5>
+              <p class="card-text text-secondary small">Design basis notes, SharePoint links and reference documents. Shortcuts auto-created next to the KDF.</p>
+            </div>
+          </div>
+        </a>
+      </div>
+
+    </div><!-- /operations row -->
+
+    <!-- Prerequisites & Validation (2 sub-columns inside the right column) -->
+    <div class="row g-3 mt-2">
+
+      <!-- Pre-requisites -->
+      <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+          <div class="card-header fw-semibold">
+            <i class="bi bi-check2-all me-1 text-primary"></i>Pre-requisites
+          </div>
+          <ul class="list-group list-group-flush">
+
+            <!-- 1. Line numbers in NOTES -->
+            <li class="list-group-item d-flex align-items-start gap-3 py-3">
+              {% if prereqs.notes_ok %}
+                <span class="text-success fs-5 mt-1 flex-shrink-0"><i class="bi bi-check-circle-fill"></i></span>
+              {% else %}
+                <span class="text-danger fs-5 mt-1 flex-shrink-0"><i class="bi bi-x-circle-fill"></i></span>
+              {% endif %}
+              <div class="min-w-0">
+                <div class="fw-semibold small">Line number in Notes</div>
+                <div class="text-secondary" style="font-size:.8rem;">
+                  Every pipe must have a valid line number in its <strong>NOTES</strong> field in KORF.
+                </div>
+              </div>
+            </li>
+
+            <!-- 2. PMS Excel path configured -->
+            <li class="list-group-item d-flex align-items-start gap-3 py-3">
+              {% if prereqs.pms_ok %}
+                <span class="text-success fs-5 mt-1 flex-shrink-0"><i class="bi bi-check-circle-fill"></i></span>
+              {% else %}
+                <span class="text-danger fs-5 mt-1 flex-shrink-0"><i class="bi bi-x-circle-fill"></i></span>
+              {% endif %}
+              <div class="min-w-0">
+                <div class="fw-semibold small">PMS Excel file configured
+                  <a href="/model/data" class="ms-1 text-decoration-none small text-primary">(Data tab)</a>
+                </div>
+                {% if prereqs.pms_path %}
+                  <div class="font-monospace text-secondary text-truncate" style="font-size:.75rem;" title="{{ prereqs.pms_path }}">
+                    {{ prereqs.pms_path | basename }}
+                  </div>
+                {% else %}
+                  <div class="text-secondary" style="font-size:.8rem;">No PMS file set — go to <a href="/model/data">Data</a> tab.</div>
+                {% endif %}
+              </div>
+            </li>
+
+            <!-- 3. No validation errors -->
+            <li class="list-group-item d-flex align-items-start gap-3 py-3">
+              {% if prereqs.validation_ok %}
+                <span class="text-success fs-5 mt-1 flex-shrink-0"><i class="bi bi-check-circle-fill"></i></span>
+              {% else %}
+                <span class="text-danger fs-5 mt-1 flex-shrink-0"><i class="bi bi-x-circle-fill"></i></span>
+              {% endif %}
+              <div>
+                <div class="fw-semibold small">No validation errors
+                  <a href="/model/info" class="ms-1 text-decoration-none small text-primary">(Model Info)</a>
+                </div>
+                <div class="text-secondary" style="font-size:.8rem;">
+                  {% if prereqs.validation_ok %}
+                    All checks passed.
+                  {% else %}
+                    {{ prereqs.issues | length }} issue(s) found — see validation panel.
+                  {% endif %}
+                </div>
+              </div>
+            </li>
+
+            <!-- 4. SharePoint / local path in Preferences -->
+            <li class="list-group-item d-flex align-items-start gap-3 py-3">
+              {% if prereqs.sharepoint_ok %}
+                <span class="text-success fs-5 mt-1 flex-shrink-0"><i class="bi bi-check-circle-fill"></i></span>
+              {% else %}
+                <span class="text-warning fs-5 mt-1 flex-shrink-0"><i class="bi bi-exclamation-circle-fill"></i></span>
+              {% endif %}
+              <div>
+                <div class="fw-semibold small">Local &amp; SharePoint path configured
+                  <a href="/preferences" class="ms-1 text-decoration-none small text-primary">(Preferences)</a>
+                </div>
+                <div class="text-secondary" style="font-size:.8rem;">
+                  {% if prereqs.sharepoint_ok %}
+                    Override mapping is set.
+                  {% else %}
+                    Optional — recommended for shared OneDrive paths.
+                  {% endif %}
+                </div>
+              </div>
+            </li>
+
+          </ul>
+        </div>
+      </div>
+
+      <!-- Validation Results -->
+      <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+          <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+            <span>
+              <i class="bi bi-clipboard-check me-1 {% if prereqs.validation_ok %}text-success{% else %}text-danger{% endif %}"></i>
+              Validation Results
+            </span>
+            {% if prereqs.validation_ok %}
+              <span class="badge bg-success">PASSED</span>
+            {% else %}
+              <span class="badge bg-danger">{{ prereqs.issues | length }} issue(s)</span>
+            {% endif %}
+          </div>
+          <div class="card-body p-0 d-flex flex-column">
+            {% if prereqs.validation_ok %}
+              <div class="text-center text-success py-4 flex-grow-1 d-flex flex-column justify-content-center">
+                <i class="bi bi-check-circle-fill fs-1"></i>
+                <div class="mt-2 fw-semibold">All validations passed</div>
+              </div>
+            {% else %}
+              <ul class="list-group list-group-flush flex-grow-1 overflow-auto" style="max-height: 280px;">
+                {% for issue in prereqs.issues %}
+                  <li class="list-group-item py-2 px-3" style="font-size: .8rem;">
+                    {% if "NOTES" in issue or "line number" in issue.lower() %}
+                      <span class="badge bg-warning text-dark me-1">NOTES</span>
+                    {% elif "NAME" in issue %}
+                      <span class="badge bg-secondary me-1">NAME</span>
+                    {% elif "CONN" in issue %}
+                      <span class="badge bg-info text-dark me-1">CONN</span>
+                    {% elif "VALUE" in issue %}
+                      <span class="badge bg-secondary me-1">VALUE</span>
+                    {% elif "LAYOUT" in issue %}
+                      <span class="badge bg-secondary me-1">LAYOUT</span>
+                    {% elif "REQUIRED" in issue %}
+                      <span class="badge bg-danger me-1">REQUIRED</span>
+                    {% else %}
+                      <span class="badge bg-secondary me-1">INFO</span>
+                    {% endif %}
+                    {{ issue }}
+                  </li>
+                {% endfor %}
+              </ul>
+              <div class="card-footer text-end py-2">
+                <a href="/model/info" class="btn btn-sm btn-outline-secondary">
+                  <i class="bi bi-arrow-right me-1"></i>Full Details
+                </a>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /prerequisites + validation row -->
+
+  </div><!-- /right col-lg-9 -->
+
+</div><!-- /outer row -->
+{% endblock %}

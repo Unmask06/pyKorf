@@ -1,0 +1,95 @@
+{% extends "base.html" %} {% block title %}About{% endblock %} {% block content
+%}
+<div class="row justify-content-center">
+  <div class="col-lg-7 col-md-9">
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-info-circle-fill text-primary me-2"></i>About pyKorf
+      </div>
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <span class="badge bg-primary fs-6">v{{ version }}</span>
+          <span class="text-secondary small">Released {{ release_date }}</span>
+        </div>
+
+        <p class="lead mb-2">
+          <strong>pyKorf</strong> is a lightweight toolkit for engineers working
+          with
+          <a
+            href="https://korf.ca/hydraulics.php"
+            target="_blank"
+            rel="noopener"
+            class="text-decoration-none"
+            >KORF</a
+          >
+          hydraulic model files (<code>.kdf</code>).
+        </p>
+
+        <p class="text-secondary mb-4">
+          KORF is powerful but its native interface offers limited bulk-editing
+          and reporting capabilities. pyKorf bridges that gap — load a model,
+          apply consistent pipe sizing criteria, import PMS / HMB data from
+          Excel, and export a clean summary report, all from a browser.
+        </p>
+
+        <hr />
+
+        <h6 class="text-uppercase text-secondary small fw-semibold mb-3 mt-3">
+          Key Features
+        </h6>
+        <ul class="list-unstyled d-flex flex-column gap-1 mb-4">
+          <li>
+            <i class="bi bi-check2-circle text-success me-2"></i>Read and write
+            <code>.kdf</code> model files without opening KORF
+          </li>
+          <li>
+            <i class="bi bi-check2-circle text-success me-2"></i>Assign pipe
+            sizing criteria (dP, velocity) from a built-in lookup table
+          </li>
+          <li>
+            <i class="bi bi-check2-circle text-success me-2"></i>Bulk-import
+            fluid data from PMS and HMB spreadsheets
+          </li>
+          <li>
+            <i class="bi bi-check2-circle text-success me-2"></i>Export a pipe
+            summary report to Excel
+          </li>
+          <li>
+            <i class="bi bi-check2-circle text-success me-2"></i>Apply project
+            level parameters to entire model in one click
+          </li>
+        </ul>
+
+        <hr />
+
+        <h6 class="text-uppercase text-secondary small fw-semibold mb-3 mt-3">
+          Author
+        </h6>
+        <div class="d-flex align-items-center gap-3">
+          <div
+            class="rounded-circle bg-primary d-flex align-items-center justify-content-center text-white fw-bold"
+            style="width: 48px; height: 48px; font-size: 1.1rem; flex-shrink: 0"
+          >
+            PP
+          </div>
+          <div>
+            <div class="fw-semibold">Prasanna Palanivel</div>
+            <div class="text-secondary small">Process Engineer</div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="card-footer text-secondary small d-flex justify-content-between align-items-center"
+      >
+        <span
+          >pyKorf — Built for the Process Engineers by the Process
+          Engineer</span
+        >
+        <a href="/" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-house me-1"></i>Home
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

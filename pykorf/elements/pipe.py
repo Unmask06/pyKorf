@@ -75,7 +75,7 @@ class Pipe(BaseElement):
     VAPCON = "VAPCON"  # [cond_c1, cond_c2, cond_c3, unit]
     VAPCP = "VAPCP"  # [cp_c1, cp_c2, cp_c3, unit]
     TFLOW = "TFLOW"  # [flow_str, flow_num, unit]
-    TPROP = "TPROP"  # [prop1, prop2, prop3, prop4, den_unit, prop6, visc_unit]
+    TPROP = "TPROP"  # [density_in, density_out, density_avg, density_avg, density_unit, viscosity, visc_unit]
     TOTCON = "TOTCON"  # [cond_str1, cond_str2, cond_num, unit]
     TOTCP = "TOTCP"  # [cp_str1, cp_str2, cp_num, unit]
     TOTMW = "TOTMW"  # [total_mw]
@@ -114,9 +114,9 @@ class Pipe(BaseElement):
     ROUGHNESS = "EPS"  # [roughness_str, roughness_num, unit]
     F = "F"  # [fric_factor, ...]
     RE = "RE"  # [reynolds_number]
-    SIZ = "SIZ"  # [sizing_str, dp_crit, unit, vel_crit, ..., ..., ..., unit]
+    SIZ = "SIZ"  # [sizing_str, dp_crit, unit, max_vel_crit,min_vel_crit, vel_coeff_max, vel_coeff_min, unit]
     DPL = "DPL"  # [dp_per_100m, unit]
-    VEL = "VEL"  # [vel_c1, vel_c2, vel_c3, vel_c4, unit]
+    VEL = "VEL"  # [vel_avg, vel_in, vel_out, vel_sonic, unit]
     HUP = "HUP"  # [liquid_holdup]
     REG = "REG"  # [regime_c1, regime_c2, regime_c3]
     REGA = "REGA"  # [regime_a1, regime_a2, unit]
@@ -353,6 +353,20 @@ class Pipe(BaseElement):
         return [float(v) for v in nums if _is_num(v)]
 
     @property
+    def rho_v2(self) -> float | None:
+        """Momentum flux rho*V^2 [Pa] calculated from mixture density and average velocity.
+
+        Uses TPROP[2] (average mixture density, kg/m³) and VEL[0] (average velocity, m/s).
+        Returns None if either value is unavailable or zero.
+        """
+        try:
+            density = float(self._scalar(Pipe.TPROP, 2))  # density_avg
+            vel = float(self._scalar(Pipe.VEL, 0))         # vel_avg
+            return density * vel * vel
+        except (TypeError, ValueError):
+            return None
+
+    @property
     def pressure_drop_per_100m(self) -> float:
         """Calculated ΔP/100 m [kPa/100m]."""
         try:
@@ -372,6 +386,21 @@ class Pipe(BaseElement):
         return self._values(Pipe.REG)
 
     @property
+    def criteria_code(self) -> str:
+        """Sizing criteria code stored in SIZ index 0 (e.g. 'P-DIS', 'P-SUC-BUB')."""
+        val = self._scalar(Pipe.SIZ, 0)
+        return str(val) if val else ""
+
+    @criteria_code.setter
+    def criteria_code(self, value: str) -> None:
+        siz_rec = self.get_param(Pipe.SIZ)
+        if siz_rec is None:
+            return
+        new_vals = list(siz_rec.values)
+        new_vals[0] = value or ""
+        self.set_param(Pipe.SIZ, new_vals)
+
+    @property
     def sizing_dp_criteria(self) -> float | str:
         """Sizing criteria for Pressure Drop (DPL)."""
         val = self._scalar(Pipe.SIZ, 1)
@@ -381,13 +410,106 @@ class Pipe(BaseElement):
             return val if val is not None else "N/A"
 
     @property
+    def max_dp_criteria(self) -> float | None:
+        """Maximum pressure drop criteria [kPa/100m].
+
+        SIZ parameter at index 1. Returns None if not set.
+        """
+        val = self._scalar(Pipe.SIZ, 1)
+        if val is None or val == "":
+            return None
+        try:
+            return float(val)
+        except (TypeError, ValueError):
+            return None
+
+    @max_dp_criteria.setter
+    def max_dp_criteria(self, value: float | None) -> None:
+        """Set maximum pressure drop criteria.
+
+        Args:
+            value: Maximum DP criteria in kPa/100m, or None to clear.
+        """
+        siz_rec = self.get_param(Pipe.SIZ)
+        if siz_rec is None:
+            return
+        new_vals = list(siz_rec.values)
+        if value is not None:
+            new_vals[1] = value
+        else:
+            new_vals[1] = ""
+        self.set_param(Pipe.SIZ, new_vals)
+
+    @property
     def sizing_velocity_criteria(self) -> float | str:
-        """Sizing criteria for Velocity."""
+        """Sizing criteria for Velocity (legacy alias for max_velocity_criteria)."""
         val = self._scalar(Pipe.SIZ, 3)
         try:
             return float(val) if val is not None else "N/A"
         except (TypeError, ValueError):
             return val if val is not None else "N/A"
+
+    @property
+    def max_velocity_criteria(self) -> float | None:
+        """Maximum velocity criteria [m/s].
+
+        SIZ parameter at index 3. Returns None if not set.
+        """
+        val = self._scalar(Pipe.SIZ, 3)
+        if val is None or val == "":
+            return None
+        try:
+            return float(val)
+        except (TypeError, ValueError):
+            return None
+
+    @max_velocity_criteria.setter
+    def max_velocity_criteria(self, value: float | None) -> None:
+        """Set maximum velocity criteria.
+
+        Args:
+            value: Maximum velocity in m/s, or None to clear.
+        """
+        siz_rec = self.get_param(Pipe.SIZ)
+        if siz_rec is None:
+            return
+        new_vals = list(siz_rec.values)
+        if value is not None:
+            new_vals[3] = value
+        else:
+            new_vals[3] = ""
+        self.set_param(Pipe.SIZ, new_vals)
+
+    @property
+    def min_velocity_criteria(self) -> float | None:
+        """Minimum velocity criteria [m/s].
+
+        SIZ parameter at index 4. Returns None if not set.
+        """
+        val = self._scalar(Pipe.SIZ, 4)
+        if val is None or val == "":
+            return None
+        try:
+            return float(val)
+        except (TypeError, ValueError):
+            return None
+
+    @min_velocity_criteria.setter
+    def min_velocity_criteria(self, value: float | None) -> None:
+        """Set minimum velocity criteria.
+
+        Args:
+            value: Minimum velocity in m/s, or None to clear.
+        """
+        siz_rec = self.get_param(Pipe.SIZ)
+        if siz_rec is None:
+            return
+        new_vals = list(siz_rec.values)
+        if value is not None:
+            new_vals[4] = value
+        else:
+            new_vals[4] = ""
+        self.set_param(Pipe.SIZ, new_vals)
 
     def check_criteria(self) -> str:
         """Check if calculated results meet sizing criteria.
@@ -540,7 +662,10 @@ class Pipe(BaseElement):
             from pykorf.use_case.line_number import LineNumber
 
             dp_crit_val, dp_crit_unit = self.get_value_and_unit(Pipe.SIZ, val_index=1, unit_index=2)
-            vel_crit_val, vel_crit_unit = self.get_value_and_unit(
+            vel_min_crit_val, vel_min_crit_unit = self.get_value_and_unit(
+                Pipe.SIZ, val_index=4, unit_index=-1
+            )
+            vel_max_crit_val, vel_max_crit_unit = self.get_value_and_unit(
                 Pipe.SIZ, val_index=3, unit_index=-1
             )
 
@@ -555,8 +680,10 @@ class Pipe(BaseElement):
             return {
                 "Pipe Name": self.name,
                 "Line Number": parsed_line.raw_line_number if parsed_line else "",
-                self.format_export_header("DP / DL Criteria", dp_crit_unit): dp_crit_val,
-                self.format_export_header("Velocity Criteria", vel_crit_unit): vel_crit_val,
+                "Criteria Code": self.criteria_code,
+                self.format_export_header("dP max Criteria", dp_crit_unit): dp_crit_val,
+                self.format_export_header("v min Criteria", vel_min_crit_unit): vel_min_crit_val,
+                self.format_export_header("v max Criteria", vel_max_crit_unit): vel_max_crit_val,
                 self.format_export_header("DP / DL", dp_calc_unit): dp_calc_val,
                 self.format_export_header("Velocity", vel_calc_unit): vel_calc_val,
                 "Criteria Check": self.check_criteria(),
@@ -600,6 +727,7 @@ def propagate_pipe_rename(model: Model, old_name: str, new_name: str) -> list[st
     Example::
 
         from pykorf.elements.pipe import propagate_pipe_rename
+
         updated = propagate_pipe_rename(model, "L3", "VCL17-806")
         # ["L5", "L9"]  — pipes that referenced L3 in their EQN
     """
