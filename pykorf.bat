@@ -230,9 +230,7 @@ winget install --id Python.Python.3.13 --scope user --accept-package-agreements 
 if %errorlevel% neq 0 (
     echo %CYAN%  │%RESET%
     echo %CYAN%  └─%RESET%  %RED%✗  Automatic install failed%RESET%
-    echo.
-    echo %WHITE%     Install Python 3.13 manually from:%RESET%
-    echo %CYAN%     https://www.python.org/downloads/%RESET%
+    echo %WHITE%     Install Python 3.13 manually and run pykorf.bat again.%RESET%
     echo.
     pause
     exit /b 1
@@ -284,7 +282,7 @@ echo %CYAN%  └─%RESET%
 echo.
 
 REM ============================================
-REM STEP 3: Download pyKorf from GitHub
+REM STEP 3: Download pyKorf
 REM ============================================
 echo %CYAN%  ┌─ [3 / 4]  Download pyKorf%RESET%
 echo %CYAN%  │%RESET%
@@ -292,7 +290,7 @@ echo %CYAN%  │%RESET%
 set "ZIP_URL=https://github.com/Unmask06/pykorf/releases/latest/download/pykorf-v!BAT_MAJOR!.zip"
 set "ZIP_PATH=%TEMP%\pykorf.zip"
 
-echo %CYAN%  │%RESET%  %GRAY%  Downloading from GitHub...%RESET%
+echo %CYAN%  │%RESET%  %GRAY%  Downloading...%RESET%
 curl -L --fail --progress-bar -o "!ZIP_PATH!" "!ZIP_URL!"
 if %errorlevel% neq 0 (
     echo %CYAN%  │%RESET%
@@ -389,6 +387,8 @@ echo.
 echo %GRAY%  ────────────────────────────────────────────────────────%RESET%
 echo %WHITE%    Starting...%RESET%
 echo %GRAY%  ────────────────────────────────────────────────────────%RESET%
+echo.
+echo %GREEN%  ℹ  Browser will automatically open. Don't close this terminal.%RESET%
 echo.
 
 ".venv\Scripts\python.exe" -m pykorf
