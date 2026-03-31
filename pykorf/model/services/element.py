@@ -295,7 +295,7 @@ class ElementService:
 
         mid_x, pipe_y = candidate
 
-        self.model._layout_service.set_position(self.model, pipe_name, mid_x, pipe_y)
+        self.model._layout_service.set_position(pipe_name, mid_x, pipe_y)
 
     def add_elements(
         self,
