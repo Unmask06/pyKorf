@@ -13,6 +13,7 @@
 #
 # dp = [0.0, 0.0] — no dP criterion; size against the above three ranges
 # All three criteria should be satisfied simultaneously for a valid design.
+# line_size / pressure omitted → single catch-all entry (no size/pressure variation)
 
 fluid_type     = "two_phase"
 dp_unit        = "kPa/100m"
@@ -30,9 +31,7 @@ pressure_unit  = "barg"
 code         = "TWO-PHASE"
 service      = "Gas/Liquid Two-Phase Flow — Mixed Phase"
 notes        = "Section 14.5.1 — preliminary sizing; all three criteria apply"
-pressure_max = 9999
-line_size    = 9999
 vel    = [0.0,   23.0]         # [min, max] m/s
 dp     = [0.0,     0.0]         # not specified
-rho_v2 = [5000,  10000]         # ρM × VM² [min, max] Pa
+rho_v2 = [0.0,  10000]         # ρM × VM² [min, max] Pa
 rho_v3 = [100000, 150000]       # ρM × VM³ [min, max] kg/s³

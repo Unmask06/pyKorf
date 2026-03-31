@@ -21,20 +21,20 @@ bp = Blueprint("pipe_criteria", __name__)
 
 
 def _get_pipes_list(model: Model) -> list[tuple[int, str]]:
-    """Build pipe list."""
+    """Build pipe list, excluding dummy pipes (names starting with 'd')."""
     return [
         (idx, model.pipes[idx].name)
         for idx in range(1, model.num_pipes + 1)
-        if model.pipes[idx].name
+        if model.pipes[idx].name and not model.pipes[idx].name.startswith("d")
     ]
 
 
 def _build_pipe_lookup(model: Model) -> dict[str, Pipe]:
-    """Build a name→pipe lookup to avoid O(n²) scans."""
+    """Build a name→pipe lookup to avoid O(n²) scans, excluding dummy pipes."""
     return {
         model.pipes[i].name: model.pipes[i]
         for i in range(1, model.num_pipes + 1)
-        if model.pipes[i].name
+        if model.pipes[i].name and not model.pipes[i].name.startswith("d")
     }
 
 
@@ -441,8 +441,14 @@ def pipe_criteria():
             pipe_criteria_values = _precompute_criteria_values(model, pipes, codes)
             pipe_calcs = _compute_pipe_calcs(model, pipes)
             return _render_page(
-                kdf_path, pipes, existing, codes, pipe_criteria_values,
-                pipe_calcs, set_result, predict_result,
+                kdf_path,
+                pipes,
+                existing,
+                codes,
+                pipe_criteria_values,
+                pipe_calcs,
+                set_result,
+                predict_result,
             )
 
         updated = _extract_form_data(pipes)
@@ -458,4 +464,13 @@ def pipe_criteria():
 
     pipe_criteria_values = _precompute_criteria_values(model, pipes, codes)
     pipe_calcs = _compute_pipe_calcs(model, pipes)
-    return _render_page(kdf_path, pipes, existing, codes, pipe_criteria_values, pipe_calcs, set_result, predict_result)
+    return _render_page(
+        kdf_path,
+        pipes,
+        existing,
+        codes,
+        pipe_criteria_values,
+        pipe_calcs,
+        set_result,
+        predict_result,
+    )

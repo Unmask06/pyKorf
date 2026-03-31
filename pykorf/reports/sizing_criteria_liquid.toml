@@ -4,16 +4,16 @@
 # Units
 #   velocity  : m/s
 #   dp        : kPa/100m  (source table is bar/100m; values multiplied × 100)
-#   line_size : inch (nominal); 9999 = no upper limit (≥ N")
-#   pressure  : barg; 9999 = no upper pressure limit
+#   line_size : inch (nominal); omit = no upper limit (catch-all row)
+#   pressure  : barg; omit = no upper pressure limit (catch-all row)
 #
 # Lookup: filter by code
 #   → if multiple sizes : sort by line_size → first entry where pipe_size ≤ line_size
 #   → if multiple press : sort by pressure  → first entry where op_pressure ≤ pressure
+#   → single-entry codes: omit line_size / pressure entirely (always matches)
 # Range format
-#   vel = [min, max]     velocity range in m/s
-#   dp  = [normal, max]  pressure drop range in kPa/100m
-# Missing dp (0.0) = no criterion specified in source table
+#   vel = [min, max]     velocity range in m/s;     max = 0.0 → no max velocity criterion
+#   dp  = [normal, max]  pressure drop in kPa/100m; max = 0.0 → no dP criterion
 
 fluid_type     = "liquid"
 dp_unit        = "kPa/100m"
@@ -29,7 +29,6 @@ pressure_unit  = "barg"
 code      = "P-SUC-BUB"
 service   = "Pump Suction, Bubble Point"
 notes     = "Note 1, 3"
-pressure  = 9999
 line_size = 2
 vel = [0.0, 0.6]    # [min, max] m/s
 dp  = [6.0, 9.0]    # [normal, max] kPa/100m
@@ -38,7 +37,6 @@ dp  = [6.0, 9.0]    # [normal, max] kPa/100m
 code      = "P-SUC-BUB"
 service   = "Pump Suction, Bubble Point"
 notes     = "Note 1, 3"
-pressure  = 9999
 line_size = 10
 vel = [0.0, 0.6]
 dp  = [6.0, 9.0]
@@ -47,7 +45,6 @@ dp  = [6.0, 9.0]
 code      = "P-SUC-BUB"
 service   = "Pump Suction, Bubble Point"
 notes     = "Note 1, 3"
-pressure  = 9999
 line_size = 18
 vel = [0.0, 1.2]
 dp  = [6.0, 9.0]
@@ -56,8 +53,7 @@ dp  = [6.0, 9.0]
 code      = "P-SUC-BUB"
 service   = "Pump Suction, Bubble Point"
 notes     = "Note 1, 3"
-pressure  = 9999
-line_size = 9999    # ≥ 20"
+# no line_size → catch-all (≥ 20")
 vel = [0.0, 1.5]
 dp  = [6.0, 9.0]
 
@@ -69,7 +65,6 @@ dp  = [6.0, 9.0]
 code      = "P-SUC-SUB"
 service   = "Pump Suction, Subcooled"
 notes     = "Note 3"
-pressure  = 9999
 line_size = 2
 vel = [0.0, 0.9]
 dp  = [23.0, 35.0]
@@ -78,7 +73,6 @@ dp  = [23.0, 35.0]
 code      = "P-SUC-SUB"
 service   = "Pump Suction, Subcooled"
 notes     = "Note 3"
-pressure  = 9999
 line_size = 6
 vel = [0.0, 1.2]
 dp  = [23.0, 35.0]
@@ -87,7 +81,6 @@ dp  = [23.0, 35.0]
 code      = "P-SUC-SUB"
 service   = "Pump Suction, Subcooled"
 notes     = "Note 3"
-pressure  = 9999
 line_size = 18
 vel = [0.0, 1.5]
 dp  = [23.0, 35.0]
@@ -96,8 +89,7 @@ dp  = [23.0, 35.0]
 code      = "P-SUC-SUB"
 service   = "Pump Suction, Subcooled"
 notes     = "Note 3"
-pressure  = 9999
-line_size = 9999    # ≥ 20"
+# no line_size → catch-all (≥ 20")
 vel = [0.0, 1.8]
 dp  = [23.0, 35.0]
 
@@ -110,7 +102,6 @@ code      = "P-DIS"
 service   = "Pump Discharge"
 notes     = "P ≤ 50 barg"
 pressure  = 50
-line_size = 9999
 vel = [0.0, 4.0]
 dp  = [0.0, 45.0]
 
@@ -118,8 +109,7 @@ dp  = [0.0, 45.0]
 code      = "P-DIS"
 service   = "Pump Discharge"
 notes     = "P > 50 barg"
-pressure  = 9999
-line_size = 9999
+# no pressure → catch-all (> 50 barg)
 vel = [1.5, 4.0]
 dp  = [70.0, 90.0]
 
@@ -131,8 +121,6 @@ dp  = [70.0, 90.0]
 code      = "RBL-TI"
 service   = "Re-boiler Lines — Trap Out / Inlet"
 notes     = ""
-pressure  = 9999
-line_size = 9999
 vel = [0.9, 1.5]
 dp  = [3.0, 7.0]
 
@@ -140,8 +128,6 @@ dp  = [3.0, 7.0]
 code      = "RBL-RET"
 service   = "Re-boiler Lines — Return"
 notes     = "Velocity and normal dP per Note 5; only max dP specified here"
-pressure  = 9999
-line_size = 9999
 vel = [0.0, 0.0]    # see Note 5
 dp  = [0.0, 7.0]
 
@@ -149,8 +135,6 @@ dp  = [0.0, 7.0]
 code      = "RBL-GRV"
 service   = "Re-boiler Lines — Gravity Flow"
 notes     = ""
-pressure  = 9999
-line_size = 9999
 vel = [0.0, 0.6]
 dp  = [2.5, 4.5]
 
@@ -162,7 +146,6 @@ dp  = [2.5, 4.5]
 code      = "COL-DRAW"
 service   = "Column Side-stream Draw-off"
 notes     = "Note 2"
-pressure  = 9999
 line_size = 2
 vel = [0.0, 0.6]
 dp  = [6.0, 9.0]
@@ -171,8 +154,7 @@ dp  = [6.0, 9.0]
 code      = "COL-DRAW"
 service   = "Column Side-stream Draw-off"
 notes     = "Note 2"
-pressure  = 9999
-line_size = 9999    # > 3"
+# no line_size → catch-all (> 3")
 vel = [0.0, 0.9]
 dp  = [6.0, 9.0]
 
@@ -184,8 +166,6 @@ dp  = [6.0, 9.0]
 code      = "CW-CLOSED"
 service   = "Cooling Water — Closed Loop"
 notes     = "Note 6"
-pressure  = 9999
-line_size = 9999
 vel = [1.0, 4.0]
 dp  = [11.0, 34.0]
 
@@ -193,8 +173,6 @@ dp  = [11.0, 34.0]
 code      = "CW-OPEN"
 service   = "Cooling Water — Open Loop"
 notes     = "Note 6"
-pressure  = 9999
-line_size = 9999
 vel = [1.5, 4.0]
 dp  = [11.0, 34.0]
 
@@ -202,10 +180,8 @@ dp  = [11.0, 34.0]
 code      = "CSW"
 service   = "Cooling Seawater"
 notes     = "Note 6"
-pressure  = 9999
-line_size = 9999
 vel = [0.0, 4.0]
-dp  = [0.0, 999]    # no dP criterion specified
+dp  = [0.0, 0.0]    # no dP criterion specified
 
 # ---------------------------------------------------------------------------
 # Boiler Feed Water
@@ -215,8 +191,6 @@ dp  = [0.0, 999]    # no dP criterion specified
 code      = "BFW"
 service   = "Boiler Feed Water"
 notes     = ""
-pressure  = 9999
-line_size = 9999
 vel = [0.0, 6.0]
 dp  = [35.0, 45.0]
 
@@ -228,7 +202,6 @@ dp  = [35.0, 45.0]
 code      = "SVC"
 service   = "Service Water"
 notes     = ""
-pressure  = 9999
 line_size = 4
 vel = [0.0, 3.0]
 dp  = [0.0, 0.0]
@@ -237,8 +210,7 @@ dp  = [0.0, 0.0]
 code      = "SVC"
 service   = "Service Water"
 notes     = ""
-pressure  = 9999
-line_size = 9999    # ≥ 6"
+# no line_size → catch-all (≥ 6")
 vel = [0.0, 4.0]
 dp  = [0.0, 0.0]
 
@@ -250,8 +222,6 @@ dp  = [0.0, 0.0]
 code      = "SEA-INJ"
 service   = "Sea Water / Injection Water"
 notes     = ""
-pressure  = 9999
-line_size = 9999
 vel = [0.0, 2.1]
 dp  = [0.0, 0.0]
 
@@ -263,8 +233,6 @@ dp  = [0.0, 0.0]
 code      = "BRK-W"
 service   = "Brackish Water"
 notes     = ""
-pressure  = 9999
-line_size = 9999
 vel = [0.0, 2.1]
 dp  = [0.0, 0.0]
 
@@ -276,8 +244,6 @@ dp  = [0.0, 0.0]
 code      = "SW-GT120-CS"
 service   = "Sour Water, > 120 °C, Carbon Steel"
 notes     = ""
-pressure  = 9999
-line_size = 9999
 vel = [0.0, 1.5]
 dp  = [0.0, 0.0]
 
@@ -285,8 +251,6 @@ dp  = [0.0, 0.0]
 code      = "SW-GT120-SS"
 service   = "Sour Water, > 120 °C, Stainless Steel"
 notes     = ""
-pressure  = 9999
-line_size = 9999
 vel = [0.0, 3.0]
 dp  = [0.0, 0.0]
 
@@ -294,8 +258,6 @@ dp  = [0.0, 0.0]
 code      = "SW-LT120-CS"
 service   = "Sour Water, < 120 °C, Carbon Steel"
 notes     = ""
-pressure  = 9999
-line_size = 9999
 vel = [0.0, 3.0]
 dp  = [0.0, 0.0]
 
@@ -303,8 +265,6 @@ dp  = [0.0, 0.0]
 code      = "SW-LT120-SS"
 service   = "Sour Water, < 120 °C, Stainless Steel"
 notes     = ""
-pressure  = 9999
-line_size = 9999
 vel = [0.0, 4.6]
 dp  = [0.0, 0.0]
 
@@ -316,8 +276,6 @@ dp  = [0.0, 0.0]
 code      = "AMN-RA-SS"
 service   = "Amine Solution — Rich Amine, Stainless Steel"
 notes     = "Note 4"
-pressure  = 9999
-line_size = 9999
 vel = [0.0, 6.0]
 dp  = [0.0, 0.0]
 
@@ -325,8 +283,6 @@ dp  = [0.0, 0.0]
 code      = "AMN-RA-CS"
 service   = "Amine Solution — Rich Amine, Carbon Steel"
 notes     = "Note 4"
-pressure  = 9999
-line_size = 9999
 vel = [0.0, 1.5]
 dp  = [0.0, 0.0]
 
@@ -334,8 +290,6 @@ dp  = [0.0, 0.0]
 code      = "AMN-LA-SS"
 service   = "Amine Solution — Lean Amine, Stainless Steel"
 notes     = "Note 4"
-pressure  = 9999
-line_size = 9999
 vel = [0.0, 6.0]
 dp  = [0.0, 0.0]
 
@@ -343,8 +297,6 @@ dp  = [0.0, 0.0]
 code      = "AMN-LA-CS"
 service   = "Amine Solution — Lean Amine, Carbon Steel"
 notes     = "Note 4"
-pressure  = 9999
-line_size = 9999
 vel = [0.0, 2.0]
 dp  = [0.0, 0.0]
 
@@ -356,7 +308,5 @@ dp  = [0.0, 0.0]
 code      = "KOH-66"
 service   = "Potassium Hydroxide (KOH) Solution, 40–60 wt% @ 66 °C"
 notes     = ""
-pressure  = 9999
-line_size = 9999
 vel = [0.0, 1.8]
 dp  = [0.0, 0.0]

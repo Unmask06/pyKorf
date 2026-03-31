@@ -109,7 +109,7 @@ class ResultExporter:
             # Set page setup for A3 Landscape
             worksheet.page_setup.paperSize = worksheet.PAPERSIZE_A3
             worksheet.page_setup.orientation = worksheet.ORIENTATION_LANDSCAPE
-            worksheet.page_setup.scale = 80
+            worksheet.page_setup.scale = 75
 
         # Insert References & Design Basis sheet as the first sheet (if data present)
         if self._basis or self._remarks or self._hold or self._references:
@@ -148,7 +148,7 @@ class ResultExporter:
 
             is_right_side = element_type in ("Feeds", "Products", "Junctions", "Misc Equipment")
             current_row = current_row_right if is_right_side else current_row_left
-            start_col = 13 if is_right_side else 1
+            start_col = 14 if is_right_side else 1
 
             start_table_row = current_row
 
@@ -355,7 +355,7 @@ class ResultExporter:
         ref_ws = workbook.create_sheet("References & Design Basis", 0)
         ref_ws.page_setup.paperSize = ref_ws.PAPERSIZE_A4
         ref_ws.page_setup.orientation = ref_ws.ORIENTATION_LANDSCAPE
-        ref_ws.page_setup.scale = 80
+        ref_ws.page_setup.scale = 75
 
         # Fixed column widths for all four content columns
         for col_idx, width in enumerate([50, 15, 15, 50], start=1):
@@ -454,7 +454,8 @@ class ResultExporter:
 
         dpdl_col = next((c for c in df.columns if "DP / DL" in c and "Criteria" not in c), None)
         vel_col = next((c for c in df.columns if "Velocity" in c and "Criteria" not in c), None)
-        if dpdl_col is None and vel_col is None:
+        rhov2_col = next((c for c in df.columns if "ρV² calc" in c), None)
+        if dpdl_col is None and vel_col is None and rhov2_col is None:
             return row + 3
 
         col_names = list(df.columns)
@@ -488,6 +489,12 @@ class ResultExporter:
             c_idx = start_col + col_names.index(vel_col)
             ws.cell(row=row, column=c_idx, value=val).font = self._styles["data"]
 
+        # ρV² calc min-max
+        if rhov2_col:
+            val = _fmt(rhov2_col)
+            c_idx = start_col + col_names.index(rhov2_col)
+            ws.cell(row=row, column=c_idx, value=val).font = self._styles["data"]
+
         return row + 3
 
     # =========================================================
@@ -495,7 +502,11 @@ class ResultExporter:
     # =========================================================
 
     def _extract_pipes(self) -> list[dict]:
-        return [pipe.summary(export=True) for idx, pipe in self.model.pipes.items() if idx != 0]
+        return [
+            pipe.summary(export=True)
+            for idx, pipe in self.model.pipes.items()
+            if idx != 0 and not pipe.name.startswith("d")
+        ]
 
     def _extract_pumps(self) -> list[dict]:
         return [pump.summary(export=True) for idx, pump in self.model.pumps.items() if idx != 0]

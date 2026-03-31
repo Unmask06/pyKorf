@@ -413,13 +413,15 @@ class Pipe(BaseElement):
     def max_dp_criteria(self) -> float | None:
         """Maximum pressure drop criteria [kPa/100m].
 
-        SIZ parameter at index 1. Returns None if not set.
+        SIZ parameter at index 1. Returns None if not set or if the value
+        is the 9999 sentinel (meaning no upper limit was specified).
         """
         val = self._scalar(Pipe.SIZ, 1)
         if val is None or val == "":
             return None
         try:
-            return float(val)
+            v = float(val)
+            return None if v >= 9999 else v
         except (TypeError, ValueError):
             return None
 
@@ -453,13 +455,15 @@ class Pipe(BaseElement):
     def max_velocity_criteria(self) -> float | None:
         """Maximum velocity criteria [m/s].
 
-        SIZ parameter at index 3. Returns None if not set.
+        SIZ parameter at index 3. Returns None if not set or if the value
+        is the 9999 sentinel (meaning no upper limit was specified).
         """
         val = self._scalar(Pipe.SIZ, 3)
         if val is None or val == "":
             return None
         try:
-            return float(val)
+            v = float(val)
+            return None if v >= 9999 else v
         except (TypeError, ValueError):
             return None
 
@@ -660,14 +664,40 @@ class Pipe(BaseElement):
         if export:
             # Local import to avoid circular dependency with use_case module
             from pykorf.use_case.line_number import LineNumber
+            from pykorf.use_case.sizing_criteria import code_to_state, lookup_criteria
 
             dp_crit_val, dp_crit_unit = self.get_value_and_unit(Pipe.SIZ, val_index=1, unit_index=2)
+            if isinstance(dp_crit_val, float) and dp_crit_val >= 9999:
+                dp_crit_val = None
             vel_min_crit_val, vel_min_crit_unit = self.get_value_and_unit(
                 Pipe.SIZ, val_index=4, unit_index=-1
             )
             vel_max_crit_val, vel_max_crit_unit = self.get_value_and_unit(
                 Pipe.SIZ, val_index=3, unit_index=-1
             )
+            if isinstance(vel_max_crit_val, float) and vel_max_crit_val >= 9999:
+                vel_max_crit_val = None
+
+            # ρV² criteria — looked up from sizing tables (not stored in SIZ)
+            rho_v2_min_crit: float | None = None
+            rho_v2_max_crit: float | None = None
+            code = self.criteria_code
+            if code:
+                state = code_to_state(code)
+                if state:
+                    try:
+                        size_inch = float(self.diameter_inch or 9999)
+                    except (ValueError, TypeError):
+                        size_inch = 9999.0
+                    pressures = self.pressure or []
+                    try:
+                        pressure_barg = pressures[0] / 100.0 if pressures else 9999.0
+                    except (IndexError, TypeError):
+                        pressure_barg = 9999.0
+                    crit = lookup_criteria(state, code, size_inch, pressure_barg)
+                    if crit is not None:
+                        rho_v2_min_crit = round(crit.rho_v2_min) if crit.rho_v2_min else None
+                        rho_v2_max_crit = round(crit.rho_v2_max) if crit.rho_v2_max is not None else None
 
             dp_calc_val, dp_calc_unit = self.get_value_and_unit(
                 Pipe.DPL, val_index=0, unit_index=-1
@@ -684,8 +714,11 @@ class Pipe(BaseElement):
                 self.format_export_header("dP max Criteria", dp_crit_unit): dp_crit_val,
                 self.format_export_header("v min Criteria", vel_min_crit_unit): vel_min_crit_val,
                 self.format_export_header("v max Criteria", vel_max_crit_unit): vel_max_crit_val,
+                "ρV² min Criteria [Pa]": rho_v2_min_crit,
+                "ρV² max Criteria [Pa]": rho_v2_max_crit,
                 self.format_export_header("DP / DL", dp_calc_unit): dp_calc_val,
                 self.format_export_header("Velocity", vel_calc_unit): vel_calc_val,
+                "ρV² calc [Pa]": round(self.rho_v2) if self.rho_v2 is not None else None,
                 "Criteria Check": self.check_criteria(),
             }
         return {

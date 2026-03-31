@@ -133,34 +133,49 @@ block content %} {% if set_result %}
                 title="Select all visible"
               />
             </th>
-            <th style="width: 60px">#</th>
-            <th style="width: 130px">Pipe</th>
-            <th style="width: 160px">State</th>
-            <th style="min-width: 180px">Criteria</th>
-            <th style="width: 100px" class="text-center text-nowrap">
+            <th style="width: 60px" class="sortable" data-column="index">#
+              <i class="bi bi-arrow-down-up sort-icon"></i>
+            </th>
+            <th style="width: 130px" class="sortable" data-column="pipe">Pipe
+              <i class="bi bi-arrow-down-up sort-icon"></i>
+            </th>
+            <th style="width: 160px" class="sortable" data-column="state">State
+              <i class="bi bi-arrow-down-up sort-icon"></i>
+            </th>
+            <th style="min-width: 180px" class="sortable" data-column="criteria">Criteria
+              <i class="bi bi-arrow-down-up sort-icon"></i>
+            </th>
+            <th style="width: 100px" class="text-center text-nowrap sortable" data-column="dp_max">
               dP max<br /><small class="fw-normal text-secondary"
                 >kPa/100m</small
               >
+              <i class="bi bi-arrow-down-up sort-icon"></i>
             </th>
-            <th style="width: 80px" class="text-center text-nowrap">
+            <th style="width: 80px" class="text-center text-nowrap sortable" data-column="v_min">
               v min<br /><small class="fw-normal text-secondary">m/s</small>
+              <i class="bi bi-arrow-down-up sort-icon"></i>
             </th>
-            <th style="width: 80px" class="text-center text-nowrap">
+            <th style="width: 80px" class="text-center text-nowrap sortable" data-column="v_max">
               v max<br /><small class="fw-normal text-secondary">m/s</small>
+              <i class="bi bi-arrow-down-up sort-icon"></i>
             </th>
-            <th style="width: 120px" class="text-center text-nowrap">
+            <th style="width: 120px" class="text-center text-nowrap sortable" data-column="rho_v2_range">
               ρV² range<br /><small class="fw-normal text-secondary">Pa</small>
+              <i class="bi bi-arrow-down-up sort-icon"></i>
             </th>
-            <th style="width: 90px" class="text-center text-nowrap">
+            <th style="width: 90px" class="text-center text-nowrap sortable" data-column="rho_v2_calc">
               ρV² calc<br /><small class="fw-normal text-secondary">Pa</small>
+              <i class="bi bi-arrow-down-up sort-icon"></i>
             </th>
-            <th style="width: 90px" class="text-center text-nowrap">
+            <th style="width: 90px" class="text-center text-nowrap sortable" data-column="dp_calc">
               dP/DL calc<br /><small class="fw-normal text-secondary"
                 >kPa/100m</small
               >
+              <i class="bi bi-arrow-down-up sort-icon"></i>
             </th>
-            <th style="width: 80px" class="text-center text-nowrap">
+            <th style="width: 80px" class="text-center text-nowrap sortable" data-column="vel_calc">
               vel calc<br /><small class="fw-normal text-secondary">m/s</small>
+              <i class="bi bi-arrow-down-up sort-icon"></i>
             </th>
           </tr>
         </thead>
@@ -295,6 +310,34 @@ rho_v2_calc}} #}
 </script>
 
 {% endblock %} {% block scripts %}
+<style>
+  .sortable {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+  }
+  .sortable:hover {
+    background-color: #e9ecef;
+  }
+  .sort-icon {
+    font-size: 0.75rem;
+    margin-left: 4px;
+    opacity: 0.3;
+  }
+  .sortable:hover .sort-icon {
+    opacity: 0.7;
+  }
+  .sortable.sort-asc .sort-icon::before {
+    content: "\F12C";
+  }
+  .sortable.sort-desc .sort-icon::before {
+    content: "\F12A";
+  }
+  .sortable.sort-asc .sort-icon,
+  .sortable.sort-desc .sort-icon {
+    opacity: 1;
+  }
+</style>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     // -----------------------------------------------------------------------
@@ -329,7 +372,7 @@ rho_v2_calc}} #}
     function fmtRhoV2Range(min, max) {
       if (min == null || max == null) return "—";
       const fmtK = (v) =>
-        v >= 1000 ? (v / 1000).toFixed(1) + "k" : v.toFixed(0);
+        v >= 1000 ? (v / 1000).toFixed(0) + "k" : v.toFixed(0);
       return min === 0.0
         ? "\u2264 " + fmtK(max)
         : fmtK(min) + " \u2013 " + fmtK(max);
@@ -356,11 +399,11 @@ rho_v2_calc}} #}
       const key = state + ":" + code;
       const vals = (PIPE_CRITERIA[pipe] || {})[key];
 
-      const fmt = (v) => (v == null || v >= 9999 ? "—" : v.toFixed(2));
+      const fmt = (v) => (v == null ? "—" : v.toFixed(2));
 
       if (vals && state && code) {
         dpEl.textContent = fmt(vals.max_dp);
-        vminEl.textContent = vals.min_vel.toFixed(2);
+        vminEl.textContent = vals.min_vel > 0 ? vals.min_vel.toFixed(2) : "—";
         vmaxEl.textContent = fmt(vals.max_vel);
         if (rhov2El)
           rhov2El.textContent = fmtRhoV2Range(vals.rho_v2_min, vals.rho_v2_max);
@@ -404,24 +447,17 @@ rho_v2_calc}} #}
       const calcs = PIPE_CALCS[pipe] || {};
       if (!vals) return;
 
-      // dP: flag if calc > max_dp (and max_dp is a real limit)
+      // dP: flag if calc > max_dp (null max_dp means no limit)
       if (dpCalcEl && calcs.dp_calc != null && calcs.dp_calc > 0) {
-        if (
-          vals.max_dp != null &&
-          vals.max_dp < 9999 &&
-          calcs.dp_calc > vals.max_dp
-        ) {
+        if (vals.max_dp != null && calcs.dp_calc > vals.max_dp) {
           dpCalcEl.classList.add("text-danger", "fw-semibold");
         }
       }
 
-      // Velocity: flag if below min or above max
+      // Velocity: flag if below min (>0) or above max (null = no limit)
       if (velCalcEl && calcs.vel_calc != null && calcs.vel_calc > 0) {
-        const tooSlow = vals.min_vel != null && calcs.vel_calc < vals.min_vel;
-        const tooFast =
-          vals.max_vel != null &&
-          vals.max_vel < 9999 &&
-          calcs.vel_calc > vals.max_vel;
+        const tooSlow = vals.min_vel > 0 && calcs.vel_calc < vals.min_vel;
+        const tooFast = vals.max_vel != null && calcs.vel_calc > vals.max_vel;
         if (tooSlow || tooFast) {
           velCalcEl.classList.add("text-danger", "fw-semibold");
         }
@@ -484,7 +520,7 @@ rho_v2_calc}} #}
     (function () {
       const fmtCalc = (v) => (v == null || v === 0 ? "—" : v.toFixed(2));
       const fmtRhoV2Calc = (v) => {
-        if (v == null) return "—";
+        if (v == null || v === 0) return "—";
         return v >= 1000 ? (v / 1000).toFixed(1) + "k" : v.toFixed(0);
       };
       document.querySelectorAll(".pipe-row").forEach(function (row) {
@@ -700,6 +736,108 @@ rho_v2_calc}} #}
         document.getElementById("btn-predict").disabled = true;
         document.getElementById("predict-spinner").classList.remove("d-none");
       });
+
+    // -----------------------------------------------------------------------
+    // Column sorting
+    // -----------------------------------------------------------------------
+    const tbody = document.querySelector("#criteria-table tbody");
+    let sortDirection = {};
+    let currentSort = null;
+
+    const COL_SELECTOR = {
+      index:        (row) => row.querySelector("td:nth-child(2)"),
+      pipe:         (row) => row.querySelector("td:nth-child(3)"),
+      state:        (row) => row.querySelector(".state-select"),
+      criteria:     (row) => row.querySelector(".criteria-select"),
+      dp_max:       (row) => row.querySelector(".crit-dp"),
+      v_min:        (row) => row.querySelector(".crit-vmin"),
+      v_max:        (row) => row.querySelector(".crit-vmax"),
+      rho_v2_range: (row) => row.querySelector(".crit-rhov2"),
+      rho_v2_calc:  (row) => row.querySelector(".calc-rhov2"),
+      dp_calc:      (row) => row.querySelector(".calc-dp"),
+      vel_calc:     (row) => row.querySelector(".calc-vel"),
+    };
+
+    function getCellValue(row, column) {
+      const getter = COL_SELECTOR[column];
+      if (!getter) return "";
+      const cell = getter(row);
+      if (!cell) return "";
+      if (cell.tagName === "SELECT") return cell.value;
+      const text = cell.textContent.trim();
+      return text === "—" ? null : text;
+    }
+
+    function getNumericValue(value) {
+      if (value === null || value === "") return -Infinity;
+      const v = value.trim();
+      if (v.endsWith("k")) return parseFloat(v) * 1000;
+      const num = parseFloat(v.replace(/,/g, ""));
+      return isNaN(num) ? -Infinity : num;
+    }
+
+    function sortRows(column, isAscending) {
+      const rows = Array.from(tbody.querySelectorAll(".pipe-row"));
+      const isNumeric = [
+        "index",
+        "dp_max",
+        "v_min",
+        "v_max",
+        "rho_v2_calc",
+        "dp_calc",
+        "vel_calc",
+      ].includes(column);
+
+      rows.sort((a, b) => {
+        let valA = getCellValue(a, column);
+        let valB = getCellValue(b, column);
+
+        if (isNumeric) {
+          valA = getNumericValue(valA);
+          valB = getNumericValue(valB);
+          return isAscending ? valA - valB : valB - valA;
+        } else {
+          valA = (valA || "").toLowerCase();
+          valB = (valB || "").toLowerCase();
+          if (valA < valB) return isAscending ? -1 : 1;
+          if (valA > valB) return isAscending ? 1 : -1;
+          return 0;
+        }
+      });
+
+      rows.forEach((row) => tbody.appendChild(row));
+    }
+
+    function updateSortIcons(column) {
+      document.querySelectorAll("th.sortable").forEach((th) => {
+        if (th.dataset.column === column) {
+          const isAsc = sortDirection[column];
+          th.classList.remove("sort-asc", "sort-desc");
+          th.classList.add(isAsc ? "sort-asc" : "sort-desc");
+        } else {
+          th.classList.remove("sort-asc", "sort-desc");
+        }
+      });
+    }
+
+    document.querySelectorAll("th.sortable").forEach((th) => {
+      th.addEventListener("click", function (e) {
+        if (e.target.closest("input")) return;
+        const column = this.dataset.column;
+        if (!column) return;
+
+        if (currentSort === column) {
+          sortDirection[column] = !sortDirection[column];
+        } else {
+          sortDirection[column] = true;
+          currentSort = column;
+        }
+
+        sortRows(column, sortDirection[column]);
+        updateSortIcons(column);
+        updateBulkUI();
+      });
+    });
   });
 </script>
 {% endblock %}
