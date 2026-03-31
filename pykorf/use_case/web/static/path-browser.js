@@ -1,23 +1,10 @@
 /**
- * pyKorf Web UI — shared helpers.
- * No framework, no build step.
+ * pyKorf Web UI — Path Browser widget.
+ * Supports SharePoint URL detection for synced folders.
  */
 
-// ─── Generic loading-spinner on any data-loading form ─────────────────────
-document.addEventListener('DOMContentLoaded', function () {
-  document.querySelectorAll('form[data-loading]').forEach(function (form) {
-    form.addEventListener('submit', function () {
-      var btn    = form.querySelector('button[type="submit"]');
-      var spinner = form.querySelector('.spinner-border');
-      if (btn)     btn.disabled = true;
-      if (spinner) spinner.classList.remove('d-none');
-    });
-  });
-});
-
-
 // ═══════════════════════════════════════════════════════════════════════════
-// Path Browser  (supports SharePoint URL detection for synced folders)
+// Path Browser
 // ═══════════════════════════════════════════════════════════════════════════
 
 var PathBrowser = (function () {
