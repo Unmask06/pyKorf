@@ -526,15 +526,190 @@ class Model(_ModelBase):
         """
         return self._layout_service.auto_place(elem)
 
-    def auto_layout(self, spacing: float | None = None) -> None:
-        """Automatically arrange all unplaced elements in a logical flow.
+    def auto_layout(
+        self,
+        spacing: float | None = None,
+        strategy: str = "grid",
+        route_pipes: bool = False,
+    ) -> None:
+        """Automatically arrange all unplaced elements.
 
         Parameters
         ----------
         spacing:
             Spacing between elements. If None, uses default comfort spacing.
+        strategy:
+            ``"grid"`` (default) - simple rectangular grid.
+            ``"flow"`` - topological left-to-right placement ordered by
+            element connectivity (FEED -> equipment -> PROD).
+        route_pipes:
+            When True, route every pipe as an orthogonal polyline after
+            placement. Combines layout + routing in one call. Default False.
         """
-        return self._layout_service.auto_layout(spacing)
+        return self._layout_service.auto_layout(spacing, strategy, route_pipes)
+
+    # ------------------------------------------------------------------
+    # Pipe polyline helpers - delegate to LayoutService
+    # ------------------------------------------------------------------
+
+    def get_polyline(self, pipe: BaseElement) -> list[tuple[float, float]]:
+        """Get the drawn waypoints from a pipe's XY record.
+
+        Parameters
+        ----------
+        pipe:
+            A PIPE element.
+
+        Returns:
+        -------
+        list[tuple[float, float]]
+            Ordered list of (x, y) waypoint tuples. Empty if none are set.
+        """
+        return self._layout_service.get_polyline(pipe)
+
+    def set_polyline(self, pipe: BaseElement, points: list[tuple[float, float]]) -> None:
+        """Write waypoints into a pipe's XY record.
+
+        Parameters
+        ----------
+        pipe:
+            A PIPE element.
+        points:
+            Ordered list of (x, y) waypoints.
+        """
+        return self._layout_service.set_polyline(pipe, points)
+
+    def add_bend(
+        self,
+        pipe: BaseElement,
+        x: float,
+        y: float,
+        index: int | None = None,
+    ) -> None:
+        """Insert a bend waypoint into a pipe's polyline.
+
+        Creates an angular corner in the pipe drawing. The most common
+        use-case is making an L-shaped route (start -> corner -> end).
+
+        For an orthogonal L from ``(x1, y1)`` to ``(x2, y2)``:
+
+        - horizontal-first: ``add_bend(pipe, x2, y1)``
+        - vertical-first:   ``add_bend(pipe, x1, y2)``
+
+        Parameters
+        ----------
+        pipe:
+            A PIPE element.
+        x:
+            X coordinate of the new waypoint.
+        y:
+            Y coordinate of the new waypoint.
+        index:
+            Position in the waypoints list to insert at. ``None`` (default)
+            inserts before the last point, making it the corner of a
+            start -> corner -> end L-shape.
+        """
+        return self._layout_service.add_bend(pipe, x, y, index)
+
+    # ------------------------------------------------------------------
+    # Orthogonal routing - delegate to LayoutService
+    # ------------------------------------------------------------------
+
+    def route_pipe(self, pipe: BaseElement, bend: str = "auto") -> None:
+        """Route a single pipe as an orthogonal polyline between its endpoints.
+
+        Parameters
+        ----------
+        pipe:
+            A PIPE element.
+        bend:
+            Corner direction: ``"h"`` horizontal-first, ``"v"`` vertical-first,
+            ``"auto"`` (default) chosen by dominant displacement.
+        """
+        return self._layout_service.route_pipe(pipe, bend)
+
+    def route_all_pipes(self, bend: str = "auto") -> None:
+        """Route every pipe with two connected elements as an orthogonal polyline.
+
+        Parameters
+        ----------
+        bend:
+            Corner direction applied to all pipes.
+            ``"h"``, ``"v"``, or ``"auto"`` (default).
+        """
+        return self._layout_service.route_all_pipes(bend)
+
+    # ------------------------------------------------------------------
+    # Alignment and grid helpers - delegate to LayoutService
+    # ------------------------------------------------------------------
+
+    def snap_orthogonal(self, threshold_deg: float = 10.0) -> None:
+        """Snap near-orthogonal connections to exactly horizontal or vertical.
+
+        Parameters
+        ----------
+        threshold_deg:
+            Maximum deviation in degrees to trigger snapping. Defaults to 10.
+        """
+        return self._layout_service.snap_orthogonal(threshold_deg)
+
+    def align_horizontal(self, names: list[str], anchor_y: float | None = None) -> None:
+        """Align named elements to the same Y coordinate.
+
+        Parameters
+        ----------
+        names:
+            Element names to align.
+        anchor_y:
+            Target Y. If omitted, the mean Y of the group is used.
+        """
+        return self._layout_service.align_horizontal(names, anchor_y)
+
+    def align_vertical(self, names: list[str], anchor_x: float | None = None) -> None:
+        """Align named elements to the same X coordinate.
+
+        Parameters
+        ----------
+        names:
+            Element names to align.
+        anchor_x:
+            Target X. If omitted, the mean X of the group is used.
+        """
+        return self._layout_service.align_vertical(names, anchor_x)
+
+    def distribute_horizontal(self, names: list[str]) -> None:
+        """Space named elements evenly along the X axis.
+
+        Parameters
+        ----------
+        names:
+            Element names to distribute (at least 3 required for effect).
+        """
+        return self._layout_service.distribute_horizontal(names)
+
+    def distribute_vertical(self, names: list[str]) -> None:
+        """Space named elements evenly along the Y axis.
+
+        Parameters
+        ----------
+        names:
+            Element names to distribute (at least 3 required for effect).
+        """
+        return self._layout_service.distribute_vertical(names)
+
+    def snap_to_grid(self, grid_size: float = 500.0) -> None:
+        """Round every placed element's position to the nearest grid point.
+
+        Parameters
+        ----------
+        grid_size:
+            Grid cell size in model units. Defaults to 500.
+        """
+        return self._layout_service.snap_to_grid(grid_size)
+
+    def center_layout(self) -> None:
+        """Translate all placed elements so the bounding box is centred on the canvas."""
+        return self._layout_service.center_layout()
 
     def visualize(self, **kwargs: Any) -> str:
         """Create a text visualization of elements and connections.

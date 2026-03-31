@@ -300,16 +300,687 @@ class LayoutService:
 
         return conn_lines
 
-    def auto_layout(self, spacing: float | None = None) -> None:
-        """Automatically arrange all unplaced elements in a logical flow."""
+    # ------------------------------------------------------------------
+    # Pipe polyline (waypoint) access
+    # ------------------------------------------------------------------
+
+    def get_polyline(self, pipe: BaseElement) -> list[tuple[float, float]]:
+        """Get the drawn waypoints from a pipe's XY record.
+
+        Pair 0 of the XY record is the element icon anchor (managed by
+        :meth:`get_position`).  Waypoints begin at pair 1 (index 2) and
+        continue until the first ``(0, 0)`` padding pair.
+
+        Args:
+            pipe: A PIPE element.
+
+        Returns:
+            Ordered list of ``(x, y)`` waypoint tuples.  Empty list if none
+            are set.
+        """
+        rec = pipe.get_param("XY")
+        if rec is None or len(rec.values) < 4:
+            return []
+        vals = rec.values
+        points: list[tuple[float, float]] = []
+        i = 2  # skip pair 0 (primary / icon-anchor position)
+        while i + 1 < len(vals):
+            try:
+                x, y = float(vals[i]), float(vals[i + 1])
+            except (ValueError, TypeError):
+                break
+            if x == 0.0 and y == 0.0:
+                break
+            points.append((x, y))
+            i += 2
+        return points
+
+    def __set_bend_flag(self, pipe: BaseElement, value: int) -> None:
+        """Write the BEND flag on a pipe (0 = no bends, 1 = has bends)."""
+        rec = pipe.get_param("BEND")
+        if rec is None:
+            return
+        vals = list(rec.values)
+        if vals:
+            vals[0] = str(value)
+            rec.values = vals
+            rec.raw_line = ""
+
+    def set_polyline(self, pipe: BaseElement, points: list[tuple[float, float]]) -> None:
+        """Write waypoints into a pipe's XY record.
+
+        Pair 0 (the element icon anchor) is left unchanged.  Pair 1 onward
+        is overwritten with *points*, followed by zeros.  The ``BEND`` flag
+        is set to ``1`` if waypoints are present, ``0`` otherwise.
+
+        Args:
+            pipe: A PIPE element.
+            points: Ordered list of ``(x, y)`` waypoints.
+        """
+        rec = pipe.get_param("XY")
+        if rec is None:
+            return
+        vals = list(rec.values)
+        write_idx = 2  # start after pair 0 (primary position)
+        for x, y in points:
+            if write_idx + 1 >= len(vals):
+                break
+            vals[write_idx] = str(x)
+            vals[write_idx + 1] = str(y)
+            write_idx += 2
+        for i in range(write_idx, len(vals)):
+            vals[i] = "0"
+        rec.values = vals
+        rec.raw_line = ""
+        self.__set_bend_flag(pipe, 1 if points else 0)
+
+    def add_bend(
+        self,
+        pipe: BaseElement,
+        x: float,
+        y: float,
+        index: int | None = None,
+    ) -> None:
+        """Insert a bend waypoint into a pipe's polyline.
+
+        A bend waypoint creates an angular corner in the pipe drawing.
+        The most common use-case is converting a straight pipe into an
+        L-shape by inserting one corner point between start and end::
+
+            start ──► corner ──► end   (two orthogonal segments)
+
+        To build an orthogonal L-shape from ``(x1, y1)`` to ``(x2, y2)``:
+
+        - horizontal-first corner: ``add_bend(pipe, x2, y1)``
+        - vertical-first corner:   ``add_bend(pipe, x1, y2)``
+
+        Args:
+            pipe: A PIPE element.
+            x: X coordinate of the new waypoint.
+            y: Y coordinate of the new waypoint.
+            index: Position in the waypoints list to insert at.
+                ``None`` (default) inserts *before* the last waypoint so
+                the point becomes the corner of a start → corner → end
+                L-shape.  Pass ``0`` to prepend or
+                ``len(get_polyline(pipe))`` to append.
+        """
+        points = self.get_polyline(pipe)
+        if not points:
+            pos = self.get_position(pipe)
+            if pos is not None and pos != (0.0, 0.0):
+                points = [pos]
+
+        insert_at = max(0, len(points) - 1) if index is None else index
+        points.insert(insert_at, (x, y))
+        self.set_polyline(pipe, points)
+
+    # ------------------------------------------------------------------
+    # Flow connectivity helpers
+    # ------------------------------------------------------------------
+
+    def _build_pipe_to_elems(self) -> dict[int, list[str]]:
+        """Build an undirected map of pipe index -> element names using that pipe.
+
+        Covers equipment ``CON`` records (both inlet and outlet) and FEED /
+        PRODUCT ``NOZL`` / ``NOZ`` records.
+
+        Returns:
+            Dict mapping pipe index to a list of element names.
+        """
+        from collections import defaultdict
+
+        pipe_to_elems: dict[int, list[str]] = defaultdict(list)
+
+        equip_attrs = (
+            "pumps",
+            "valves",
+            "check_valves",
+            "orifices",
+            "exchangers",
+            "compressors",
+            "misc_equipment",
+            "expanders",
+        )
+        for attr in equip_attrs:
+            for idx, elem in getattr(self.model, attr, {}).items():
+                if idx == 0:
+                    continue
+                rec = elem.get_param("CON")
+                if rec and len(rec.values) >= 2:
+                    for raw in rec.values[:2]:
+                        try:
+                            p = int(raw)
+                            if p:
+                                pipe_to_elems[p].append(elem.name)
+                        except (ValueError, TypeError):
+                            pass
+
+        for attr in ("feeds", "products"):
+            for idx, elem in getattr(self.model, attr, {}).items():
+                if idx == 0:
+                    continue
+                for noz in ("NOZL", "NOZ"):
+                    rec = elem.get_param(noz)
+                    if rec and rec.values:
+                        try:
+                            p = int(rec.values[0])
+                            if p:
+                                pipe_to_elems[p].append(elem.name)
+                        except (ValueError, TypeError):
+                            pass
+                        break
+
+        return dict(pipe_to_elems)
+
+    def _build_flow_graph(self) -> dict[str, list[str]]:
+        """Build a directed element-to-element adjacency from flow connectivity.
+
+        Uses the undirected pipe-to-element map from :meth:`_build_pipe_to_elems`
+        combined with each element's *outlet* pipe (``CON[1]`` for equipment,
+        ``NOZL`` for FEEDs) to determine flow direction.
+
+        Returns:
+            Dict mapping each element name to downstream element names.
+        """
+        from collections import defaultdict
+
+        pipe_to_elems = self._build_pipe_to_elems()
+        elem_out_pipe: dict[str, int] = {}
+
+        equip_attrs = (
+            "pumps",
+            "valves",
+            "check_valves",
+            "orifices",
+            "exchangers",
+            "compressors",
+            "misc_equipment",
+            "expanders",
+        )
+        for attr in equip_attrs:
+            for idx, elem in getattr(self.model, attr, {}).items():
+                if idx == 0:
+                    continue
+                rec = elem.get_param("CON")
+                if rec and len(rec.values) >= 2:
+                    try:
+                        out_p = int(rec.values[1])
+                        if out_p:
+                            elem_out_pipe[elem.name] = out_p
+                    except (ValueError, TypeError):
+                        pass
+
+        for idx, elem in getattr(self.model, "feeds", {}).items():
+            if idx == 0:
+                continue
+            for noz in ("NOZL", "NOZ"):
+                rec = elem.get_param(noz)
+                if rec and rec.values:
+                    try:
+                        p = int(rec.values[0])
+                        if p:
+                            elem_out_pipe[elem.name] = p
+                    except (ValueError, TypeError):
+                        pass
+                    break
+
+        graph: dict[str, list[str]] = defaultdict(list)
+        for elem_name, out_p in elem_out_pipe.items():
+            for other in pipe_to_elems.get(out_p, []):
+                if other != elem_name:
+                    graph[elem_name].append(other)
+
+        return dict(graph)
+
+    def _assign_flow_levels(self, graph: dict[str, list[str]]) -> dict[str, int]:
+        """Assign a column depth to each element via BFS from source nodes.
+
+        Depth is the length of the *longest* path from any source (in-degree 0)
+        node, so that elements always appear to the right of all their
+        predecessors.
+
+        Returns:
+            Dict mapping element name to column index (0 = leftmost).
+        """
+        from collections import defaultdict, deque
+
+        all_nodes: set[str] = set(graph.keys())
+        for dests in graph.values():
+            all_nodes.update(dests)
+
+        in_degree: dict[str, int] = defaultdict(int)
+        for node in all_nodes:
+            in_degree[node] += 0  # ensure every node is present
+        for dests in graph.values():
+            for d in dests:
+                in_degree[d] += 1
+
+        levels: dict[str, int] = {}
+        queue: deque[str] = deque()
+        for node in all_nodes:
+            if in_degree[node] == 0:
+                levels[node] = 0
+                queue.append(node)
+
+        while queue:
+            node = queue.popleft()
+            for neighbor in graph.get(node, []):
+                new_lvl = levels[node] + 1
+                if neighbor not in levels or levels[neighbor] < new_lvl:
+                    levels[neighbor] = new_lvl
+                in_degree[neighbor] -= 1
+                if in_degree[neighbor] == 0:
+                    queue.append(neighbor)
+
+        return levels
+
+    def _auto_layout_grid(
+        self,
+        unplaced: list[BaseElement],
+        existing: list[tuple[float, float]],
+        spacing: float,
+    ) -> None:
+        """Place elements in a simple square-root grid (default strategy)."""
+        import math
+
+        cols = max(1, int(math.sqrt(len(unplaced))))
+        for i, elem in enumerate(unplaced):
+            row = i // cols
+            col = i % cols
+            x = X_MIN + col * spacing
+            y = Y_MIN + row * spacing
+            for ex, ey in existing:
+                if abs(x - ex) < spacing / 2 and abs(y - ey) < spacing / 2:
+                    x += spacing
+                    break
+            self.set_position(self.model, elem.name, x, y)
+            existing.append((x, y))
+
+    def _auto_layout_flow(
+        self,
+        unplaced: list[BaseElement],
+        existing: list[tuple[float, float]],
+        spacing: float,
+    ) -> None:
+        """Place elements left-to-right in topological flow order.
+
+        Elements connected to FEEDs are placed in column 0, their
+        downstream neighbours in column 1, and so on.  Elements with no
+        connectivity are placed in a grid after the flow columns.
+        """
+        import math
+        from collections import defaultdict
+
+        graph = self._build_flow_graph()
+        levels = self._assign_flow_levels(graph)
+
+        level_groups: dict[int, list[BaseElement]] = defaultdict(list)
+        no_level: list[BaseElement] = []
+        for elem in unplaced:
+            if elem.name in levels:
+                level_groups[levels[elem.name]].append(elem)
+            else:
+                no_level.append(elem)
+
+        for level in sorted(level_groups.keys()):
+            group = level_groups[level]
+            x = X_MIN + level * spacing
+            for i, elem in enumerate(group):
+                y = Y_MIN + i * spacing
+                self.set_position(self.model, elem.name, x, y)
+                existing.append((x, y))
+
+        if no_level:
+            max_level = max(level_groups.keys(), default=-1)
+            start_x = X_MIN + (max_level + 2) * spacing
+            cols = max(1, int(math.sqrt(len(no_level))))
+            for i, elem in enumerate(no_level):
+                row = i // cols
+                col = i % cols
+                x = start_x + col * spacing
+                y = Y_MIN + row * spacing
+                self.set_position(self.model, elem.name, x, y)
+                existing.append((x, y))
+
+    def _get_connected_pairs(self) -> list[tuple[str, str]]:
+        """Return unique connected element pairs that share a common pipe.
+
+        Returns:
+            List of ``(name_a, name_b)`` tuples for each pair of elements
+            connected via the same pipe index.
+        """
+        pipe_to_elems = self._build_pipe_to_elems()
+
+        pairs: list[tuple[str, str]] = []
+        seen: set[frozenset[str]] = set()
+        for elems in pipe_to_elems.values():
+            if len(elems) == 2:
+                key: frozenset[str] = frozenset(elems)
+                if key not in seen:
+                    seen.add(key)
+                    pairs.append((elems[0], elems[1]))
+        return pairs
+
+    def snap_orthogonal(self, threshold_deg: float = 10.0) -> None:
+        """Snap near-orthogonal connections to be exactly horizontal or vertical.
+
+        For each connected element pair, if the angle between their positions
+        deviates less than *threshold_deg* from horizontal (0°) or vertical
+        (90°), the second element's Y (horizontal snap) or X (vertical snap)
+        is adjusted to make the connection exactly orthogonal.
+
+        Args:
+            threshold_deg: Maximum deviation in degrees to trigger snapping.
+                Defaults to 10.
+        """
+        import math
+
+        pairs = self._get_connected_pairs()
+        for name1, name2 in pairs:
+            try:
+                elem1 = self.model.get_element(name1)
+                elem2 = self.model.get_element(name2)
+            except KeyError:
+                continue
+            pos1 = self.get_position(elem1)
+            pos2 = self.get_position(elem2)
+            if pos1 is None or pos2 is None:
+                continue
+            dx = pos2[0] - pos1[0]
+            dy = pos2[1] - pos1[1]
+            if dx == 0 and dy == 0:
+                continue
+            # angle_deg in [0, 90]: deviation from the nearest cardinal axis
+            angle_deg = math.degrees(math.atan2(abs(dy), abs(dx)))
+            if angle_deg < threshold_deg:
+                # Almost horizontal — align elem2's Y to elem1's Y
+                self.__set_position_on_element(elem2, pos2[0], pos1[1])
+            elif angle_deg > (90.0 - threshold_deg):
+                # Almost vertical — align elem2's X to elem1's X
+                self.__set_position_on_element(elem2, pos1[0], pos2[1])
+
+    # ------------------------------------------------------------------
+    # Orthogonal pipe routing
+    # ------------------------------------------------------------------
+
+    def route_pipe(self, pipe: BaseElement, bend: str = "auto") -> None:
+        """Route a single pipe as an orthogonal polyline between its endpoints.
+
+        Looks up the two elements connected by *pipe*, reads their positions,
+        and writes a 2- or 3-point polyline:
+
+        - Straight line (2 points) when the connection is already horizontal
+          or vertical.
+        - L-shape (3 points) otherwise, with one 90-degree corner.
+
+        The corner direction is controlled by *bend*:
+
+        - ``"h"`` - horizontal-first: ``start -> (x_end, y_start) -> end``
+        - ``"v"`` - vertical-first:   ``start -> (x_start, y_end) -> end``
+        - ``"auto"`` (default) - horizontal-first when ``|dx| >= |dy|``,
+          vertical-first otherwise.
+
+        Args:
+            pipe: A PIPE element to route.
+            bend: Corner direction. One of ``"h"``, ``"v"``, or ``"auto"``.
+        """
+        pipe_to_elems = self._build_pipe_to_elems()
+        endpoint_names = pipe_to_elems.get(pipe.index, [])
+        if len(endpoint_names) != 2:
+            return
+
+        try:
+            elem1 = self.model.get_element(endpoint_names[0])
+            elem2 = self.model.get_element(endpoint_names[1])
+        except Exception:
+            return
+
+        pos1 = self.get_position(elem1)
+        pos2 = self.get_position(elem2)
+        if pos1 is None or pos2 is None:
+            return
+
+        x1, y1 = pos1
+        x2, y2 = pos2
+        dx = x2 - x1
+        dy = y2 - y1
+
+        if dx == 0.0 or dy == 0.0:
+            # Already orthogonal — straight two-point line
+            points: list[tuple[float, float]] = [(x1, y1), (x2, y2)]
+        else:
+            if bend == "auto":
+                effective = "h" if abs(dx) >= abs(dy) else "v"
+            else:
+                effective = bend
+
+            if effective == "h":
+                # Horizontal first: travel along X to align, then along Y
+                points = [(x1, y1), (x2, y1), (x2, y2)]
+            else:
+                # Vertical first: travel along Y to align, then along X
+                points = [(x1, y1), (x1, y2), (x2, y2)]
+
+        # Update the pipe's primary position (icon anchor) to the start point
+        self.__set_position_on_element(pipe, x1, y1)
+        self.set_polyline(pipe, points)
+
+    def route_all_pipes(self, bend: str = "auto") -> None:
+        """Route every pipe with two connected elements as an orthogonal polyline.
+
+        Iterates over all non-template pipes in the model and calls
+        :meth:`route_pipe` on each one that connects exactly two elements.
+        Pipes with zero or one connected element (stubs) are silently skipped.
+
+        Args:
+            bend: Corner direction applied to all pipes.
+                ``"h"`` - horizontal-first, ``"v"`` - vertical-first,
+                ``"auto"`` (default) - chosen per-pipe by dominant displacement.
+        """
+        for idx, pipe in self.model.pipes.items():
+            if idx == 0 or not pipe.name:
+                continue
+            self.route_pipe(pipe, bend)
+
+    # ------------------------------------------------------------------
+    # Alignment helpers
+    # ------------------------------------------------------------------
+
+    def align_horizontal(self, names: list[str], anchor_y: float | None = None) -> None:
+        """Align all named elements to the same Y coordinate.
+
+        Elements are moved vertically so they share a common Y.  If
+        *anchor_y* is not given the average Y of the named elements is used.
+
+        Args:
+            names: Element names to align.
+            anchor_y: Target Y coordinate. Defaults to the mean Y of the group.
+        """
+        positioned = []
+        for name in names:
+            try:
+                elem = self.model.get_element(name)
+            except Exception:
+                continue
+            pos = self.get_position(elem)
+            if pos is not None:
+                positioned.append((elem, pos))
+
+        if not positioned:
+            return
+
+        target_y = anchor_y if anchor_y is not None else sum(p[1] for _, p in positioned) / len(positioned)
+        for elem, pos in positioned:
+            self.__set_position_on_element(elem, pos[0], target_y)
+
+    def align_vertical(self, names: list[str], anchor_x: float | None = None) -> None:
+        """Align all named elements to the same X coordinate.
+
+        Elements are moved horizontally so they share a common X.  If
+        *anchor_x* is not given the average X of the named elements is used.
+
+        Args:
+            names: Element names to align.
+            anchor_x: Target X coordinate. Defaults to the mean X of the group.
+        """
+        positioned = []
+        for name in names:
+            try:
+                elem = self.model.get_element(name)
+            except Exception:
+                continue
+            pos = self.get_position(elem)
+            if pos is not None:
+                positioned.append((elem, pos))
+
+        if not positioned:
+            return
+
+        target_x = anchor_x if anchor_x is not None else sum(p[0] for _, p in positioned) / len(positioned)
+        for elem, pos in positioned:
+            self.__set_position_on_element(elem, target_x, pos[1])
+
+    # ------------------------------------------------------------------
+    # Distribution helpers
+    # ------------------------------------------------------------------
+
+    def distribute_horizontal(self, names: list[str]) -> None:
+        """Space named elements evenly along the X axis.
+
+        The leftmost and rightmost elements stay fixed; everything in between
+        is repositioned with equal gaps.  At least three elements are needed
+        for the distribution to have any effect.
+
+        Args:
+            names: Element names to distribute (order does not matter).
+        """
+        positioned = []
+        for name in names:
+            try:
+                elem = self.model.get_element(name)
+            except Exception:
+                continue
+            pos = self.get_position(elem)
+            if pos is not None:
+                positioned.append((elem, pos))
+
+        if len(positioned) < 3:
+            return
+
+        positioned.sort(key=lambda ep: ep[1][0])
+        x_min = positioned[0][1][0]
+        x_max = positioned[-1][1][0]
+        step = (x_max - x_min) / (len(positioned) - 1)
+        for i, (elem, pos) in enumerate(positioned):
+            self.__set_position_on_element(elem, x_min + i * step, pos[1])
+
+    def distribute_vertical(self, names: list[str]) -> None:
+        """Space named elements evenly along the Y axis.
+
+        The topmost and bottommost elements stay fixed; everything in between
+        is repositioned with equal gaps.  At least three elements are needed
+        for the distribution to have any effect.
+
+        Args:
+            names: Element names to distribute (order does not matter).
+        """
+        positioned = []
+        for name in names:
+            try:
+                elem = self.model.get_element(name)
+            except Exception:
+                continue
+            pos = self.get_position(elem)
+            if pos is not None:
+                positioned.append((elem, pos))
+
+        if len(positioned) < 3:
+            return
+
+        positioned.sort(key=lambda ep: ep[1][1])
+        y_min = positioned[0][1][1]
+        y_max = positioned[-1][1][1]
+        step = (y_max - y_min) / (len(positioned) - 1)
+        for i, (elem, pos) in enumerate(positioned):
+            self.__set_position_on_element(elem, pos[0], y_min + i * step)
+
+    # ------------------------------------------------------------------
+    # Grid snapping and centering
+    # ------------------------------------------------------------------
+
+    def snap_to_grid(self, grid_size: float = 500.0) -> None:
+        """Round every placed element's position to the nearest grid point.
+
+        Args:
+            grid_size: Grid cell size in model units. Defaults to 500.
+        """
+        if grid_size <= 0:
+            raise ValueError(f"grid_size must be positive, got {grid_size}")
+        for elem in self.model.elements:
+            pos = self.get_position(elem)
+            if pos is None or pos == (0.0, 0.0):
+                continue
+            snapped_x = round(pos[0] / grid_size) * grid_size
+            snapped_y = round(pos[1] / grid_size) * grid_size
+            self.__set_position_on_element(elem, snapped_x, snapped_y)
+
+    def center_layout(self) -> None:
+        """Translate all placed elements so the bounding box is centred on the canvas.
+
+        The canvas centre is ``((X_MIN + X_MAX) / 2, (Y_MIN + Y_MAX) / 2)``.
+        All elements are shifted by the same offset so that the mid-point of
+        their collective bounding box coincides with the canvas centre.
+        """
+        positioned = [
+            (elem, pos)
+            for elem in self.model.elements
+            for pos in (self.get_position(elem),)
+            if pos is not None and pos != (0.0, 0.0)
+        ]
+        if not positioned:
+            return
+
+        xs = [p[0] for _, p in positioned]
+        ys = [p[1] for _, p in positioned]
+        bbox_cx = (min(xs) + max(xs)) / 2
+        bbox_cy = (min(ys) + max(ys)) / 2
+        canvas_cx = (X_MIN + X_MAX) / 2
+        canvas_cy = (Y_MIN + Y_MAX) / 2
+        dx = canvas_cx - bbox_cx
+        dy = canvas_cy - bbox_cy
+        for elem, pos in positioned:
+            self.__set_position_on_element(elem, pos[0] + dx, pos[1] + dy)
+
+    def auto_layout(
+        self,
+        spacing: float | None = None,
+        strategy: str = "grid",
+        route_pipes: bool = False,
+    ) -> None:
+        """Automatically arrange all unplaced elements.
+
+        Args:
+            spacing: Spacing between elements. Defaults to
+                :data:`COMFORT_SPACING_X`.
+            strategy: Layout algorithm.
+
+                ``"grid"`` (default) - simple rectangular grid.
+
+                ``"flow"`` - topological left-to-right placement ordered by
+                element connectivity (FEED -> equipment -> PROD).
+            route_pipes: When ``True``, call :meth:`route_all_pipes` after
+                placing elements so every pipe gets an orthogonal polyline
+                drawn between its endpoint elements. Defaults to ``False``.
+        """
         spacing = spacing or COMFORT_SPACING_X
 
         unplaced = []
         for elem in self.model.elements:
+            if not elem.name:
+                continue
             pos = self.get_position(elem)
             if pos is None or pos == (0.0, 0.0):
                 unplaced.append(elem)
-
         if not unplaced:
             return
 
@@ -319,24 +990,15 @@ class LayoutService:
             if pos is not None and pos != (0.0, 0.0)
         ]
 
-        import math
+        if strategy == "flow":
+            self._auto_layout_flow(unplaced, existing, spacing)
+        else:
+            self._auto_layout_grid(unplaced, existing, spacing)
 
-        cols = max(1, int(math.sqrt(len(unplaced))))
+        self.snap_orthogonal()
 
-        for i, elem in enumerate(unplaced):
-            row = i // cols
-            col = i % cols
-
-            x = X_MIN + col * spacing
-            y = Y_MIN + row * spacing
-
-            for ex, ey in existing:
-                if abs(x - ex) < spacing / 2 and abs(y - ey) < spacing / 2:
-                    x += spacing
-                    break
-
-            self.set_position(self.model, elem.name, x, y)
-            existing.append((x, y))
+        if route_pipes:
+            self.route_all_pipes()
 
     def visualize_network(self, path: str | Path = "network.html") -> None:
         """Generate an interactive PyVis HTML visualization."""
