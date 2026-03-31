@@ -1,7 +1,7 @@
 """Layout and positioning service for KORF models.
 
 Handles element positions (XY records), auto-placement of new elements,
-clash detection, and simple visualization.
+clash detection, alignment, and orthogonal pipe routing.
 
 XY Record Format
 ----------------
@@ -16,8 +16,7 @@ multiple coordinate pairs forming a polyline.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, cast
 
 from pykorf.exceptions import LayoutError
 
@@ -51,7 +50,8 @@ class LayoutService:
     - Getting and setting element positions
     - Auto-placement of elements
     - Layout validation and clash detection
-    - Text and HTML visualization
+    - Alignment, distribution, grid snapping, and centering
+    - Pipe polyline (waypoint) management and orthogonal routing
 
     Attributes:
         model: The Model instance to operate on.
@@ -69,8 +69,8 @@ class LayoutService:
         except (ValueError, TypeError):
             return None
 
-    def __set_position_on_element(self, elem: BaseElement, x: float, y: float) -> None:
-        """Set the primary (x, y) position on a concrete element object."""
+    def _apply_position(self, elem: BaseElement, x: float, y: float) -> None:
+        """Apply position to element's XY parameter."""
         rec = elem.get_param("XY")
         if rec is None:
             return
@@ -83,53 +83,23 @@ class LayoutService:
 
     def set_position(
         self,
-        target: str | BaseElement | Model,
-        name_or_x: str | float,
-        x_or_y: float,
-        y: float | None = None,
+        target: str | BaseElement,
+        x: float,
+        y: float,
     ) -> None:
         """Set the primary (x, y) position.
 
-        Can be called in three ways:
+        Can be called in two ways:
         - set_position(element, x, y)
         - set_position(name, x, y)
-        - set_position(model, name, x, y)
         """
-        # Case 1: set_position(model, name, x, y)
-        if hasattr(target, "get_element"):
-            if not isinstance(name_or_x, str) or y is None:
-                raise ValueError("Use set_position(model, element_name, x, y)")
-            from pykorf.model import Model as KorfModel
-
-            if isinstance(target, KorfModel):
-                elem = target.get_element(name_or_x)
-            self.__set_position_on_element(elem, float(x_or_y), float(y))
-            return
-
-        # Case 2: set_position(name, x, y)
+        # Case 1: set_position(name, x, y)
         if isinstance(target, str):
-            if y is not None:
-                # If y is provided, assume Case 1 was intended but target was name
-                # Actually Case 2 should only have 3 args (name, x, y)
-                # But if called via model.set_position("L1", x, y), it arrives here
-                # because model is not target.
-                # Wait, if called via model.set_position, target is "L1".
-                self.__set_position_on_element(
-                    self.model.get_element(target), float(name_or_x), float(x_or_y)
-                )
-                return
-            # If y is None, then Case 2: set_position(name, x, y)
-            # but wait, the signature is (self, target, name_or_x, x_or_y, y=None)
-            # So name_or_x is x, x_or_y is y.
-            self.__set_position_on_element(
-                self.model.get_element(target), float(name_or_x), float(x_or_y)
-            )
+            self._apply_position(self.model.get_element(target), float(x), float(y))
             return
 
-        # Case 3: set_position(element, x, y)
-        if y is not None:
-            raise ValueError("Use set_position(element, x, y) for element objects")
-        self.__set_position_on_element(cast("BaseElement", target), float(name_or_x), float(x_or_y))
+        # Case 2: set_position(element, x, y)
+        self._apply_position(cast("BaseElement", target), float(x), float(y))
 
     def __all_positions(self) -> dict[str, tuple[float, float]]:
         """Collect all element positions as ``{name: (x, y)}``."""
@@ -211,7 +181,7 @@ class LayoutService:
                     Y_MIN + row * COMFORT_SPACING_Y,
                 )
                 if _fits(candidate):
-                    self.__set_position_on_element(elem, candidate[0], candidate[1])
+                    self._apply_position(elem, candidate[0], candidate[1])
                     return
 
         raise LayoutError(
@@ -219,86 +189,6 @@ class LayoutService:
             f"[{X_MIN:.0f},{Y_MIN:.0f}]-[{X_MAX:.0f},{Y_MAX:.0f}] "
             f"with minimum spacing {MIN_SPACING:.0f}."
         )
-
-    def visualize(self, **kwargs: Any) -> str:
-        """Create a simple text representation of the model layout."""
-        lines: list[str] = []
-        lines.append(f"=== Model Layout: {self.model.path.name} ===")
-        lines.append(f"Version: {self.model.version}  |  Elements: {len(self.model.elements)}")
-        lines.append("")
-
-        from collections import defaultdict
-
-        by_type: dict[str, list] = defaultdict(list)
-        for elem in self.model.elements:
-            pos = self.get_position(elem)
-            pos_str = f"({pos[0]:.0f}, {pos[1]:.0f})" if pos else "(unplaced)"
-            by_type[elem.etype].append(f"  {elem.name:12s} idx={elem.index:<3d} {pos_str}")
-
-        for etype in sorted(by_type.keys()):
-            lines.append(f"[{etype}]")
-            lines.extend(by_type[etype])
-            lines.append("")
-
-        lines.append("[Connections]")
-        conn_lines = self.__format_connections()
-        if conn_lines:
-            lines.extend(conn_lines)
-        else:
-            lines.append("  (no connections)")
-        lines.append("")
-
-        return "\n".join(lines)
-
-    def __format_connections(self) -> list[str]:
-        """Format connection information for visualization."""
-        conn_lines: list[str] = []
-        pipe_names = {idx: elem.name for idx, elem in self.model.pipes.items() if idx >= 1}
-
-        for attr in (
-            "pumps",
-            "valves",
-            "check_valves",
-            "orifices",
-            "exchangers",
-            "compressors",
-            "misc_equipment",
-            "expanders",
-        ):
-            collection = getattr(self.model, attr, {})
-            for idx, elem in collection.items():
-                if idx == 0:
-                    continue
-                rec = elem.get_param("CON")
-                if rec and len(rec.values) >= 2:
-                    try:
-                        in_idx, out_idx = int(rec.values[0]), int(rec.values[1])
-                        in_name = pipe_names.get(in_idx, f"?{in_idx}")
-                        out_name = pipe_names.get(out_idx, f"?{out_idx}")
-                        if in_idx != 0 or out_idx != 0:
-                            conn_lines.append(f"  {in_name} --> [{elem.name}] --> {out_name}")
-                    except (ValueError, TypeError):
-                        pass
-
-        for attr in ("feeds", "products"):
-            collection = getattr(self.model, attr, {})
-            for idx, elem in collection.items():
-                if idx == 0:
-                    continue
-                for noz_param in ("NOZL", "NOZ"):
-                    rec = elem.get_param(noz_param)
-                    if rec and rec.values:
-                        try:
-                            pipe_ref = int(rec.values[0])
-                            if pipe_ref != 0:
-                                p_name = pipe_names.get(pipe_ref, f"?{pipe_ref}")
-                                arrow = "-->" if elem.etype == "FEED" else "<--"
-                                conn_lines.append(f"  [{elem.name}] {arrow} {p_name}")
-                        except (ValueError, TypeError):
-                            pass
-                        break
-
-        return conn_lines
 
     # ------------------------------------------------------------------
     # Pipe polyline (waypoint) access
@@ -414,166 +304,6 @@ class LayoutService:
         points.insert(insert_at, (x, y))
         self.set_polyline(pipe, points)
 
-    # ------------------------------------------------------------------
-    # Flow connectivity helpers
-    # ------------------------------------------------------------------
-
-    def _build_pipe_to_elems(self) -> dict[int, list[str]]:
-        """Build an undirected map of pipe index -> element names using that pipe.
-
-        Covers equipment ``CON`` records (both inlet and outlet) and FEED /
-        PRODUCT ``NOZL`` / ``NOZ`` records.
-
-        Returns:
-            Dict mapping pipe index to a list of element names.
-        """
-        from collections import defaultdict
-
-        pipe_to_elems: dict[int, list[str]] = defaultdict(list)
-
-        equip_attrs = (
-            "pumps",
-            "valves",
-            "check_valves",
-            "orifices",
-            "exchangers",
-            "compressors",
-            "misc_equipment",
-            "expanders",
-        )
-        for attr in equip_attrs:
-            for idx, elem in getattr(self.model, attr, {}).items():
-                if idx == 0:
-                    continue
-                rec = elem.get_param("CON")
-                if rec and len(rec.values) >= 2:
-                    for raw in rec.values[:2]:
-                        try:
-                            p = int(raw)
-                            if p:
-                                pipe_to_elems[p].append(elem.name)
-                        except (ValueError, TypeError):
-                            pass
-
-        for attr in ("feeds", "products"):
-            for idx, elem in getattr(self.model, attr, {}).items():
-                if idx == 0:
-                    continue
-                for noz in ("NOZL", "NOZ"):
-                    rec = elem.get_param(noz)
-                    if rec and rec.values:
-                        try:
-                            p = int(rec.values[0])
-                            if p:
-                                pipe_to_elems[p].append(elem.name)
-                        except (ValueError, TypeError):
-                            pass
-                        break
-
-        return dict(pipe_to_elems)
-
-    def _build_flow_graph(self) -> dict[str, list[str]]:
-        """Build a directed element-to-element adjacency from flow connectivity.
-
-        Uses the undirected pipe-to-element map from :meth:`_build_pipe_to_elems`
-        combined with each element's *outlet* pipe (``CON[1]`` for equipment,
-        ``NOZL`` for FEEDs) to determine flow direction.
-
-        Returns:
-            Dict mapping each element name to downstream element names.
-        """
-        from collections import defaultdict
-
-        pipe_to_elems = self._build_pipe_to_elems()
-        elem_out_pipe: dict[str, int] = {}
-
-        equip_attrs = (
-            "pumps",
-            "valves",
-            "check_valves",
-            "orifices",
-            "exchangers",
-            "compressors",
-            "misc_equipment",
-            "expanders",
-        )
-        for attr in equip_attrs:
-            for idx, elem in getattr(self.model, attr, {}).items():
-                if idx == 0:
-                    continue
-                rec = elem.get_param("CON")
-                if rec and len(rec.values) >= 2:
-                    try:
-                        out_p = int(rec.values[1])
-                        if out_p:
-                            elem_out_pipe[elem.name] = out_p
-                    except (ValueError, TypeError):
-                        pass
-
-        for idx, elem in getattr(self.model, "feeds", {}).items():
-            if idx == 0:
-                continue
-            for noz in ("NOZL", "NOZ"):
-                rec = elem.get_param(noz)
-                if rec and rec.values:
-                    try:
-                        p = int(rec.values[0])
-                        if p:
-                            elem_out_pipe[elem.name] = p
-                    except (ValueError, TypeError):
-                        pass
-                    break
-
-        graph: dict[str, list[str]] = defaultdict(list)
-        for elem_name, out_p in elem_out_pipe.items():
-            for other in pipe_to_elems.get(out_p, []):
-                if other != elem_name:
-                    graph[elem_name].append(other)
-
-        return dict(graph)
-
-    def _assign_flow_levels(self, graph: dict[str, list[str]]) -> dict[str, int]:
-        """Assign a column depth to each element via BFS from source nodes.
-
-        Depth is the length of the *longest* path from any source (in-degree 0)
-        node, so that elements always appear to the right of all their
-        predecessors.
-
-        Returns:
-            Dict mapping element name to column index (0 = leftmost).
-        """
-        from collections import defaultdict, deque
-
-        all_nodes: set[str] = set(graph.keys())
-        for dests in graph.values():
-            all_nodes.update(dests)
-
-        in_degree: dict[str, int] = defaultdict(int)
-        for node in all_nodes:
-            in_degree[node] += 0  # ensure every node is present
-        for dests in graph.values():
-            for d in dests:
-                in_degree[d] += 1
-
-        levels: dict[str, int] = {}
-        queue: deque[str] = deque()
-        for node in all_nodes:
-            if in_degree[node] == 0:
-                levels[node] = 0
-                queue.append(node)
-
-        while queue:
-            node = queue.popleft()
-            for neighbor in graph.get(node, []):
-                new_lvl = levels[node] + 1
-                if neighbor not in levels or levels[neighbor] < new_lvl:
-                    levels[neighbor] = new_lvl
-                in_degree[neighbor] -= 1
-                if in_degree[neighbor] == 0:
-                    queue.append(neighbor)
-
-        return levels
-
     def _auto_layout_grid(
         self,
         unplaced: list[BaseElement],
@@ -593,7 +323,7 @@ class LayoutService:
                 if abs(x - ex) < spacing / 2 and abs(y - ey) < spacing / 2:
                     x += spacing
                     break
-            self.set_position(self.model, elem.name, x, y)
+            self.set_position(elem.name, x, y)
             existing.append((x, y))
 
     def _auto_layout_flow(
@@ -611,8 +341,7 @@ class LayoutService:
         import math
         from collections import defaultdict
 
-        graph = self._build_flow_graph()
-        levels = self._assign_flow_levels(graph)
+        levels = self.model.connectivity.get_flow_levels()
 
         level_groups: dict[int, list[BaseElement]] = defaultdict(list)
         no_level: list[BaseElement] = []
@@ -627,7 +356,7 @@ class LayoutService:
             x = X_MIN + level * spacing
             for i, elem in enumerate(group):
                 y = Y_MIN + i * spacing
-                self.set_position(self.model, elem.name, x, y)
+                self.set_position(elem.name, x, y)
                 existing.append((x, y))
 
         if no_level:
@@ -639,27 +368,8 @@ class LayoutService:
                 col = i % cols
                 x = start_x + col * spacing
                 y = Y_MIN + row * spacing
-                self.set_position(self.model, elem.name, x, y)
+                self.set_position(elem.name, x, y)
                 existing.append((x, y))
-
-    def _get_connected_pairs(self) -> list[tuple[str, str]]:
-        """Return unique connected element pairs that share a common pipe.
-
-        Returns:
-            List of ``(name_a, name_b)`` tuples for each pair of elements
-            connected via the same pipe index.
-        """
-        pipe_to_elems = self._build_pipe_to_elems()
-
-        pairs: list[tuple[str, str]] = []
-        seen: set[frozenset[str]] = set()
-        for elems in pipe_to_elems.values():
-            if len(elems) == 2:
-                key: frozenset[str] = frozenset(elems)
-                if key not in seen:
-                    seen.add(key)
-                    pairs.append((elems[0], elems[1]))
-        return pairs
 
     def snap_orthogonal(self, threshold_deg: float = 10.0) -> None:
         """Snap near-orthogonal connections to be exactly horizontal or vertical.
@@ -675,7 +385,7 @@ class LayoutService:
         """
         import math
 
-        pairs = self._get_connected_pairs()
+        pairs = self.model.connectivity.get_connected_pairs()
         for name1, name2 in pairs:
             try:
                 elem1 = self.model.get_element(name1)
@@ -694,10 +404,10 @@ class LayoutService:
             angle_deg = math.degrees(math.atan2(abs(dy), abs(dx)))
             if angle_deg < threshold_deg:
                 # Almost horizontal — align elem2's Y to elem1's Y
-                self.__set_position_on_element(elem2, pos2[0], pos1[1])
+                self._apply_position(elem2, pos2[0], pos1[1])
             elif angle_deg > (90.0 - threshold_deg):
                 # Almost vertical — align elem2's X to elem1's X
-                self.__set_position_on_element(elem2, pos1[0], pos2[1])
+                self._apply_position(elem2, pos1[0], pos2[1])
 
     # ------------------------------------------------------------------
     # Orthogonal pipe routing
@@ -724,7 +434,7 @@ class LayoutService:
             pipe: A PIPE element to route.
             bend: Corner direction. One of ``"h"``, ``"v"``, or ``"auto"``.
         """
-        pipe_to_elems = self._build_pipe_to_elems()
+        pipe_to_elems = self.model.connectivity.get_pipe_to_elems()
         endpoint_names = pipe_to_elems.get(pipe.index, [])
         if len(endpoint_names) != 2:
             return
@@ -762,7 +472,7 @@ class LayoutService:
                 points = [(x1, y1), (x1, y2), (x2, y2)]
 
         # Update the pipe's primary position (icon anchor) to the start point
-        self.__set_position_on_element(pipe, x1, y1)
+        self._apply_position(pipe, x1, y1)
         self.set_polyline(pipe, points)
 
     def route_all_pipes(self, bend: str = "auto") -> None:
@@ -809,9 +519,11 @@ class LayoutService:
         if not positioned:
             return
 
-        target_y = anchor_y if anchor_y is not None else sum(p[1] for _, p in positioned) / len(positioned)
+        target_y = (
+            anchor_y if anchor_y is not None else sum(p[1] for _, p in positioned) / len(positioned)
+        )
         for elem, pos in positioned:
-            self.__set_position_on_element(elem, pos[0], target_y)
+            self._apply_position(elem, pos[0], target_y)
 
     def align_vertical(self, names: list[str], anchor_x: float | None = None) -> None:
         """Align all named elements to the same X coordinate.
@@ -836,9 +548,11 @@ class LayoutService:
         if not positioned:
             return
 
-        target_x = anchor_x if anchor_x is not None else sum(p[0] for _, p in positioned) / len(positioned)
+        target_x = (
+            anchor_x if anchor_x is not None else sum(p[0] for _, p in positioned) / len(positioned)
+        )
         for elem, pos in positioned:
-            self.__set_position_on_element(elem, target_x, pos[1])
+            self._apply_position(elem, target_x, pos[1])
 
     # ------------------------------------------------------------------
     # Distribution helpers
@@ -872,7 +586,7 @@ class LayoutService:
         x_max = positioned[-1][1][0]
         step = (x_max - x_min) / (len(positioned) - 1)
         for i, (elem, pos) in enumerate(positioned):
-            self.__set_position_on_element(elem, x_min + i * step, pos[1])
+            self._apply_position(elem, x_min + i * step, pos[1])
 
     def distribute_vertical(self, names: list[str]) -> None:
         """Space named elements evenly along the Y axis.
@@ -902,7 +616,7 @@ class LayoutService:
         y_max = positioned[-1][1][1]
         step = (y_max - y_min) / (len(positioned) - 1)
         for i, (elem, pos) in enumerate(positioned):
-            self.__set_position_on_element(elem, pos[0], y_min + i * step)
+            self._apply_position(elem, pos[0], y_min + i * step)
 
     # ------------------------------------------------------------------
     # Grid snapping and centering
@@ -922,7 +636,7 @@ class LayoutService:
                 continue
             snapped_x = round(pos[0] / grid_size) * grid_size
             snapped_y = round(pos[1] / grid_size) * grid_size
-            self.__set_position_on_element(elem, snapped_x, snapped_y)
+            self._apply_position(elem, snapped_x, snapped_y)
 
     def center_layout(self) -> None:
         """Translate all placed elements so the bounding box is centred on the canvas.
@@ -949,7 +663,7 @@ class LayoutService:
         dx = canvas_cx - bbox_cx
         dy = canvas_cy - bbox_cy
         for elem, pos in positioned:
-            self.__set_position_on_element(elem, pos[0] + dx, pos[1] + dy)
+            self._apply_position(elem, pos[0] + dx, pos[1] + dy)
 
     def auto_layout(
         self,
@@ -999,13 +713,6 @@ class LayoutService:
 
         if route_pipes:
             self.route_all_pipes()
-
-    def visualize_network(self, path: str | Path = "network.html") -> None:
-        """Generate an interactive PyVis HTML visualization."""
-        from pykorf.visualization import Visualizer
-
-        viz = Visualizer(self.model)
-        viz.to_html(path)
 
 
 __all__ = [

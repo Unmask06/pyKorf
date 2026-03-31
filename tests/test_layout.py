@@ -143,7 +143,7 @@ class TestAddBend:
 
 class TestRoutePipe:
     def _first_two_endpoint_pipe(self, m: Model):
-        pipe_to_elems = m.layout._build_pipe_to_elems()
+        pipe_to_elems = m.connectivity.get_pipe_to_elems()
         idx = next((i for i, ns in pipe_to_elems.items() if len(ns) == 2), None)
         if idx is None:
             return None, None
@@ -197,7 +197,7 @@ class TestRoutePipe:
     def test_route_all_pipes_smoke(self):
         m = Model(CWC_KDF)
         m.layout.route_all_pipes()
-        pipe_to_elems = m.layout._build_pipe_to_elems()
+        pipe_to_elems = m.connectivity.get_pipe_to_elems()
         for idx, pipe in m.pipes.items():
             if idx == 0 or not pipe.name:
                 continue
@@ -214,7 +214,7 @@ class TestRoutePipe:
         for elem in m.elements:
             m.set_position(elem, 0.0, 0.0)
         m.layout.auto_layout(strategy="flow", route_pipes=True)
-        pipe_to_elems = m.layout._build_pipe_to_elems()
+        pipe_to_elems = m.connectivity.get_pipe_to_elems()
         routed = sum(
             1
             for idx, pipe in m.pipes.items()
@@ -386,14 +386,3 @@ class TestCenterLayout:
         m.layout.center_layout()
 
 
-class TestVisualize:
-    def test_visualize_returns_string(self):
-        m = Model(PUMP_KDF)
-        text = m.visualize()
-        assert isinstance(text, str)
-        assert "Model Layout" in text
-
-    def test_visualize_cwc(self):
-        m = Model(CWC_KDF)
-        text = m.visualize()
-        assert "PIPE" in text

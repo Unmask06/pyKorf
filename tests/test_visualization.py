@@ -158,9 +158,3 @@ class TestVisualizer:
         assert "pykorf-legend" in content
 
 
-class TestModelConvenience:
-    def test_visualize_network(self, tmp_path):
-        m = Model(CWC_KDF)
-        out = tmp_path / "test_model.html"
-        m.visualize_network(out)
-        assert out.exists()

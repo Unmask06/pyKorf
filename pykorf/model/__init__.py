@@ -711,24 +711,6 @@ class Model(_ModelBase):
         """Translate all placed elements so the bounding box is centred on the canvas."""
         return self._layout_service.center_layout()
 
-    def visualize(self, **kwargs: Any) -> str:
-        """Create a text visualization of elements and connections.
-
-        Returns:
-            Multi-line string with model layout visualization.
-        """
-        return self._layout_service.visualize(**kwargs)
-
-    def visualize_network(self, path: str | Path = "network.html") -> None:
-        """Generate an interactive PyVis HTML visualization.
-
-        Parameters
-        ----------
-        path:
-            Output file path for the HTML visualization.
-        """
-        return self._layout_service.visualize_network(path)
-
     # I/O - delegate to IOService
     def save(
         self, path: str | Path | None = None, *, check_layout: bool = True, overwrite: bool = True
