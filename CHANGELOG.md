@@ -5,6 +5,15 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.4] - 2026-04-01
+
+### Fixed
+
+- The References page now saves correctly when editing remarks or hold items.
+- All model operations (Apply PMS, Apply HMB, Bulk Copy, Global Parameters, Pipe Criteria) now save the model before and after the operation to prevent data loss.
+
+---
+
 ## [0.6.3] - 2026-04-01
 
 ### What's New
