@@ -147,7 +147,9 @@ class SummaryService:
                         from pykorf.use_case.pms import load_all_pms, lookup_pms_across_materials
 
                         all_materials = load_all_pms(pms_path)
-                        _, spec, _ = lookup_pms_across_materials(all_materials, pms_val, float(nps))
+                        _, spec, _, _ = lookup_pms_across_materials(
+                            all_materials, pms_val, float(nps)
+                        )
                         # 2c. Schedule Availability Check - schedule value must be defined
                         pms_value = spec.get("value") or spec.get("schedule", "")
                         if not pms_value:
@@ -303,7 +305,7 @@ class SummaryService:
         """Check that model has at least one title symbol.
 
         A title symbol is identified by:
-        - SYMBOL element with TYPE="Text" and FSIZ=2
+        - SYMBOL element with TYPE="Text" and FSIZ > 1.5
 
         Returns:
             List of validation issues (empty if title found).
@@ -331,12 +333,12 @@ class SummaryService:
                 except (ValueError, TypeError):
                     fsiz_val = None
 
-                if type_val == "Text" and fsiz_val == 2:
+                if type_val == "Text" and fsiz_val is not None and fsiz_val > 1.5:
                     has_title = True
                     break
 
         if not has_title:
-            issues.append("Add Title (Text with size 2)")
+            issues.append("Add Title (Text with font size > 1.5)")
 
         return issues
 
@@ -517,7 +519,7 @@ class SummaryService:
             pms_code = line_data.pms_code
 
             try:
-                material, spec, od_mm = lookup_pms_across_materials(
+                material, spec, od_mm, _ = lookup_pms_across_materials(
                     all_materials, pms_code, float(nps)
                 )
             except Exception:

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Environment
 
-- **Shell**: Git Bash on Windows. Use Unix syntax — `&&` for chaining, forward slashes in paths, `/dev/null` not `NUL`.
+- **Shell**: PowerShell on Windows. Use PowerShell syntax — `;` or `&&` for chaining, `$null` / `| Out-Null` instead of `/dev/null`.
 - **Python**: Managed via `uv`. Always prefix commands with `uv run`.
 - **Python version**: 3.13 exactly (enforced in `pyproject.toml` and `.python-version`).
 
@@ -104,7 +104,7 @@ if is_redirect(model):
 
 ### Sizing Criteria Data (`pykorf/reports/`)
 
-Three TOML files (read via stdlib `tomllib`) define hydraulic line sizing lookup tables. Each entry has `code`, `service`, `pressure`, `line_size`, `vel = [min, max]`, `dp = [normal, max]` fields. Lookup pattern: filter by `code` → sort by the filter dimension → first entry where value ≤ threshold (9999 = no upper limit).
+Three TOML files (read via stdlib `tomllib`) define hydraulic line sizing lookup tables. Each entry has `code`, `service`, optional `pressure`, optional `line_size`, `vel = [min, max]`, `dp = [normal, max]` fields. Lookup pattern: filter by `code` → sort by the filter dimension → first entry where value ≤ threshold. Omitting `line_size` or `pressure` means no upper limit (catch-all row). `vel[1] = 0.0` or `dp[1] = 0.0` means no criterion for that bound (`CriteriaValues.max_vel` / `max_dp` → `None`).
 
 | File | Fluid type | Filter dimensions | Extra fields |
 |---|---|---|---|
@@ -141,7 +141,7 @@ Test markers available: `unit`, `integration`, `slow`, `automation` (automation 
 
 ## Key Constraints
 
-- **Shell**: Git Bash — use Unix syntax even though the OS is Windows.
+- **Shell**: PowerShell — use PowerShell syntax (`$null`, `;` chaining, no heredocs).
 - **Zero-destruction policy**: Never delete files to resolve errors.
 - **Global research before refactoring**: Use grep/glob to find all usages before renaming or moving anything.
 - **Full validation before finishing**: `uv run pytest` + `uv run ruff check pykorf tests` + `uv run mypy pykorf` must all pass.

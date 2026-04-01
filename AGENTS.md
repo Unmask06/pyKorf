@@ -4,7 +4,7 @@ Guidance for agentic coding assistants working in this repository. Focus on **ab
 
 ## Environment
 
-- **Shell**: Git Bash on Windows — use Unix syntax (`&&` for chaining, forward slashes, `/dev/null` not `NUL`).
+- **Shell**: PowerShell on Windows — use PowerShell syntax (`;` or `&&` for chaining, `$null` / `| Out-Null` instead of `/dev/null`, no bash heredocs).
 - **Python**: Managed via `uv`. Always prefix commands with `uv run` — never call `python` directly.
 - **Python version**: 3.13 exactly (enforced in `pyproject.toml` and `.python-version`).
 

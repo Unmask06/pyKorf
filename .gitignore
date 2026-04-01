@@ -52,4 +52,4 @@ examples/examples/
 # ── Local / personal settings ─────────────────────────────
 *.local
 .local/
-settings.local.json
+settings.local.jsonnul

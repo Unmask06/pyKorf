@@ -251,7 +251,8 @@ def apply_rename_line_settings(model: Model) -> list[str]:
 
     affected_pipes: list[str] = []
     errors: list[str] = []
-    used_names: set[str] = set()
+    used_names: set[str] = {p.name for p in model.pipes.values() if p.name}
+    logger.debug("used_names: %s", used_names)
 
     for idx in range(1, model.num_pipes + 1):
         pipe = model.pipes[idx]
@@ -281,21 +282,28 @@ def apply_rename_line_settings(model: Model) -> list[str]:
         second_element = name_rec.values[1] if len(name_rec.values) > 1 else "Pipe"
 
         new_name = extracted
-        if len(new_name) > 12:
+        if len(new_name) > 15:
             logger.warning(
-                "Pipe %s: extracted name %s exceeds 12 char limit, skipping",
+                "Pipe %s: extracted name %s exceeds 15 char limit, skipping",
                 pipe_name,
                 extracted,
             )
             continue
 
+        if new_name == pipe_name:
+            # Already correctly named — leave used_names intact so others can't collide with it
+            continue
+
+        # Free the current name slot: this pipe is being renamed away from pipe_name
+        used_names.discard(pipe_name)
+
         if new_name in used_names:
             suffix_num = 1
             while True:
                 new_name = f"{extracted}_{suffix_num}"
-                if len(new_name) > 12:
+                if len(new_name) > 15:
                     logger.warning(
-                        "Pipe %s: generated name %s exceeds 12 char limit, skipping",
+                        "Pipe %s: generated name %s exceeds 15 char limit, skipping",
                         pipe_name,
                         new_name,
                     )
@@ -306,6 +314,7 @@ def apply_rename_line_settings(model: Model) -> list[str]:
                 suffix_num += 1
 
             if new_name is None:
+                used_names.add(pipe_name)
                 continue
 
         used_names.add(new_name)
@@ -402,6 +411,7 @@ def apply_global_settings(
         setting_ids: List of setting IDs to apply (e.g., ["dummy_pipe", "dp_margin"]).
         save: Whether to save the model after applying changes (default True).
         dp_margin: Design margin factor for dp_margin setting (default 1.25).
+        shutoff_margin: Design margin factor for pump_shutoff setting (default 1.20).
 
     Returns:
         Dictionary mapping setting IDs to lists of affected pipe names.

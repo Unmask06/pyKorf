@@ -6,6 +6,7 @@ that all connections in a model are consistent.
 
 from __future__ import annotations
 
+from collections import defaultdict, deque
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
@@ -246,6 +247,181 @@ class ConnectivityService:
                     unconnected.append(elem.name)
 
         return sorted(list(set(unconnected)))
+
+    # -------------------------------------------------------------------------
+    # Graph query methods — connectivity as data
+    # -------------------------------------------------------------------------
+
+    def get_pipe_to_elems(self) -> dict[int, list[str]]:
+        """Build an undirected map of pipe index → element names using that pipe.
+
+        Covers equipment ``CON`` records (both inlet and outlet) and FEED /
+        PRODUCT ``NOZL`` / ``NOZ`` records.
+
+        Returns:
+            Dict mapping pipe index to a list of element names connected to it.
+        """
+        pipe_to_elems: dict[int, list[str]] = defaultdict(list)
+
+        equip_attrs = (
+            "pumps",
+            "valves",
+            "check_valves",
+            "orifices",
+            "exchangers",
+            "compressors",
+            "misc_equipment",
+            "expanders",
+        )
+        for attr in equip_attrs:
+            for idx, elem in getattr(self.model, attr, {}).items():
+                if idx == 0:
+                    continue
+                rec = elem.get_param("CON")
+                if rec and len(rec.values) >= 2:
+                    for raw in rec.values[:2]:
+                        try:
+                            p = int(raw)
+                            if p:
+                                pipe_to_elems[p].append(elem.name)
+                        except (ValueError, TypeError):
+                            pass
+
+        for attr in ("feeds", "products"):
+            for idx, elem in getattr(self.model, attr, {}).items():
+                if idx == 0:
+                    continue
+                for noz in ("NOZL", "NOZ"):
+                    rec = elem.get_param(noz)
+                    if rec and rec.values:
+                        try:
+                            p = int(rec.values[0])
+                            if p:
+                                pipe_to_elems[p].append(elem.name)
+                        except (ValueError, TypeError):
+                            pass
+                        break
+
+        return dict(pipe_to_elems)
+
+    def get_flow_graph(self) -> dict[str, list[str]]:
+        """Build a directed element-to-element adjacency from flow connectivity.
+
+        Uses the undirected pipe-to-element map from :meth:`get_pipe_to_elems`
+        combined with each element's *outlet* pipe (``CON[1]`` for equipment,
+        ``NOZL`` for FEEDs) to determine flow direction.
+
+        Returns:
+            Dict mapping each element name to its list of downstream element names.
+        """
+        pipe_to_elems = self.get_pipe_to_elems()
+        elem_out_pipe: dict[str, int] = {}
+
+        equip_attrs = (
+            "pumps",
+            "valves",
+            "check_valves",
+            "orifices",
+            "exchangers",
+            "compressors",
+            "misc_equipment",
+            "expanders",
+        )
+        for attr in equip_attrs:
+            for idx, elem in getattr(self.model, attr, {}).items():
+                if idx == 0:
+                    continue
+                rec = elem.get_param("CON")
+                if rec and len(rec.values) >= 2:
+                    try:
+                        out_p = int(rec.values[1])
+                        if out_p:
+                            elem_out_pipe[elem.name] = out_p
+                    except (ValueError, TypeError):
+                        pass
+
+        for idx, elem in getattr(self.model, "feeds", {}).items():
+            if idx == 0:
+                continue
+            for noz in ("NOZL", "NOZ"):
+                rec = elem.get_param(noz)
+                if rec and rec.values:
+                    try:
+                        p = int(rec.values[0])
+                        if p:
+                            elem_out_pipe[elem.name] = p
+                    except (ValueError, TypeError):
+                        pass
+                    break
+
+        graph: dict[str, list[str]] = defaultdict(list)
+        for elem_name, out_p in elem_out_pipe.items():
+            for other in pipe_to_elems.get(out_p, []):
+                if other != elem_name:
+                    graph[elem_name].append(other)
+
+        return dict(graph)
+
+    def get_flow_levels(self) -> dict[str, int]:
+        """Assign a column depth to each element via BFS from source nodes.
+
+        Depth is the length of the *longest* path from any source (in-degree 0)
+        node, so that elements always appear to the right of all their
+        predecessors.  Useful for left-to-right flow-based layout.
+
+        Returns:
+            Dict mapping element name to column index (0 = leftmost / most upstream).
+        """
+        graph = self.get_flow_graph()
+
+        all_nodes: set[str] = set(graph.keys())
+        for dests in graph.values():
+            all_nodes.update(dests)
+
+        in_degree: dict[str, int] = defaultdict(int)
+        for node in all_nodes:
+            in_degree[node] += 0  # ensure every node is present
+        for dests in graph.values():
+            for d in dests:
+                in_degree[d] += 1
+
+        levels: dict[str, int] = {}
+        queue: deque[str] = deque()
+        for node in all_nodes:
+            if in_degree[node] == 0:
+                levels[node] = 0
+                queue.append(node)
+
+        while queue:
+            node = queue.popleft()
+            for neighbor in graph.get(node, []):
+                new_lvl = levels[node] + 1
+                if neighbor not in levels or levels[neighbor] < new_lvl:
+                    levels[neighbor] = new_lvl
+                in_degree[neighbor] -= 1
+                if in_degree[neighbor] == 0:
+                    queue.append(neighbor)
+
+        return levels
+
+    def get_connected_pairs(self) -> list[tuple[str, str]]:
+        """Return unique element pairs that share a common pipe.
+
+        Returns:
+            List of ``(name_a, name_b)`` tuples for each pair of elements
+            connected via the same pipe index.
+        """
+        pipe_to_elems = self.get_pipe_to_elems()
+
+        pairs: list[tuple[str, str]] = []
+        seen: set[frozenset[str]] = set()
+        for elems in pipe_to_elems.values():
+            if len(elems) == 2:
+                key: frozenset[str] = frozenset(elems)
+                if key not in seen:
+                    seen.add(key)
+                    pairs.append((elems[0], elems[1]))
+        return pairs
 
     # -------------------------------------------------------------------------
     # Private helper methods (moved from module-level functions)

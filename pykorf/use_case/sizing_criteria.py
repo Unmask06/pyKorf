@@ -17,12 +17,11 @@ class CriteriaValues(NamedTuple):
     """Resolved sizing criteria bounds for a single pipe lookup.
 
     All values use SI/engineering units as stored in the TOML tables.
-    9999.0 means no upper limit (KORF convention for unbounded criteria).
-    None means the criterion is not defined for that fluid type / code.
+    None means the criterion is not specified / does not apply.
     """
 
-    max_dp: float  # kPa/100m
-    max_vel: float  # m/s; 9999.0 = no limit
+    max_dp: float | None  # kPa/100m; None = no dP criterion
+    max_vel: float | None  # m/s; None = no max velocity criterion
     min_vel: float  # m/s
     rho_v2_min: float | None = None  # Pa; None = not applicable
     rho_v2_max: float | None = None  # Pa; None = not applicable
@@ -147,8 +146,12 @@ def predict_criteria(fluid_type: str, pipe_name: str) -> str | None:
 
 def _entry_to_criteria(entry: dict) -> CriteriaValues:
     """Convert a raw TOML entry dict to a CriteriaValues NamedTuple."""
-    dp_max = entry["dp"][1] if entry["dp"][1] != 0.0 else 9999.0
-    vel_max = entry["vel"][1] if entry["vel"][1] != 0.0 else 9999.0
+    dp_raw = entry["dp"][1]
+    dp_max: float | None = None if dp_raw == 0.0 else float(dp_raw)
+
+    vel_raw = entry["vel"][1]
+    vel_max: float | None = None if vel_raw == 0.0 else float(vel_raw)
+
     vel_min = entry["vel"][0]
 
     raw = entry.get("rho_v2")
