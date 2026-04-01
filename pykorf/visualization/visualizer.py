@@ -22,7 +22,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from pykorf.elements import Common, Element, Vessel
-from pykorf.model.services.layout import X_MAX, X_MIN, Y_MAX, Y_MIN
 from pykorf.visualization.models import EdgeData, NetworkData, NodeData
 
 if TYPE_CHECKING:
@@ -55,14 +54,14 @@ _CANVAS_W = 1200
 _CANVAS_H = 700
 
 
-def _scale_x(x: float) -> float:
+def _scale_x(x: float, x_min: float, x_max: float) -> float:
     """Scale a KDF X coordinate to PyVis canvas pixels."""
-    return (x - X_MIN) / (X_MAX - X_MIN) * _CANVAS_W
+    return (x - x_min) / (x_max - x_min) * _CANVAS_W
 
 
-def _scale_y(y: float) -> float:
+def _scale_y(y: float, y_min: float, y_max: float) -> float:
     """Scale a KDF Y coordinate to PyVis canvas pixels."""
-    return (y - Y_MIN) / (Y_MAX - Y_MIN) * _CANVAS_H
+    return (y - y_min) / (y_max - y_min) * _CANVAS_H
 
 
 def _legend_html() -> str:
@@ -101,6 +100,9 @@ class Visualizer:
 
     def __init__(self, model: Model) -> None:
         self._model = model
+        self._bx_min, self._by_min, self._bx_max, self._by_max = (
+            model.layout.boundary_coordinates
+        )
         self._network_data = self._build_network_data()
 
     # ------------------------------------------------------------------
@@ -124,8 +126,8 @@ class Visualizer:
                 NodeData(
                     id=elem.name,
                     label=elem.name,
-                    x=_scale_x(pos[0]),
-                    y=_scale_y(pos[1]),
+                    x=_scale_x(pos[0], self._bx_min, self._bx_max),
+                    y=_scale_y(pos[1], self._by_min, self._by_max),
                     element_type=elem.etype,
                 )
             )
@@ -402,10 +404,10 @@ class Visualizer:
 
     def _add_layout_boundary(self, net) -> None:
         """Draw the model coordinate bounds as a dashed rectangle."""
-        left = _scale_x(X_MIN)
-        right = _scale_x(X_MAX)
-        top = _scale_y(Y_MIN)
-        bottom = _scale_y(Y_MAX)
+        left = _scale_x(self._bx_min, self._bx_min, self._bx_max)
+        right = _scale_x(self._bx_max, self._bx_min, self._bx_max)
+        top = _scale_y(self._by_min, self._by_min, self._by_max)
+        bottom = _scale_y(self._by_max, self._by_min, self._by_max)
 
         corners = {
             "__layout_tl": (left, top),

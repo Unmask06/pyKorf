@@ -518,36 +518,6 @@ class Model(_ModelBase):
         """
         return self._layout_service.set_position(name_or_elem, x, y)
 
-    def auto_place(self, elem: BaseElement) -> None:
-        """Automatically position a single element.
-
-        Args:
-            elem: The element to position.
-        """
-        return self._layout_service.auto_place(elem)
-
-    def auto_layout(
-        self,
-        spacing: float | None = None,
-        strategy: str = "grid",
-        route_pipes: bool = False,
-    ) -> None:
-        """Automatically arrange all unplaced elements.
-
-        Parameters
-        ----------
-        spacing:
-            Spacing between elements. If None, uses default comfort spacing.
-        strategy:
-            ``"grid"`` (default) - simple rectangular grid.
-            ``"flow"`` - topological left-to-right placement ordered by
-            element connectivity (FEED -> equipment -> PROD).
-        route_pipes:
-            When True, route every pipe as an orthogonal polyline after
-            placement. Combines layout + routing in one call. Default False.
-        """
-        return self._layout_service.auto_layout(spacing, strategy, route_pipes)
-
     # ------------------------------------------------------------------
     # Pipe polyline helpers - delegate to LayoutService
     # ------------------------------------------------------------------
@@ -710,6 +680,23 @@ class Model(_ModelBase):
     def center_layout(self) -> None:
         """Translate all placed elements so the bounding box is centred on the canvas."""
         return self._layout_service.center_layout()
+
+    @property
+    def page_size(self) -> str:
+        """Detected page size from GEN.DWGSTD (``'A4'`` or ``'A3'``)."""
+        return self._layout_service.page_size
+
+    @property
+    def boundary_coordinates(self) -> tuple[float, float, float, float]:
+        """Page boundary as ``(x_min, y_min, x_max, y_max)``."""
+        return self._layout_service.boundary_coordinates
+
+    @property
+    def grid_size(self) -> float:
+        """Standard grid alignment size in model units (100.0)."""
+        from pykorf.model.services.layout import GRID_SIZE
+
+        return GRID_SIZE
 
     # I/O - delegate to IOService
     def save(

@@ -57,16 +57,6 @@ class TestCheckLayout:
         assert isinstance(issues, list)
 
 
-class TestAutoPlace:
-    def test_auto_place_new_element(self):
-        m = Model(PUMP_KDF)
-        new_pump = m.add_element("PUMP", "P_AP")
-        m.auto_place(new_pump)
-        pos = m.get_position(new_pump)
-        if pos is not None:
-            assert pos != (0.0, 0.0)
-
-
 # ---------------------------------------------------------------------------
 # LayoutService — accessed via model.layout
 # ---------------------------------------------------------------------------
@@ -209,45 +199,6 @@ class TestRoutePipe:
         m = Model(PUMP_KDF)
         m.layout.route_all_pipes()  # should not raise
 
-    def test_auto_layout_with_route_pipes(self):
-        m = Model(PUMP_KDF)
-        for elem in m.elements:
-            m.set_position(elem, 0.0, 0.0)
-        m.layout.auto_layout(strategy="flow", route_pipes=True)
-        pipe_to_elems = m.connectivity.get_pipe_to_elems()
-        routed = sum(
-            1
-            for idx, pipe in m.pipes.items()
-            if idx != 0 and pipe.name and len(pipe_to_elems.get(idx, [])) == 2
-            and m.layout.get_polyline(pipe)
-        )
-        assert routed > 0
-
-
-class TestAutoLayoutFlow:
-    def test_auto_layout_flow_does_not_crash(self):
-        m = Model(CWC_KDF)
-        for elem in m.elements:
-            if m.get_position(elem) is not None:
-                m.set_position(elem, 0.0, 0.0)
-        m.auto_layout(strategy="flow")
-
-    def test_auto_layout_flow_places_elements(self):
-        m = Model(PUMP_KDF)
-        for elem in m.elements:
-            m.set_position(elem, 0.0, 0.0)
-        m.auto_layout(strategy="flow")
-        placed = [e for e in m.elements if m.get_position(e) not in (None, (0.0, 0.0))]
-        assert len(placed) > 0
-
-    def test_auto_layout_grid_still_works(self):
-        m = Model(PUMP_KDF)
-        for elem in m.elements:
-            m.set_position(elem, 0.0, 0.0)
-        m.auto_layout(strategy="grid")
-        placed = [e for e in m.elements if m.get_position(e) not in (None, (0.0, 0.0))]
-        assert len(placed) > 0
-
 
 class TestSnapOrthogonal:
     def test_snap_orthogonal_does_not_crash(self):
@@ -356,33 +307,121 @@ class TestSnapToGrid:
 
     def test_snap_to_grid_invalid(self):
         import pytest
+
         m = Model(PUMP_KDF)
         with pytest.raises(ValueError):
             m.layout.snap_to_grid(0)
 
 
+class TestPageSize:
+    def test_page_size_a4(self):
+        m = Model(PUMP_KDF)
+        assert m.page_size == "A4"
+
+    def test_boundary_coordinates_a4(self):
+        m = Model(PUMP_KDF)
+        x_min, y_min, x_max, y_max = m.boundary_coordinates
+        assert x_min == 1000.0
+        assert y_min == 1000.0
+        assert x_max == 15500.0
+        assert y_max == 9000.0
+
+    def test_grid_size(self):
+        m = Model(PUMP_KDF)
+        assert m.grid_size == 100.0
+
+    def test_layout_service_boundary_coordinates(self):
+        m = Model(CWC_KDF)
+        coords = m.layout.boundary_coordinates
+        assert len(coords) == 4
+        assert coords == m.boundary_coordinates
+
+
 class TestCenterLayout:
     def test_center_layout_smoke(self):
-        from pykorf.model.services.layout import X_MAX, X_MIN, Y_MAX, Y_MIN
         m = Model(CWC_KDF)
         m.layout.center_layout()
         positioned = [
-            m.get_position(e) for e in m.elements
-            if m.get_position(e) not in (None, (0.0, 0.0))
+            m.get_position(e) for e in m.elements if m.get_position(e) not in (None, (0.0, 0.0))
         ]
         if not positioned:
             return
+        x_min, y_min, x_max, y_max = m.layout.boundary_coordinates
         xs = [p[0] for p in positioned]
         ys = [p[1] for p in positioned]
-        canvas_cx = (X_MIN + X_MAX) / 2
-        canvas_cy = (Y_MIN + Y_MAX) / 2
+        page_cx = (x_min + x_max) / 2
+        page_cy = (y_min + y_max) / 2
         bbox_cx = (min(xs) + max(xs)) / 2
         bbox_cy = (min(ys) + max(ys)) / 2
-        assert abs(bbox_cx - canvas_cx) < 1.0
-        assert abs(bbox_cy - canvas_cy) < 1.0
+        assert abs(bbox_cx - page_cx) < 1.0
+        assert abs(bbox_cy - page_cy) < 1.0
 
     def test_center_layout_pump(self):
         m = Model(PUMP_KDF)
         m.layout.center_layout()
 
+    def test_ensure_title_no_existing_title(self):
+        """Test that ensure_title creates a title symbol when none exists."""
+        m = Model(PUMP_KDF)
+        m.layout.ensure_title("Test Title")
 
+        title_found = False
+        for rec in m._parser.records:
+            if rec.element_type == "SYMBOL" and rec.index is not None:
+                type_rec = m._parser.get("SYMBOL", rec.index, "TYPE")
+                text_rec = m._parser.get("SYMBOL", rec.index, "TEXT")
+                color_rec = m._parser.get("SYMBOL", rec.index, "COLOR")
+                if type_rec and type_rec.values and type_rec.values[0] == "Text":
+                    if text_rec and text_rec.values and text_rec.values[0] == "Test Title":
+                        xy_rec = m._parser.get("SYMBOL", rec.index, "XY")
+                        if xy_rec and len(xy_rec.values) >= 2:
+                            x = float(xy_rec.values[0])
+                            y = float(xy_rec.values[1])
+                            assert x == 1200.0
+                            assert y == 200.0
+                            assert (
+                                color_rec and color_rec.values and color_rec.values[0] == "16711680"
+                            )
+                            title_found = True
+                            break
+
+        assert title_found, "Title symbol was not created"
+
+    def test_ensure_title_with_existing_in_margin(self):
+        """Test that ensure_title does nothing when symbol already exists in top margin."""
+        m = Model(PUMP_KDF)
+        m.layout.ensure_title("First Title")
+
+        initial_symbol_count = sum(
+            1 for rec in m._parser.records if rec.element_type == "SYMBOL" and rec.index is not None
+        )
+
+        m.layout.ensure_title("Second Title")
+
+        new_symbol_count = sum(
+            1 for rec in m._parser.records if rec.element_type == "SYMBOL" and rec.index is not None
+        )
+
+        assert new_symbol_count == initial_symbol_count
+
+    def test_ensure_title_default_name(self):
+        """Test that ensure_title uses filename as default title."""
+        m = Model(PUMP_KDF)
+        m.layout.ensure_title()
+
+        title_found = False
+        for rec in m._parser.records:
+            if rec.element_type == "SYMBOL" and rec.index is not None:
+                type_rec = m._parser.get("SYMBOL", rec.index, "TYPE")
+                text_rec = m._parser.get("SYMBOL", rec.index, "TEXT")
+                if type_rec and type_rec.values and type_rec.values[0] == "Text":
+                    if text_rec and text_rec.values and text_rec.values[0] == "Pumpcases":
+                        title_found = True
+                        break
+
+        assert title_found
+
+    def test_symbol_in_top_margin_empty(self):
+        """Test _symbol_in_top_margin with no symbols in margin."""
+        m = Model(PUMP_KDF)
+        assert not m.layout._symbol_in_top_margin(margin_height=500.0)

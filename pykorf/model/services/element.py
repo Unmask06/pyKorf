@@ -195,7 +195,7 @@ class ElementService:
                 key.upper() in {Common.X, Common.Y} for key in params
             )
             if not x_or_y_provided:
-                self.model.auto_place(self.model.get_element(name))
+                self.model.layout.auto_place(self.model.get_element(name))
 
         return self.model.get_element(name)
 
@@ -255,17 +255,18 @@ class ElementService:
         pos2 = self.model._layout_service.get_position(elem2)
 
         if pos1 is None or pos2 is None or pos1 == (0.0, 0.0) or pos2 == (0.0, 0.0):
-            self.model.auto_place(pipe)
+            self.model.layout.auto_place(pipe)
             return
 
         mid_x = (pos1[0] + pos2[0]) / 2
 
         pipe_y = pos1[1]
 
-        from pykorf.model.services.layout import MIN_SPACING, X_MAX, X_MIN, Y_MAX, Y_MIN
+        from pykorf.model.services.layout import MIN_SPACING
 
-        mid_x = max(X_MIN, min(X_MAX, mid_x))
-        pipe_y = max(Y_MIN, min(Y_MAX, pipe_y))
+        x_min, y_min, x_max, y_max = self.model.layout.boundary_coordinates
+        mid_x = max(x_min, min(x_max, mid_x))
+        pipe_y = max(y_min, min(y_max, pipe_y))
 
         candidate = (mid_x, pipe_y)
         offset = MIN_SPACING / 2
@@ -286,8 +287,8 @@ class ElementService:
                     clash = True
                     candidate = (candidate[0], candidate[1] + offset)
                     candidate = (
-                        max(X_MIN, min(X_MAX, candidate[0])),
-                        max(Y_MIN, min(Y_MAX, candidate[1])),
+                        max(x_min, min(x_max, candidate[0])),
+                        max(y_min, min(y_max, candidate[1])),
                     )
                     break
             if not clash:
