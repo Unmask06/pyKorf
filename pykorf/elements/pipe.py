@@ -361,7 +361,7 @@ class Pipe(BaseElement):
         """
         try:
             density = float(self._scalar(Pipe.TPROP, 2))  # density_avg
-            vel = float(self._scalar(Pipe.VEL, 0))         # vel_avg
+            vel = float(self._scalar(Pipe.VEL, 0))  # vel_avg
             return density * vel * vel
         except (TypeError, ValueError):
             return None
@@ -515,26 +515,70 @@ class Pipe(BaseElement):
             new_vals[4] = ""
         self.set_param(Pipe.SIZ, new_vals)
 
-    def check_criteria(self) -> str:
+    def _rho_v2_criteria(self) -> tuple[float | None, float | None]:
+        """Look up rho*V^2 (min, max) criteria from TOML tables.
+
+        Returns (None, None) if criteria_code is not set or not found.
+        Results are cached at the sizing_criteria module level.
+        """
+        if not self.criteria_code:
+            return None, None
+        try:
+            from pykorf.use_case.sizing_criteria import code_to_state, lookup_criteria
+
+            fluid_type = code_to_state(self.criteria_code)
+            if fluid_type is None:
+                return None, None
+            size_inch = self.diameter_inch
+            pressure_barg = self.pressure[0] if self.pressure else 9999.0
+            size_f = round(float(size_inch), 2) if size_inch else 9999.0
+            pressure_f = round(float(pressure_barg), 2) if pressure_barg else 9999.0
+            crit = lookup_criteria(fluid_type, self.criteria_code, size_f, pressure_f)
+            if crit is None:
+                return None, None
+            return crit.rho_v2_min, crit.rho_v2_max
+        except (ValueError, TypeError, ImportError):
+            return None, None
+
+    @property
+    def min_rho_v2_criteria(self) -> float | None:
+        """Minimum rho*V^2 criteria [Pa] from TOML lookup."""
+        return self._rho_v2_criteria()[0]
+
+    @property
+    def max_rho_v2_criteria(self) -> float | None:
+        """Maximum rho*V^2 criteria [Pa] from TOML lookup."""
+        return self._rho_v2_criteria()[1]
+
+    def check_criteria(self) -> bool:
         """Check if calculated results meet sizing criteria.
 
-        Returns 'PASS' if DP/DL and Velocity are within criteria, otherwise 'FAIL'.
+        Returns True if DP/DL, Velocity, and rho*V^2 are within criteria,
+        otherwise False. Criteria values of 0 are skipped (considered passed).
         """
         dp_crit = self.sizing_dp_criteria
         vel_crit = self.sizing_velocity_criteria
         dp_calc = self.pressure_drop_per_100m
         vel_calc = self.velocity[0] if self.velocity else 0.0
 
-        # Logic for PASS/FAIL
         dp_pass = True
-        if isinstance(dp_crit, (int, float)):
+        if isinstance(dp_crit, (int, float)) and dp_crit > 0:
             dp_pass = dp_calc <= dp_crit
 
         vel_pass = True
-        if isinstance(vel_crit, (int, float)):
+        if isinstance(vel_crit, (int, float)) and vel_crit > 0:
             vel_pass = vel_calc <= vel_crit
 
-        return "PASS" if dp_pass and vel_pass else "FAIL"
+        rho_v2_pass = True
+        rho_v2_calc = self.rho_v2
+        if rho_v2_calc is not None:
+            rho_v2_min_crit, rho_v2_max_crit = self._rho_v2_criteria()
+            if rho_v2_min_crit is not None and rho_v2_min_crit > 0:
+                rho_v2_pass = rho_v2_pass and rho_v2_calc >= rho_v2_min_crit
+            if rho_v2_max_crit is not None and rho_v2_max_crit > 0:
+                rho_v2_pass = rho_v2_pass and rho_v2_calc <= rho_v2_max_crit
+
+        return dp_pass and vel_pass and rho_v2_pass
 
     # ------------------------------------------------------------------
     # Fluid properties
@@ -697,7 +741,9 @@ class Pipe(BaseElement):
                     crit = lookup_criteria(state, code, size_inch, pressure_barg)
                     if crit is not None:
                         rho_v2_min_crit = round(crit.rho_v2_min) if crit.rho_v2_min else None
-                        rho_v2_max_crit = round(crit.rho_v2_max) if crit.rho_v2_max is not None else None
+                        rho_v2_max_crit = (
+                            round(crit.rho_v2_max) if crit.rho_v2_max is not None else None
+                        )
 
             dp_calc_val, dp_calc_unit = self.get_value_and_unit(
                 Pipe.DPL, val_index=0, unit_index=-1
@@ -719,7 +765,7 @@ class Pipe(BaseElement):
                 self.format_export_header("DP / DL", dp_calc_unit): dp_calc_val,
                 self.format_export_header("Velocity", vel_calc_unit): vel_calc_val,
                 "ρV² calc [Pa]": round(self.rho_v2) if self.rho_v2 is not None else None,  # noqa: RUF001
-                "Criteria Check": self.check_criteria(),
+                "Criteria Check": "PASS" if self.check_criteria() else "FAIL",
             }
         return {
             "name": self.name,
