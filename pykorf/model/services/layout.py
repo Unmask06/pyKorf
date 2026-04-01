@@ -24,22 +24,16 @@ if TYPE_CHECKING:
     from pykorf.elements.base import BaseElement
     from pykorf.model import Model
 
-X_MIN = 1000.0
-Y_MIN = 1000.0
-X_MAX = 15500.0
-Y_MAX = 8500.0
+GRID_SIZE = 100.0
+MIN_SPACING = GRID_SIZE * 10
+COMFORT_SPACING_X = GRID_SIZE * 15
+COMFORT_SPACING_Y = GRID_SIZE * 15
 
-MIN_SPACING = 1000.0
-COMFORT_SPACING_X = 1500.0
-COMFORT_SPACING_Y = 1500.0
-
-_X_MIN = X_MIN
-_Y_MIN = Y_MIN
-_X_MAX = X_MAX
-_Y_MAX = Y_MAX
-_MIN_SPACING = MIN_SPACING
-_COMFORT_SPACING_X = COMFORT_SPACING_X
-_COMFORT_SPACING_Y = COMFORT_SPACING_Y
+_PAGE_BOUNDARIES: dict[str, tuple[float, float, float, float]] = {
+    "A4": (1000.0, 1000.0, 15500.0, 9000.0),
+    "A3": (1000.0, 1000.0, 22500.0, 13000.0),
+}
+_DEFAULT_PAGE = "A4"
 
 
 @dataclass(frozen=True, slots=True)
@@ -110,8 +104,27 @@ class LayoutService:
                 positions[elem.name] = pos
         return positions
 
+    @property
+    def page_size(self) -> str:
+        """Detected page size from GEN.DWGSTD (e.g. ``'A4'`` or ``'A3'``).
+
+        Falls back to ``'A4'`` when the record is missing or unrecognised.
+        """
+        rec = self.model.general.get_param("DWGSTD")
+        page_str = (rec.values[0] if rec and rec.values else "") or ""
+        for key in _PAGE_BOUNDARIES:
+            if key in page_str:
+                return key
+        return _DEFAULT_PAGE
+
+    @property
+    def boundary_coordinates(self) -> tuple[float, float, float, float]:
+        """Return ``(x_min, y_min, x_max, y_max)`` for the model's page size."""
+        return _PAGE_BOUNDARIES[self.page_size]
+
     def check_layout(self) -> list[str]:
         """Check for overlapping element positions."""
+        x_min, y_min, x_max, y_max = self.boundary_coordinates
         issues: list[str] = []
         positions = self.__all_positions()
 
@@ -124,10 +137,16 @@ class LayoutService:
             x, y = float(pos[0]), float(pos[1])
             placed.append((name, x, y))
 
-            if not (X_MIN <= x <= X_MAX and Y_MIN <= y <= Y_MAX):
+            if not (x_min <= x <= x_max and y_min <= y <= y_max):
                 issues.append(
                     f"Element {name} at ({x:.1f}, {y:.1f}) is outside layout bounds "
-                    f"[{X_MIN:.0f},{Y_MIN:.0f}]-[{X_MAX:.0f},{Y_MAX:.0f}]"
+                    f"[{x_min:.0f},{y_min:.0f}]-[{x_max:.0f},{y_max:.0f}]"
+                )
+
+            if round(x) % int(GRID_SIZE) != 0 or round(y) % int(GRID_SIZE) != 0:
+                issues.append(
+                    f"Element {name} at ({x:.1f}, {y:.1f}) is not aligned to "
+                    f"{GRID_SIZE:.0f}-unit grid"
                 )
 
             key = (round(x, 1), round(y, 1))
@@ -152,7 +171,19 @@ class LayoutService:
         return issues
 
     def auto_place(self, elem: BaseElement) -> None:
-        """Automatically place an element at a non-overlapping position."""
+        """Automatically place *elem* at the first non-overlapping grid position.
+
+        Scans a comfort-spacing grid within the page boundary and places the
+        element at the first candidate that respects :data:`MIN_SPACING` from
+        every already-placed element.
+
+        Args:
+            elem: Element to position.
+
+        Raises:
+            LayoutError: When no valid position can be found.
+        """
+        x_min, y_min, x_max, y_max = self.boundary_coordinates
         existing = []
         for name, pos in self.__all_positions().items():
             if name == elem.name or pos == (0.0, 0.0):
@@ -161,32 +192,30 @@ class LayoutService:
 
         def _fits(candidate: tuple[float, float]) -> bool:
             cx, cy = candidate
-            if not (X_MIN <= cx <= X_MAX and Y_MIN <= cy <= Y_MAX):
+            if not (x_min <= cx <= x_max and y_min <= cy <= y_max):
                 return False
             for ex, ey in existing:
                 dx = cx - ex
                 dy = cy - ey
-                dist = (dx * dx + dy * dy) ** 0.5
-                if dist < MIN_SPACING:
+                if (dx * dx + dy * dy) ** 0.5 < MIN_SPACING:
                     return False
             return True
 
-        cols = int((X_MAX - X_MIN) // COMFORT_SPACING_X) + 1
-        rows = int((Y_MAX - Y_MIN) // COMFORT_SPACING_Y) + 1
-
+        cols = int((x_max - x_min) // COMFORT_SPACING_X) + 1
+        rows = int((y_max - y_min) // COMFORT_SPACING_Y) + 1
         for row in range(rows):
             for col in range(cols):
                 candidate = (
-                    X_MIN + col * COMFORT_SPACING_X,
-                    Y_MIN + row * COMFORT_SPACING_Y,
+                    x_min + col * COMFORT_SPACING_X,
+                    y_min + row * COMFORT_SPACING_Y,
                 )
                 if _fits(candidate):
                     self._apply_position(elem, candidate[0], candidate[1])
                     return
 
         raise LayoutError(
-            "No available layout position within bounds "
-            f"[{X_MIN:.0f},{Y_MIN:.0f}]-[{X_MAX:.0f},{Y_MAX:.0f}] "
+            f"No available layout position within bounds "
+            f"[{x_min:.0f},{y_min:.0f}]-[{x_max:.0f},{y_max:.0f}] "
             f"with minimum spacing {MIN_SPACING:.0f}."
         )
 
@@ -303,73 +332,6 @@ class LayoutService:
         insert_at = max(0, len(points) - 1) if index is None else index
         points.insert(insert_at, (x, y))
         self.set_polyline(pipe, points)
-
-    def _auto_layout_grid(
-        self,
-        unplaced: list[BaseElement],
-        existing: list[tuple[float, float]],
-        spacing: float,
-    ) -> None:
-        """Place elements in a simple square-root grid (default strategy)."""
-        import math
-
-        cols = max(1, int(math.sqrt(len(unplaced))))
-        for i, elem in enumerate(unplaced):
-            row = i // cols
-            col = i % cols
-            x = X_MIN + col * spacing
-            y = Y_MIN + row * spacing
-            for ex, ey in existing:
-                if abs(x - ex) < spacing / 2 and abs(y - ey) < spacing / 2:
-                    x += spacing
-                    break
-            self.set_position(elem.name, x, y)
-            existing.append((x, y))
-
-    def _auto_layout_flow(
-        self,
-        unplaced: list[BaseElement],
-        existing: list[tuple[float, float]],
-        spacing: float,
-    ) -> None:
-        """Place elements left-to-right in topological flow order.
-
-        Elements connected to FEEDs are placed in column 0, their
-        downstream neighbours in column 1, and so on.  Elements with no
-        connectivity are placed in a grid after the flow columns.
-        """
-        import math
-        from collections import defaultdict
-
-        levels = self.model.connectivity.get_flow_levels()
-
-        level_groups: dict[int, list[BaseElement]] = defaultdict(list)
-        no_level: list[BaseElement] = []
-        for elem in unplaced:
-            if elem.name in levels:
-                level_groups[levels[elem.name]].append(elem)
-            else:
-                no_level.append(elem)
-
-        for level in sorted(level_groups.keys()):
-            group = level_groups[level]
-            x = X_MIN + level * spacing
-            for i, elem in enumerate(group):
-                y = Y_MIN + i * spacing
-                self.set_position(elem.name, x, y)
-                existing.append((x, y))
-
-        if no_level:
-            max_level = max(level_groups.keys(), default=-1)
-            start_x = X_MIN + (max_level + 2) * spacing
-            cols = max(1, int(math.sqrt(len(no_level))))
-            for i, elem in enumerate(no_level):
-                row = i // cols
-                col = i % cols
-                x = start_x + col * spacing
-                y = Y_MIN + row * spacing
-                self.set_position(elem.name, x, y)
-                existing.append((x, y))
 
     def snap_orthogonal(self, threshold_deg: float = 10.0) -> None:
         """Snap near-orthogonal connections to be exactly horizontal or vertical.
@@ -639,11 +601,11 @@ class LayoutService:
             self._apply_position(elem, snapped_x, snapped_y)
 
     def center_layout(self) -> None:
-        """Translate all placed elements so the bounding box is centred on the canvas.
+        """Translate all placed elements so the bounding box is centred on the page boundary.
 
-        The canvas centre is ``((X_MIN + X_MAX) / 2, (Y_MIN + Y_MAX) / 2)``.
         All elements are shifted by the same offset so that the mid-point of
-        their collective bounding box coincides with the canvas centre.
+        their collective bounding box coincides with the centre of the detected
+        page boundary (A4 or A3 as read from ``GEN.DWGSTD``).
         """
         positioned = [
             (elem, pos)
@@ -654,74 +616,145 @@ class LayoutService:
         if not positioned:
             return
 
+        x_min, y_min, x_max, y_max = self.boundary_coordinates
         xs = [p[0] for _, p in positioned]
         ys = [p[1] for _, p in positioned]
         bbox_cx = (min(xs) + max(xs)) / 2
         bbox_cy = (min(ys) + max(ys)) / 2
-        canvas_cx = (X_MIN + X_MAX) / 2
-        canvas_cy = (Y_MIN + Y_MAX) / 2
-        dx = canvas_cx - bbox_cx
-        dy = canvas_cy - bbox_cy
+        page_cx = (x_min + x_max) / 2
+        page_cy = (y_min + y_max) / 2
+        dx = page_cx - bbox_cx
+        dy = page_cy - bbox_cy
         for elem, pos in positioned:
             self._apply_position(elem, pos[0] + dx, pos[1] + dy)
 
-    def auto_layout(
-        self,
-        spacing: float | None = None,
-        strategy: str = "grid",
-        route_pipes: bool = False,
-    ) -> None:
-        """Automatically arrange all unplaced elements.
+    def _symbol_in_top_margin(self, margin_height: float = 500.0) -> bool:
+        """Check if any symbol exists in the top margin area.
+
+        The top margin is defined as the absolute region from y=0 to y=margin_height,
+        spanning the full page width. This area is typically above the drawing boundary.
 
         Args:
-            spacing: Spacing between elements. Defaults to
-                :data:`COMFORT_SPACING_X`.
-            strategy: Layout algorithm.
+            margin_height: Height of the top margin from y=0. Defaults to 500.
 
-                ``"grid"`` (default) - simple rectangular grid.
-
-                ``"flow"`` - topological left-to-right placement ordered by
-                element connectivity (FEED -> equipment -> PROD).
-            route_pipes: When ``True``, call :meth:`route_all_pipes` after
-                placing elements so every pipe gets an orthogonal polyline
-                drawn between its endpoint elements. Defaults to ``False``.
+        Returns:
+            True if at least one symbol exists in the top margin, False otherwise.
         """
-        spacing = spacing or COMFORT_SPACING_X
+        x_min, y_min, x_max, y_max = self.boundary_coordinates
 
-        unplaced = []
-        for elem in self.model.elements:
-            if not elem.name:
+        for rec in self.model._parser.records:
+            if rec.element_type != "SYMBOL" or rec.index is None:
                 continue
-            pos = self.get_position(elem)
-            if pos is None or pos == (0.0, 0.0):
-                unplaced.append(elem)
-        if not unplaced:
+
+            xy_rec = self.model._parser.get("SYMBOL", rec.index, "XY")
+            if xy_rec is None or len(xy_rec.values) < 2:
+                continue
+
+            try:
+                x = float(xy_rec.values[0])
+                y = float(xy_rec.values[1])
+            except (ValueError, TypeError):
+                continue
+
+            if x_min <= x <= x_max and 0 <= y <= margin_height:
+                return True
+
+        return False
+
+    def ensure_title(
+        self,
+        title_text: str | None = None,
+        margin_height: float = 500.0,
+        color: str = "16711680", # blue
+        font_size: int = 2,
+    ) -> None:
+        """Ensure a title symbol exists in the top margin area.
+
+        If no symbol is present in the top margin (region from y=0 to y=margin_height),
+        creates a new title symbol with the specified text and positions it at:
+        - X: 200
+        - Y: center of page width (margin_height / 2)
+
+        Args:
+            title_text: Title text to display. If None, uses the model filename
+                (without .kdf extension) as the title.
+            margin_height: Height of the top margin from y=0. Defaults to 500.
+            color: Color code for the title text. Defaults to blue.
+            font_size: Font size for the title. Defaults to 2.
+
+        Example:
+            ```python
+            model.layout.ensure_title("My Process Model")
+            model.layout.ensure_title()
+            ```
+        """
+        if self._symbol_in_top_margin(margin_height):
             return
 
-        existing = [
-            pos
-            for pos in (self.get_position(e) for e in self.model.elements)
-            if pos is not None and pos != (0.0, 0.0)
-        ]
+        if title_text is None:
+            title_text = self.model.path.stem
 
-        if strategy == "flow":
-            self._auto_layout_flow(unplaced, existing, spacing)
+        from pykorf.elements import Symbol
+        from pykorf.parser import KdfParser
+
+        template_parser: KdfParser | None = None
+        if self.model._parser.num_instances(Symbol.ETYPE) == 0:
+            from pathlib import Path
+
+            template_path = Path(__file__).resolve().parent.parent.parent / "library" / "New.kdf"
+            template_parser = KdfParser(template_path)
+            template_parser.load()
+
+        new_idx = self.model._parser.next_index(Symbol.ETYPE)
+
+        if template_parser is not None:
+            source_records = template_parser.get_all(Symbol.ETYPE, 0)
         else:
-            self._auto_layout_grid(unplaced, existing, spacing)
+            source_records = self.model._parser.get_all(Symbol.ETYPE, 0)
 
-        self.snap_orthogonal()
+        for rec in source_records:
+            if rec.param == "NUM":
+                continue
 
-        if route_pipes:
-            self.route_all_pipes()
+            clone = rec
+            if template_parser is not None:
+                from pykorf.parser import KdfRecord
+
+                clone = KdfRecord(
+                    element_type=Symbol.ETYPE,
+                    index=new_idx,
+                    param=rec.param,
+                    values=list(rec.values),
+                    raw_line="",
+                )
+            else:
+                clone.index = new_idx
+                clone.raw_line = ""
+
+            if rec.param == Symbol.TYPE:
+                clone.values = ["Text"]
+            elif rec.param == Symbol.TEXT:
+                clone.values = [title_text]
+            elif rec.param == Symbol.FSIZ:
+                clone.values = [str(font_size)]
+            elif rec.param == Symbol.COLOR:
+                clone.values = [color]
+            elif rec.param == Symbol.XY:
+                x_min, y_min, x_max, y_max = self.boundary_coordinates
+                clone.values = [str(x_min + 200.0), str(200.0), "0", "0"]
+
+            self.model._parser.insert_records([clone])
+
+        current_count = self.model._parser.num_instances(Symbol.ETYPE)
+        self.model._parser.set_num_instances(Symbol.ETYPE, current_count + 1)
+
+        self.model._build_collections()
 
 
 __all__ = [
     "COMFORT_SPACING_X",
     "COMFORT_SPACING_Y",
+    "GRID_SIZE",
     "MIN_SPACING",
-    "X_MAX",
-    "X_MIN",
-    "Y_MAX",
-    "Y_MIN",
     "LayoutService",
 ]
