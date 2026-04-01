@@ -30,7 +30,7 @@ from pykorf.use_case.web.routes.pipe_criteria import bp as pipe_criteria_bp
 from pykorf.use_case.web.routes.references import bp as references_bp
 from pykorf.use_case.web.routes.report import bp as report_bp
 from pykorf.use_case.web.routes.about import bp as about_bp
-from pykorf.use_case.web.routes.settings import bp as settings_bp
+from pykorf.use_case.web.routes.global_parameters import bp as settings_bp
 
 _TEMPLATES_DIR = Path(__file__).parent / "templates"
 _STATIC_DIR = Path(__file__).parent / "static"
@@ -73,10 +73,12 @@ def create_app() -> Flask:
 
     @app.after_request
     def add_no_cache(response):
-        """Prevent browser caching of HTML pages so the UI always reflects current server state."""
+        """Prevent browser caching of HTML pages and ensure UTF-8 for JS/CSS."""
         if "text/html" in response.content_type:
             response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
             response.headers["Pragma"] = "no-cache"
+        if "javascript" in response.content_type and "charset" not in response.content_type:
+            response.content_type = "text/javascript; charset=utf-8"
         return response
 
     @app.context_processor

@@ -1,5 +1,5 @@
 /**
- * pyKorf Web UI — generic loading-spinner on any data-loading form.
+ * pyKorf Web UI - generic loading-spinner on any data-loading form.
  */
 
 document.addEventListener('DOMContentLoaded', function () {

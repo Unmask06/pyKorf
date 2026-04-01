@@ -92,7 +92,7 @@ block content %} {% if set_result %}
           class="form-select form-select-sm"
           style="width: 140px"
         >
-          <option value="">â€” State â€”</option>
+          <option value="">&mdash; State &mdash;</option>
           {% for ft, label in fluid_labels.items() %}
           <option value="{{ ft }}">{{ label }}</option>
           {% endfor %}
@@ -103,7 +103,7 @@ block content %} {% if set_result %}
           style="width: 220px"
           disabled
         >
-          <option value="">â€” Criteria â€”</option>
+          <option value="">&mdash; Criteria &mdash;</option>
         </select>
         <button
           type="button"
@@ -133,47 +133,87 @@ block content %} {% if set_result %}
                 title="Select all visible"
               />
             </th>
-            <th style="width: 60px" class="sortable" data-column="index">#
+            <th style="width: 60px" class="sortable" data-column="index">
+              #
               <i class="bi bi-arrow-down-up sort-icon"></i>
             </th>
-            <th style="width: 130px" class="sortable" data-column="pipe">Pipe
+            <th style="width: 130px" class="sortable" data-column="pipe">
+              Pipe
               <i class="bi bi-arrow-down-up sort-icon"></i>
             </th>
-            <th style="width: 160px" class="sortable" data-column="state">State
+            <th style="width: 160px" class="sortable" data-column="state">
+              State
               <i class="bi bi-arrow-down-up sort-icon"></i>
             </th>
-            <th style="min-width: 180px" class="sortable" data-column="criteria">Criteria
+            <th
+              style="min-width: 180px"
+              class="sortable"
+              data-column="criteria"
+            >
+              Criteria
               <i class="bi bi-arrow-down-up sort-icon"></i>
             </th>
-            <th style="width: 100px" class="text-center text-nowrap sortable" data-column="dp_max">
+            <th
+              style="width: 100px"
+              class="text-center text-nowrap sortable"
+              data-column="dp_max"
+            >
               dP max<br /><small class="fw-normal text-secondary"
                 >kPa/100m</small
               >
               <i class="bi bi-arrow-down-up sort-icon"></i>
             </th>
-            <th style="width: 80px" class="text-center text-nowrap sortable" data-column="v_min">
+            <th
+              style="width: 80px"
+              class="text-center text-nowrap sortable"
+              data-column="v_min"
+            >
               v min<br /><small class="fw-normal text-secondary">m/s</small>
               <i class="bi bi-arrow-down-up sort-icon"></i>
             </th>
-            <th style="width: 80px" class="text-center text-nowrap sortable" data-column="v_max">
+            <th
+              style="width: 80px"
+              class="text-center text-nowrap sortable"
+              data-column="v_max"
+            >
               v max<br /><small class="fw-normal text-secondary">m/s</small>
               <i class="bi bi-arrow-down-up sort-icon"></i>
             </th>
-            <th style="width: 120px" class="text-center text-nowrap sortable" data-column="rho_v2_range">
-              ÏVÂ² range<br /><small class="fw-normal text-secondary">Pa</small>
+            <th
+              style="width: 120px"
+              class="text-center text-nowrap sortable"
+              data-column="rho_v2_range"
+            >
+              &rho;V&sup2; range<br /><small class="fw-normal text-secondary"
+                >Pa</small
+              >
               <i class="bi bi-arrow-down-up sort-icon"></i>
             </th>
-            <th style="width: 90px" class="text-center text-nowrap sortable" data-column="rho_v2_calc">
-              ÏVÂ² calc<br /><small class="fw-normal text-secondary">Pa</small>
+            <th
+              style="width: 90px"
+              class="text-center text-nowrap sortable"
+              data-column="rho_v2_calc"
+            >
+              &rho;V&sup2; calc<br /><small class="fw-normal text-secondary"
+                >Pa</small
+              >
               <i class="bi bi-arrow-down-up sort-icon"></i>
             </th>
-            <th style="width: 90px" class="text-center text-nowrap sortable" data-column="dp_calc">
+            <th
+              style="width: 90px"
+              class="text-center text-nowrap sortable"
+              data-column="dp_calc"
+            >
               dP/DL calc<br /><small class="fw-normal text-secondary"
                 >kPa/100m</small
               >
               <i class="bi bi-arrow-down-up sort-icon"></i>
             </th>
-            <th style="width: 80px" class="text-center text-nowrap sortable" data-column="vel_calc">
+            <th
+              style="width: 80px"
+              class="text-center text-nowrap sortable"
+              data-column="vel_calc"
+            >
               vel calc<br /><small class="fw-normal text-secondary">m/s</small>
               <i class="bi bi-arrow-down-up sort-icon"></i>
             </th>
@@ -196,9 +236,14 @@ block content %} {% if set_result %}
                 data-pipe="{{ pipe_name }}"
                 data-saved-criteria="{{ saved_criteria }}"
               >
-                <option value="">â€”</option>
+                <option value="">&mdash;</option>
                 {% for ft, label in fluid_labels.items() %}
-                <option value="{{ ft }}" {% if saved_state == ft %}selected{% endif %}>{{ label }}</option>
+                <option
+                  value="{{ ft }}"
+                  {% if saved_state == ft %}selected{% endif %}
+                >
+                  {{ label }}
+                </option>
                 {% endfor %}
               </select>
             </td>
@@ -208,7 +253,7 @@ block content %} {% if set_result %}
                 class="form-select form-select-sm criteria-select"
                 data-pipe="{{ pipe_name }}"
               >
-                <option value="">â€”</option>
+                <option value="">&mdash;</option>
                 {# Options populated by JS based on state; static fallback for
                 saved state #} {% if saved_state and saved_criteria %}
                 <option value="{{ saved_criteria }}" selected>

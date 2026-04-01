@@ -1,5 +1,5 @@
 /**
- * pyKorf Web UI — Path Browser widget.
+ * pyKorf Web UI - Path Browser widget.
  * Supports SharePoint URL detection for synced folders.
  */
 
@@ -240,7 +240,7 @@ var PathBrowser = (function () {
   // ── Go up one level ────────────────────────────────────────────────────────
   function goUp() {
     var cur = _el('pb-current-path').textContent;
-    if (!cur || cur === '—') return;
+    if (!cur || cur === '-') return;
     fetch('/api/browse?filter=' + encodeURIComponent(_filterMode) + '&path=' + encodeURIComponent(cur))
       .then(function (r) { return r.json(); })
       .then(function (data) { if (data.parent) browse(data.parent); });

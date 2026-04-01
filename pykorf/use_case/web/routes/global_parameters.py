@@ -94,11 +94,10 @@ def global_settings():
                 for pipe_name in pipes[:10]:
                     result_lines.append(("info", f"  - {pipe_name}"))
                 if len(pipes) > 10:
-                    result_lines.append(("info", f"  - … and {len(pipes) - 10} more"))
-            if not errors:
-                model.io.save()
-                _sess.reload()
-                result_lines.append(("success", "Model saved."))
+                    result_lines.append(("info", f"  - ... and {len(pipes) - 10} more"))
+            model.io.save()
+            _sess.reload()
+            result_lines.append(("success", "Model saved."))
         except Exception as exc:
             logger.error("global_settings_error", error=str(exc))
             errors.append(f"Error applying settings: {exc}")
