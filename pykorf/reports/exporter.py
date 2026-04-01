@@ -454,7 +454,7 @@ class ResultExporter:
 
         dpdl_col = next((c for c in df.columns if "DP / DL" in c and "Criteria" not in c), None)
         vel_col = next((c for c in df.columns if "Velocity" in c and "Criteria" not in c), None)
-        rhov2_col = next((c for c in df.columns if "ρV² calc" in c), None)
+        rhov2_col = next((c for c in df.columns if "ρV² calc" in c), None)  # noqa: RUF001
         if dpdl_col is None and vel_col is None and rhov2_col is None:
             return row + 3
 
@@ -489,7 +489,7 @@ class ResultExporter:
             c_idx = start_col + col_names.index(vel_col)
             ws.cell(row=row, column=c_idx, value=val).font = self._styles["data"]
 
-        # ρV² calc min-max
+        # ρV² calc min-max  # noqa: RUF003
         if rhov2_col:
             val = _fmt(rhov2_col)
             c_idx = start_col + col_names.index(rhov2_col)

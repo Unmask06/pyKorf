@@ -5,6 +5,23 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.2] - 2026-04-01
+
+### What's New
+
+- Pipe layout now has automated routing tools — pipes can be arranged using orthogonal routing, polyline paths, flow-based positioning, and alignment helpers directly from the model API.
+- Pipe sizing criteria has been overhauled with a more comprehensive lookup system covering liquid, gas, and two-phase services.
+
+### Improved
+
+- Automatic updates now install silently without a confirmation prompt — the application informs you and installs immediately.
+
+### Fixed
+
+- **Rename Line from NOTES** now correctly appends `_1`, `_2` suffixes when multiple pipes share the same extracted line number, instead of silently skipping the duplicate rename.
+
+---
+
 ## [0.6.1] - 2026-03-30
 
 ### What's New

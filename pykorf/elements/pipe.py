@@ -678,7 +678,7 @@ class Pipe(BaseElement):
             if isinstance(vel_max_crit_val, float) and vel_max_crit_val >= 9999:
                 vel_max_crit_val = None
 
-            # ρV² criteria — looked up from sizing tables (not stored in SIZ)
+            # ρV² criteria — looked up from sizing tables (not stored in SIZ)  # noqa: RUF003
             rho_v2_min_crit: float | None = None
             rho_v2_max_crit: float | None = None
             code = self.criteria_code
@@ -714,11 +714,11 @@ class Pipe(BaseElement):
                 self.format_export_header("dP max Criteria", dp_crit_unit): dp_crit_val,
                 self.format_export_header("v min Criteria", vel_min_crit_unit): vel_min_crit_val,
                 self.format_export_header("v max Criteria", vel_max_crit_unit): vel_max_crit_val,
-                "ρV² min Criteria [Pa]": rho_v2_min_crit,
-                "ρV² max Criteria [Pa]": rho_v2_max_crit,
+                "ρV² min Criteria [Pa]": rho_v2_min_crit,  # noqa: RUF001
+                "ρV² max Criteria [Pa]": rho_v2_max_crit,  # noqa: RUF001
                 self.format_export_header("DP / DL", dp_calc_unit): dp_calc_val,
                 self.format_export_header("Velocity", vel_calc_unit): vel_calc_val,
-                "ρV² calc [Pa]": round(self.rho_v2) if self.rho_v2 is not None else None,
+                "ρV² calc [Pa]": round(self.rho_v2) if self.rho_v2 is not None else None,  # noqa: RUF001
                 "Criteria Check": self.check_criteria(),
             }
         return {
