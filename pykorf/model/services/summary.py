@@ -83,23 +83,7 @@ class SummaryService:
         """Internal validation implementation focusing on pipes and PMS."""
         issues: list[str] = []
 
-        valid_pms_keys, pms_path = self._load_pms_config(issues)
-        self._validate_pipe_line_numbers(issues, valid_pms_keys, pms_path)
-        self._validate_pipe_sizing_criteria(issues)
-        issues.extend(self._verify_pipe_properties())
-        issues.extend(self._check_title_symbol())
-
-        return issues
-
-    def _load_pms_config(self, issues: list[str]) -> tuple[set[str], object]:
-        """Load PMS configuration and return valid PMS keys and the resolved path.
-
-        Args:
-            issues: List to append error messages to.
-
-        Returns:
-            Tuple of (valid_pms_keys, pms_path).
-        """
+        # We need config to check PMS
         import json
 
         from pykorf.use_case.config import get_pms_path
@@ -110,30 +94,21 @@ class SummaryService:
             try:
                 with open(pms_path, encoding="utf-8") as f:
                     pms_data = json.load(f)
+                    # Handle nested format: {material: {"specifications": {pms_code: ...}}}
                     for material_data in pms_data.values():
                         if isinstance(material_data, dict) and "specifications" in material_data:
                             specs = material_data["specifications"]
                             if isinstance(specs, dict):
                                 valid_pms_keys.update(specs.keys())
                         elif isinstance(material_data, dict):
+                            # Fallback for older formats or direct specs
                             valid_pms_keys.update(material_data.keys())
 
+                    # Also include top-level keys just in case it's a legacy flat format
                     valid_pms_keys.update(pms_data.keys())
             except Exception:
                 issues.append("Failed to load PMS config file.")
 
-        return valid_pms_keys, pms_path
-
-    def _validate_pipe_line_numbers(
-        self, issues: list[str], valid_pms_keys: set[str], pms_path: object
-    ) -> None:
-        """Validate pipe line numbers in NOTES and verify against PMS.
-
-        Args:
-            issues: List to append validation issues to.
-            valid_pms_keys: Set of valid PMS keys from configuration.
-            pms_path: Resolved PMS file path (from _load_pms_config).
-        """
         from pykorf.use_case.line_number import LineNumber
 
         for pipe_idx, pipe in self.model.pipes.items():
@@ -145,9 +120,11 @@ class SummaryService:
                 issues.append(f"Pipe {pipe_idx} is missing a name.")
                 continue
 
+            # Skip dummy pipes
             if name.startswith("d"):
                 continue
 
+            # 1. Line Number in NOTES Parsing
             notes_rec = pipe.get_param("NOTES")
             notes_val = notes_rec.values[0] if notes_rec and notes_rec.values else ""
 
@@ -157,117 +134,79 @@ class SummaryService:
 
             line_data = LineNumber.parse(notes_val)
             if line_data:
-                self._verify_pms_for_pipe(issues, name, line_data, valid_pms_keys, pms_path)
+                # 2. PMS Verification
+                pms_val = line_data.pms_code
+                if valid_pms_keys and pms_val not in valid_pms_keys:
+                    issues.append(
+                        f"Pipe '{name}': PMS '{pms_val}' (from NOTES) not found in pms.json."
+                    )
+                else:
+                    # 2b. NPS Availability Check - exact NPS must exist in PMS
+                    nps = line_data.nominal_pipe_size
+                    try:
+                        from pykorf.use_case.pms import load_all_pms, lookup_pms_across_materials
+
+                        all_materials = load_all_pms(pms_path)
+                        _, spec, _, _ = lookup_pms_across_materials(
+                            all_materials, pms_val, float(nps)
+                        )
+                        # 2c. Schedule Availability Check - schedule value must be defined
+                        pms_value = spec.get("value") or spec.get("schedule", "")
+                        if not pms_value:
+                            issues.append(
+                                f"Pipe '{name}': Schedule not defined for PMS '{pms_val}' at NPS {nps}\"."
+                            )
+                    except Exception as exc:
+                        # Check if it's NPS not available error
+                        err_msg = str(exc)
+                        if "not defined" in err_msg.lower() or "not available" in err_msg.lower():
+                            issues.append(f"Pipe '{name}': {err_msg}")
             else:
                 issues.append(
                     f"Pipe '{name}': NOTES value '{notes_val}' is not a valid line number."
                 )
 
-    def _verify_pms_for_pipe(
-        self,
-        issues: list[str],
-        name: str,
-        line_data,
-        valid_pms_keys: set[str],
-        pms_path: object,
-    ) -> None:
-        """Verify PMS, NPS, and schedule for a single pipe.
+            # 3. Sizing Criteria Check
+            if hasattr(pipe, "check_criteria"):
+                status = pipe.check_criteria()
+                if status == "FAIL":
+                    try:
+                        dp_crit = float(pipe.sizing_dp_criteria)
+                    except (ValueError, TypeError):
+                        dp_crit = float("inf")
 
-        Args:
-            issues: List to append validation issues to.
-            name: Pipe name.
-            line_data: Parsed line number data.
-            valid_pms_keys: Set of valid PMS keys.
-            pms_path: Resolved PMS file path (from _load_pms_config).
-        """
-        pms_val = line_data.pms_code
-        if valid_pms_keys and pms_val not in valid_pms_keys:
-            issues.append(f"Pipe '{name}': PMS '{pms_val}' (from NOTES) not found in pms.json.")
-        else:
-            nps = line_data.nominal_pipe_size
-            try:
-                from pykorf.use_case.pms import load_all_pms, lookup_pms_across_materials
+                    try:
+                        vel_crit = float(pipe.sizing_velocity_criteria)
+                    except (ValueError, TypeError):
+                        vel_crit = float("inf")
 
-                all_materials = load_all_pms(pms_path)
-                _, spec, _, _ = lookup_pms_across_materials(all_materials, pms_val, float(nps))
-                pms_value = spec.get("value") or spec.get("schedule", "")
-                if not pms_value:
-                    issues.append(
-                        f"Pipe '{name}': Schedule not defined for PMS '{pms_val}' at NPS {nps}\"."
+                    dp_calc = (
+                        float(pipe.pressure_drop_per_100m) if pipe.pressure_drop_per_100m else 0.0
                     )
-            except Exception as exc:
-                err_msg = str(exc)
-                if "not defined" in err_msg.lower() or "not available" in err_msg.lower():
-                    issues.append(f"Pipe '{name}': {err_msg}")
+                    vel_calc = float(pipe.velocity[0]) if pipe.velocity else 0.0
 
-    def _validate_pipe_sizing_criteria(self, issues: list[str]) -> None:
-        """Validate pipe sizing criteria (DP/DL, Velocity, rho*V^2).
+                    failures = []
+                    if dp_calc > dp_crit:
+                        failures.append(f"DP/DL({dp_calc:.2f} > {dp_crit})")
+                    if vel_calc > vel_crit:
+                        failures.append(f"Vel({vel_calc:.2f} > {vel_crit})")
 
-        For each pipe (excluding dummy pipes):
-        - Check if calculated DPL <= SIZ dP/dL criteria (skip if criteria is 0)
-        - Check if velocity <= max velocity criteria (skip if criteria is 0)
-        - Check if rho*V^2 is within min/max bounds (skip if bounds are 0 or None)
+                    if failures:
+                        msg = " and ".join(failures)
+                        issues.append(f"Pipe '{name}' fails sizing criteria: {msg}.")
+                    else:
+                        # Fallback if status is FAIL but thresholds aren't crossed (rounding/edge cases)
+                        issues.append(f"Pipe '{name}' fails sizing criteria.")
 
-        Args:
-            issues: List to append validation issues to.
-        """
-        for pipe_idx, pipe in self.model.pipes.items():
-            if pipe_idx == 0:
-                continue
+        # 4. Pipe Property Verification (compare with Line Number + PMS)
+        property_issues = self._verify_pipe_properties()
+        issues.extend(property_issues)
 
-            name = pipe.name
-            if not name or name.startswith("d"):
-                continue
+        # 5. Title Symbol Verification - check model has at least one title
+        title_issues = self._check_title_symbol()
+        issues.extend(title_issues)
 
-            if not hasattr(pipe, "check_criteria"):
-                continue
-
-            if not pipe.check_criteria():
-                self._build_criteria_failure_message(issues, name, pipe)
-
-    def _build_criteria_failure_message(self, issues: list[str], name: str, pipe) -> None:
-        """Build detailed failure message for a pipe that failed sizing criteria.
-
-        Args:
-            issues: List to append validation issues to.
-            name: Pipe name.
-            pipe: Pipe instance.
-        """
-        failures = []
-
-        try:
-            dp_crit = float(pipe.sizing_dp_criteria)
-            if dp_crit > 0:
-                dp_calc = float(pipe.pressure_drop_per_100m) if pipe.pressure_drop_per_100m else 0.0
-                if dp_calc > dp_crit:
-                    failures.append(f"DP/DL({dp_calc:.2f} > {dp_crit})")
-        except (ValueError, TypeError):
-            pass
-
-        try:
-            vel_crit = float(pipe.sizing_velocity_criteria)
-            if vel_crit > 0:
-                vel_calc = float(pipe.velocity[0]) if pipe.velocity else 0.0
-                if vel_calc > vel_crit:
-                    failures.append(f"Vel({vel_calc:.2f} > {vel_crit})")
-        except (ValueError, TypeError):
-            pass
-
-        rho_v2_calc = pipe.rho_v2
-        if rho_v2_calc is not None:
-            rho_v2_min = pipe.min_rho_v2_criteria
-            rho_v2_max = pipe.max_rho_v2_criteria
-
-            if rho_v2_min is not None and rho_v2_min > 0 and rho_v2_calc < rho_v2_min:
-                failures.append(f"rhoV2({rho_v2_calc:.0f} < {rho_v2_min:.0f})")
-            if rho_v2_max is not None and rho_v2_max > 0 and rho_v2_calc > rho_v2_max:
-                failures.append(f"rhoV2({rho_v2_calc:.0f} > {rho_v2_max:.0f})")
-
-        if failures:
-            msg = " and ".join(failures)
-            issues.append(f"Pipe '{name}' fails sizing criteria: {msg}.")
-        else:
-            issues.append(f"Pipe '{name}' fails sizing criteria.")
+        return issues
 
     def _check_num_counts(self, issues: list[str]) -> None:
         """Verify NUM records match actual instance counts."""
@@ -451,12 +390,11 @@ class SummaryService:
                         pass
 
     def _validate_pipe_criteria(self) -> list[str]:
-        """Validate pipe DPL, VEL, and rho*V^2 against SIZ criteria.
+        """Validate pipe DPL and VEL against SIZ criteria.
 
         For each pipe (index >= 1):
-        - Check if calculated DPL <= SIZ dP/dL criteria (skip if criteria is 0)
-        - Check if all VEL values (V_avg, V_in, V_out) are within SIZ min/max bounds (skip if 0)
-        - Check if rho*V^2 is within min/max bounds from TOML lookup (skip if 0 or None)
+        - Check if calculated DPL <= SIZ dP/dL criteria
+        - Check if all VEL values (V_avg, V_in, V_out) are within SIZ min/max bounds
 
         Only validates first case for multi-case models.
 
@@ -488,7 +426,7 @@ class SummaryService:
             if dpl_rec and dpl_rec.values and len(dpl_rec.values) >= 1:
                 try:
                     calc_dpl = float(dpl_rec.values[0])
-                    if siz_dpdl > 0 and calc_dpl > siz_dpdl:
+                    if calc_dpl > siz_dpdl:
                         issues.append(
                             f"PIPE {pipe.name} (idx {pipe.index}): "
                             f"DPL {calc_dpl:.3f} exceeds criteria {siz_dpdl:.3f} kPa/100m"
@@ -503,34 +441,18 @@ class SummaryService:
                     v_out = float(vel_rec.values[2])
 
                     for vel_name, vel_value in [("V_avg", v_avg), ("V_in", v_in), ("V_out", v_out)]:
-                        if siz_max_vel > 0 and vel_value > siz_max_vel:
+                        if vel_value > siz_max_vel:
                             issues.append(
                                 f"PIPE {pipe.name} (idx {pipe.index}): "
                                 f"{vel_name} {vel_value:.3f} exceeds max criteria {siz_max_vel:.3f} m/s"
                             )
-                        if siz_min_vel > 0 and vel_value < siz_min_vel:
+                        if vel_value < siz_min_vel:
                             issues.append(
                                 f"PIPE {pipe.name} (idx {pipe.index}): "
                                 f"{vel_name} {vel_value:.3f} below min criteria {siz_min_vel:.3f} m/s"
                             )
                 except (ValueError, TypeError):
                     pass
-
-            rho_v2_calc = pipe.rho_v2
-            if rho_v2_calc is not None:
-                rho_v2_min = pipe.min_rho_v2_criteria
-                rho_v2_max = pipe.max_rho_v2_criteria
-
-                if rho_v2_min is not None and rho_v2_min > 0 and rho_v2_calc < rho_v2_min:
-                    issues.append(
-                        f"PIPE {pipe.name} (idx {pipe.index}): "
-                        f"rho*V^2 {rho_v2_calc:.0f} below min criteria {rho_v2_min:.0f} Pa"
-                    )
-                if rho_v2_max is not None and rho_v2_max > 0 and rho_v2_calc > rho_v2_max:
-                    issues.append(
-                        f"PIPE {pipe.name} (idx {pipe.index}): "
-                        f"rho*V^2 {rho_v2_calc:.0f} exceeds max criteria {rho_v2_max:.0f} Pa"
-                    )
 
         return issues
 
