@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // -----------------------------------------------------------------------
   const codesRaw = document.getElementById("criteria-data").textContent;
   const CODES = JSON.parse(codesRaw);
-  // CODES = { "liquid": [["P-SUC-BUB","P-SUC-BUB — ..."], ...], "gas": [...], "two_phase": [...] }
+  // CODES = { "liquid": [["P-SUC-BUB","P-SUC-BUB - ..."], ...], "gas": [...], "two_phase": [...] }
 
   const PIPE_CRITERIA = JSON.parse(
     document.getElementById("pipe-criteria-values").textContent,
@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // Build criteria <option> HTML for a given fluid type
   function buildOptions(fluidType, selected) {
     const entries = CODES[fluidType] || [];
-    let html = '<option value="">—</option>';
+    let html = '<option value="">-</option>';
     entries.forEach(function ([code, label]) {
       const sel = code === selected ? " selected" : "";
       html += `<option value="${code}"${sel}>${label}</option>`;
@@ -27,9 +27,9 @@ document.addEventListener("DOMContentLoaded", function () {
     return html;
   }
 
-  // Format rho_v2 criteria range: "≤ max" for gas (min=0), "min – max" for two-phase, "—" if null
+  // Format rho_v2 criteria range: "≤ max" for gas (min=0), "min - max" for two-phase, "-" if null
   function fmtRhoV2Range(min, max) {
-    if (min == null || max == null) return "—";
+    if (min == null || max == null) return "-";
     const fmtK = (v) =>
       v >= 1000 ? (v / 1000).toFixed(0) + "k" : v.toFixed(0);
     return min === 0.0
@@ -58,19 +58,19 @@ document.addEventListener("DOMContentLoaded", function () {
     const key = state + ":" + code;
     const vals = (PIPE_CRITERIA[pipe] || {})[key];
 
-    const fmt = (v) => (v == null ? "—" : v.toFixed(2));
+    const fmt = (v) => (v == null ? "-" : v.toFixed(2));
 
     if (vals && state && code) {
       dpEl.textContent = fmt(vals.max_dp);
-      vminEl.textContent = vals.min_vel > 0 ? vals.min_vel.toFixed(2) : "—";
+      vminEl.textContent = vals.min_vel > 0 ? vals.min_vel.toFixed(2) : "-";
       vmaxEl.textContent = fmt(vals.max_vel);
       if (rhov2El)
         rhov2El.textContent = fmtRhoV2Range(vals.rho_v2_min, vals.rho_v2_max);
     } else {
-      dpEl.textContent = "—";
-      vminEl.textContent = "—";
-      vmaxEl.textContent = "—";
-      if (rhov2El) rhov2El.textContent = "—";
+      dpEl.textContent = "-";
+      vminEl.textContent = "-";
+      vmaxEl.textContent = "-";
+      if (rhov2El) rhov2El.textContent = "-";
     }
   }
 
@@ -177,9 +177,9 @@ document.addEventListener("DOMContentLoaded", function () {
   // Populate calculated values (dp_calc, vel_calc, rho_v2_calc) on page load
   // -----------------------------------------------------------------------
   (function () {
-    const fmtCalc = (v) => (v == null || v === 0 ? "—" : v.toFixed(2));
+    const fmtCalc = (v) => (v == null || v === 0 ? "-" : v.toFixed(2));
     const fmtRhoV2Calc = (v) => {
-      if (v == null || v === 0) return "—";
+      if (v == null || v === 0) return "-";
       return v >= 1000 ? (v / 1000).toFixed(1) + "k" : v.toFixed(0);
     };
     document.querySelectorAll(".pipe-row").forEach(function (row) {
@@ -207,7 +207,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const fluidType = this.value;
       criteriaEl.innerHTML = fluidType
         ? buildOptions(fluidType, "")
-        : '<option value="">—</option>';
+        : '<option value="">-</option>';
       updateCriteriaDisplay(pipe);
       checkCalcVsCriteria(pipe);
       updatePredictBtn();
@@ -320,7 +320,7 @@ document.addEventListener("DOMContentLoaded", function () {
       bulkCriteria.innerHTML = buildOptions(ft, "");
       bulkCriteria.disabled = false;
     } else {
-      bulkCriteria.innerHTML = '<option value="">— Criteria —</option>';
+      bulkCriteria.innerHTML = '<option value="">- Criteria -</option>';
       bulkCriteria.disabled = true;
     }
   });
@@ -355,12 +355,12 @@ document.addEventListener("DOMContentLoaded", function () {
         el.value = "";
       });
       document.querySelectorAll(".criteria-select").forEach(function (el) {
-        el.innerHTML = '<option value="">—</option>';
+        el.innerHTML = '<option value="">-</option>';
       });
       document
         .querySelectorAll(".crit-dp, .crit-vmin, .crit-vmax, .crit-rhov2")
         .forEach(function (el) {
-          el.textContent = "—";
+          el.textContent = "-";
         });
       document
         .querySelectorAll(".calc-dp, .calc-vel, .calc-rhov2")
@@ -424,7 +424,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!cell) return "";
     if (cell.tagName === "SELECT") return cell.value;
     const text = cell.textContent.trim();
-    return text === "—" ? null : text;
+    return text === "-" ? null : text;
   }
 
   function getNumericValue(value) {
