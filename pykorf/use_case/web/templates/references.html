@@ -118,15 +118,16 @@
       <div class="collapse show" id="add-form-body">
         <div class="card-body p-3">
           <form method="post" action="/model/references/add" id="add-form">
+            <input type="hidden" id="edit-id-hidden" name="edit_id" value="" />
             <div class="row g-2 mb-2">
               <div class="col-md-5">
                 <label class="form-label small fw-semibold mb-1">Name <span class="text-danger">*</span></label>
                 <input type="text" class="form-control form-control-sm" name="name"
-                       placeholder="e.g. P&amp;ID-001" required autocomplete="off" />
+                       id="add-name" placeholder="e.g. P&amp;ID-001" required autocomplete="off" />
               </div>
               <div class="col-md-3">
                 <label class="form-label small fw-semibold mb-1">Category</label>
-                <select class="form-select form-select-sm" name="category">
+                <select class="form-select form-select-sm" name="category" id="add-category">
                   {% for cat in categories %}
                   <option value="{{ cat }}">{{ cat }}</option>
                   {% endfor %}
@@ -149,10 +150,10 @@
             </div>
             <div class="mb-2">
               <label class="form-label small fw-semibold mb-1">Description</label>
-              <input type="text" class="form-control form-control-sm" name="description"
+              <input type="text" class="form-control form-control-sm" name="description" id="add-description"
                      placeholder="Brief note about this reference (optional)" autocomplete="off" />
             </div>
-            <button type="submit" class="btn btn-sm btn-success">
+            <button type="submit" class="btn btn-sm btn-success" id="add-btn">
               <i class="bi bi-plus me-1"></i>Add Reference
             </button>
           </form>
@@ -209,11 +210,13 @@
               <td class="text-end">
                 <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-1 me-1"
                         title="Edit"
-                        onclick="openEdit('{{ ref.id }}', {{ ref | tojson }})">
+                        data-ref-id="{{ ref.id }}"
+                        data-ref='{{ ref | tojson }}'
+                        onclick="editReference(this)">
                   <i class="bi bi-pencil"></i>
                 </button>
-                <form method="post" action="/model/references/delete" class="d-inline"
-                      onsubmit="return confirm('Delete this reference?')">
+                <form method="post" action="/model/references/delete" class="d-inline delete-form"
+                      data-ref-id="{{ ref.id }}" onsubmit="return confirm('Delete this reference?')">
                   <input type="hidden" name="ref_id" value="{{ ref.id }}" />
                   <button type="submit" class="btn btn-xs btn-outline-danger py-0 px-1" title="Delete">
                     <i class="bi bi-trash"></i>
@@ -237,62 +240,19 @@
 </div>
 
 
-<!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!-- Edit Reference Modal                                                     -->
-<!-- ═══════════════════════════════════════════════════════════════════════ -->
-<div class="modal fade" id="editModal" tabindex="-1" aria-label="Edit reference">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header py-2">
-        <h6 class="modal-title"><i class="bi bi-pencil me-2 text-warning"></i>Edit Reference</h6>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <form method="post" action="/model/references/update" id="edit-form">
-        <div class="modal-body">
-          <input type="hidden" name="ref_id" id="edit-id" />
-          <div class="mb-3">
-            <label class="form-label fw-semibold small">Name</label>
-            <input type="text" class="form-control" name="name" id="edit-name" required />
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold small">Category</label>
-            <select class="form-select" name="category" id="edit-category">
-              {% for cat in categories %}
-              <option value="{{ cat }}">{{ cat }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold small">Link / URL</label>
-            <div class="input-group">
-              <input type="text" class="form-control font-monospace" name="link" id="edit-link" required />
-              <button type="button" class="btn btn-outline-secondary"
-                      data-browse-target="edit-link"
-                      data-browse-filter="any"
-                      data-browse-pref-sp="true"
-                      title="Browse — SharePoint URL auto-detected">
-                <i class="bi bi-folder2-open"></i>
-              </button>
-            </div>
-          </div>
-          <div class="mb-1">
-            <label class="form-label fw-semibold small">Description</label>
-            <input type="text" class="form-control" name="description" id="edit-description" />
-          </div>
-        </div>
-        <div class="modal-footer py-2">
-          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary btn-sm">
-            <i class="bi bi-floppy me-1"></i>Save Changes
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
+
 
 {% endblock %}
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='references.js') }}"></script>
+<script>
+document.getElementById('add-form').addEventListener('submit', function() {
+  document.getElementById('edit-id-hidden').value = '';
+  var btn = document.getElementById('add-btn');
+  btn.innerHTML = '<i class="bi bi-plus me-1"></i>Add Reference';
+  btn.classList.remove('btn-warning');
+  btn.classList.add('btn-success');
+});
+</script>
 {% endblock %}

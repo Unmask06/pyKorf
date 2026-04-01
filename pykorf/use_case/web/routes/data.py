@@ -71,6 +71,7 @@ def apply_data():
             errors.append(f"PMS data file not found: {pms_source}")
         else:
             try:
+                model.io.save()
                 from pykorf.use_case.pms import apply_pms as _apply_pms, import_pms_from_excel
 
                 # Convert Excel → pms.json in the data dir, then apply from JSON
@@ -110,6 +111,7 @@ def apply_data():
             errors.append(f"HMB data file not found: {hmb_source}")
         else:
             try:
+                model.io.save()
                 from pykorf.use_case.hmb import apply_hmb as _apply_hmb, import_stream_from_excel
 
                 # Convert Excel → stream_data.json in the data dir, then apply from JSON
