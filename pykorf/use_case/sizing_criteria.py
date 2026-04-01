@@ -9,6 +9,7 @@ Provides helpers for loading and querying the three sizing criteria tables:
 from __future__ import annotations
 
 import tomllib
+from functools import cache
 from pathlib import Path
 from typing import NamedTuple
 
@@ -26,6 +27,7 @@ class CriteriaValues(NamedTuple):
     rho_v2_min: float | None = None  # Pa; None = not applicable
     rho_v2_max: float | None = None  # Pa; None = not applicable
 
+
 _CRITERIA_DIR = Path(__file__).parent.parent / "reports"
 
 _FILES: dict[str, str] = {
@@ -41,6 +43,7 @@ FLUID_LABELS: dict[str, str] = {
 }
 
 
+@cache
 def load_criteria(fluid_type: str) -> list[dict]:
     """Return all entries for a fluid type.
 
@@ -81,6 +84,7 @@ def all_codes_by_type() -> dict[str, list[tuple[str, str]]]:
     return {ft: get_codes(ft) for ft in _FILES}
 
 
+@cache
 def code_to_state(code: str) -> str | None:
     """Return the fluid type that owns *code*, or None if not found.
 
@@ -174,6 +178,7 @@ def _entry_to_criteria(entry: dict) -> CriteriaValues:
     )
 
 
+@cache
 def lookup_criteria(
     fluid_type: str,
     code: str,
