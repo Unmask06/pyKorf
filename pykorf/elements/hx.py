@@ -21,6 +21,7 @@ class HeatExchanger(BaseElement):
     # ------------------------------------------------------------------
     # Parameter constants (moved from definitions/hx.py)
     # ------------------------------------------------------------------
+    XY = "XY"  # [icon_x, icon_y, conn_x, conn_y] - 2 coordinate pairs (icon anchor + connection point)
     TYPE = "TYPE"  # ["hx_type"]
     SIDE = "SIDE"  # ["modeled_side"]
     DP = "DP"  # [dp_str, dp_num, unit]

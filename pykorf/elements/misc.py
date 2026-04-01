@@ -14,6 +14,7 @@ class MiscEquipment(BaseElement):
     # ------------------------------------------------------------------
     # Parameter constants (moved from definitions/misc.py)
     # ------------------------------------------------------------------
+    XY = "XY"  # [icon_x, icon_y, conn_x, conn_y] - 2 coordinate pairs (icon anchor + connection point)
     DP = "DP"  # [dp_str, dp_num, unit]
     PIN = "PIN"  # [pres_in_str, pres_in_num, unit]
     POUT = "POUT"  # [pres_out_str, pres_out_num, unit]

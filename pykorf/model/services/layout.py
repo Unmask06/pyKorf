@@ -75,6 +75,41 @@ class LayoutService:
             rec.values = vals
             rec.raw_line = ""
 
+    def _translate_xy(self, elem: BaseElement, dx: float, dy: float) -> None:
+        """Translate all non-zero XY coordinate pairs by (dx, dy).
+
+        This updates the primary position and all additional coordinate pairs
+        (bend waypoints, nozzle positions, connection points) while preserving
+        (0, 0) padding pairs.
+
+        Args:
+            elem: Element to translate.
+            dx: X offset to apply.
+            dy: Y offset to apply.
+        """
+        rec = elem.get_param("XY")
+        if rec is None:
+            return
+        vals = list(rec.values)
+        modified = False
+        for i in range(0, len(vals), 2):
+            if i + 1 >= len(vals):
+                break
+            try:
+                x = float(vals[i])
+                y = float(vals[i + 1])
+            except (ValueError, TypeError):
+                continue
+            # Skip (0, 0) padding pairs
+            if x == 0.0 and y == 0.0:
+                continue
+            vals[i] = str(x + dx)
+            vals[i + 1] = str(y + dy)
+            modified = True
+        if modified:
+            rec.values = vals
+            rec.raw_line = ""
+
     def set_position(
         self,
         target: str | BaseElement,
@@ -584,8 +619,44 @@ class LayoutService:
     # Grid snapping and centering
     # ------------------------------------------------------------------
 
+    def _snap_xy_to_grid(self, elem: BaseElement, grid_size: float) -> None:
+        """Snap all non-zero XY coordinate pairs to the nearest grid point.
+
+        Args:
+            elem: Element to snap.
+            grid_size: Grid cell size in model units.
+        """
+        rec = elem.get_param("XY")
+        if rec is None:
+            return
+        vals = list(rec.values)
+        modified = False
+        for i in range(0, len(vals), 2):
+            if i + 1 >= len(vals):
+                break
+            try:
+                x = float(vals[i])
+                y = float(vals[i + 1])
+            except (ValueError, TypeError):
+                continue
+            # Skip (0, 0) padding pairs
+            if x == 0.0 and y == 0.0:
+                continue
+            snapped_x = round(x / grid_size) * grid_size
+            snapped_y = round(y / grid_size) * grid_size
+            if snapped_x != x or snapped_y != y:
+                vals[i] = str(snapped_x)
+                vals[i + 1] = str(snapped_y)
+                modified = True
+        if modified:
+            rec.values = vals
+            rec.raw_line = ""
+
     def snap_to_grid(self, grid_size: float = 500.0) -> None:
         """Round every placed element's position to the nearest grid point.
+
+        This method snaps all XY coordinate pairs (icon positions, bend waypoints,
+        nozzle positions, connection points) while preserving (0, 0) padding pairs.
 
         Args:
             grid_size: Grid cell size in model units. Defaults to 500.
@@ -596,9 +667,7 @@ class LayoutService:
             pos = self.get_position(elem)
             if pos is None or pos == (0.0, 0.0):
                 continue
-            snapped_x = round(pos[0] / grid_size) * grid_size
-            snapped_y = round(pos[1] / grid_size) * grid_size
-            self._apply_position(elem, snapped_x, snapped_y)
+            self._snap_xy_to_grid(elem, grid_size)
 
     def center_layout(self) -> None:
         """Translate all placed elements so the bounding box is centred on the page boundary.
@@ -606,6 +675,9 @@ class LayoutService:
         All elements are shifted by the same offset so that the mid-point of
         their collective bounding box coincides with the centre of the detected
         page boundary (A4 or A3 as read from ``GEN.DWGSTD``).
+
+        This method translates all XY coordinate pairs (icon positions, bend waypoints,
+        nozzle positions, connection points) while preserving (0, 0) padding pairs.
         """
         positioned = [
             (elem, pos)
@@ -626,7 +698,7 @@ class LayoutService:
         dx = page_cx - bbox_cx
         dy = page_cy - bbox_cy
         for elem, pos in positioned:
-            self._apply_position(elem, pos[0] + dx, pos[1] + dy)
+            self._translate_xy(elem, dx, dy)
 
     def _symbol_in_top_margin(self, margin_height: float = 500.0) -> bool:
         """Check if any symbol exists in the top margin area.
@@ -665,7 +737,7 @@ class LayoutService:
         self,
         title_text: str | None = None,
         margin_height: float = 500.0,
-        color: str = "16711680", # blue
+        color: str = "16711680",  # blue
         font_size: int = 2,
     ) -> None:
         """Ensure a title symbol exists in the top margin area.

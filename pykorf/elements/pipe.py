@@ -37,6 +37,7 @@ class Pipe(BaseElement):
     # Parameter constants (moved from definitions/pipe.py)
     # ------------------------------------------------------------------
     BEND = "BEND"  # [angle_deg]
+    XY = "XY"  # [icon_x, icon_y, bend1_x, bend1_y, ..., bend12_x, bend12_y] - 13 coordinate pairs (icon anchor + up to 12 bend waypoints)
     LBL = "LBL"  # [on/off, x-offset, y-offset]
     COLOR = "COLOR"  # [color_int]
     STRM = "STRM"  # ["stream_name"]
@@ -361,7 +362,7 @@ class Pipe(BaseElement):
         """
         try:
             density = float(self._scalar(Pipe.TPROP, 2))  # density_avg
-            vel = float(self._scalar(Pipe.VEL, 0))         # vel_avg
+            vel = float(self._scalar(Pipe.VEL, 0))  # vel_avg
             return density * vel * vel
         except (TypeError, ValueError):
             return None
@@ -697,7 +698,9 @@ class Pipe(BaseElement):
                     crit = lookup_criteria(state, code, size_inch, pressure_barg)
                     if crit is not None:
                         rho_v2_min_crit = round(crit.rho_v2_min) if crit.rho_v2_min else None
-                        rho_v2_max_crit = round(crit.rho_v2_max) if crit.rho_v2_max is not None else None
+                        rho_v2_max_crit = (
+                            round(crit.rho_v2_max) if crit.rho_v2_max is not None else None
+                        )
 
             dp_calc_val, dp_calc_unit = self.get_value_and_unit(
                 Pipe.DPL, val_index=0, unit_index=-1

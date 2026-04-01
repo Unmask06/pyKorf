@@ -14,6 +14,7 @@ class Vessel(BaseElement):
     # ------------------------------------------------------------------
     # Parameter constants (moved from definitions/vessel.py)
     # ------------------------------------------------------------------
+    XY = "XY"  # [icon_x, icon_y, nozzle1_x, nozzle1_y, ..., nozzle4_x, nozzle4_y] - 8 coordinate pairs (icon + 4 nozzle positions)
     TYPE = "TYPE"  # ["vessel_type"]
     PRES = "PRES"  # [pres_str, pres_num, unit]
     WSPEC = "WSPEC"  # [wspec_int]

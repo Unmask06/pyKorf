@@ -14,6 +14,7 @@ class Tee(BaseElement):
     # ------------------------------------------------------------------
     # Parameter constants (moved from definitions/tee.py)
     # ------------------------------------------------------------------
+    XY = "XY"  # [icon_x, icon_y, conn1_x, conn1_y, ..., conn3_x, conn3_y] - 6 coordinate pairs (icon + 3 connection points)
     TYPE = "TYPE"  # [tee_type_int]
     ELEV = "ELEV"  # [elevation, unit]
     PRES = "PRES"  # [p1, p2, p3, unit]
