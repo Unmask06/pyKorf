@@ -5,6 +5,26 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-04-02
+
+### What's New
+
+- License key support added — enter a key in Preferences to unlock pyKorf beyond the trial period without needing a new release.
+- The trial period now starts from the first time you launch pyKorf, giving each installation a full 30-day window regardless of when the software was built.
+
+### Improved
+
+- Updates are now atomic: pyKorf backs up the current installation before applying a new version and automatically restores it if anything goes wrong mid-update.
+- Updates skip rebuilding the virtual environment when no package dependencies have changed, cutting update time from ~30 seconds to ~2 seconds for most releases.
+- Downloaded update packages are now verified against a SHA256 checksum before installation, protecting against corrupted or tampered downloads.
+- Updates now install the correct distribution package instead of the raw source archive.
+
+### Fixed
+
+- Update no longer fails with "A directory already exists at: .venv" when the old virtual environment could not be fully removed.
+
+---
+
 ## [0.7.1] - 2026-04-02
 
 ### Fixed

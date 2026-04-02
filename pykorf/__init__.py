@@ -148,6 +148,15 @@ def _get_version() -> str:
     except Exception:
         pass
 
+    try:
+        version_file = Path(__file__).parent.parent / "VERSION"
+        if version_file.exists():
+            v = version_file.read_text(encoding="utf-8").strip()
+            if v:
+                return v
+    except Exception:
+        pass
+
     return "dev"
 
 

@@ -77,6 +77,7 @@ jobs:
           prerelease: false
           files: |
             dist/pykorf-v${{ steps.get_version.outputs.MAJOR }}.zip
+            dist/pykorf-v${{ steps.get_version.outputs.MAJOR }}.zip.sha256
             dist/pykorf.bat
             dist/bat_version.txt
           generate_release_notes: true
