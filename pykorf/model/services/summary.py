@@ -184,7 +184,7 @@ class SummaryService:
         """
         pms_val = line_data.pms_code
         if valid_pms_keys and pms_val not in valid_pms_keys:
-            issues.append(f"Pipe '{name}': PMS '{pms_val}' (from NOTES) not found in pms.json.")
+            issues.append(f"Pipe '{name}': PMS '{pms_val}' (from NOTES) not found in PMS file.")
         else:
             nps = line_data.nominal_pipe_size
             try:

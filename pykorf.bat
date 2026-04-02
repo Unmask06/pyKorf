@@ -279,12 +279,9 @@ pause
 exit /b 1
 
 REM ============================================
-REM Banner display (shared by update, repair, and reinstall paths)
+REM PYKORF ASCII banner (single source of truth)
 REM ============================================
-:show_banner
-timeout /t 1 >nul
-cls
-echo.
+:print_banner
 echo %CYAN%        ######  #     # #    # ####### ######  ####### %RESET%
 echo %CYAN%        #     #  #   #  #   #  #     # #     # #       %RESET%
 echo %CYAN%        #     #   # #   #  #   #     # #     # #       %RESET%
@@ -294,6 +291,16 @@ echo %CYAN%        #          #    #   #  #     # #    #  #       %RESET%
 echo %CYAN%        #          #    #    # ####### #     # #       %RESET%
 echo.
 echo %GRAY%            Enterprise Hydraulic Modeling Toolkit%RESET%
+goto :eof
+
+REM ============================================
+REM Banner display (shared by update, repair, and reinstall paths)
+REM ============================================
+:show_banner
+timeout /t 1 >nul
+cls
+echo.
+call :print_banner
 echo.
 echo %GRAY%  ────────────────────────────────────────────────────────%RESET%
 echo %WHITE%    Starting...%RESET%
@@ -309,15 +316,7 @@ REM ============================================
 :first_install
 cls
 echo.
-echo %CYAN%        ######  #     # #    # ####### ######  ####### %RESET%
-echo %CYAN%        #     #  #   #  #   #  #     # #     # #       %RESET%
-echo %CYAN%        #     #   # #   #  #   #     # #     # #       %RESET%
-echo %CYAN%        ######     #    ####   #     # ######  #####   %RESET%
-echo %CYAN%        #          #    #  #   #     # #   #   #       %RESET%
-echo %CYAN%        #          #    #   #  #     # #    #  #       %RESET%
-echo %CYAN%        #          #    #    # ####### #     # #       %RESET%
-echo.
-echo %GRAY%            Enterprise Hydraulic Modeling Toolkit%RESET%
+call :print_banner
 echo.
 echo %GRAY%  ────────────────────────────────────────────────────────%RESET%
 echo %WHITE%    First-time setup  ·  Steps 1 – 4  ·  Runs once%RESET%
@@ -504,13 +503,7 @@ REM ============================================
 :uninstall
 cls
 echo.
-echo %CYAN%        ######  #     # #    # ####### ######  ####### %RESET%
-echo %CYAN%        #     #  #   #  #   #  #     # #     # #       %RESET%
-echo %CYAN%        #     #   # #   #  #   #     # #     # #       %RESET%
-echo %CYAN%        ######     #    ####   #     # ######  #####   %RESET%
-echo %CYAN%        #          #    #  #   #     # #   #   #       %RESET%
-echo %CYAN%        #          #    #   #  #     # #    #  #       %RESET%
-echo %CYAN%        #          #    #    # ####### #     # #       %RESET%
+call :print_banner
 echo.
 echo %GRAY%  ────────────────────────────────────────────────────────%RESET%
 echo %WHITE%    Uninstall pyKorf%RESET%

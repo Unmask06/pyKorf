@@ -41,7 +41,9 @@ def _is_safe_path(path: Path) -> bool:
     home = Path.home().resolve()
 
     if os.name == "nt":
-        allowed_roots = [home] + [Path(f"{d}:\\") for d in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" if Path(f"{d}:\\").exists()]
+        allowed_roots = [home] + [
+            Path(f"{d}:\\") for d in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" if Path(f"{d}:\\").exists()
+        ]
     else:
         allowed_roots = [home, Path("/")]
 
@@ -122,11 +124,7 @@ def api_browse():
     if os.name == "nt":
         import string
 
-        drives = [
-            f"{d}:\\"
-            for d in string.ascii_uppercase
-            if Path(f"{d}:\\").exists()
-        ]
+        drives = [f"{d}:\\" for d in string.ascii_uppercase if Path(f"{d}:\\").exists()]
 
     return jsonify(
         {

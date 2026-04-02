@@ -115,6 +115,7 @@ def _deps_changed(old_pyproject: Path, new_pyproject: Path) -> bool:
     Returns:
         True if dependencies have changed, False if identical.
     """
+
     def _get_deps(p: Path) -> list[str]:
         try:
             with open(p, "rb") as f:
@@ -193,8 +194,7 @@ def check_for_update(current_version: str, timeout: float = 3.0) -> dict[str, An
             (
                 a
                 for a in assets
-                if a.get("name", "").endswith(".zip")
-                and "pykorf" in a.get("name", "").lower()
+                if a.get("name", "").endswith(".zip") and "pykorf" in a.get("name", "").lower()
             ),
             None,
         )
@@ -204,13 +204,9 @@ def check_for_update(current_version: str, timeout: float = 3.0) -> dict[str, An
         )
 
         zipball_url: str = (
-            zip_asset["browser_download_url"]
-            if zip_asset
-            else (data.get("zipball_url") or "")
+            zip_asset["browser_download_url"] if zip_asset else (data.get("zipball_url") or "")
         )
-        sha256_url: str | None = (
-            sha256_asset["browser_download_url"] if sha256_asset else None
-        )
+        sha256_url: str | None = sha256_asset["browser_download_url"] if sha256_asset else None
 
         return {
             "latest_version": _normalize_version(latest_version),
@@ -327,7 +323,9 @@ def install_update(
 
             # ── 5. Rebuild venv only if dependencies changed ─────────────────
             new_pyproject = install_root / "pyproject.toml"
-            rebuild_venv = _deps_changed(old_pyproject, new_pyproject) if old_pyproject.exists() else True
+            rebuild_venv = (
+                _deps_changed(old_pyproject, new_pyproject) if old_pyproject.exists() else True
+            )
 
             if rebuild_venv:
                 venv_path = install_root / ".venv"
