@@ -14,6 +14,8 @@ from pykorf.elements import Element, Feed, Pipe, Product, Pump
 from pykorf.exceptions import ElementNotFound
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from pykorf.model import Model
 
 _logger = logging.getLogger(__name__)
@@ -91,7 +93,7 @@ class SummaryService:
 
         return issues
 
-    def _load_pms_config(self, issues: list[str]) -> tuple[set[str], object]:
+    def _load_pms_config(self, issues: list[str]) -> tuple[set[str], Path | str]:
         """Load PMS configuration and return valid PMS keys and the resolved path.
 
         Args:
@@ -125,7 +127,7 @@ class SummaryService:
         return valid_pms_keys, pms_path
 
     def _validate_pipe_line_numbers(
-        self, issues: list[str], valid_pms_keys: set[str], pms_path: object
+        self, issues: list[str], valid_pms_keys: set[str], pms_path: Path | str
     ) -> None:
         """Validate pipe line numbers in NOTES and verify against PMS.
 
@@ -169,7 +171,7 @@ class SummaryService:
         name: str,
         line_data,
         valid_pms_keys: set[str],
-        pms_path: object,
+        pms_path: Path | str,
     ) -> None:
         """Verify PMS, NPS, and schedule for a single pipe.
 
