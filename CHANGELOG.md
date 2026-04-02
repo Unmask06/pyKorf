@@ -5,6 +5,14 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.3] - 2026-04-02
+
+### Fixed
+
+- The launcher now performs a full reinstall automatically if virtual environment repair fails, giving you a better chance of recovery without manual intervention. A new `--uninstall-app` flag also lets you quickly reset the application while keeping your saved data and settings.
+
+---
+
 ## [0.8.2] - 2026-04-02
 
 ### Fixed
