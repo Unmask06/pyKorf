@@ -527,16 +527,6 @@ def apply_pms(
     Raises:
         LineNumberParseError: If NOTES contains an unparseable line number.
         PmsLookupError: If the PMS class from the line number is not found.
-
-    Example:
-        ```python
-        from pykorf import Model
-        from pykorf.use_case.pms import apply_pms
-
-        model = Model("model.kdf")
-        updated_pipes = apply_pms("Consolidated PMS.json", model)
-        print(f"Updated {len(updated_pipes)} pipes with PMS specifications")
-        ```
     """
     all_materials = load_all_pms(pms_source)
     updated_pipes: list[str] = []
