@@ -154,6 +154,14 @@ echo.
 echo Creating distribution package...
 uv run python -c "import zipfile, os; z = zipfile.ZipFile(r'%DIST_DIR%/pykorf-v%MAJOR%.zip', 'w', zipfile.ZIP_DEFLATED); base = r'%DIST_DIR%'; [z.write(os.path.join(root, f), os.path.relpath(os.path.join(root, f), base)) for root, dirs, files in os.walk(base) for f in files if not f.endswith('.zip')]; z.close()"
 
+REM Generate SHA256 checksum for integrity verification
+echo.
+echo Generating SHA256 checksum...
+powershell -command "(Get-FileHash 'dist\pykorf-v%MAJOR%.zip' -Algorithm SHA256).Hash | Out-File 'dist\pykorf-v%MAJOR%.zip.sha256' -NoNewline -Encoding ASCII"
+if errorlevel 1 (
+    echo WARNING: Failed to generate SHA256 checksum
+)
+
 REM Clean up unzipped content
 REM Keep pykorf.bat and bat_version.txt — uploaded as separate release assets
 echo Cleaning up...

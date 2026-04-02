@@ -335,6 +335,48 @@ def set_sp_overrides(overrides: dict[str, str]) -> None:
     save_config(config)
 
 
+def get_trial_start() -> str | None:
+    """Get the ISO date string of when the trial period started.
+
+    Returns:
+        ISO date string (e.g. "2026-04-02"), or None if not yet set.
+    """
+    config = load_config()
+    return config.get("trial_start")
+
+
+def set_trial_start(iso_date: str) -> None:
+    """Persist the trial start date.
+
+    Args:
+        iso_date: ISO date string (e.g. ``date.today().isoformat()``).
+    """
+    config = load_config()
+    config["trial_start"] = iso_date
+    save_config(config)
+
+
+def get_license_key() -> str | None:
+    """Get the stored license key.
+
+    Returns:
+        License key string, or None if no key has been entered.
+    """
+    config = load_config()
+    return config.get("license_key")
+
+
+def set_license_key(key: str) -> None:
+    """Persist a license key.
+
+    Args:
+        key: The license key string to store.
+    """
+    config = load_config()
+    config["license_key"] = key
+    save_config(config)
+
+
 def get_stream_excel_last_imported() -> str | None:
     """Get the ISO timestamp of when Stream data was last imported from Excel.
 
