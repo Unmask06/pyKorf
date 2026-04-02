@@ -34,6 +34,10 @@ REM Uninstall flag check
 REM ============================================
 if /i "%~1"=="/uninstall" goto :uninstall
 if /i "%~1"=="--uninstall" goto :uninstall
+if /i "%~1"=="--uninstall-app" (
+    set "CONFIRM=Y"
+    goto :uninstall_app_only
+)
 
 REM ============================================
 REM Launcher self-update check
@@ -202,7 +206,7 @@ if exist ".venv" rd /s /q ".venv" >nul 2>&1
 py -3.13 -m uv venv .venv --quiet
 if %errorlevel% neq 0 (
     echo %RED%  Failed to create virtual environment.%RESET%
-    goto :launch_failed
+    goto :launch_reinstall
 )
 
 set "VENV_UV=%APPDATA_DIR%\.venv\Scripts\uv.exe"
@@ -213,10 +217,58 @@ if exist "!VENV_UV!" (
 )
 if %errorlevel% neq 0 (
     echo %RED%  Failed to reinstall dependencies.%RESET%
-    goto :launch_failed
+    goto :launch_reinstall
 )
 
 echo %GREEN%  Venv repaired — relaunching...%RESET%
+echo.
+".venv\Scripts\python.exe" -m pykorf
+if %errorlevel% equ 0 exit /b
+
+:launch_reinstall
+echo.
+echo %YELLOW%  Venv repair failed — attempting full reinstall...%RESET%
+echo.
+
+REM Run uninstall_app_only silently (CONFIRM=Y skips prompt)
+set "CONFIRM=Y"
+goto :uninstall_app_only_no_pause
+
+:uninstall_app_only_no_pause
+echo %GRAY%  Removing application...%RESET%
+if exist "%APPDATA_DIR%\data" (
+    robocopy "%APPDATA_DIR%\data" "%TEMP%\pykorf_data_bak" /E /MOVE /NFL /NDL /NJH /NJS >nul 2>&1
+)
+if exist "%APPDATA_DIR%\config.json" (
+    copy /y "%APPDATA_DIR%\config.json" "%TEMP%\pykorf_cfg_bak.json" >nul 2>&1
+)
+rd /s /q "%APPDATA_DIR%" >nul 2>&1
+mkdir "%APPDATA_DIR%" >nul 2>&1
+if exist "%TEMP%\pykorf_data_bak" (
+    robocopy "%TEMP%\pykorf_data_bak" "%APPDATA_DIR%\data" /E /MOVE /NFL /NDL /NJH /NJS >nul 2>&1
+)
+if exist "%TEMP%\pykorf_cfg_bak.json" (
+    copy /y "%TEMP%\pykorf_cfg_bak.json" "%APPDATA_DIR%\config.json" >nul 2>&1
+    del "%TEMP%\pykorf_cfg_bak.json" >nul 2>&1
+)
+echo %GREEN%  ✓  Application removed.%RESET%
+echo.
+
+REM Now perform fresh install
+echo %GRAY%  Performing fresh installation...%RESET%
+cd /d "%APPDATA_DIR%"
+set "PYTHON_EXE=py -3.13"
+!PYTHON_EXE! -m uv venv .venv --quiet
+set "VENV_UV=%APPDATA_DIR%\.venv\Scripts\uv.exe"
+if exist "!VENV_UV!" (
+    "!VENV_UV!" pip install --python ".venv\Scripts\python.exe" -e . --quiet
+) else (
+    ".venv\Scripts\python.exe" -m uv pip install --python ".venv\Scripts\python.exe" -e . --quiet 2>nul
+    if %errorlevel% neq 0 ".venv\Scripts\python.exe" -m pip install -e . --quiet
+)
+echo %GREEN%  ✓  Installation complete.%RESET%
+echo.
+echo %GRAY%  Launching pyKorf...%RESET%
 echo.
 ".venv\Scripts\python.exe" -m pykorf
 if %errorlevel% equ 0 exit /b
@@ -226,8 +278,8 @@ echo.
 echo %RED%  ┌─────────────────────────────────────────────────────────┐%RESET%
 echo %RED%  │   pyKorf failed to start                                │%RESET%
 echo %RED%  │                                                         │%RESET%
-echo %RED%  │   Automatic repair was attempted but did not resolve    │%RESET%
-echo %RED%  │   the issue.                                            │%RESET%
+echo %RED%  │   Automatic repair and reinstall were attempted but     │%RESET%
+echo %RED%  │   did not resolve the issue.                            │%RESET%
 echo %RED%  │                                                         │%RESET%
 echo %RED%  │   Please contact: Prasanna Palanivel                    │%RESET%
 echo %RED%  └─────────────────────────────────────────────────────────┘%RESET%
@@ -504,7 +556,9 @@ exit /b 1
 echo.
 echo %WHITE%  This will remove the pyKorf application but keep your saved data.%RESET%
 echo.
+if /i "!CONFIRM!"=="Y" goto :confirm_skip
 set /p CONFIRM=  Are you sure? (Y/N):
+:confirm_skip
 if /i not "!CONFIRM!"=="Y" (
     echo.
     echo %GRAY%  Cancelled.%RESET%
