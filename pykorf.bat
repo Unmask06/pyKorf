@@ -13,7 +13,7 @@ REM              Bump on any launcher fix/improvement; enables auto-update.
 REM AUTO_UPDATE: TRUE = silently self-update when a newer launcher is on GitHub.
 REM              FALSE = never self-update; user must get new bat from administrator.
 set "BAT_MAJOR=0"
-set "BAT_VERSION=0.5"
+set "BAT_VERSION=0.6"
 set "AUTO_UPDATE=TRUE"
 
 chcp 65001 > nul
@@ -187,8 +187,53 @@ echo.
 :app_update_done
 
 cd /d "%APPDATA_DIR%"
+
+REM ── Launch with auto-repair on venv errors ───────────────────────────────────
 ".venv\Scripts\python.exe" -m pykorf
-exit /b
+set "LAUNCH_ERR=%errorlevel%"
+if "!LAUNCH_ERR!"=="0" exit /b
+
+REM Non-zero exit — attempt one venv rebuild before giving up
+echo.
+echo %YELLOW%  pyKorf exited with error !LAUNCH_ERR! — attempting venv repair...%RESET%
+echo.
+
+if exist ".venv" rd /s /q ".venv" >nul 2>&1
+py -3.13 -m uv venv .venv --quiet
+if %errorlevel% neq 0 (
+    echo %RED%  Failed to create virtual environment.%RESET%
+    goto :launch_failed
+)
+
+set "VENV_UV=%APPDATA_DIR%\.venv\Scripts\uv.exe"
+if exist "!VENV_UV!" (
+    "!VENV_UV!" pip install --python ".venv\Scripts\python.exe" -e . --quiet
+) else (
+    ".venv\Scripts\python.exe" -m pip install -e . --quiet
+)
+if %errorlevel% neq 0 (
+    echo %RED%  Failed to reinstall dependencies.%RESET%
+    goto :launch_failed
+)
+
+echo %GREEN%  Venv repaired — relaunching...%RESET%
+echo.
+".venv\Scripts\python.exe" -m pykorf
+if %errorlevel% equ 0 exit /b
+
+:launch_failed
+echo.
+echo %RED%  ┌─────────────────────────────────────────────────────────┐%RESET%
+echo %RED%  │   pyKorf failed to start                                │%RESET%
+echo %RED%  │                                                         │%RESET%
+echo %RED%  │   Automatic repair was attempted but did not resolve    │%RESET%
+echo %RED%  │   the issue.                                            │%RESET%
+echo %RED%  │                                                         │%RESET%
+echo %RED%  │   Please contact: Prasanna Palanivel                    │%RESET%
+echo %RED%  └─────────────────────────────────────────────────────────┘%RESET%
+echo.
+pause
+exit /b 1
 
 REM ============================================
 REM First-time install
