@@ -127,18 +127,12 @@ if not "!INST_MAJOR!"=="!BAT_MAJOR!" (
 )
 
 REM ============================================
-REM App version update check
+REM App version update check (GitHub API)
 REM ============================================
-set "APP_VER_URL=https://github.com/Unmask06/pykorf/releases/latest/download/VERSION"
-set "APP_VER_TMP=%TEMP%\pk_app_ver.txt"
 set "APP_ZIP_URL=https://github.com/Unmask06/pykorf/releases/latest/download/pykorf-v!BAT_MAJOR!.zip"
 
-curl -L --fail --silent --max-time 10 -o "!APP_VER_TMP!" "!APP_VER_URL!" 2>nul
-if %errorlevel% neq 0 goto :app_update_done
-
-set "REMOTE_APP_VER="
-set /p REMOTE_APP_VER=<"!APP_VER_TMP!"
-del "!APP_VER_TMP!" >nul 2>&1
+for /f %%v in ('powershell -command "(Invoke-RestMethod 'https://api.github.com/repos/Unmask06/pykorf/releases/latest').tag_name" 2^>nul') do set "REMOTE_APP_VER=%%v"
+set "REMOTE_APP_VER=!REMOTE_APP_VER:v=!"
 if "!REMOTE_APP_VER!"=="" goto :app_update_done
 if "!INST_VER!"=="!REMOTE_APP_VER!" goto :app_update_done
 
@@ -177,12 +171,11 @@ set "PYTHON_EXE=py -3.13"
 !PYTHON_EXE! -m uv venv .venv --quiet
 
 echo %GRAY%  Installing dependencies...%RESET%
-set "VENV_UV=%APPDATA_DIR%\.venv\Scripts\uv.exe"
-if exist "!VENV_UV!" (
-    "!VENV_UV!" pip install --python ".venv\Scripts\python.exe" -e . --quiet
-) else (
-    ".venv\Scripts\python.exe" -m uv pip install --python ".venv\Scripts\python.exe" -e . --quiet 2>nul
-    if %errorlevel% neq 0 ".venv\Scripts\python.exe" -m pip install -e . --quiet
+py -3.13 -m uv pip install --python ".venv\Scripts\python.exe" -e .
+if %errorlevel% neq 0 (
+    echo %YELLOW%  Update download failed — launching existing version%RESET%
+    echo.
+    goto :app_update_done
 )
 
 echo %GREEN%  ✓  Updated to !REMOTE_APP_VER!%RESET%
@@ -192,7 +185,10 @@ echo.
 
 cd /d "%APPDATA_DIR%"
 
-REM ── Launch with auto-repair on venv errors ───────────────────────────────────
+REM ── Show banner before launch ────────────────────────────────────────────────
+goto :show_banner
+
+:banner_launch
 ".venv\Scripts\python.exe" -m pykorf
 set "LAUNCH_ERR=%errorlevel%"
 if "!LAUNCH_ERR!"=="0" exit /b
@@ -211,9 +207,9 @@ if %errorlevel% neq 0 (
 
 set "VENV_UV=%APPDATA_DIR%\.venv\Scripts\uv.exe"
 if exist "!VENV_UV!" (
-    "!VENV_UV!" pip install --python ".venv\Scripts\python.exe" -e . --quiet
+    "!VENV_UV!" pip install --python ".venv\Scripts\python.exe" -e .
 ) else (
-    ".venv\Scripts\python.exe" -m pip install -e . --quiet
+    py -3.13 -m uv pip install --python ".venv\Scripts\python.exe" -e .
 )
 if %errorlevel% neq 0 (
     echo %RED%  Failed to reinstall dependencies.%RESET%
@@ -222,7 +218,7 @@ if %errorlevel% neq 0 (
 
 echo %GREEN%  Venv repaired — relaunching...%RESET%
 echo.
-".venv\Scripts\python.exe" -m pykorf
+goto :banner_launch
 if %errorlevel% equ 0 exit /b
 
 :launch_reinstall
@@ -259,19 +255,14 @@ echo %GRAY%  Performing fresh installation...%RESET%
 cd /d "%APPDATA_DIR%"
 set "PYTHON_EXE=py -3.13"
 !PYTHON_EXE! -m uv venv .venv --quiet
-set "VENV_UV=%APPDATA_DIR%\.venv\Scripts\uv.exe"
-if exist "!VENV_UV!" (
-    "!VENV_UV!" pip install --python ".venv\Scripts\python.exe" -e . --quiet
-) else (
-    ".venv\Scripts\python.exe" -m uv pip install --python ".venv\Scripts\python.exe" -e . --quiet 2>nul
-    if %errorlevel% neq 0 ".venv\Scripts\python.exe" -m pip install -e . --quiet
+py -3.13 -m uv pip install --python ".venv\Scripts\python.exe" -e .
+if %errorlevel% neq 0 (
+    echo %RED%  Failed to install dependencies.%RESET%
+    goto :launch_failed
 )
 echo %GREEN%  ✓  Installation complete.%RESET%
 echo.
-echo %GRAY%  Launching pyKorf...%RESET%
-echo.
-".venv\Scripts\python.exe" -m pykorf
-if %errorlevel% equ 0 exit /b
+goto :banner_launch
 
 :launch_failed
 echo.
@@ -286,6 +277,31 @@ echo %RED%  └─────────────────────�
 echo.
 pause
 exit /b 1
+
+REM ============================================
+REM Banner display (shared by update, repair, and reinstall paths)
+REM ============================================
+:show_banner
+timeout /t 1 >nul
+cls
+echo.
+echo %CYAN%        ######  #     # #    # ####### ######  ####### %RESET%
+echo %CYAN%        #     #  #   #  #   #  #     # #     # #       %RESET%
+echo %CYAN%        #     #   # #   #  #   #     # #     # #       %RESET%
+echo %CYAN%        ######     #    ####   #     # ######  #####   %RESET%
+echo %CYAN%        #          #    #  #   #     # #   #   #       %RESET%
+echo %CYAN%        #          #    #   #  #     # #    #  #       %RESET%
+echo %CYAN%        #          #    #    # ####### #     # #       %RESET%
+echo.
+echo %GRAY%            Enterprise Hydraulic Modeling Toolkit%RESET%
+echo.
+echo %GRAY%  ────────────────────────────────────────────────────────%RESET%
+echo %WHITE%    Starting...%RESET%
+echo %GRAY%  ────────────────────────────────────────────────────────%RESET%
+echo.
+echo %GREEN%  ℹ  Browser will automatically open. Don't close this terminal.%RESET%
+echo.
+goto :banner_launch
 
 REM ============================================
 REM First-time install
@@ -477,27 +493,7 @@ echo.
 REM ============================================
 REM Launch
 REM ============================================
-timeout /t 1 >nul
-cls
-echo.
-echo %CYAN%        ######  #     # #    # ####### ######  ####### %RESET%
-echo %CYAN%        #     #  #   #  #   #  #     # #     # #       %RESET%
-echo %CYAN%        #     #   # #   #  #   #     # #     # #       %RESET%
-echo %CYAN%        ######     #    ####   #     # ######  #####   %RESET%
-echo %CYAN%        #          #    #  #   #     # #   #   #       %RESET%
-echo %CYAN%        #          #    #   #  #     # #    #  #       %RESET%
-echo %CYAN%        #          #    #    # ####### #     # #       %RESET%
-echo.
-echo %GRAY%            Enterprise Hydraulic Modeling Toolkit%RESET%
-echo.
-echo %GRAY%  ────────────────────────────────────────────────────────%RESET%
-echo %WHITE%    Starting...%RESET%
-echo %GRAY%  ────────────────────────────────────────────────────────%RESET%
-echo.
-echo %GREEN%  ℹ  Browser will automatically open. Don't close this terminal.%RESET%
-echo.
-
-".venv\Scripts\python.exe" -m pykorf
+goto :banner_launch
 
 endlocal
 goto :eof
