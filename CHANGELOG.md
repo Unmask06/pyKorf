@@ -5,6 +5,14 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.2] - 2026-04-02
+
+### Fixed
+
+- Removed the in-app update mechanism that was failing on Windows because it tried to overwrite locked PyArmor runtime files while pyKorf was running. Updates are now handled entirely by the launcher script before the application starts, eliminating file-lock crashes and broken installations.
+
+---
+
 ## [0.8.1] - 2026-04-02
 
 ### Fixed

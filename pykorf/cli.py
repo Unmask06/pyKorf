@@ -12,7 +12,6 @@ from rich.panel import Panel
 from rich.text import Text
 
 from pykorf.license import validate_license_key
-from pykorf.update import check_for_update, install_update
 from pykorf.use_case.config import get_license_key, get_trial_start, set_trial_start
 
 TRIAL_DURATION_DAYS = 30
@@ -138,62 +137,6 @@ def show_trial_info(days_left: int) -> None:
     console.print()
 
 
-def show_update_prompt(update_info: dict) -> None:
-    """Display update notice and automatically install it.
-
-    Args:
-        update_info: Dict with 'latest_version', 'release_url', 'zipball_url',
-            and optional 'sha256_url' keys.
-    """
-    latest_version = update_info["latest_version"]
-    zipball_url = update_info.get("zipball_url", "")
-    release_notes = update_info.get("release_notes", "")
-
-    body = f"A newer version of pyKorf is available: [bold cyan]v{latest_version}[/bold cyan]\n"
-    if release_notes:
-        body += "\n[bold]What's new:[/bold]\n"
-        body += f"[dim]{release_notes}[/dim]\n"
-    body += "\n\nInstalling update automatically..."
-
-    console.print(
-        Panel(body, title="📦 Update Available", border_style="green", padding=(0, 1)),
-        justify="center",
-    )
-    console.print()
-
-    if not zipball_url:
-        console.print("[yellow]No download URL available — please update manually.[/yellow]")
-        console.print()
-        return
-
-    sha256_url = update_info.get("sha256_url")
-    with console.status("[dim]Downloading and installing update...[/dim]", spinner="dots"):
-        success, message = install_update(zipball_url, sha256_url=sha256_url)
-
-    if success:
-        console.print(
-            Panel(
-                f"[green]{message}[/green]",
-                title="✅ Update Installed",
-                border_style="green",
-                padding=(0, 1),
-            ),
-            justify="center",
-        )
-    else:
-        console.print(
-            Panel(
-                f"[red]{message}[/red]",
-                title="❌ Update Failed",
-                border_style="red",
-                padding=(0, 1),
-            ),
-            justify="center",
-        )
-
-    console.print()
-
-
 def main():
     """Launch the pyKorf web application."""
     parser = argparse.ArgumentParser(
@@ -227,12 +170,6 @@ def main():
             return
         if days_left >= 0:
             show_trial_info(days_left)
-
-    pkg_version = get_version()
-    if pkg_version != "dev":
-        update_info = check_for_update(pkg_version)
-        if update_info:
-            show_update_prompt(update_info)
 
     from pykorf.use_case.web.app import run_server
 
