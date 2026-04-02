@@ -5,6 +5,20 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-04-01
+
+### What's New
+
+- Pipe sizing validation now checks the ρV² (momentum) criterion for gas and two-phase services, catching high-velocity impingement issues that dP and velocity limits alone would miss.
+- If a sizing criterion value is zero (not configured), that check is now skipped entirely rather than falsely flagging every pipe.
+
+### Improved
+
+- Criteria lookups are now cached, making repeated validation runs on large models noticeably faster.
+- The "Criteria Check" column in Excel exports now shows **PASS** or **FAIL** instead of a raw true/false value, making reports easier to read at a glance.
+
+---
+
 ## [0.6.4] - 2026-04-01
 
 ### Fixed
