@@ -114,9 +114,9 @@
     }
 
     var html = '<table class="table table-sm table-hover mb-0"><thead class="table-light">' +
-      '<tr><th style="width:55%">Name</th><th style="width:8%">Type</th>' +
-      '<th style="width:11%">Modified</th><th style="width:12%">Modified By</th>' +
-      '<th>Path</th></tr></thead><tbody>';
+      '<tr><th style="width:50%">Name</th><th style="width:8%">Type</th>' +
+      '<th style="width:10%">Modified</th><th style="width:11%">Modified By</th>' +
+      '<th>Path</th><th style="width:3rem"></th></tr></thead><tbody>';
 
     results.forEach(function(r) {
       var typeBadge = r.item_type === 'Folder'
@@ -124,16 +124,24 @@
         : '<span class="badge bg-success"><i class="bi bi-file-earmark me-1"></i>File</span>';
 
       var modDisplay = r.modified && r.modified !== '' ? escapeHtml(r.modified.substring(0, 10)) : '—';
+      var spSite = window.DOC_REGISTER_SP_SITE_URL || '';
+      var fullUrl = spSite + '/' + r.path.replace(/^\/+/, '') + '/' + r.name.replace(/^\/+/, '');
 
       html += '<tr class="query-row" style="cursor:pointer;font-size:.75rem" ' +
         'data-name="' + escapeHtml(r.name) + '" ' +
         'data-path="' + escapeHtml(r.path) + '" ' +
         'data-type="' + escapeHtml(r.item_type) + '">' +
-        '<td class="fw-semibold text-truncate" style="max-width:320px" title="' + escapeHtml(r.name) + '">' + escapeHtml(r.name) + '</td>' +
+        '<td class="fw-semibold text-truncate" style="max-width:280px" title="' + escapeHtml(r.name) + '">' + escapeHtml(r.name) + '</td>' +
         '<td>' + typeBadge + '</td>' +
         '<td class="text-secondary">' + modDisplay + '</td>' +
-        '<td class="text-secondary text-truncate" style="max-width:100px" title="' + escapeHtml(r.modified_by || '') + '">' + escapeHtml(r.modified_by || '—') + '</td>' +
-        '<td class="text-secondary text-truncate" style="max-width:140px" title="' + escapeHtml(r.path) + '">' + escapeHtml(r.path) + '</td></tr>';
+        '<td class="text-secondary text-truncate" style="max-width:90px" title="' + escapeHtml(r.modified_by || '') + '">' + escapeHtml(r.modified_by || '—') + '</td>' +
+        '<td class="text-secondary text-truncate" style="max-width:120px" title="' + escapeHtml(r.path) + '">' + escapeHtml(r.path) + '</td>' +
+        '<td class="text-center">' +
+          '<a href="' + escapeHtml(fullUrl) + '" target="_blank" rel="noopener" ' +
+          'class="btn btn-xs btn-outline-primary py-0 px-1" ' +
+          'title="Open in new tab" ' +
+          'onclick="event.stopPropagation()">' +
+          '<i class="bi bi-box-arrow-up-right"></i></a></td></tr>';
     });
 
     html += '</tbody></table>';
