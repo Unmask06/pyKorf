@@ -5,6 +5,23 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-04-03
+
+### What's New
+
+- A new **Document Register** search modal is available on the References page, letting you look up engineering documents by title and select the matching SharePoint file to attach as a reference link in one step.
+- Document titles can now be searched with words in any order — for example, "heads column data sheet" finds documents that contain all those words even if they appear in a different sequence.
+- The Document Register source Excel file and SharePoint site URL can be configured in Preferences, with the database built automatically when the file is updated.
+- PMS data is now automatically re-applied when the source Excel file changes, so model parameters stay in sync without a manual import step.
+
+### Improved
+
+- Searching the Document Register is faster — the database is only rebuilt when the source Excel file has actually changed, not on every search request.
+- The query results table shows file type (File/Folder) as a badge and includes an Open button to preview the file in a new browser tab without leaving the current form.
+- SharePoint URL links are now constructed consistently across the search modal.
+
+---
+
 ## [0.8.3] - 2026-04-02
 
 ### Fixed
