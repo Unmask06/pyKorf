@@ -114,8 +114,8 @@
     }
 
     var html = '<table class="table table-sm table-hover mb-0"><thead class="table-light">' +
-      '<tr><th style="width:45%">Name</th><th style="width:10%">Type</th>' +
-      '<th style="width:13%">Modified</th><th style="width:14%">Modified By</th>' +
+      '<tr><th style="width:55%">Name</th><th style="width:8%">Type</th>' +
+      '<th style="width:11%">Modified</th><th style="width:12%">Modified By</th>' +
       '<th>Path</th></tr></thead><tbody>';
 
     results.forEach(function(r) {
@@ -125,15 +125,15 @@
 
       var modDisplay = r.modified && r.modified !== '' ? escapeHtml(r.modified.substring(0, 10)) : '—';
 
-      html += '<tr class="query-row" style="cursor:pointer" ' +
+      html += '<tr class="query-row" style="cursor:pointer;font-size:.75rem" ' +
         'data-name="' + escapeHtml(r.name) + '" ' +
         'data-path="' + escapeHtml(r.path) + '" ' +
         'data-type="' + escapeHtml(r.item_type) + '">' +
-        '<td class="small fw-semibold text-truncate" style="max-width:200px" title="' + escapeHtml(r.name) + '">' + escapeHtml(r.name) + '</td>' +
+        '<td class="fw-semibold text-truncate" style="max-width:320px" title="' + escapeHtml(r.name) + '">' + escapeHtml(r.name) + '</td>' +
         '<td>' + typeBadge + '</td>' +
-        '<td class="small text-secondary">' + modDisplay + '</td>' +
-        '<td class="small text-secondary">' + escapeHtml(r.modified_by || '—') + '</td>' +
-        '<td class="small text-secondary text-truncate" style="max-width:180px" title="' + escapeHtml(r.path) + '">' + escapeHtml(r.path) + '</td></tr>';
+        '<td class="text-secondary">' + modDisplay + '</td>' +
+        '<td class="text-secondary text-truncate" style="max-width:100px" title="' + escapeHtml(r.modified_by || '') + '">' + escapeHtml(r.modified_by || '—') + '</td>' +
+        '<td class="text-secondary text-truncate" style="max-width:140px" title="' + escapeHtml(r.path) + '">' + escapeHtml(r.path) + '</td></tr>';
     });
 
     html += '</tbody></table>';
