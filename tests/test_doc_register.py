@@ -309,6 +309,23 @@ class TestDBOps:
         assert len(results) == 1
         assert results[0]["document_no"] == "DOC-001"
 
+    def test_search_eddr_by_document_no(self, populated_db):
+        from pykorf.use_case.web.doc_register.db_ops import search_eddr_by_title
+
+        # Search by document number directly
+        results = search_eddr_by_title("DOC-002")
+        assert len(results) == 1
+        assert results[0]["document_no"] == "DOC-002"
+
+    def test_search_eddr_mixed_doc_no_and_title(self, populated_db):
+        from pykorf.use_case.web.doc_register.db_ops import search_eddr_by_title
+
+        # "DOC-001" matches document_no, "Instrument" matches title — both words
+        # must appear across either field
+        results = search_eddr_by_title("DOC-001 Instrument")
+        assert len(results) == 1
+        assert results[0]["document_no"] == "DOC-001"
+
     def test_search_eddr_unordered_partial_words_no_match(self, populated_db):
         from pykorf.use_case.web.doc_register.db_ops import search_eddr_by_title
 
