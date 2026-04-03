@@ -54,6 +54,80 @@
     </div>
   </div>
 
+  <!-- ── Document Register ── -->
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold d-flex align-items-center gap-2">
+        <i class="bi bi-database text-info"></i>Document Register
+        <span class="badge bg-secondary ms-auto small" id="dr-status-badge">
+          {% if doc_register_excel_path %}Configured{% else %}Not configured{% endif %}
+        </span>
+      </div>
+      <div class="card-body">
+
+        {% if dr_flash %}
+        <div class="alert alert-{{ dr_flash.type }} alert-dismissible fade show py-2" role="alert">
+          <i class="bi bi-{% if dr_flash.type == 'success' %}check-circle{% else %}exclamation-triangle{% endif %} me-1"></i>
+          {{ dr_flash.msg }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endif %}
+
+        <form method="post" action="/preferences" class="row g-2 align-items-end">
+          <input type="hidden" name="action" value="set_doc_register_config" />
+          <div class="col-lg-5">
+            <label class="form-label small fw-semibold mb-1" for="dr_excel_path">Excel File Path</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text"><i class="bi bi-file-earmark-excel"></i></span>
+              <input type="text" class="form-control font-monospace" id="dr_excel_path" name="dr_excel_path"
+                     placeholder="C:\path\to\Document Register.xlsx"
+                     value="{{ doc_register_excel_path or '' }}" autocomplete="off" />
+              <button type="button" class="btn btn-outline-secondary"
+                      data-browse-target="dr_excel_path"
+                      data-browse-filter="excel"
+                      title="Browse for Excel file">
+                <i class="bi bi-folder2-open"></i>
+              </button>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <label class="form-label small fw-semibold mb-1" for="dr_sp_site_url">SharePoint Site URL</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text"><i class="bi bi-cloud"></i></span>
+              <input type="text" class="form-control font-monospace" id="dr_sp_site_url" name="dr_sp_site_url"
+                     placeholder="https://tenant.sharepoint.com"
+                     value="{{ doc_register_sp_site_url or '' }}" autocomplete="off" />
+            </div>
+          </div>
+          <div class="col-lg-3">
+            <button type="submit" class="btn btn-sm btn-primary w-100">
+              <i class="bi bi-floppy me-1"></i>Save Config
+            </button>
+          </div>
+        </form>
+
+        {% if doc_register_excel_path %}
+        <div class="mt-3 d-flex align-items-center gap-2">
+          <button type="button" class="btn btn-sm btn-outline-info" onclick="rebuildDocRegisterDB()">
+            <i class="bi bi-arrow-clockwise me-1"></i>Rebuild Database
+          </button>
+          {% if doc_register_db_last_imported %}
+          <span class="small text-secondary">
+            <i class="bi bi-clock me-1"></i>Last built: {{ doc_register_db_last_imported }}
+          </span>
+          {% endif %}
+        </div>
+        {% else %}
+        <div class="mt-2 small text-secondary">
+          <i class="bi bi-info-circle me-1"></i>
+          Configure the Excel path above, then click Save to enable document search in References.
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+
   <div class="col-lg-8">
     <div class="card shadow-sm">
       <div class="card-header fw-semibold d-flex align-items-center gap-2">
@@ -220,4 +294,33 @@
 
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+function rebuildDocRegisterDB() {
+  var btn = event.target.closest('button');
+  if (!btn) return;
+  var origHTML = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Rebuilding...';
+
+  fetch('/api/doc-register/rebuild-db', { method: 'POST' })
+    .then(function(resp) { return resp.json(); })
+    .then(function(data) {
+      if (data.success) {
+        location.reload();
+      } else {
+        alert('Rebuild failed: ' + (data.error || 'Unknown error'));
+        btn.disabled = false;
+        btn.innerHTML = origHTML;
+      }
+    })
+    .catch(function(err) {
+      alert('Rebuild failed: ' + err.message);
+      btn.disabled = false;
+      btn.innerHTML = origHTML;
+    });
+}
+</script>
 {% endblock %}
