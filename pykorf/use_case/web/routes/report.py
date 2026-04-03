@@ -81,7 +81,9 @@ def generate_report():
                     if ref_store
                     else []
                 )
-                exporter = ResultExporter(model, basis=basis, remarks=remarks, hold=hold, references=references)
+                exporter = ResultExporter(
+                    model, basis=basis, remarks=remarks, hold=hold, references=references
+                )
                 exporter.export_to_excel(str(report_file))
                 result_lines.append(("success", f"Report saved to: {report_file}"))
             except Exception as exc:

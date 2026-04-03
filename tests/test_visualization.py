@@ -156,5 +156,3 @@ class TestVisualizer:
         content = out.read_text(encoding="utf-8")
         assert "__layout_tl" in content
         assert "pykorf-legend" in content
-
-

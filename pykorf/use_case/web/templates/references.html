@@ -88,7 +88,8 @@
       <div class="card-body small text-secondary">
         <ol class="ps-3 mb-0">
           <li>Write design basis notes in the text area and click <strong>Save Basis</strong>.</li>
-          <li>Add document references (P&amp;IDs, datasheets, specs) with their SharePoint or local links.</li>
+          <li>Click the <i class="bi bi-search"></i> button next to the Name field to search the Document Register and auto-fill Name, Link, and Description.</li>
+          <li>Select a <strong>Category</strong> and click <strong>Add Reference</strong>.</li>
           <li>Shortcuts are <strong>auto-created</strong> in the <code>reference/</code> folder when you add, edit, or delete references.</li>
           <li>Use the browse button on the Link field to auto-detect SharePoint URLs for synced folders.</li>
         </ol>
@@ -122,12 +123,22 @@
             <div class="row g-2 mb-2">
               <div class="col-md-5">
                 <label class="form-label small fw-semibold mb-1">Name <span class="text-danger">*</span></label>
-                <input type="text" class="form-control form-control-sm" name="name"
-                       id="add-name" placeholder="e.g. P&amp;ID-001" required autocomplete="off" />
+                <div class="input-group input-group-sm">
+                  <input type="text" class="form-control form-control-sm" name="name"
+                         id="add-name" placeholder="e.g. P&amp;ID-001" required autocomplete="off" />
+                  <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#docRegisterModal"
+                          title="Search Document Register">
+                    <i class="bi bi-search"></i>
+                  </button>
+                </div>
+                <div class="form-text" style="font-size:.7rem; margin-top:2px;">
+                  <i class="bi bi-info-circle me-1"></i>Click <i class="bi bi-search"></i> to search the Document Register and auto-fill fields.
+                </div>
               </div>
               <div class="col-md-3">
-                <label class="form-label small fw-semibold mb-1">Category</label>
-                <select class="form-select form-select-sm" name="category" id="add-category">
+                <label class="form-label small fw-semibold mb-1">Category <span class="text-danger">*</span></label>
+                <select class="form-select form-select-sm" name="category" id="add-category" required>
+                  <option value="" disabled selected>Select…</option>
                   {% for cat in categories %}
                   <option value="{{ cat }}">{{ cat }}</option>
                   {% endfor %}
@@ -239,14 +250,73 @@
   </div>
 </div>
 
+<!-- ── Document Register Search Modal ────────────────────────────────────── -->
+<div class="modal fade" id="docRegisterModal" tabindex="-1" aria-labelledby="docRegisterModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title" id="docRegisterModalLabel">
+          <i class="bi bi-journal-bookmark text-info me-1"></i>Search Document Register
+        </h6>
+        <div>
+          <span class="badge bg-secondary me-2" id="doc-register-modal-status">Checking...</span>
+          <button type="button" class="btn btn-sm btn-outline-info me-1" id="doc-register-rebuild-btn">
+            <i class="bi bi-arrow-clockwise me-1"></i>Refresh DB
+          </button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+      </div>
+      <div class="modal-body p-3">
 
+        <!-- Step 1: EDDR Search -->
+        <div class="mb-3">
+          <label class="form-label small fw-semibold mb-1">
+            <span class="badge bg-primary me-1">Step 1</span>Search Document by Title
+          </label>
+          <input type="text" class="form-control form-control-sm" id="eddr-search"
+                 placeholder="Type to search EDDR titles (e.g. 'Single Line Diagram', 'P&ID')..."
+                 autocomplete="off" />
+          <div id="eddr-results" class="mt-2" style="max-height:280px; overflow-y:auto;">
+            <div class="text-center text-secondary py-3">
+              <i class="bi bi-search d-block fs-5 mb-1"></i>Type to search documents by title...
+            </div>
+          </div>
+        </div>
+
+        <hr class="my-2" />
+
+        <!-- Step 2: Query Results -->
+        <div>
+          <label class="form-label small fw-semibold mb-1">
+            <span class="badge bg-success me-1">Step 2</span>Select File or Folder
+          </label>
+          <div id="query-results" style="max-height:360px; overflow-y:auto;">
+            <div class="text-center text-secondary py-3">
+              <i class="bi bi-hand-index d-block fs-5 mb-1"></i>Select a document above to see available files
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer py-1">
+        <small class="text-secondary me-auto">
+          <i class="bi bi-info-circle me-1"></i>
+          Step 1: Search by title → click a document. Step 2: Pick a file → auto-fills Name, Link, Description.
+        </small>
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 
 {% endblock %}
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='references.js') }}"></script>
+<script src="{{ url_for('static', filename='doc_register.js') }}"></script>
 <script>
+window.DOC_REGISTER_SP_SITE_URL = '{{ doc_register_sp_site_url or "" }}';
 document.getElementById('add-form').addEventListener('submit', function() {
   document.getElementById('edit-id-hidden').value = '';
   var btn = document.getElementById('add-btn');

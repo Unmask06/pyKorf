@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %} {% block title %}Pipe Sizing Criteria{% endblock %} {%
+{% extends "base.html" %} {% block title %}Pipe Sizing Criteria{% endblock %} {%
 block content %} {% if set_result %}
 <div
   class="alert alert-{% if set_result.skipped %}warning{% else %}success{% endif %} d-flex align-items-start gap-2 mb-3"
@@ -62,7 +62,7 @@ block content %} {% if set_result %}
           type="text"
           id="pipe-filter"
           class="form-control form-control-sm"
-          placeholder="Filter pipesâ€¦"
+          placeholder="Filter pipes…"
           style="width: 180px"
         />
       </div>
@@ -266,43 +266,43 @@ block content %} {% if set_result %}
               class="text-center font-monospace small crit-dp"
               data-pipe="{{ pipe_name }}"
             >
-              â€”
+              —
             </td>
             <td
               class="text-center font-monospace small crit-vmin"
               data-pipe="{{ pipe_name }}"
             >
-              â€”
+              —
             </td>
             <td
               class="text-center font-monospace small crit-vmax"
               data-pipe="{{ pipe_name }}"
             >
-              â€”
+              —
             </td>
             <td
               class="text-center font-monospace small crit-rhov2"
               data-pipe="{{ pipe_name }}"
             >
-              â€”
+              —
             </td>
             <td
               class="text-center font-monospace small calc-rhov2"
               data-pipe="{{ pipe_name }}"
             >
-              â€”
+              —
             </td>
             <td
               class="text-center font-monospace small calc-dp"
               data-pipe="{{ pipe_name }}"
             >
-              â€”
+              —
             </td>
             <td
               class="text-center font-monospace small calc-vel"
               data-pipe="{{ pipe_name }}"
             >
-              â€”
+              —
             </td>
           </tr>
           {% endfor %}

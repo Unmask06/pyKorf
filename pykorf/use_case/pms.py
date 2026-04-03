@@ -30,6 +30,8 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+from datetime import datetime, UTC
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -41,6 +43,10 @@ from pykorf.use_case.exceptions import (
 )
 from pykorf.use_case.line_number import LineNumber, format_nps
 from pykorf.use_case.paths import ensure_data_dir
+from pykorf.use_case.preferences import (
+    get_pms_excel_last_imported,
+    get_pms_excel_path,
+)
 
 if TYPE_CHECKING:
     from pykorf.model import Model
@@ -49,6 +55,40 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_MATERIAL = "Steel"
 DEFAULT_ROUGHNESS_MICRON = 46
+
+
+def is_pms_excel_stale() -> bool:
+    """Return True if the configured PMS Excel file is newer than the last import.
+
+    Compares the Excel file's modification time against the
+    ``pms_excel_last_imported`` timestamp stored in config.json.
+
+    Returns:
+        True if the Excel file exists and has been modified since the last
+        import, False otherwise (including when no Excel path is configured).
+    """
+    excel_path_str = get_pms_excel_path()
+    if not excel_path_str:
+        return False
+
+    excel_path = Path(excel_path_str)
+    if not excel_path.is_file():
+        return False
+
+    last_imported = get_pms_excel_last_imported()
+    if last_imported is None:
+        return True
+
+    try:
+        last_imported_dt = datetime.fromisoformat(last_imported)
+        if last_imported_dt.tzinfo is None:
+            last_imported_dt = last_imported_dt.replace(tzinfo=UTC)
+    except (ValueError, TypeError):
+        return True
+
+    excel_mtime = datetime.fromtimestamp(os.path.getmtime(excel_path), tz=UTC)
+    return excel_mtime > last_imported_dt
+
 
 # Type alias for the loaded PMS data structure:
 # {pms_code: {nominal_size_inches: {"schedule": str} | {"wall_mm": float}, "roughness": float}}

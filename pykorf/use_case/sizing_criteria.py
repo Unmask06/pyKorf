@@ -26,6 +26,7 @@ class CriteriaValues(NamedTuple):
     rho_v2_min: float | None = None  # Pa; None = not applicable
     rho_v2_max: float | None = None  # Pa; None = not applicable
 
+
 _CRITERIA_DIR = Path(__file__).parent.parent / "reports"
 
 _FILES: dict[str, str] = {

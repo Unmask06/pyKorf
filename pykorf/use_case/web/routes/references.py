@@ -38,6 +38,7 @@ def _refs_context(kdf_path: Path, store: Any, **extra: Any) -> dict[str, Any]:
     Returns:
         Template context dict.
     """
+    from pykorf.use_case.preferences import get_doc_register_sp_site_url
     from pykorf.use_case.web.references import CATEGORIES
 
     return {
@@ -47,6 +48,7 @@ def _refs_context(kdf_path: Path, store: Any, **extra: Any) -> dict[str, Any]:
         "ref_dir": str(kdf_path.parent / "reference"),
         "flash": None,
         "shortcut_result": None,
+        "doc_register_sp_site_url": get_doc_register_sp_site_url() or "",
         **extra,
     }
 

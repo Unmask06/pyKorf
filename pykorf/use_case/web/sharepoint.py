@@ -142,7 +142,7 @@ def get_sharepoint_url(local_path: str | Path) -> str | None:
     for local_root, sp_url in sorted(get_sp_overrides().items(), key=lambda t: -len(t[0])):
         mp = local_root.replace("\\", "/").rstrip("/")
         if lp.lower().startswith(mp.lower()):
-            relative = lp[len(mp):]
+            relative = lp[len(mp) :]
             return sp_url.rstrip("/") + quote(relative, safe="/.-_~")
 
     sync_roots = _read_sync_roots()
@@ -152,7 +152,7 @@ def get_sharepoint_url(local_path: str | Path) -> str | None:
     for mount_point, url_namespace in sync_roots:
         mp = mount_point.replace("\\", "/").rstrip("/")
         if lp.lower().startswith(mp.lower()):
-            relative = lp[len(mp):]  # e.g. "/folder/file.pdf"
+            relative = lp[len(mp) :]  # e.g. "/folder/file.pdf"
             # URL-encode only characters that must be encoded in a URL path;
             # keep slashes, hyphens, dots, and most printable chars intact so
             # the URL remains readable.

@@ -665,7 +665,7 @@ class LayoutService:
         self,
         title_text: str | None = None,
         margin_height: float = 500.0,
-        color: str = "16711680", # blue
+        color: str = "16711680",  # blue
         font_size: int = 2,
     ) -> None:
         """Ensure a title symbol exists in the top margin area.
