@@ -84,6 +84,7 @@ def get_session() -> Session:
     """
     if _SessionFactory is None:
         get_engine()
+    assert _SessionFactory is not None
     return _SessionFactory()
 
 
