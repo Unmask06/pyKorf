@@ -114,8 +114,8 @@
     }
 
     var html = '<table class="table table-sm table-hover mb-0"><thead class="table-light">' +
-      '<tr><th style="width:28%">Name</th><th style="width:14%">Type</th>' +
-      '<th style="width:18%">Modified</th><th style="width:20%">Modified By</th>' +
+      '<tr><th style="width:45%">Name</th><th style="width:10%">Type</th>' +
+      '<th style="width:13%">Modified</th><th style="width:14%">Modified By</th>' +
       '<th>Path</th></tr></thead><tbody>';
 
     results.forEach(function(r) {

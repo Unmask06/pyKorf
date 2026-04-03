@@ -124,7 +124,8 @@ def search_eddr_by_title(query: str, limit: int = 50) -> list[dict[str, str]]:
 def search_query_by_name(doc_no: str, limit: int = 20) -> list[dict[str, str]]:
     """Search query entries where name contains the document number.
 
-    Returns both Items (files) and Folders.
+    Returns both Items (files) and Folders, sorted by modified time
+    descending (latest first).
 
     Args:
         doc_no: Document number to search for in the name field.
@@ -149,6 +150,7 @@ def search_query_by_name(doc_no: str, limit: int = 20) -> list[dict[str, str]]:
                 QueryEntry.item_type,
             )
             .filter(QueryEntry.name.ilike(term))
+            .order_by(QueryEntry.modified.desc())
             .limit(limit)
             .all()
         )
