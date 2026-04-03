@@ -22,15 +22,7 @@ from pykorf.use_case.preferences import (
     get_doc_register_sp_site_url,
     set_doc_register_db_last_imported,
 )
-from pykorf.use_case.web.doc_register import (
-    EDDR_COL_DOC_NO,
-    EDDR_COL_TITLE,
-    QUERY_COL_ITEM_TYPE,
-    QUERY_COL_MODIFIED,
-    QUERY_COL_MODIFIED_BY,
-    QUERY_COL_NAME,
-    QUERY_COL_PATH,
-)
+from pykorf.use_case.web.doc_register import Cols
 
 logger = structlog.get_logger()
 
@@ -97,7 +89,7 @@ def is_excel_stale() -> bool:
 def _find_eddr_header_row(df: pd.DataFrame) -> int:
     """Find the row index containing the document number column header.
 
-    Scans rows until a cell with value matching EDDR_COL_DOC_NO is found.
+    Scans rows until a cell with value matching Cols.EDDR_DOC_NO is found.
 
     Args:
         df: DataFrame read without header (header=None).
@@ -107,7 +99,7 @@ def _find_eddr_header_row(df: pd.DataFrame) -> int:
     """
     for idx in range(min(len(df), 10)):
         row = df.iloc[idx]
-        if EDDR_COL_DOC_NO in row.values:
+        if Cols.EDDR_DOC_NO in row.values:
             return idx
     return 2
 
@@ -144,33 +136,35 @@ def build_db_from_excel(excel_path: Path, sp_site_url: str = "") -> Path:
         excel_path,
         sheet_name="EDDR",
         header=header_row,
-        usecols=[EDDR_COL_DOC_NO, EDDR_COL_TITLE],
+        usecols=[Cols.EDDR_DOC_NO, Cols.EDDR_TITLE],
     )
-    eddr_df = eddr_df.dropna(subset=[EDDR_COL_DOC_NO])
-    eddr_df[EDDR_COL_DOC_NO] = eddr_df[EDDR_COL_DOC_NO].astype(str).str.strip()
-    eddr_df = eddr_df[eddr_df[EDDR_COL_DOC_NO] != "nan"]
-    eddr_df[EDDR_COL_TITLE] = eddr_df[EDDR_COL_TITLE].fillna("").astype(str).str.strip()  # type: ignore[union-attr]
+    eddr_df = eddr_df.dropna(subset=[Cols.EDDR_DOC_NO])
+    eddr_df[Cols.EDDR_DOC_NO] = eddr_df[Cols.EDDR_DOC_NO].astype(str).str.strip()
+    eddr_df = eddr_df[eddr_df[Cols.EDDR_DOC_NO] != "nan"]
+    eddr_df[Cols.EDDR_TITLE] = eddr_df[Cols.EDDR_TITLE].fillna("").astype(str).str.strip()  # type: ignore[union-attr]
 
     # Read query sheet
     query_df = pd.read_excel(
         excel_path,
         sheet_name="query",
         usecols=[
-            QUERY_COL_NAME,
-            QUERY_COL_MODIFIED,
-            QUERY_COL_MODIFIED_BY,
-            QUERY_COL_PATH,
-            QUERY_COL_ITEM_TYPE,
+            Cols.QUERY_NAME,
+            Cols.QUERY_MODIFIED,
+            Cols.QUERY_MODIFIED_BY,
+            Cols.QUERY_PATH,
+            Cols.QUERY_ITEM_TYPE,
         ],
     )
-    query_df = query_df.dropna(subset=[QUERY_COL_NAME])
-    query_df[QUERY_COL_NAME] = query_df[QUERY_COL_NAME].astype(str).str.strip()
-    query_df[QUERY_COL_MODIFIED] = query_df[QUERY_COL_MODIFIED].fillna("").astype(str).str.strip()
-    query_df[QUERY_COL_MODIFIED_BY] = (
-        query_df[QUERY_COL_MODIFIED_BY].fillna("").astype(str).str.strip()
+    query_df = query_df.dropna(subset=[Cols.QUERY_NAME])
+    query_df[Cols.QUERY_NAME] = query_df[Cols.QUERY_NAME].astype(str).str.strip()
+    query_df[Cols.QUERY_MODIFIED] = query_df[Cols.QUERY_MODIFIED].fillna("").astype(str).str.strip()
+    query_df[Cols.QUERY_MODIFIED_BY] = (
+        query_df[Cols.QUERY_MODIFIED_BY].fillna("").astype(str).str.strip()
     )
-    query_df[QUERY_COL_PATH] = query_df[QUERY_COL_PATH].fillna("").astype(str).str.strip()
-    query_df[QUERY_COL_ITEM_TYPE] = query_df[QUERY_COL_ITEM_TYPE].fillna("").astype(str).str.strip()
+    query_df[Cols.QUERY_PATH] = query_df[Cols.QUERY_PATH].fillna("").astype(str).str.strip()
+    query_df[Cols.QUERY_ITEM_TYPE] = (
+        query_df[Cols.QUERY_ITEM_TYPE].fillna("").astype(str).str.strip()
+    )
 
     # Build database
     db_path = get_db_path()
@@ -182,19 +176,19 @@ def build_db_from_excel(excel_path: Path, sp_site_url: str = "") -> Path:
         for _, row in eddr_df.iterrows():
             conn.execute(
                 EDDR.__table__.insert().values(
-                    document_no=row[EDDR_COL_DOC_NO],
-                    title=row[EDDR_COL_TITLE],
+                    document_no=row[Cols.EDDR_DOC_NO],
+                    title=row[Cols.EDDR_TITLE],
                 )
             )
 
         for _, row in query_df.iterrows():
             conn.execute(
                 QueryEntry.__table__.insert().values(
-                    name=row[QUERY_COL_NAME],
-                    modified=row[QUERY_COL_MODIFIED],
-                    modified_by=row[QUERY_COL_MODIFIED_BY],
-                    path=row[QUERY_COL_PATH],
-                    item_type=row[QUERY_COL_ITEM_TYPE],
+                    name=row[Cols.QUERY_NAME],
+                    modified=row[Cols.QUERY_MODIFIED],
+                    modified_by=row[Cols.QUERY_MODIFIED_BY],
+                    path=row[Cols.QUERY_PATH],
+                    item_type=row[Cols.QUERY_ITEM_TYPE],
                 )
             )
 
