@@ -22,7 +22,7 @@ from pykorf.use_case.preferences import (
     get_doc_register_sp_site_url,
     set_doc_register_db_last_imported,
 )
-from pykorf.use_case.web.doc_register import Cols
+from pykorf.use_case.web.doc_register._cols import Cols
 
 logger = structlog.get_logger()
 
@@ -36,11 +36,8 @@ def get_db_path() -> Path:
     return ensure_data_dir() / "doc_register.db"
 
 
-def detect_sp_site_url(path_sample: str = "") -> str:
+def detect_sp_site_url() -> str:
     """Get the configured SharePoint site URL for document links.
-
-    Args:
-        path_sample: Unused, kept for API compatibility.
 
     Returns:
         Configured SharePoint site base URL, or empty string if not set.
@@ -124,7 +121,7 @@ def build_db_from_excel(excel_path: Path, sp_site_url: str = "") -> Path:
     Returns:
         Path to the created SQLite database.
     """
-    from pykorf.use_case.web.doc_register.db_ops import Base, EDDR, QueryEntry, get_engine
+    from pykorf.use_case.web.doc_register.db_ops import Base, get_engine
 
     logger.info("doc_register.build_db_start", excel_path=str(excel_path))
 
@@ -172,25 +169,18 @@ def build_db_from_excel(excel_path: Path, sp_site_url: str = "") -> Path:
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
 
-    with engine.begin() as conn:
-        for _, row in eddr_df.iterrows():
-            conn.execute(
-                EDDR.__table__.insert().values(
-                    document_no=row[Cols.EDDR_DOC_NO],
-                    title=row[Cols.EDDR_TITLE],
-                )
-            )
-
-        for _, row in query_df.iterrows():
-            conn.execute(
-                QueryEntry.__table__.insert().values(
-                    name=row[Cols.QUERY_NAME],
-                    modified=row[Cols.QUERY_MODIFIED],
-                    modified_by=row[Cols.QUERY_MODIFIED_BY],
-                    path=row[Cols.QUERY_PATH],
-                    item_type=row[Cols.QUERY_ITEM_TYPE],
-                )
-            )
+    eddr_df.rename(columns={Cols.EDDR_DOC_NO: "document_no", Cols.EDDR_TITLE: "title"}).to_sql(
+        "eddr", con=engine, if_exists="append", index=False
+    )
+    query_df.rename(
+        columns={
+            Cols.QUERY_NAME: "name",
+            Cols.QUERY_MODIFIED: "modified",
+            Cols.QUERY_MODIFIED_BY: "modified_by",
+            Cols.QUERY_PATH: "path",
+            Cols.QUERY_ITEM_TYPE: "item_type",
+        }
+    ).to_sql("query_entries", con=engine, if_exists="append", index=False)
 
     logger.info(
         "doc_register.build_db_complete",
@@ -223,7 +213,7 @@ def ensure_db_ready() -> Path | None:
         logger.warning("doc_register.excel_not_found", path=str(excel_path))
         return None
 
-    sp_site_url = get_doc_register_sp_site_url() or detect_sp_site_url()
+    sp_site_url = get_doc_register_sp_site_url() or ""
 
     if is_excel_stale() or not get_db_path().is_file():
         try:

@@ -90,32 +90,35 @@ def get_session() -> Session:
     """
     if _SessionFactory is None:
         get_engine()
-    assert _SessionFactory is not None
+    if _SessionFactory is None:  # pragma: no cover
+        raise RuntimeError("SessionFactory not initialised — call get_engine() first")
     return _SessionFactory()
 
 
 def search_eddr_by_title(query: str, limit: int = 50) -> list[dict[str, str]]:
-    """Search EDDR entries by title using case-insensitive containment.
+    """Search EDDR entries by title using unordered, case-insensitive word matching.
+
+    Each whitespace-separated word in *query* must appear somewhere in the
+    title (AND logic), so "heads column data sheet" matches titles that
+    contain all four words in any order.
 
     Args:
-        query: Search term (matched with ILIKE %term%).
+        query: Search term — words may appear in any order in the title.
         limit: Maximum number of results to return.
 
     Returns:
         List of dicts with keys 'document_no' and 'title'.
     """
-    if not query.strip():
+    words = query.strip().split()
+    if not words:
         return []
 
-    term = f"%{query.strip()}%"
     session = get_session()
     try:
-        results = (
-            session.query(EDDR.document_no, EDDR.title)
-            .filter(EDDR.title.ilike(term))
-            .limit(limit)
-            .all()
-        )
+        q = session.query(EDDR.document_no, EDDR.title)
+        for word in words:
+            q = q.filter(EDDR.title.ilike(f"%{word}%"))
+        results = q.limit(limit).all()
         return [{"document_no": row.document_no, "title": row.title} for row in results]
     finally:
         session.close()

@@ -8,7 +8,7 @@ from flask import Blueprint, jsonify, request
 
 import structlog
 
-from pykorf.use_case.preferences import (
+from pykorf.use_case.config import (
     get_doc_register_excel_path,
     get_doc_register_sp_site_url,
     set_doc_register_excel_path,
@@ -16,7 +16,6 @@ from pykorf.use_case.preferences import (
 )
 from pykorf.use_case.web.doc_register.excel_to_db import (
     build_db_from_excel,
-    ensure_db_ready,
     get_db_path,
     is_excel_stale,
 )
@@ -66,7 +65,6 @@ def api_search_eddr():
     Returns:
         JSON list of {document_no, title}.
     """
-    ensure_db_ready()
     q = (request.args.get("q") or "").strip()
     if not q:
         return jsonify([])
@@ -85,7 +83,6 @@ def api_search_query():
     Returns:
         JSON list of {name, modified, modified_by, path, item_type}.
     """
-    ensure_db_ready()
     doc_no = (request.args.get("doc_no") or "").strip()
     if not doc_no:
         return jsonify([])

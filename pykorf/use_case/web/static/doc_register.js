@@ -15,11 +15,17 @@
   }
 
   // Fetch wrapper with error handling
-  function apiFetch(url) {
-    return fetch(url).then(function(resp) {
+  function apiFetch(url, options) {
+    return fetch(url, options).then(function(resp) {
       if (!resp.ok) throw new Error('API error: ' + resp.status);
       return resp.json();
     });
+  }
+
+  // Build a full SharePoint URL from path + name
+  function buildSpUrl(path, name) {
+    var base = window.DOC_REGISTER_SP_SITE_URL || '';
+    return base + '/' + path.replace(/^\/+/, '') + '/' + name.replace(/^\/+/, '');
   }
 
   // Escape HTML to prevent XSS
@@ -124,8 +130,7 @@
         : '<span class="badge bg-success"><i class="bi bi-file-earmark me-1"></i>File</span>';
 
       var modDisplay = r.modified && r.modified !== '' ? escapeHtml(r.modified.substring(0, 10)) : '—';
-      var spSite = window.DOC_REGISTER_SP_SITE_URL || '';
-      var fullUrl = spSite + '/' + r.path.replace(/^\/+/, '') + '/' + r.name.replace(/^\/+/, '');
+      var fullUrl = buildSpUrl(r.path, r.name);
 
       html += '<tr class="query-row" style="cursor:pointer;font-size:.75rem" ' +
         'data-name="' + escapeHtml(r.name) + '" ' +
@@ -160,10 +165,7 @@
   function selectQueryEntry(row) {
     var name = row.getAttribute('data-name');
     var path = row.getAttribute('data-path');
-    var spSite = window.DOC_REGISTER_SP_SITE_URL || '';
-
-    // Construct full SharePoint URL
-    var fullPath = spSite + '/' + path.replace(/^\/+/, '') + '/' + name.replace(/^\/+/, '');
+    var fullPath = buildSpUrl(path, name);
 
     // Populate the parent form
     var nameInput = document.getElementById('add-name');
@@ -210,6 +212,19 @@
       });
   }
 
+  function showRebuildError(msg) {
+    var errEl = document.getElementById('doc-register-rebuild-error');
+    if (!errEl) {
+      errEl = document.createElement('div');
+      errEl.id = 'doc-register-rebuild-error';
+      errEl.className = 'text-danger small mt-1';
+      var btn = document.getElementById('doc-register-rebuild-btn');
+      if (btn && btn.parentNode) btn.parentNode.insertBefore(errEl, btn.nextSibling);
+    }
+    errEl.textContent = msg;
+    setTimeout(function() { if (errEl) errEl.textContent = ''; }, 5000);
+  }
+
   function rebuildDB() {
     var btn = document.getElementById('doc-register-rebuild-btn');
     if (btn) {
@@ -217,21 +232,16 @@
       btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Rebuilding...';
     }
 
-    fetch('/api/doc-register/rebuild-db', { method: 'POST' })
-      .then(function(resp) { return resp.json(); })
+    apiFetch('/api/doc-register/rebuild-db', { method: 'POST' })
       .then(function(data) {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i>Refresh DB';
+        }
         if (data.success) {
           checkDBStatus();
-          if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i>Refresh DB';
-          }
         } else {
-          if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i>Refresh DB';
-          }
-          alert('Rebuild failed: ' + (data.error || 'Unknown error'));
+          showRebuildError('Rebuild failed: ' + (data.error || 'Unknown error'));
         }
       })
       .catch(function(err) {
@@ -239,7 +249,7 @@
           btn.disabled = false;
           btn.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i>Refresh DB';
         }
-        alert('Rebuild failed: ' + err.message);
+        showRebuildError('Rebuild failed: ' + err.message);
       });
   }
 

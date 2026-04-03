@@ -300,6 +300,22 @@ class TestDBOps:
         results = search_eddr_by_title("single line")
         assert len(results) == 1
 
+    def test_search_eddr_unordered_words(self, populated_db):
+        from pykorf.use_case.web.doc_register.db_ops import search_eddr_by_title
+
+        # Words reversed — "Diagram Instrument Process" should still match
+        # "Process and Instrument Diagram"
+        results = search_eddr_by_title("Diagram Instrument Process")
+        assert len(results) == 1
+        assert results[0]["document_no"] == "DOC-001"
+
+    def test_search_eddr_unordered_partial_words_no_match(self, populated_db):
+        from pykorf.use_case.web.doc_register.db_ops import search_eddr_by_title
+
+        # All words must appear — this extra word should yield no results
+        results = search_eddr_by_title("Single Line Nonexistent")
+        assert len(results) == 0
+
     def test_search_query_by_name_match(self, populated_db):
         from pykorf.use_case.web.doc_register.db_ops import search_query_by_name
 
