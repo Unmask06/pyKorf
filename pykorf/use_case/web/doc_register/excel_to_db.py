@@ -9,10 +9,8 @@ Handles:
 
 from __future__ import annotations
 
-import re
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
-from typing import Any
 
 import pandas as pd
 import structlog
@@ -91,10 +89,10 @@ def is_excel_stale() -> bool:
         return True
 
     try:
-        excel_mtime = datetime.fromtimestamp(excel_path.stat().st_mtime, tz=timezone.utc)
+        excel_mtime = datetime.fromtimestamp(excel_path.stat().st_mtime, tz=UTC)
         imported_time = datetime.fromisoformat(last_imported)
         if imported_time.tzinfo is None:
-            imported_time = imported_time.replace(tzinfo=timezone.utc)
+            imported_time = imported_time.replace(tzinfo=UTC)
         return excel_mtime > imported_time
     except (OSError, ValueError) as exc:
         logger.warning("doc_register.staleness_check_failed", error=str(exc))
@@ -205,7 +203,7 @@ def build_db_from_excel(excel_path: Path, sp_site_url: str = "") -> Path:
     )
 
     # Update config timestamp
-    set_doc_register_db_last_imported(datetime.now(timezone.utc).isoformat())
+    set_doc_register_db_last_imported(datetime.now(UTC).isoformat())
 
     return db_path
 

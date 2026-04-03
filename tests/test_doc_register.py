@@ -14,9 +14,9 @@ from __future__ import annotations
 import json
 import os
 import tempfile
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pandas as pd
 import pytest
@@ -106,6 +106,10 @@ def mock_config(tmp_path):
 @pytest.fixture
 def mock_data_dir(tmp_path):
     """Mock the data directory for DB storage."""
+    from pykorf.use_case.web.doc_register.db_ops import reset_engine
+
+    reset_engine()
+
     data_dir = tmp_path / "data"
     data_dir.mkdir()
 
@@ -113,11 +117,21 @@ def mock_data_dir(tmp_path):
         with patch("pykorf.use_case.paths.ensure_data_dir", return_value=data_dir):
             yield data_dir
 
+    reset_engine()
+
 
 @pytest.fixture
 def populated_db(mock_data_dir, sample_eddr_df, sample_query_df):
     """Create a pre-populated SQLite DB for testing queries."""
-    from pykorf.use_case.web.doc_register.db_ops import Base, EDDR, QueryEntry, get_engine
+    from pykorf.use_case.web.doc_register.db_ops import (
+        Base,
+        EDDR,
+        QueryEntry,
+        get_engine,
+        reset_engine,
+    )
+
+    reset_engine()
 
     db_path = mock_data_dir / "doc_register.db"
     engine = get_engine()
@@ -170,7 +184,7 @@ class TestDocRegisterConfig:
         assert get_doc_register_sp_site_url() is None
 
     def test_set_and_get_db_last_imported(self, mock_config):
-        ts = datetime.now(timezone.utc).isoformat()
+        ts = datetime.now(UTC).isoformat()
         set_doc_register_db_last_imported(ts)
         assert get_doc_register_db_last_imported() == ts
 
@@ -215,11 +229,16 @@ class TestExcelToDB:
         assert is_excel_stale() is True
 
     def test_is_excel_stale_db_newer(self, mock_config, mock_data_dir, sample_excel_path):
-        from pykorf.use_case.web.doc_register.excel_to_db import is_excel_stale
+        import time
+        from pykorf.use_case.web.doc_register.excel_to_db import build_db_from_excel, is_excel_stale
 
         set_doc_register_excel_path(str(sample_excel_path))
-        future_ts = datetime.now(timezone.utc).isoformat()
-        set_doc_register_db_last_imported(future_ts)
+        # Ensure Excel mtime is in the past
+        old_time = time.time() - 10
+        os.utime(sample_excel_path, (old_time, old_time))
+        # Build the DB (sets timestamp to now)
+        build_db_from_excel(sample_excel_path, "https://tenant.sharepoint.com")
+        # Now the DB should NOT be stale (just built, Excel is older)
         assert is_excel_stale() is False
 
     def test_build_db_from_excel(self, mock_config, mock_data_dir, sample_excel_path):
@@ -353,6 +372,10 @@ class TestDocRegisterAPI:
     @pytest.fixture
     def client(self, mock_config, mock_data_dir):
         """Create a Flask test client."""
+        from pykorf.use_case.web.doc_register.db_ops import reset_engine
+
+        reset_engine()
+
         from pykorf.use_case.web.app import create_app
 
         app = create_app()

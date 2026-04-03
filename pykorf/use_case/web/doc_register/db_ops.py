@@ -9,7 +9,6 @@ Provides:
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
 
 from sqlalchemy import Column, Integer, String, Text, create_engine
@@ -17,10 +16,10 @@ from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
 from pykorf.use_case.web.doc_register.excel_to_db import get_db_path
 
-Base = declarative_base()
+Base = declarative_base()  # type: ignore[misc]
 
 
-class EDDR(Base):
+class EDDR(Base):  # type: ignore[valid-type]
     """EDDR (Engineering Document Deliverable Register) entry.
 
     Attributes:
@@ -36,7 +35,7 @@ class EDDR(Base):
     title = Column(Text, nullable=False, index=True)
 
 
-class QueryEntry(Base):
+class QueryEntry(Base):  # type: ignore[valid-type]
     """Query table entry from SharePoint file listing.
 
     Attributes:
@@ -60,6 +59,13 @@ class QueryEntry(Base):
 
 _engine = None
 _SessionFactory = None
+
+
+def reset_engine():
+    """Reset the engine singleton (useful for testing)."""
+    global _engine, _SessionFactory
+    _engine = None
+    _SessionFactory = None
 
 
 def get_engine():

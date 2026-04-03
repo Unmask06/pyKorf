@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
-from typing import Any
 
 from flask import Blueprint, render_template, request
 
@@ -25,7 +24,7 @@ def _format_timestamp(iso_str: str | None) -> str:
     try:
         dt = datetime.fromisoformat(iso_str)
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
+            dt = dt.replace(tzinfo=UTC)
         return dt.astimezone().strftime("%d %b %Y %H:%M")
     except (ValueError, TypeError):
         return "Never"

@@ -189,6 +189,8 @@ module = [
     "tomllib",
     "tomli_w",
     "requests",
+    "sqlalchemy",
+    "sqlalchemy.*",
 ]
 ignore_missing_imports = true
 
