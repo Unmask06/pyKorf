@@ -9,6 +9,9 @@ from flask import Blueprint, render_template, request
 
 bp = Blueprint("preferences", __name__)
 
+# Default SharePoint site URL shown as placeholder in the UI
+DEFAULT_SP_SITE_URL = "https://cc7ges.sharepoint.com"
+
 
 def _format_timestamp(iso_str: str | None) -> str:
     """Format an ISO timestamp for display.
@@ -174,6 +177,7 @@ def preferences_page():
         current_license_key=current_key,
         doc_register_excel_path=get_doc_register_excel_path(),
         doc_register_sp_site_url=get_doc_register_sp_site_url(),
+        doc_register_sp_site_url_default=DEFAULT_SP_SITE_URL,
         doc_register_db_last_imported=_format_timestamp(get_doc_register_db_last_imported()),
         dr_flash=dr_flash,
     )

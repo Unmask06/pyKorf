@@ -22,11 +22,17 @@ from pykorf.use_case.preferences import (
     get_doc_register_sp_site_url,
     set_doc_register_db_last_imported,
 )
+from pykorf.use_case.web.doc_register import (
+    EDDR_COL_DOC_NO,
+    EDDR_COL_TITLE,
+    QUERY_COL_ITEM_TYPE,
+    QUERY_COL_MODIFIED,
+    QUERY_COL_MODIFIED_BY,
+    QUERY_COL_NAME,
+    QUERY_COL_PATH,
+)
 
 logger = structlog.get_logger()
-
-# Default SharePoint tenant URL derived from observed path patterns
-_DEFAULT_SP_SITE_URL = "https://cc7ges.sharepoint.com"
 
 
 def get_db_path() -> Path:
@@ -39,27 +45,16 @@ def get_db_path() -> Path:
 
 
 def detect_sp_site_url(path_sample: str = "") -> str:
-    """Extract SharePoint tenant URL from a server-relative path sample.
-
-    Given a path like ``sites/25002TAZIZSALT-ADNOCUAE/Shared Documents``,
-    returns ``https://cc7ges.sharepoint.com``.
-
-    Falls back to the configured SP site URL or default if detection fails.
+    """Get the configured SharePoint site URL for document links.
 
     Args:
-        path_sample: A sample server-relative path from the query sheet.
+        path_sample: Unused, kept for API compatibility.
 
     Returns:
-        SharePoint site base URL string.
+        Configured SharePoint site base URL, or empty string if not set.
     """
     configured = get_doc_register_sp_site_url()
-    if configured:
-        return configured.rstrip("/")
-
-    # Try to extract tenant from path pattern
-    # Paths look like: sites/25002TAZIZSALT-ADNOCUAE/Shared Documents/...
-    # We can't derive tenant from path alone, so use default
-    return _DEFAULT_SP_SITE_URL
+    return configured.rstrip("/") if configured else ""
 
 
 def is_excel_stale() -> bool:
@@ -100,9 +95,9 @@ def is_excel_stale() -> bool:
 
 
 def _find_eddr_header_row(df: pd.DataFrame) -> int:
-    """Find the row index containing the 'Document No' column header.
+    """Find the row index containing the document number column header.
 
-    Scans rows until a cell with value 'Document No' is found.
+    Scans rows until a cell with value matching EDDR_COL_DOC_NO is found.
 
     Args:
         df: DataFrame read without header (header=None).
@@ -112,7 +107,7 @@ def _find_eddr_header_row(df: pd.DataFrame) -> int:
     """
     for idx in range(min(len(df), 10)):
         row = df.iloc[idx]
-        if "Document No" in row.values:
+        if EDDR_COL_DOC_NO in row.values:
             return idx
     return 2
 
@@ -149,25 +144,33 @@ def build_db_from_excel(excel_path: Path, sp_site_url: str = "") -> Path:
         excel_path,
         sheet_name="EDDR",
         header=header_row,
-        usecols=["Document No", "Title"],
+        usecols=[EDDR_COL_DOC_NO, EDDR_COL_TITLE],
     )
-    eddr_df = eddr_df.dropna(subset=["Document No"])
-    eddr_df["Document No"] = eddr_df["Document No"].astype(str).str.strip()
-    eddr_df = eddr_df[eddr_df["Document No"] != "nan"]
-    eddr_df["Title"] = eddr_df["Title"].fillna("").astype(str).str.strip()  # type: ignore[union-attr]
+    eddr_df = eddr_df.dropna(subset=[EDDR_COL_DOC_NO])
+    eddr_df[EDDR_COL_DOC_NO] = eddr_df[EDDR_COL_DOC_NO].astype(str).str.strip()
+    eddr_df = eddr_df[eddr_df[EDDR_COL_DOC_NO] != "nan"]
+    eddr_df[EDDR_COL_TITLE] = eddr_df[EDDR_COL_TITLE].fillna("").astype(str).str.strip()  # type: ignore[union-attr]
 
     # Read query sheet
     query_df = pd.read_excel(
         excel_path,
         sheet_name="query",
-        usecols=["Name", "Modified", "Modified By", "Path", "Item Type"],
+        usecols=[
+            QUERY_COL_NAME,
+            QUERY_COL_MODIFIED,
+            QUERY_COL_MODIFIED_BY,
+            QUERY_COL_PATH,
+            QUERY_COL_ITEM_TYPE,
+        ],
     )
-    query_df = query_df.dropna(subset=["Name"])
-    query_df["Name"] = query_df["Name"].astype(str).str.strip()
-    query_df["Modified"] = query_df["Modified"].fillna("").astype(str).str.strip()
-    query_df["Modified By"] = query_df["Modified By"].fillna("").astype(str).str.strip()
-    query_df["Path"] = query_df["Path"].fillna("").astype(str).str.strip()
-    query_df["Item Type"] = query_df["Item Type"].fillna("").astype(str).str.strip()
+    query_df = query_df.dropna(subset=[QUERY_COL_NAME])
+    query_df[QUERY_COL_NAME] = query_df[QUERY_COL_NAME].astype(str).str.strip()
+    query_df[QUERY_COL_MODIFIED] = query_df[QUERY_COL_MODIFIED].fillna("").astype(str).str.strip()
+    query_df[QUERY_COL_MODIFIED_BY] = (
+        query_df[QUERY_COL_MODIFIED_BY].fillna("").astype(str).str.strip()
+    )
+    query_df[QUERY_COL_PATH] = query_df[QUERY_COL_PATH].fillna("").astype(str).str.strip()
+    query_df[QUERY_COL_ITEM_TYPE] = query_df[QUERY_COL_ITEM_TYPE].fillna("").astype(str).str.strip()
 
     # Build database
     db_path = get_db_path()
@@ -179,19 +182,19 @@ def build_db_from_excel(excel_path: Path, sp_site_url: str = "") -> Path:
         for _, row in eddr_df.iterrows():
             conn.execute(
                 EDDR.__table__.insert().values(
-                    document_no=row["Document No"],
-                    title=row["Title"],
+                    document_no=row[EDDR_COL_DOC_NO],
+                    title=row[EDDR_COL_TITLE],
                 )
             )
 
         for _, row in query_df.iterrows():
             conn.execute(
                 QueryEntry.__table__.insert().values(
-                    name=row["Name"],
-                    modified=row["Modified"],
-                    modified_by=row["Modified By"],
-                    path=row["Path"],
-                    item_type=row["Item Type"],
+                    name=row[QUERY_COL_NAME],
+                    modified=row[QUERY_COL_MODIFIED],
+                    modified_by=row[QUERY_COL_MODIFIED_BY],
+                    path=row[QUERY_COL_PATH],
+                    item_type=row[QUERY_COL_ITEM_TYPE],
                 )
             )
 
