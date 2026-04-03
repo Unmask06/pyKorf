@@ -88,7 +88,7 @@ def preferences_page():
                 edit_entry=edit_entry,
                 current_license_key=current_key,
                 doc_register_excel_path=get_doc_register_excel_path(),
-                doc_register_sp_site_url=get_doc_register_sp_site_url(),
+                doc_register_sp_site_url=get_doc_register_sp_site_url() or DEFAULT_SP_SITE_URL,
                 doc_register_db_last_imported=_format_timestamp(
                     get_doc_register_db_last_imported()
                 ),
@@ -176,7 +176,7 @@ def preferences_page():
         edit_entry=edit_entry,
         current_license_key=current_key,
         doc_register_excel_path=get_doc_register_excel_path(),
-        doc_register_sp_site_url=get_doc_register_sp_site_url(),
+        doc_register_sp_site_url=get_doc_register_sp_site_url() or DEFAULT_SP_SITE_URL,
         doc_register_sp_site_url_default=DEFAULT_SP_SITE_URL,
         doc_register_db_last_imported=_format_timestamp(get_doc_register_db_last_imported()),
         dr_flash=dr_flash,

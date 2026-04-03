@@ -73,7 +73,7 @@
         </div>
         {% endif %}
 
-        <form method="post" action="/preferences" class="row g-2 align-items-end">
+        <form method="post" action="/preferences" class="row g-2 align-items-end" id="dr-config-form">
           <input type="hidden" name="action" value="set_doc_register_config" />
           <div class="col-lg-5">
             <label class="form-label small fw-semibold mb-1" for="dr_excel_path">Excel File Path</label>
@@ -95,16 +95,27 @@
             <div class="input-group input-group-sm">
               <span class="input-group-text"><i class="bi bi-cloud"></i></span>
               <input type="text" class="form-control font-monospace" id="dr_sp_site_url" name="dr_sp_site_url"
-                     placeholder="{{ doc_register_sp_site_url_default }}"
-                     value="{{ doc_register_sp_site_url or '' }}" autocomplete="off" />
+                     placeholder="https://company.sharepoint.com"
+                     value="{{ doc_register_sp_site_url }}" autocomplete="off" />
             </div>
           </div>
           <div class="col-lg-3">
-            <button type="submit" class="btn btn-sm btn-primary w-100">
+            <button type="submit" class="btn btn-sm btn-primary w-100" id="dr-save-btn">
               <i class="bi bi-floppy me-1"></i>Save Config
             </button>
           </div>
         </form>
+
+        <!-- Loading overlay for DB rebuild -->
+        <div id="dr-loading-overlay" class="d-none position-relative mt-3 p-3 border rounded bg-light">
+          <div class="d-flex align-items-center gap-2">
+            <div class="spinner-border spinner-border-sm text-info" role="status"></div>
+            <span class="small fw-semibold">Building database from Excel…</span>
+          </div>
+          <div class="small text-secondary mt-1">
+            <i class="bi bi-hourglass-split me-1"></i>This may take a few seconds, please be patient.
+          </div>
+        </div>
 
         {% if doc_register_excel_path %}
         <div class="mt-3 d-flex align-items-center gap-2">
@@ -322,5 +333,15 @@ function rebuildDocRegisterDB() {
       btn.innerHTML = origHTML;
     });
 }
+
+// Show loading overlay when saving Document Register config
+document.getElementById('dr-config-form').addEventListener('submit', function() {
+  var excelPath = document.getElementById('dr_excel_path').value.trim();
+  if (excelPath) {
+    document.getElementById('dr-loading-overlay').classList.remove('d-none');
+    document.getElementById('dr-save-btn').disabled = true;
+    document.getElementById('dr-save-btn').innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving…';
+  }
+});
 </script>
 {% endblock %}
