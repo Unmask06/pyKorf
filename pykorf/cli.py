@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import argparse
-from datetime import date
+from datetime import datetime, timedelta
 from importlib.metadata import PackageNotFoundError, version
 
 from rich.align import Align
@@ -11,10 +11,10 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 
-from pykorf.license import validate_license_key
-from pykorf.use_case.config import get_license_key, get_trial_start, set_trial_start
+from pykorf.update import check_for_update, install_update
 
-TRIAL_DURATION_DAYS = 30
+TRIAL_START_DATE = datetime(2026, 3, 15)
+TRIAL_DURATION_DAYS = 7
 DEVELOPER_CONTACT = "Prasanna Palanivel"
 
 console = Console()
@@ -56,38 +56,18 @@ def show_splash() -> None:
     console.print()
 
 
-def _check_access() -> tuple[bool, int]:
-    """Determine whether the user may run pyKorf and how many trial days remain.
-
-    Checks the stored license key first. If no valid key is found, falls back
-    to the trial period counted from the first-launch date stored in config.
+def check_trial_expired() -> bool:
+    """Check if the trial period has expired.
 
     Returns:
-        Tuple of ``(allowed, days_left)``.  ``days_left`` is ``-1`` when a
-        valid license key is active (no expiry display needed), ``0`` when the
-        trial has expired, or a positive integer for the remaining trial days.
+        True if trial has expired, False otherwise.
     """
-    key = get_license_key()
-    if key:
-        valid, _expiry, _err = validate_license_key(key)
-        if valid:
-            return True, -1
-
-    trial_start_str = get_trial_start()
-    if not trial_start_str:
-        today_str = date.today().isoformat()
-        set_trial_start(today_str)
-        trial_start_str = today_str
-
-    trial_start = date.fromisoformat(trial_start_str)
-    days_elapsed = (date.today() - trial_start).days
-    days_left = TRIAL_DURATION_DAYS - days_elapsed
-
-    return days_left > 0, max(0, days_left)
+    expiry_date = TRIAL_START_DATE + timedelta(days=TRIAL_DURATION_DAYS)
+    return datetime.now() > expiry_date
 
 
 def show_expired_message() -> None:
-    """Display trial expired message."""
+    """Display trial expired message and exit."""
     console.clear()
     console.print()
     console.print()
@@ -97,9 +77,8 @@ def show_expired_message() -> None:
         Panel(
             f"[red bold]Trial Period Expired[/red bold]\n\n"
             f"The [yellow]{TRIAL_DURATION_DAYS}-day[/yellow] trial has ended.\n\n"
-            f"To continue using pyKorf, please enter a license key in:\n"
-            f"[bold cyan]Preferences → License Key[/bold cyan]\n\n"
-            f"Contact: [bold cyan]{DEVELOPER_CONTACT}[/bold cyan]",
+            f"To continue using pyKorf, please contact:\n"
+            f"[bold cyan]{DEVELOPER_CONTACT}[/bold cyan]",
             title="[red]⚠ Access Expired[/red]",
             border_style="red",
             padding=(1, 2),
@@ -127,7 +106,7 @@ def show_trial_info(days_left: int) -> None:
 
     console.print(
         Panel(
-            f"[{style}]Trial Mode: {days_left} days remaining[/{style}]",
+            f"[{style}]Trial Mode: {days_left} days remaining[{style}]",
             title=f"{urgency} Trial Status",
             border_style="yellow" if days_left <= 7 else "green",
             padding=(0, 1),
@@ -135,6 +114,74 @@ def show_trial_info(days_left: int) -> None:
         justify="center",
     )
     console.print()
+
+
+def show_update_prompt(update_info: dict) -> None:
+    """Display update available prompt and handle user response.
+
+    Args:
+        update_info: Dict with 'latest_version', 'release_url', and 'zipball_url' keys.
+    """
+    latest_version = update_info["latest_version"]
+    release_url = update_info.get("release_url", "")
+    zipball_url = update_info.get("zipball_url", "")
+    release_notes = update_info.get("release_notes", "")
+
+    body = f"A newer version of pyKorf is available: [bold cyan]v{latest_version}[/bold cyan]\n"
+    if release_notes:
+        body += "\n[bold]What's new:[/bold]\n"
+        body += f"[dim]{release_notes}[/dim]\n"
+    body += "\n\nInstall now? [Y/n]"
+
+    console.print(
+        Panel(body, title="📦 Update Available", border_style="green", padding=(0, 1)),
+        justify="center",
+    )
+
+    response = console.input().strip().lower()
+
+    if response not in ("", "y", "yes"):
+        return
+
+    console.print()
+
+    if not zipball_url:
+        console.print("[yellow]No download URL available — please update manually.[/yellow]")
+        console.print()
+        console.print("[dim]Press Enter to continue...[/dim]")
+        console.input()
+        return
+
+    success = False
+    message = ""
+
+    with console.status("[dim]Downloading update...[/dim]", spinner="dots"):
+        success, message = install_update(zipball_url)
+
+    if success:
+        console.print(
+            Panel(
+                f"[green]{message}[/green]",
+                title="✅ Update Installed",
+                border_style="green",
+                padding=(0, 1),
+            ),
+            justify="center",
+        )
+    else:
+        console.print(
+            Panel(
+                f"[red]{message}[/red]",
+                title="❌ Update Failed",
+                border_style="red",
+                padding=(0, 1),
+            ),
+            justify="center",
+        )
+
+    console.print()
+    console.print("[dim]Press Enter to continue...[/dim]")
+    console.input()
 
 
 def main():
@@ -146,7 +193,7 @@ def main():
     parser.add_argument(
         "--trial",
         action="store_true",
-        help="Enforce trial mode (time-limited access check)",
+        help="Run in trial mode (time-limited access)",
     )
     parser.add_argument(
         "--debug",
@@ -164,12 +211,17 @@ def main():
     show_splash()
 
     if args.trial:
-        allowed, days_left = _check_access()
-        if not allowed:
+        if check_trial_expired():
             show_expired_message()
             return
-        if days_left >= 0:
-            show_trial_info(days_left)
+        days_left = (TRIAL_START_DATE + timedelta(days=TRIAL_DURATION_DAYS) - datetime.now()).days
+        show_trial_info(max(0, days_left))
+
+    pkg_version = get_version()
+    if pkg_version != "dev":
+        update_info = check_for_update(pkg_version)
+        if update_info:
+            show_update_prompt(update_info)
 
     from pykorf.use_case.web.app import run_server
 
