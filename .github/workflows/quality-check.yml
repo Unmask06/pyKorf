@@ -54,6 +54,28 @@ jobs:
           echo "| Mypy | ${{ steps.mypy.outcome == 'success' && '✅ Passed' || '⚠️ Warning' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Tests | ${{ steps.pytest.outcome == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
 
+      - name: Save failure report
+        if: always()
+        run: |
+          mkdir -p reports
+          cat > reports/quality-report.json << 'ENDJSON'
+          {
+            "ruff_check": "${{ steps.ruff-check.outcome }}",
+            "ruff_format": "${{ steps.ruff-format.outcome }}",
+            "mypy": "${{ steps.mypy.outcome }}",
+            "pytest": "${{ steps.pytest.outcome }}",
+            "conclusion": "${{ steps.ruff-check.outcome == 'failure' || steps.ruff-format.outcome == 'failure' || steps.pytest.outcome == 'failure' && 'failure' || 'success' }}"
+          }
+          ENDJSON
+
+      - name: Upload failure report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-report
+          path: reports/
+          retention-days: 30
+
       - name: Fail if any check failed
         if: steps.ruff-check.outcome == 'failure' || steps.ruff-format.outcome == 'failure' || steps.pytest.outcome == 'failure'
         run: |
