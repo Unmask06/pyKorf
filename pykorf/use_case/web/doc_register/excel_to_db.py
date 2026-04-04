@@ -9,7 +9,7 @@ Handles:
 
 from __future__ import annotations
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pandas as pd
@@ -169,7 +169,7 @@ def build_db_from_excel(excel_path: Path, sp_site_url: str = "") -> Path:
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
 
-    eddr_df.rename(columns={Cols.EDDR_DOC_NO: "document_no", Cols.EDDR_TITLE: "title"}).to_sql(
+    eddr_df.rename(columns={Cols.EDDR_DOC_NO: "document_no", Cols.EDDR_TITLE: "title"}).to_sql(  # type: ignore[call-overload]
         "eddr", con=engine, if_exists="append", index=False
     )
     query_df.rename(

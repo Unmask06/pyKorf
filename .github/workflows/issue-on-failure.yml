@@ -32,62 +32,33 @@ jobs:
             const fs = require('fs');
             const path = require('path');
 
-            const workflowName = `${{ github.event.workflow_run.name }}`;
-            const workflowUrl = `${{ github.event.workflow_run.html_url }}`;
-            const headBranch = `${{ github.event.workflow_run.head_branch }}`;
-            const headSha = `${{ github.event.workflow_run.head_sha }}`;
-            const runAttempt = `${{ github.event.workflow_run.run_attempt }}`;
+            const workflowName = process.env.WORKFLOW_NAME;
+            const workflowUrl = process.env.WORKFLOW_URL;
+            const headBranch = process.env.HEAD_BRANCH;
+            const headSha = process.env.HEAD_SHA;
+            const runAttempt = process.env.RUN_ATTEMPT;
 
             let reportDetails = '';
             try {
               const reportPath = path.join('reports', 'quality-report.json');
               const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
               const statusEmoji = {
-                'success': '✅ Passed',
-                'failure': '❌ Failed',
-                'skipped': '⏭️ Skipped'
+                success: 'Passed',
+                failure: 'Failed',
+                skipped: 'Skipped'
               };
-              reportDetails = `
-            | Check | Status |
-            |-------|--------|
-            | Ruff Check | ${statusEmoji[report.ruff_check] || report.ruff_check} |
-            | Ruff Format | ${statusEmoji[report.ruff_format] || report.ruff_format} |
-            | Mypy | ${statusEmoji[report.mypy] || report.mypy} |
-            | Tests | ${statusEmoji[report.pytest] || report.pytest} |
-            `;
+              const ruffCheck = statusEmoji[report.ruff_check] || report.ruff_check;
+              const ruffFormat = statusEmoji[report.ruff_format] || report.ruff_format;
+              const mypy = statusEmoji[report.mypy] || report.mypy;
+              const tests = statusEmoji[report.pytest] || report.pytest;
+              reportDetails = '| Check | Status |\n|-------|--------|\n| Ruff Check | ' + ruffCheck + ' |\n| Ruff Format | ' + ruffFormat + ' |\n| Mypy | ' + mypy + ' |\n| Tests | ' + tests + ' |';
             } catch (e) {
-              reportDetails = '*Quality report not available.*';
+              reportDetails = 'Quality report not available.';
             }
 
-            const issueTitle = `Workflow Failed: ${workflowName}`;
+            const issueTitle = 'Workflow Failed: ' + workflowName;
 
-            const issueBody = `/oc
-
-## Workflow Failure Report
-
-**Workflow:** [${workflowName}](${workflowUrl})
-**Branch:** \`${headBranch}\`
-**Commit:** \`${headSha}\`
-**Run Attempt:** ${runAttempt}
-
-### Failure Details
-
-${reportDetails}
-
-### Implementation Plan Required
-
-Analyze the failure logs and codebase, then:
-
-1. **Root Cause Analysis** — Identify exactly which check failed and why
-2. **Fix Plan** — Outline specific file changes needed
-3. **Implement** — Apply the fix
-4. **Verify** — Run the relevant checks locally to confirm
-5. **Commit** — Create a fix commit referencing this issue
-
----
-
-*This issue was automatically created by the issue-on-failure workflow.*
-`;
+            const issueBody = '/oc\n\n## Workflow Failure Report\n\n**Workflow:** [' + workflowName + '](' + workflowUrl + ')\n**Branch:** `' + headBranch + '`\n**Commit:** `' + headSha + '`\n**Run Attempt:** ' + runAttempt + '\n\n### Failure Details\n\n' + reportDetails + '\n\n### Implementation Plan Required\n\nAnalyze the failure logs and codebase, then:\n\n1. **Root Cause Analysis** - Identify exactly which check failed and why\n2. **Fix Plan** - Outline specific file changes needed\n3. **Implement** - Apply the fix\n4. **Verify** - Run the relevant checks locally to confirm\n5. **Commit** - Create a fix commit referencing this issue\n\n---\n\n*This issue was automatically created by the issue-on-failure workflow.*';
 
             const { data: issue } = await github.rest.issues.create({
               owner: context.repo.owner,
@@ -97,15 +68,19 @@ Analyze the failure logs and codebase, then:
               labels: ['bug', 'ci-failure', 'automated']
             });
 
-            console.log(`Created issue #${issue.number}: ${issueTitle}`);
+            console.log('Created issue #' + issue.number + ': ' + issueTitle);
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: issue.number,
-              body: `/oc
-
-Analyze this CI failure and implement a fix. Review the workflow logs, identify the root cause, and create a PR with the fix.`
+              body: '/oc\n\nAnalyze this CI failure and implement a fix. Review the workflow logs, identify the root cause, and create a PR with the fix.'
             });
 
-            console.log(`Added opencode trigger comment to issue #${issue.number}`);
+            console.log('Added opencode trigger comment to issue #' + issue.number);
+        env:
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          WORKFLOW_URL: ${{ github.event.workflow_run.html_url }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
