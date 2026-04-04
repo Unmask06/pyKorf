@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime, UTC
 from pathlib import Path
 
 from flask import Blueprint, render_template, request
@@ -20,6 +21,66 @@ def _get_filename(path_str: str) -> str:
     if not path_str:
         return ""
     return Path(path_str).name
+
+
+def _apply_pms_from_source(model, pms_source: Path) -> None:
+    """Apply PMS from a given source (Excel or JSON) to the model.
+
+    Args:
+        model: The active model to apply PMS to.
+        pms_source: Path to PMS Excel or JSON file.
+    """
+    from pykorf.use_case.config import set_pms_excel_last_imported
+    from pykorf.use_case.pms import apply_pms as _apply_pms, import_pms_from_excel
+
+    model.io.save()
+
+    # Convert Excel → pms.json in the data dir, then apply from JSON
+    if pms_source.suffix.lower() in (".xlsx", ".xls"):
+        json_path = import_pms_from_excel(pms_source)
+        _apply_pms(json_path, model, save=False)
+    else:
+        _apply_pms(pms_source, model, save=False)
+
+    model.io.save()
+    _sess.reload()
+    set_pms_excel_last_imported(datetime.now(UTC).isoformat())
+    logger.info("pms_applied", pms_source=str(pms_source))
+
+
+def apply_pms_if_stale(model) -> bool:
+    """Apply PMS from the configured Excel file if it has been updated since last import.
+
+    Args:
+        model: The active model to apply PMS to.
+
+    Returns:
+        True if PMS was applied, False otherwise.
+    """
+    from pykorf.use_case.config import get_pms_excel_path
+    from pykorf.use_case.pms import is_pms_excel_stale
+
+    if not is_pms_excel_stale():
+        logger.info("pms_stale_check", stale=False)
+        return False
+
+    pms_path = get_pms_excel_path()
+    if not pms_path:
+        logger.warning("pms_stale_but_no_path")
+        return False
+
+    pms_source = Path(pms_path)
+    if not pms_source.is_file():
+        logger.warning("pms_stale_but_file_not_found", pms_path=pms_path)
+        return False
+
+    logger.info("auto_apply_pms_start", pms_source=str(pms_source))
+    try:
+        _apply_pms_from_source(model, pms_source)
+        return True
+    except Exception as exc:
+        logger.warning("auto_apply_pms_failed", error=str(exc), exc_info=True)
+        return False
 
 
 @bp.route("/model/data", methods=["GET", "POST"])
