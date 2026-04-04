@@ -42,6 +42,7 @@ def test_line_number_limits():
     assert result.is_valid is False
     assert result.error_message is not None and "exceeds maximum length" in result.error_message
 
+
 def test_file_overwrite_protection(tmp_path):
     # Setup: create a dummy model and save it
     kdf_path = tmp_path / "test.kdf"
@@ -94,5 +95,3 @@ def test_export_overwrite_protection(tmp_path):
     pump_csv.write_text("")
     with pytest.raises(ExportError, match="File already exists"):
         model.io.export_to_csv(csv_dir, overwrite=False)
-
-

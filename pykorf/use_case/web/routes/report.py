@@ -22,25 +22,56 @@ def generate_report():
     if is_redirect(model):
         return model
 
+    from pykorf.use_case.config import (
+        get_last_batch_folder_path,
+        get_last_excel_export_path,
+        get_last_excel_import_path,
+        get_last_report_path,
+        set_last_batch_folder_path,
+        set_last_excel_export_path,
+        set_last_excel_import_path,
+        set_last_report_path,
+    )
+
     kdf_path = _sess.get_kdf_path()
 
+    # Default paths based on KDF file
     kdf_folder = str(kdf_path.parent) if kdf_path else ""
     kdf_stem = kdf_path.stem if kdf_path else "model"
 
-    report_path = str(Path(kdf_folder) / f"{kdf_stem}_report.xlsx")
-    export_path = str(Path(kdf_folder) / f"{kdf_stem}_export.xlsx")
-    export_exists = Path(export_path).is_file()
-    import_path = export_path if export_exists else ""
-    import_exists = export_exists
+    default_report_name = f"{kdf_stem}_report.xlsx"
+    default_export_name = f"{kdf_stem}_export.xlsx"
+
+    # Report full file path — use last generated path, else default to kdf_folder/name
+    last_report = get_last_report_path()
+    last_report_file = str(last_report) if last_report and Path(last_report).is_file() else ""
+    default_report_path = last_report_file or str(Path(kdf_folder) / default_report_name)
+
+    # Batch report folder
+    last_batch = get_last_batch_folder_path()
+    batch_folder_path = str(last_batch) if last_batch else kdf_folder
+
+    # Export path — only show if the file actually exists on disk
+    last_export = get_last_excel_export_path()
+    export_exists = bool(last_export and Path(last_export).is_file())
+    export_path = str(last_export) if export_exists else ""
+
+    # Import path — only show if the file actually exists on disk
+    last_import = get_last_excel_import_path()
+    import_exists = bool(last_import and Path(last_import).is_file())
+    import_path = str(last_import) if import_exists else (export_path if export_exists else "")
 
     ctx = {
         "kdf_path": str(kdf_path or ""),
-        "report_path": report_path,
+        "report_path": default_report_path,
+        "default_report_name": default_report_name,
+        "default_export_name": default_export_name,
         "export_path": export_path,
-        "export_exists": export_exists,
         "import_path": import_path,
+        "export_exists": export_exists,
         "import_exists": import_exists,
-        "batch_folder_path": kdf_folder,
+        "last_report_file": last_report_file,
+        "batch_folder_path": batch_folder_path,
     }
 
     if request.method == "GET":
@@ -53,7 +84,9 @@ def generate_report():
     errors: list[str] = []
 
     if action == "generate_report":
-        report_file = Path(report_path)
+        report_file = (
+            Path(file_path_str) if file_path_str else Path(kdf_folder) / default_report_name
+        )
         report_dir = report_file.parent
         if not report_dir.exists():
             errors.append(f"Output directory does not exist: {report_dir}")
@@ -66,8 +99,6 @@ def generate_report():
 
                 ref_store = ReferencesStore.load(kdf_path) if kdf_path else None
                 basis = ref_store.basis if ref_store else ""
-                remarks = ref_store.remarks if ref_store else ""
-                hold = ref_store.hold if ref_store else ""
                 references = (
                     [
                         {
@@ -81,19 +112,23 @@ def generate_report():
                     if ref_store
                     else []
                 )
-                exporter = ResultExporter(model, basis=basis, remarks=remarks, hold=hold, references=references)
+                exporter = ResultExporter(model, basis=basis, references=references)
                 exporter.export_to_excel(str(report_file))
+                set_last_report_path(str(report_file))
+                last_report_file = str(report_file)
+                default_report_path = last_report_file
                 result_lines.append(("success", f"Report saved to: {report_file}"))
             except Exception as exc:
                 errors.append(f"Error generating report: {exc}")
 
     elif action == "export":
+        file_path = Path(file_path_str) if file_path_str else Path(kdf_folder) / default_export_name
         try:
-            model.io.to_excel(Path(export_path))
+            model.io.to_excel(file_path)
+            set_last_excel_export_path(str(file_path))
+            export_path = str(file_path)
             export_exists = True
-            import_path = export_path
-            import_exists = True
-            result_lines.append(("success", f"Exported to: {export_path}"))
+            result_lines.append(("success", f"Exported to: {file_path}"))
         except Exception as exc:
             errors.append(f"Error during export: {exc}")
 
@@ -104,6 +139,7 @@ def generate_report():
         else:
             try:
                 model.io.from_excel(file_path)
+                set_last_excel_import_path(str(file_path))
                 import_path = str(file_path)
                 import_exists = True
                 result_lines.append(("success", f"Imported from: {file_path}"))
@@ -123,6 +159,10 @@ def generate_report():
 
                 generator = BatchReportGenerator(batch_folder)
                 output_path = generator.generate_report()
+                set_last_batch_folder_path(str(batch_folder))
+                batch_folder_path = str(batch_folder)
+                set_last_report_path(output_path)
+                last_report_file = output_path
                 result_lines.append(("success", f"Batch report saved to: {output_path}"))
                 for err in generator.errors:
                     result_lines.append(("warning", err))
@@ -133,8 +173,12 @@ def generate_report():
         errors.append(f"Unknown action: {action}")
 
     ctx.update(
-        export_exists=export_exists,
+        report_path=default_report_path,
+        export_path=export_path,
         import_path=import_path,
+        export_exists=export_exists,
         import_exists=import_exists,
+        last_report_file=last_report_file,
+        batch_folder_path=batch_folder_path,
     )
     return render_template("report.html", **ctx, result={"lines": result_lines, "errors": errors})

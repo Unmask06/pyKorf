@@ -516,6 +516,70 @@ class Pipe(BaseElement):
             new_vals[4] = ""
         self.set_param(Pipe.SIZ, new_vals)
 
+    @property
+    def min_rho_v2_criteria(self) -> float | None:
+        """Minimum rho*V^2 criteria [Pa] looked up from sizing criteria tables.
+
+        Returns None if criteria_code is not set or if no matching entry is found.
+        """
+        from pykorf.use_case.sizing_criteria import code_to_state, lookup_criteria
+
+        code = self.criteria_code
+        if not code:
+            return None
+
+        state = code_to_state(code)
+        if not state:
+            return None
+
+        try:
+            size_inch = float(self.diameter_inch or 9999)
+        except (ValueError, TypeError):
+            size_inch = 9999.0
+
+        pressures = self.pressure or []
+        try:
+            pressure_barg = pressures[0] / 100.0 if pressures else 9999.0
+        except (IndexError, TypeError):
+            pressure_barg = 9999.0
+
+        crit = lookup_criteria(state, code, size_inch, pressure_barg)
+        if crit is not None and crit.rho_v2_min is not None:
+            return round(crit.rho_v2_min)
+        return None
+
+    @property
+    def max_rho_v2_criteria(self) -> float | None:
+        """Maximum rho*V^2 criteria [Pa] looked up from sizing criteria tables.
+
+        Returns None if criteria_code is not set or if no matching entry is found.
+        """
+        from pykorf.use_case.sizing_criteria import code_to_state, lookup_criteria
+
+        code = self.criteria_code
+        if not code:
+            return None
+
+        state = code_to_state(code)
+        if not state:
+            return None
+
+        try:
+            size_inch = float(self.diameter_inch or 9999)
+        except (ValueError, TypeError):
+            size_inch = 9999.0
+
+        pressures = self.pressure or []
+        try:
+            pressure_barg = pressures[0] / 100.0 if pressures else 9999.0
+        except (IndexError, TypeError):
+            pressure_barg = 9999.0
+
+        crit = lookup_criteria(state, code, size_inch, pressure_barg)
+        if crit is not None and crit.rho_v2_max is not None:
+            return round(crit.rho_v2_max)
+        return None
+
     def check_criteria(self) -> str:
         """Check if calculated results meet sizing criteria.
 

@@ -22,9 +22,7 @@ def pipe_names(model: Any) -> list[str]:
         Sorted list of non-empty pipe names.
     """
     return sorted(
-        model.pipes[idx].name
-        for idx in range(1, model.num_pipes + 1)
-        if model.pipes[idx].name
+        model.pipes[idx].name for idx in range(1, model.num_pipes + 1) if model.pipes[idx].name
     )
 
 

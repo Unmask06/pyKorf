@@ -29,6 +29,7 @@ from pykorf.use_case.web.routes.model_info import bp as model_info_bp
 from pykorf.use_case.web.routes.pipe_criteria import bp as pipe_criteria_bp
 from pykorf.use_case.web.routes.references import bp as references_bp
 from pykorf.use_case.web.routes.report import bp as report_bp
+from pykorf.use_case.web.routes.doc_register import bp as doc_register_bp
 from pykorf.use_case.web.routes.about import bp as about_bp
 from pykorf.use_case.web.routes.global_parameters import bp as settings_bp
 
@@ -59,6 +60,7 @@ def create_app() -> Flask:
     app.register_blueprint(browse_bp)
     app.register_blueprint(preferences_bp)
     app.register_blueprint(bulk_copy_bp)
+    app.register_blueprint(doc_register_bp)
     app.register_blueprint(about_bp)
 
     from pathlib import Path as _Path

@@ -6,6 +6,139 @@
 {% block content %}
 <div class="row g-4">
 
+  <!-- ── License Key ── -->
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold d-flex align-items-center gap-2">
+        <i class="bi bi-key text-warning"></i>License Key
+      </div>
+      <div class="card-body">
+
+        {% if license_flash %}
+        <div class="alert alert-{{ license_flash.type }} alert-dismissible fade show py-2" role="alert">
+          <i class="bi bi-{% if license_flash.type == 'success' %}check-circle{% elif license_flash.type == 'danger' %}x-circle{% else %}exclamation-triangle{% endif %} me-1"></i>
+          {{ license_flash.msg }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endif %}
+
+        <form method="post" action="/preferences" class="row g-2 align-items-end">
+          <input type="hidden" name="action" value="set_license_key" />
+          <div class="col-sm-8">
+            <label class="form-label small fw-semibold mb-1" for="license_key">License Key</label>
+            <input type="text" class="form-control form-control-sm font-monospace"
+                   id="license_key" name="license_key"
+                   placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX"
+                   value="{{ current_license_key or '' }}"
+                   autocomplete="off" spellcheck="false" />
+          </div>
+          <div class="col-sm-auto">
+            <button type="submit" class="btn btn-sm btn-warning">
+              <i class="bi bi-key-fill me-1"></i>Activate
+            </button>
+          </div>
+        </form>
+
+        {% if current_license_key %}
+        <div class="mt-2 small text-secondary">
+          <i class="bi bi-check-circle-fill text-success me-1"></i>
+          A license key is currently stored.
+        </div>
+        {% else %}
+        <div class="mt-2 small text-secondary">
+          No license key set — running in trial mode.
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Document Register ── -->
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header fw-semibold d-flex align-items-center gap-2">
+        <i class="bi bi-database text-info"></i>Document Register
+        <span class="badge bg-secondary ms-auto small" id="dr-status-badge">
+          {% if doc_register_excel_path %}Configured{% else %}Not configured{% endif %}
+        </span>
+      </div>
+      <div class="card-body">
+
+        {% if dr_flash %}
+        <div class="alert alert-{{ dr_flash.type }} alert-dismissible fade show py-2" role="alert">
+          <i class="bi bi-{% if dr_flash.type == 'success' %}check-circle{% else %}exclamation-triangle{% endif %} me-1"></i>
+          {{ dr_flash.msg }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endif %}
+
+        <form method="post" action="/preferences" class="row g-2 align-items-end" id="dr-config-form">
+          <input type="hidden" name="action" value="set_doc_register_config" />
+          <div class="col-lg-5">
+            <label class="form-label small fw-semibold mb-1" for="dr_excel_path">Excel File Path</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text"><i class="bi bi-file-earmark-excel"></i></span>
+              <input type="text" class="form-control font-monospace" id="dr_excel_path" name="dr_excel_path"
+                     placeholder="C:\path\to\Document Register.xlsx"
+                     value="{{ doc_register_excel_path or '' }}" autocomplete="off" />
+              <button type="button" class="btn btn-outline-secondary"
+                      data-browse-target="dr_excel_path"
+                      data-browse-filter="excel"
+                      title="Browse for Excel file">
+                <i class="bi bi-folder2-open"></i>
+              </button>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <label class="form-label small fw-semibold mb-1" for="dr_sp_site_url">SharePoint Site URL</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text"><i class="bi bi-cloud"></i></span>
+              <input type="text" class="form-control font-monospace" id="dr_sp_site_url" name="dr_sp_site_url"
+                     placeholder="https://company.sharepoint.com"
+                     value="{{ doc_register_sp_site_url }}" autocomplete="off" />
+            </div>
+          </div>
+          <div class="col-lg-3">
+            <button type="submit" class="btn btn-sm btn-primary w-100" id="dr-save-btn">
+              <i class="bi bi-floppy me-1"></i>Save Config
+            </button>
+          </div>
+        </form>
+
+        <!-- Loading overlay for DB rebuild -->
+        <div id="dr-loading-overlay" class="d-none position-relative mt-3 p-3 border rounded bg-light">
+          <div class="d-flex align-items-center gap-2">
+            <div class="spinner-border spinner-border-sm text-info" role="status"></div>
+            <span class="small fw-semibold">Building database from Excel…</span>
+          </div>
+          <div class="small text-secondary mt-1">
+            <i class="bi bi-hourglass-split me-1"></i>This may take a few seconds, please be patient.
+          </div>
+        </div>
+
+        {% if doc_register_excel_path %}
+        <div class="mt-3 d-flex align-items-center gap-2">
+          <button type="button" class="btn btn-sm btn-outline-info" onclick="rebuildDocRegisterDB()">
+            <i class="bi bi-arrow-clockwise me-1"></i>Rebuild Database
+          </button>
+          {% if doc_register_db_last_imported %}
+          <span class="small text-secondary">
+            <i class="bi bi-clock me-1"></i>Last built: {{ doc_register_db_last_imported }}
+          </span>
+          {% endif %}
+        </div>
+        {% else %}
+        <div class="mt-2 small text-secondary">
+          <i class="bi bi-info-circle me-1"></i>
+          Configure the Excel path above, then click Save to enable document search in References.
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+
   <div class="col-lg-8">
     <div class="card shadow-sm">
       <div class="card-header fw-semibold d-flex align-items-center gap-2">
@@ -172,4 +305,43 @@
 
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+function rebuildDocRegisterDB() {
+  var btn = event.target.closest('button');
+  if (!btn) return;
+  var origHTML = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Rebuilding...';
+
+  fetch('/api/doc-register/rebuild-db', { method: 'POST' })
+    .then(function(resp) { return resp.json(); })
+    .then(function(data) {
+      if (data.success) {
+        location.reload();
+      } else {
+        alert('Rebuild failed: ' + (data.error || 'Unknown error'));
+        btn.disabled = false;
+        btn.innerHTML = origHTML;
+      }
+    })
+    .catch(function(err) {
+      alert('Rebuild failed: ' + err.message);
+      btn.disabled = false;
+      btn.innerHTML = origHTML;
+    });
+}
+
+// Show loading overlay when saving Document Register config
+document.getElementById('dr-config-form').addEventListener('submit', function() {
+  var excelPath = document.getElementById('dr_excel_path').value.trim();
+  if (excelPath) {
+    document.getElementById('dr-loading-overlay').classList.remove('d-none');
+    document.getElementById('dr-save-btn').disabled = true;
+    document.getElementById('dr-save-btn').innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving…';
+  }
+});
+</script>
 {% endblock %}

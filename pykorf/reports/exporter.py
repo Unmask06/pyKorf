@@ -449,13 +449,15 @@ class ResultExporter:
             self._apply_table_formatting(ref_ws, header_row, row - 1, len(headers), 1)
 
     def _write_pipe_stats(self, ws: Any, df: Any, row: int, start_col: int) -> int:
-        """Writes a single Min - Max summary row below the pipe table."""
+        """Writes a Min-Max summary row and an overall Criteria Check row below the pipe table."""
         import pandas as pd
 
         dpdl_col = next((c for c in df.columns if "DP / DL" in c and "Criteria" not in c), None)
         vel_col = next((c for c in df.columns if "Velocity" in c and "Criteria" not in c), None)
         rhov2_col = next((c for c in df.columns if "ρV² calc" in c), None)  # noqa: RUF001
-        if dpdl_col is None and vel_col is None and rhov2_col is None:
+        criteria_col = next((c for c in df.columns if c == "Criteria Check"), None)
+
+        if dpdl_col is None and vel_col is None and rhov2_col is None and criteria_col is None:
             return row + 3
 
         col_names = list(df.columns)
@@ -467,33 +469,46 @@ class ResultExporter:
                 hi = numeric.max()
                 if pd.isna(lo) or pd.isna(hi):
                     return None
-                lo_s = f"{lo:.4g}"
-                hi_s = f"{hi:.4g}"
-                return f"{lo_s} - {hi_s}"
+                return f"{lo:.4g} - {hi:.4g}"
             except Exception:
                 return None
 
-        # Label cell
+        # -- Row 1: Min - Max ----------------------------------------------------
         lc = ws.cell(row=row, column=start_col, value="Min - Max")
         lc.font = Font(bold=True, size=10)
 
-        # DP/DL min-max
         if dpdl_col:
-            val = _fmt(dpdl_col)
             c_idx = start_col + col_names.index(dpdl_col)
-            ws.cell(row=row, column=c_idx, value=val).font = self._styles["data"]
+            ws.cell(row=row, column=c_idx, value=_fmt(dpdl_col)).font = self._styles["data"]
 
-        # Velocity min-max
         if vel_col:
-            val = _fmt(vel_col)
             c_idx = start_col + col_names.index(vel_col)
-            ws.cell(row=row, column=c_idx, value=val).font = self._styles["data"]
+            ws.cell(row=row, column=c_idx, value=_fmt(vel_col)).font = self._styles["data"]
 
-        # ρV² calc min-max  # noqa: RUF003
         if rhov2_col:
-            val = _fmt(rhov2_col)
             c_idx = start_col + col_names.index(rhov2_col)
-            ws.cell(row=row, column=c_idx, value=val).font = self._styles["data"]
+            ws.cell(row=row, column=c_idx, value=_fmt(rhov2_col)).font = self._styles["data"]
+
+        # -- Row 2: Overall Criteria Check (OR logic - any FAIL -> FAIL) --------
+        if criteria_col:
+            overall = "FAIL" if (df[criteria_col] == "FAIL").any() else "PASS"
+            is_fail = overall == "FAIL"
+
+            label_cell = ws.cell(row=row + 1, column=start_col, value="Overall Criteria")
+            label_cell.font = Font(bold=True, size=10)
+
+            c_idx = start_col + col_names.index(criteria_col)
+            result_cell = ws.cell(row=row + 1, column=c_idx, value=overall)
+            result_cell.font = Font(
+                bold=True,
+                size=10,
+                color="9C0006" if is_fail else "276221",
+            )
+            result_cell.fill = PatternFill(
+                start_color="FFC7CE" if is_fail else "C6EFCE",
+                end_color="FFC7CE" if is_fail else "C6EFCE",
+                fill_type="solid",
+            )
 
         return row + 3
 

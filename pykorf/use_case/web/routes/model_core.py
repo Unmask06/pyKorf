@@ -26,8 +26,7 @@ def _build_prereqs(model, kdf_path) -> dict:
     issues = model.validate()
 
     notes_ok = not any(
-        "NOTES" in i or "missing line number" in i or "line number" in i.lower()
-        for i in issues
+        "NOTES" in i or "missing line number" in i or "line number" in i.lower() for i in issues
     )
     validation_ok = len(issues) == 0
 
@@ -54,6 +53,9 @@ def main_menu():
     model = require_model()
     if is_redirect(model):
         return model
+    from pykorf.use_case.web.routes.data import apply_pms_if_stale
+
+    apply_pms_if_stale(model)
     kdf_path = _sess.get_kdf_path()
     prereqs = _build_prereqs(model, kdf_path)
     return render_template(

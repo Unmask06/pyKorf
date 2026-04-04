@@ -5,6 +5,119 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-04-04
+
+### What's New
+
+- Pipe sizing exports now include an **Overall Criteria Check** row that shows a single PASS or FAIL for the entire model — if any pipe fails, the overall result is FAIL.
+
+### Improved
+
+- Document Register search now finds results by **Document Number** as well as Title, and you can search using words from both fields together.
+- The search modal pre-fills your query from the Name field and runs the search automatically when a valid document is selected.
+
+---
+
+## [0.9.0] - 2026-04-03
+
+### What's New
+
+- A new **Document Register** search modal is available on the References page, letting you look up engineering documents by title and select the matching SharePoint file to attach as a reference link in one step.
+- Document titles can now be searched with words in any order — for example, "heads column data sheet" finds documents that contain all those words even if they appear in a different sequence.
+- The Document Register source Excel file and SharePoint site URL can be configured in Preferences, with the database built automatically when the file is updated.
+- PMS data is now automatically re-applied when the source Excel file changes, so model parameters stay in sync without a manual import step.
+
+### Improved
+
+- Searching the Document Register is faster — the database is only rebuilt when the source Excel file has actually changed, not on every search request.
+- The query results table shows file type (File/Folder) as a badge and includes an Open button to preview the file in a new browser tab without leaving the current form.
+- SharePoint URL links are now constructed consistently across the search modal.
+
+---
+
+## [0.8.3] - 2026-04-02
+
+### Fixed
+
+- The launcher now performs a full reinstall automatically if virtual environment repair fails, giving you a better chance of recovery without manual intervention. A new `--uninstall-app` flag also lets you quickly reset the application while keeping your saved data and settings.
+
+---
+
+## [0.8.2] - 2026-04-02
+
+### Fixed
+
+- Removed the in-app update mechanism that was failing on Windows because it tried to overwrite locked PyArmor runtime files while pyKorf was running. Updates are now handled entirely by the launcher script before the application starts, eliminating file-lock crashes and broken installations.
+
+---
+
+## [0.8.1] - 2026-04-02
+
+### Fixed
+
+- pyKorf now automatically repairs a broken virtual environment on startup instead of silently failing. If the repair succeeds, it relaunches immediately. If it cannot be repaired, a clear message is shown asking you to contact the developer.
+
+---
+
+## [0.8.0] - 2026-04-02
+
+### What's New
+
+- License key support added — enter a key in Preferences to unlock pyKorf beyond the trial period without needing a new release.
+- The trial period now starts from the first time you launch pyKorf, giving each installation a full 30-day window regardless of when the software was built.
+
+### Improved
+
+- Updates are now atomic: pyKorf backs up the current installation before applying a new version and automatically restores it if anything goes wrong mid-update.
+- Updates skip rebuilding the virtual environment when no package dependencies have changed, cutting update time from ~30 seconds to ~2 seconds for most releases.
+- Downloaded update packages are now verified against a SHA256 checksum before installation, protecting against corrupted or tampered downloads.
+- Updates now install the correct distribution package instead of the raw source archive.
+
+### Fixed
+
+- Update no longer fails with "A directory already exists at: .venv" when the old virtual environment could not be fully removed.
+
+---
+
+## [0.7.1] - 2026-04-02
+
+### Fixed
+
+- Improved the release process to prevent the dev branch from diverging ahead of main during releases.
+
+---
+
+## [0.7.0] - 2026-04-01
+
+### What's New
+
+- Pipe sizing validation now checks the ρV² (momentum) criterion for gas and two-phase services, catching high-velocity impingement issues that dP and velocity limits alone would miss.
+- If a sizing criterion value is zero (not configured), that check is now skipped entirely rather than falsely flagging every pipe.
+
+### Improved
+
+- Criteria lookups are now cached, making repeated validation runs on large models noticeably faster.
+- The "Criteria Check" column in Excel exports now shows **PASS** or **FAIL** instead of a raw true/false value, making reports easier to read at a glance.
+
+---
+
+## [0.6.4] - 2026-04-01
+
+### Fixed
+
+- The References page now saves correctly when editing remarks or hold items.
+- All model operations (Apply PMS, Apply HMB, Bulk Copy, Global Parameters, Pipe Criteria) now save the model before and after the operation to prevent data loss.
+
+---
+
+## [0.6.3] - 2026-04-01
+
+### What's New
+
+- Pipe layout tools now support page size configuration, boundary definitions, and grid alignment for precise diagram positioning.
+
+---
+
 ## [0.6.2] - 2026-04-01
 
 ### What's New

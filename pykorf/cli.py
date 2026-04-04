@@ -117,12 +117,13 @@ def show_trial_info(days_left: int) -> None:
 
 
 def show_update_prompt(update_info: dict) -> None:
-    """Display update notice and automatically install it.
+    """Display update available prompt and handle user response.
 
     Args:
         update_info: Dict with 'latest_version', 'release_url', and 'zipball_url' keys.
     """
     latest_version = update_info["latest_version"]
+    release_url = update_info.get("release_url", "")
     zipball_url = update_info.get("zipball_url", "")
     release_notes = update_info.get("release_notes", "")
 
@@ -130,20 +131,31 @@ def show_update_prompt(update_info: dict) -> None:
     if release_notes:
         body += "\n[bold]What's new:[/bold]\n"
         body += f"[dim]{release_notes}[/dim]\n"
-    body += "\n\nInstalling update automatically..."
+    body += "\n\nInstall now? [Y/n]"
 
     console.print(
         Panel(body, title="📦 Update Available", border_style="green", padding=(0, 1)),
         justify="center",
     )
+
+    response = console.input().strip().lower()
+
+    if response not in ("", "y", "yes"):
+        return
+
     console.print()
 
     if not zipball_url:
         console.print("[yellow]No download URL available — please update manually.[/yellow]")
         console.print()
+        console.print("[dim]Press Enter to continue...[/dim]")
+        console.input()
         return
 
-    with console.status("[dim]Downloading and installing update...[/dim]", spinner="dots"):
+    success = False
+    message = ""
+
+    with console.status("[dim]Downloading update...[/dim]", spinner="dots"):
         success, message = install_update(zipball_url)
 
     if success:
@@ -168,6 +180,8 @@ def show_update_prompt(update_info: dict) -> None:
         )
 
     console.print()
+    console.print("[dim]Press Enter to continue...[/dim]")
+    console.input()
 
 
 def main():

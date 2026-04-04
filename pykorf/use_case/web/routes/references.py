@@ -38,6 +38,7 @@ def _refs_context(kdf_path: Path, store: Any, **extra: Any) -> dict[str, Any]:
     Returns:
         Template context dict.
     """
+    from pykorf.use_case.preferences import get_doc_register_sp_site_url
     from pykorf.use_case.web.references import CATEGORIES
 
     return {
@@ -47,6 +48,7 @@ def _refs_context(kdf_path: Path, store: Any, **extra: Any) -> dict[str, Any]:
         "ref_dir": str(kdf_path.parent / "reference"),
         "flash": None,
         "shortcut_result": None,
+        "doc_register_sp_site_url": get_doc_register_sp_site_url() or "",
         **extra,
     }
 
@@ -103,7 +105,7 @@ def references_save_hold() -> Any:
 
 @bp.route("/model/references/add", methods=["POST"])
 def references_add() -> Any:
-    """Add a new reference entry and save."""
+    """Add a new reference entry or update existing if edit_id provided."""
     model = require_model()
     if is_redirect(model):
         return model
@@ -113,13 +115,19 @@ def references_add() -> Any:
     kdf_path = _sess.get_kdf_path()
     store = _load_refs()
 
+    edit_id = (request.form.get("edit_id") or "").strip()
     name = (request.form.get("name") or "").strip()
     link = (request.form.get("link") or "").strip()
     description = (request.form.get("description") or "").strip()
     category = (request.form.get("category") or "Other").strip()
 
     if name and link:
-        store.add(Reference.new(name=name, link=link, description=description, category=category))
+        if edit_id:
+            store.update(edit_id, name=name, link=link, description=description, category=category)
+        else:
+            store.add(
+                Reference.new(name=name, link=link, description=description, category=category)
+            )
         store.save(kdf_path)
         store.create_shortcuts(kdf_path)
 

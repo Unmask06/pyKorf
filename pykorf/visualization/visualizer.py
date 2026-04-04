@@ -100,9 +100,7 @@ class Visualizer:
 
     def __init__(self, model: Model) -> None:
         self._model = model
-        self._bx_min, self._by_min, self._bx_max, self._by_max = (
-            model.layout.boundary_coordinates
-        )
+        self._bx_min, self._by_min, self._bx_max, self._by_max = model.layout.boundary_coordinates
         self._network_data = self._build_network_data()
 
     # ------------------------------------------------------------------

@@ -1,5 +1,20 @@
 Release a new version of pyKorf. Follow these steps exactly:
 
+## Step 0 — Pre-flight: ensure dev is in sync with main
+
+Run:
+```
+git fetch origin
+git log dev..origin/main --oneline
+```
+
+If this prints any commits, main is ahead of dev. Merge it first before proceeding:
+```
+git merge origin/main --no-ff -m "chore: sync dev with main"
+```
+
+**Never skip this step.** Releasing when dev is behind main causes the branches to diverge permanently.
+
 ## Step 1 — Determine version bump
 
 Run `git log $(git describe --tags --abbrev=0)..HEAD --oneline` to see commits since the last tag.
@@ -54,15 +69,19 @@ git add pyproject.toml CHANGELOG.md uv.lock
 git commit -m "release: vX.Y.Z"
 ```
 
-## Step 7 — Merge to main and push
+## Step 7 — Merge to main, sync back to dev, and push
 
 ```
 git checkout main
 git merge dev --no-ff -m "release: vX.Y.Z"
 git push origin main
-git push origin dev
 git checkout dev
+git merge main --ff-only
+git push origin dev
 ```
+
+The `--ff-only` merge after switching back to dev fast-forwards dev to include the release merge commit on main.
+This keeps both branches at the same tip and prevents main from drifting ahead of dev.
 
 ## Step 8 — Report back
 

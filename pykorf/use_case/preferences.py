@@ -335,6 +335,48 @@ def set_sp_overrides(overrides: dict[str, str]) -> None:
     save_config(config)
 
 
+def get_trial_start() -> str | None:
+    """Get the ISO date string of when the trial period started.
+
+    Returns:
+        ISO date string (e.g. "2026-04-02"), or None if not yet set.
+    """
+    config = load_config()
+    return config.get("trial_start")
+
+
+def set_trial_start(iso_date: str) -> None:
+    """Persist the trial start date.
+
+    Args:
+        iso_date: ISO date string (e.g. ``date.today().isoformat()``).
+    """
+    config = load_config()
+    config["trial_start"] = iso_date
+    save_config(config)
+
+
+def get_license_key() -> str | None:
+    """Get the stored license key.
+
+    Returns:
+        License key string, or None if no key has been entered.
+    """
+    config = load_config()
+    return config.get("license_key")
+
+
+def set_license_key(key: str) -> None:
+    """Persist a license key.
+
+    Args:
+        key: The license key string to store.
+    """
+    config = load_config()
+    config["license_key"] = key
+    save_config(config)
+
+
 def get_stream_excel_last_imported() -> str | None:
     """Get the ISO timestamp of when Stream data was last imported from Excel.
 
@@ -353,4 +395,67 @@ def set_stream_excel_last_imported(timestamp: str) -> None:
     """
     config = load_config()
     config["stream_excel_last_imported"] = timestamp
+    save_config(config)
+
+
+def get_doc_register_excel_path() -> str | None:
+    """Get the Document Register Excel source file path.
+
+    Returns:
+        The Document Register Excel file path, or None if not set.
+    """
+    config = load_config()
+    return config.get("doc_register_excel_path")
+
+
+def set_doc_register_excel_path(path: str | Path) -> None:
+    """Save the Document Register Excel source file path.
+
+    Args:
+        path: The Document Register Excel file path to save.
+    """
+    config = load_config()
+    config["doc_register_excel_path"] = str(path)
+    save_config(config)
+
+
+def get_doc_register_sp_site_url() -> str | None:
+    """Get the SharePoint site base URL for Document Register links.
+
+    Returns:
+        The SharePoint site URL (e.g., 'https://tenant.sharepoint.com'), or None.
+    """
+    config = load_config()
+    return config.get("doc_register_sp_site_url")
+
+
+def set_doc_register_sp_site_url(url: str) -> None:
+    """Save the SharePoint site base URL for Document Register links.
+
+    Args:
+        url: The SharePoint site URL string.
+    """
+    config = load_config()
+    config["doc_register_sp_site_url"] = url.strip().rstrip("/")
+    save_config(config)
+
+
+def get_doc_register_db_last_imported() -> str | None:
+    """Get the ISO timestamp of when Document Register DB was last built from Excel.
+
+    Returns:
+        ISO format timestamp string, or None if DB has never been built.
+    """
+    config = load_config()
+    return config.get("doc_register_db_last_imported")
+
+
+def set_doc_register_db_last_imported(timestamp: str) -> None:
+    """Save the ISO timestamp of when Document Register DB was last built from Excel.
+
+    Args:
+        timestamp: ISO format timestamp string (e.g. from datetime.isoformat()).
+    """
+    config = load_config()
+    config["doc_register_db_last_imported"] = timestamp
     save_config(config)

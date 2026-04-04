@@ -8,6 +8,7 @@ from pykorf.use_case.web import session as _sess
 from pykorf.use_case.web.helpers import is_redirect, pipe_names, require_model
 
 import structlog
+
 logger = structlog.get_logger(__name__)
 bp = Blueprint("bulk_copy", __name__)
 
@@ -36,6 +37,7 @@ def bulk_copy():
             error = "Please enter a reference pipe."
         else:
             try:
+                model.io.save()
                 from pykorf.use_case import copy_fluids
 
                 target_list = (

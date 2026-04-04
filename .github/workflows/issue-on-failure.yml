@@ -15,63 +15,50 @@ jobs:
       issues: write
       actions: read
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Download workflow run logs
-        uses: actions/download-artifact@v7
+      - name: Download quality report
+        id: download
+        uses: actions/download-artifact@v4
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ github.event.workflow_run.id }}
-
-      - name: Get failed job details
-        id: details
-        run: |
-          echo "WORKFLOW_NAME=${{ github.event.workflow_run.name }}" >> $GITHUB_OUTPUT
-          echo "WORKFLOW_URL=${{ github.event.workflow_run.html_url }}" >> $GITHUB_OUTPUT
-          echo "HEAD_BRANCH=${{ github.event.workflow_run.head_branch }}" >> $GITHUB_OUTPUT
-          echo "HEAD_SHA=${{ github.event.workflow_run.head_sha }}" >> $GITHUB_OUTPUT
-          echo "RUN_ATTEMPT=${{ github.event.workflow_run.run_attempt }}" >> $GITHUB_OUTPUT
+          name: quality-report
+          path: reports/
 
       - name: Create issue on failure
         uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const fs = require('fs');
+            const path = require('path');
+
             const workflowName = process.env.WORKFLOW_NAME;
             const workflowUrl = process.env.WORKFLOW_URL;
             const headBranch = process.env.HEAD_BRANCH;
             const headSha = process.env.HEAD_SHA;
             const runAttempt = process.env.RUN_ATTEMPT;
 
-            const issueTitle = `Workflow Failed: ${workflowName}`;
-            
-            const issueBody = `/oc
+            let reportDetails = '';
+            try {
+              const reportPath = path.join('reports', 'quality-report.json');
+              const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+              const statusEmoji = {
+                success: 'Passed',
+                failure: 'Failed',
+                skipped: 'Skipped'
+              };
+              const ruffCheck = statusEmoji[report.ruff_check] || report.ruff_check;
+              const ruffFormat = statusEmoji[report.ruff_format] || report.ruff_format;
+              const mypy = statusEmoji[report.mypy] || report.mypy;
+              const tests = statusEmoji[report.pytest] || report.pytest;
+              reportDetails = '| Check | Status |\n|-------|--------|\n| Ruff Check | ' + ruffCheck + ' |\n| Ruff Format | ' + ruffFormat + ' |\n| Mypy | ' + mypy + ' |\n| Tests | ' + tests + ' |';
+            } catch (e) {
+              reportDetails = 'Quality report not available.';
+            }
 
-## Workflow Failure Report
+            const issueTitle = 'Workflow Failed: ' + workflowName;
 
-**Workflow:** [${workflowName}](${workflowUrl})
-**Branch:** \`${headBranch}\`
-**Commit:** \`${headSha}\`
-**Run Attempt:** ${runAttempt}
-**Conclusion:** FAILED
-
-### Failure Details
-
-The GitHub Actions workflow has failed. Please analyze the failure and create a fix plan.
-
-#### Action Required
-
-1. Review the [workflow logs](${workflowUrl})
-2. Identify the failed job(s) and root cause
-3. Create a detailed fix plan
-4. Implement the fix
-5. Verify the fix resolves the issue
-
----
-
-*This issue was automatically created by the issue-on-failure workflow.*
-`;
+            const issueBody = '/oc\n\n## Workflow Failure Report\n\n**Workflow:** [' + workflowName + '](' + workflowUrl + ')\n**Branch:** `' + headBranch + '`\n**Commit:** `' + headSha + '`\n**Run Attempt:** ' + runAttempt + '\n\n### Failure Details\n\n' + reportDetails + '\n\n### Implementation Plan Required\n\nAnalyze the failure logs and codebase, then:\n\n1. **Root Cause Analysis** - Identify exactly which check failed and why\n2. **Fix Plan** - Outline specific file changes needed\n3. **Implement** - Apply the fix\n4. **Verify** - Run the relevant checks locally to confirm\n5. **Commit** - Create a fix commit referencing this issue\n\n---\n\n*This issue was automatically created by the issue-on-failure workflow.*';
 
             const { data: issue } = await github.rest.issues.create({
               owner: context.repo.owner,
@@ -81,10 +68,19 @@ The GitHub Actions workflow has failed. Please analyze the failure and create a 
               labels: ['bug', 'ci-failure', 'automated']
             });
 
-            console.log(`Created issue #${issue.number}: ${issueTitle}`);
+            console.log('Created issue #' + issue.number + ': ' + issueTitle);
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              body: '/oc\n\nAnalyze this CI failure and implement a fix. Review the workflow logs, identify the root cause, and create a PR with the fix.'
+            });
+
+            console.log('Added opencode trigger comment to issue #' + issue.number);
         env:
-          WORKFLOW_NAME: ${{ steps.details.outputs.WORKFLOW_NAME }}
-          WORKFLOW_URL: ${{ steps.details.outputs.WORKFLOW_URL }}
-          HEAD_BRANCH: ${{ steps.details.outputs.HEAD_BRANCH }}
-          HEAD_SHA: ${{ steps.details.outputs.HEAD_SHA }}
-          RUN_ATTEMPT: ${{ steps.details.outputs.RUN_ATTEMPT }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          WORKFLOW_URL: ${{ github.event.workflow_run.html_url }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}

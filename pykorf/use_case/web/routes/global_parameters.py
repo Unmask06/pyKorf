@@ -82,8 +82,9 @@ def global_settings():
             shutoff_margin=shutoff_margin,
         )
         try:
+            model.io.save()
             apply_results: dict[str, Any] = apply_global_settings(
-                model, selected_ids, save=False, dp_margin=dp_margin, shutoff_margin=shutoff_margin
+                model, selected_ids, save=False, dp_margin=dp_margin
             )
             errs: list[str] = apply_results.pop("_errors", [])
             errors.extend(errs)

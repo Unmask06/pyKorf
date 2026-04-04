@@ -73,6 +73,7 @@ def reload() -> None:
         if _kdf_path is None:
             return
         from pykorf import Model
+
         _model = Model(_kdf_path)
 
 
