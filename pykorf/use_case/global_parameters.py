@@ -372,7 +372,6 @@ def apply_global_settings(
             continue
 
         try:
-            # Pass dp_margin parameter to the dp_margin setting
             if setting_id == "dp_margin":
                 affected = setting.apply_func(model, margin=dp_margin)
             else:
