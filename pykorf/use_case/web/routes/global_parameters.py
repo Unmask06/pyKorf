@@ -130,6 +130,7 @@ def center_layout():
     try:
         model.layout.center_layout()
         model.io.save()
+        logger.info("center_layout_saved", path=str(_sess.get_kdf_path()))
         _sess.reload()
         result_lines.append(("success", "Layout centered successfully."))
         set_last_interaction("center_layout", {})

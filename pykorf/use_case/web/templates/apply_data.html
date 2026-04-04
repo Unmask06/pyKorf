@@ -113,17 +113,20 @@
   <div class="col-lg-4">
     {% if result %}
     <div class="card shadow-sm mb-3">
-      <div class="card-header fw-semibold"><i class="bi bi-terminal me-1"></i>Results</div>
-      <div class="card-body p-3" style="font-family:monospace; font-size:.82rem; max-height:300px; overflow-y:auto;">
-        {% for err in result.errors %}
-        <div class="result-line-error"><i class="bi bi-x-circle me-1"></i>{{ err }}</div>
-        {% endfor %}
+      <div class="card-header fw-semibold">
+        <i class="bi bi-terminal me-1"></i>Results
+      </div>
+      <div class="card-body p-3" style="font-family:monospace; font-size:.82rem; max-height:320px; overflow-y:auto;">
+        {% if result.errors %}
+          {% for err in result.errors %}
+          <div class="result-line-error"><i class="bi bi-x-circle me-1"></i>{{ err }}</div>
+          {% endfor %}
+        {% endif %}
         {% for level, msg in result.lines %}
-        <div class="result-line-{{ level }}">
-          {% if level == "success" %}<i class="bi bi-check-circle me-1"></i>
-          {% elif level == "info" %}<i class="bi bi-file-earmark-check me-1 text-info"></i>
-          {% endif %}{{ msg }}
-        </div>
+          <div class="result-line-{{ level }}">
+            {% if level == "success" %}<i class="bi bi-check-circle me-1"></i>{% endif %}
+            {{ msg }}
+          </div>
         {% endfor %}
       </div>
     </div>
