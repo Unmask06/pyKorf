@@ -37,7 +37,6 @@ def bulk_copy():
             error = "Please enter a reference pipe."
         else:
             try:
-                model.io.save()
                 from pykorf.use_case import copy_fluids
 
                 target_list = (
@@ -47,11 +46,12 @@ def bulk_copy():
                 )
                 updated_pipes = copy_fluids(model, ref_pipe, target_list, exclude)
                 updated_count = len(updated_pipes)
-                result = "success"
                 model.io.save()
                 _sess.reload()
+                result = "success"
             except Exception as exc:
                 error = f"Error: {exc}"
+                _sess.reload()
 
     pipes = pipe_names(model)
 

@@ -82,7 +82,6 @@ def global_settings():
             shutoff_margin=shutoff_margin,
         )
         try:
-            model.io.save()
             apply_results: dict[str, Any] = apply_global_settings(
                 model, selected_ids, save=False, dp_margin=dp_margin
             )
@@ -102,6 +101,7 @@ def global_settings():
         except Exception as exc:
             logger.error("global_settings_error", error=str(exc))
             errors.append(f"Error applying settings: {exc}")
+            _sess.reload()
 
     return render_template(
         "global_parameters.html",
