@@ -33,8 +33,6 @@ def _apply_pms_from_source(model, pms_source: Path) -> None:
     from pykorf.use_case.config import set_pms_excel_last_imported
     from pykorf.use_case.pms import apply_pms as _apply_pms, import_pms_from_excel
 
-    model.io.save()
-
     # Convert Excel → pms.json in the data dir, then apply from JSON
     if pms_source.suffix.lower() in (".xlsx", ".xls"):
         json_path = import_pms_from_excel(pms_source)
