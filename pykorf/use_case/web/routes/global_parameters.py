@@ -112,3 +112,94 @@ def global_settings():
         saved_shutoff_margin=shutoff_margin_str,
         result={"lines": result_lines, "errors": errors},
     )
+
+
+@bp.route("/model/center_layout", methods=["POST"])
+def center_layout():
+    """Center all elements on the page."""
+    model = require_model()
+    if is_redirect(model):
+        return model
+
+    from pykorf.use_case.config import set_last_interaction
+    from pykorf.use_case.global_parameters import get_global_settings
+
+    result_lines: list[tuple[str, str]] = []
+    errors: list[str] = []
+
+    try:
+        model.layout.center_layout()
+        model.io.save()
+        logger.info("center_layout_saved", path=str(_sess.get_kdf_path()))
+        _sess.reload()
+        result_lines.append(("success", "Layout centered successfully."))
+        set_last_interaction("center_layout", {})
+        logger.info("center_layout_applied")
+    except Exception as exc:
+        logger.error("center_layout_error", error=str(exc))
+        errors.append(f"Error centering layout: {exc}")
+
+    return render_template(
+        "global_parameters.html",
+        kdf_path=str(_sess.get_kdf_path() or ""),
+        settings=get_global_settings(),
+        saved_selections=[],
+        saved_dp_margin="1.25",
+        saved_shutoff_margin="1.20",
+        result={"lines": result_lines, "errors": errors},
+    )
+
+
+@bp.route("/model/snap_orthogonal", methods=["POST"])
+def snap_orthogonal_route():
+    """Snap near-orthogonal connections and align all elements to grid."""
+    model = require_model()
+    if is_redirect(model):
+        return model
+
+    from pykorf.use_case.config import set_last_interaction
+    from pykorf.use_case.global_parameters import get_global_settings
+
+    threshold_deg_str = (request.form.get("orthogonal_threshold") or "10.0").strip()
+    try:
+        threshold_deg = float(threshold_deg_str)
+    except ValueError:
+        threshold_deg = 10.0
+        threshold_deg_str = "10.0"
+
+    grid_size_str = (request.form.get("grid_size") or "500.0").strip()
+    try:
+        grid_size = float(grid_size_str)
+    except ValueError:
+        grid_size = 500.0
+        grid_size_str = "500.0"
+
+    result_lines: list[tuple[str, str]] = []
+    errors: list[str] = []
+
+    try:
+        model.layout.snap_orthogonal(threshold_deg=threshold_deg)
+        model.layout.snap_to_grid(grid_size=grid_size)
+        model.io.save()
+        _sess.reload()
+        result_lines.append(
+            ("success", f"Snapped connections to orthogonal (threshold: {threshold_deg}°).")
+        )
+        result_lines.append(("success", f"Aligned all elements to {grid_size:.0f}-unit grid."))
+        set_last_interaction(
+            "snap_orthogonal", {"threshold": threshold_deg_str, "grid_size": grid_size_str}
+        )
+        logger.info("snap_orthogonal_applied", threshold=threshold_deg, grid_size=grid_size)
+    except Exception as exc:
+        logger.error("snap_orthogonal_error", error=str(exc))
+        errors.append(f"Error snapping orthogonal: {exc}")
+
+    return render_template(
+        "global_parameters.html",
+        kdf_path=str(_sess.get_kdf_path() or ""),
+        settings=get_global_settings(),
+        saved_selections=[],
+        saved_dp_margin="1.25",
+        saved_shutoff_margin="1.20",
+        result={"lines": result_lines, "errors": errors},
+    )

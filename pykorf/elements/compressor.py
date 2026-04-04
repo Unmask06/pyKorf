@@ -17,6 +17,7 @@ class Compressor(BaseElement):
     # ------------------------------------------------------------------
     # Parameter constants (moved from definitions/comp.py)
     # ------------------------------------------------------------------
+    XY = "XY"  # [icon_x, icon_y, conn_x, conn_y] - 2 coordinate pairs (icon anchor + connection point)
     ELEV = "ELEV"  # [elevation, unit]
     DP = "DP"  # [dp_str, dp_num, unit]
     PIN = "PIN"  # [pres_in_spec, pres_in_calc, unit]

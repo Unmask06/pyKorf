@@ -126,6 +126,7 @@ class SimpleLogger:
 
 
 if HAS_STRUCTLOG:
+    _configure_structlog()
 
     class BoundContextLogger:
         """A logger wrapper that automatically includes context variables."""
@@ -164,7 +165,9 @@ def get_logger(name: str | None = None) -> BoundContextLogger | SimpleLogger:
     """Get a structured logger.
 
     Args:
-        name: Logger name (defaults to calling module)
+        name: Logger name (defaults to calling module).  Short names like
+            ``"IOService"`` are automatically prefixed with ``"pykorf."`` so
+            they inherit the root ``pykorf`` log-level configuration.
 
     Returns:
         A logger instance
@@ -178,6 +181,12 @@ def get_logger(name: str | None = None) -> BoundContextLogger | SimpleLogger:
             name = module.__name__ if module else "pykorf"
         else:
             name = "pykorf"
+
+    # Ensure the name sits under the pykorf hierarchy so it inherits the
+    # configured log level.  Module-style names (containing ".") are left
+    # as-is; short labels like "IOService" are prefixed.
+    if "." not in name and not name.startswith("pykorf"):
+        name = f"pykorf.{name}"
 
     if HAS_STRUCTLOG:
         logger = structlog.get_logger(name)

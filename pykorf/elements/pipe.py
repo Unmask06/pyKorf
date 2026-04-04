@@ -37,6 +37,7 @@ class Pipe(BaseElement):
     # Parameter constants (moved from definitions/pipe.py)
     # ------------------------------------------------------------------
     BEND = "BEND"  # [angle_deg]
+    XY = "XY"  # [icon_x, icon_y, bend1_x, bend1_y, ..., bend12_x, bend12_y] - 13 coordinate pairs (icon anchor + up to 12 bend waypoints)
     LBL = "LBL"  # [on/off, x-offset, y-offset]
     COLOR = "COLOR"  # [color_int]
     STRM = "STRM"  # ["stream_name"]

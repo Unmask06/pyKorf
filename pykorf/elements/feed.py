@@ -22,6 +22,7 @@ class Feed(BaseElement):
     # ------------------------------------------------------------------
     # Parameter constants (moved from definitions/feed.py)
     # ------------------------------------------------------------------
+    XY = "XY"  # [icon_x, icon_y] - 1 coordinate pair (icon anchor position only)
     TYPE = "TYPE"  # ["feed_type"]
     ELEV = "ELEV"  # [elevation, unit]
     LEVELH = "LEVELH"  # [level1, level2, unit, level4, unit, level6]

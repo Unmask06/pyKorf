@@ -21,4 +21,6 @@ def test_property_map_has_pipe_and_orifice():
 def test_common_properties():
     assert Common.NAME == "NAME"
     assert Common.NUM == "NUM"
-    assert Common.XY == "XY"
+    # XY is now defined per-element type based on coordinate pair capacity
+    assert Pipe.XY == "XY"
+    assert Orifice.XY == "XY"

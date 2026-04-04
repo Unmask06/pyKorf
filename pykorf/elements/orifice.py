@@ -22,6 +22,7 @@ class FlowOrifice(BaseElement):
     # ------------------------------------------------------------------
     # Parameter constants (moved from definitions/orifice.py)
     # ------------------------------------------------------------------
+    XY = "XY"  # [icon_x, icon_y, conn_x, conn_y] - 2 coordinate pairs (icon anchor + connection point)
     TYPE = "TYPE"  # ["orifice_type"]
     ELEV = "ELEV"  # [elevation, unit]
     DP = "DP"  # [dp_str, dp_num, unit]

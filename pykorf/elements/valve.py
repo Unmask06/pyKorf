@@ -23,6 +23,7 @@ class Valve(BaseElement):
     # ------------------------------------------------------------------
     # Parameter constants (moved from definitions/valve.py)
     # ------------------------------------------------------------------
+    XY = "XY"  # [icon_x, icon_y, conn_x, conn_y] - 2 coordinate pairs (icon anchor + connection point)
     ELEV = "ELEV"  # [elevation, unit]
     DP = "DP"  # [dp_str, dp_num, unit]
     PIN = "PIN"  # [pres_in_str, pres_in_num, unit]

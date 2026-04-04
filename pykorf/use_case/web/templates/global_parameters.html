@@ -14,6 +14,21 @@
       <div class="card-body">
         <form method="post" action="/model/settings" id="settings-form">
 
+          <!-- Layout Operations Section -->
+          <div class="card mb-4 border-primary">
+            <div class="card-header bg-primary text-white fw-semibold">
+              <i class="bi bi-grid-3x3-gap me-2"></i>Layout Operations
+            </div>
+            <div class="card-body">
+              <div class="d-grid" style="max-width:280px">
+                <button type="submit" class="btn btn-outline-primary" formaction="/model/center_layout" formmethod="post">
+                  <i class="bi bi-arrows-fullscreen me-2"></i>Center Layout
+                </button>
+                <small class="text-muted mt-1">Center all elements on the page</small>
+              </div>
+            </div>
+          </div>
+
           <div class="row row-cols-1 row-cols-md-2 g-3 mb-4" id="settings-list">
           {% for setting in settings %}
             <div class="col">
