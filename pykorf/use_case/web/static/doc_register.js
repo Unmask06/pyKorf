@@ -259,8 +259,20 @@
     // Reset state
     selectedDocNo = null;
     selectedTitle = null;
-    document.getElementById('eddr-search').value = '';
-    showEmpty('eddr-results', 'Type to search documents by title...');
+
+    // Pre-fill search from the Name field (works for both Add and Edit flows)
+    var nameInput = document.getElementById('add-name');
+    var prefill = nameInput ? nameInput.value.trim() : '';
+
+    var searchInput = document.getElementById('eddr-search');
+    if (searchInput) searchInput.value = prefill;
+
+    if (prefill.length >= 2) {
+      showLoading('eddr-results');
+      searchEDDR(prefill);
+    } else {
+      showEmpty('eddr-results', 'Type to search documents by title...');
+    }
     showEmpty('query-results', 'Select a document above to see available files');
     checkDBStatus();
   }

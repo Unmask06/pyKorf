@@ -1,0 +1,57 @@
+name: Dependency Updates
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-deps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Update dependencies
+        run: uv lock --upgrade
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet uv.lock; then
+            echo "HAS_CHANGES=false" >> $GITHUB_OUTPUT
+          else
+            echo "HAS_CHANGES=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Pull Request
+        if: steps.changes.outputs.HAS_CHANGES == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore(deps): update dependencies'
+          title: 'chore(deps): update dependencies'
+          body: |
+            ## Dependency Updates
+
+            Automated dependency update via `uv lock --upgrade`.
+
+            ### Checklist
+            - [ ] Review `uv.lock` changes
+            - [ ] Run `uv run pytest -m "not automation"` locally
+            - [ ] Run `uv run ruff check pykorf tests`
+            - [ ] Run `uv run mypy pykorf`
+          branch: deps/update-dependencies
+          delete-branch: true
+          labels: dependencies

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import Column, Integer, String, Text, create_engine
+from sqlalchemy import Column, Integer, String, Text, create_engine, or_
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
 from pykorf.use_case.web.doc_register.excel_to_db import get_db_path
@@ -96,14 +96,15 @@ def get_session() -> Session:
 
 
 def search_eddr_by_title(query: str, limit: int = 50) -> list[dict[str, str]]:
-    """Search EDDR entries by title using unordered, case-insensitive word matching.
+    """Search EDDR entries by Document No or Title, with unordered word matching.
 
-    Each whitespace-separated word in *query* must appear somewhere in the
-    title (AND logic), so "heads column data sheet" matches titles that
-    contain all four words in any order.
+    Each whitespace-separated word must appear in either the document number
+    or the title (AND across words, OR across fields). For example,
+    "EV000 data sheet" matches any entry where every word is found in at
+    least one of the two fields.
 
     Args:
-        query: Search term — words may appear in any order in the title.
+        query: Search term — words may appear in any order across either field.
         limit: Maximum number of results to return.
 
     Returns:
@@ -117,7 +118,12 @@ def search_eddr_by_title(query: str, limit: int = 50) -> list[dict[str, str]]:
     try:
         q = session.query(EDDR.document_no, EDDR.title)
         for word in words:
-            q = q.filter(EDDR.title.ilike(f"%{word}%"))
+            q = q.filter(
+                or_(
+                    EDDR.title.ilike(f"%{word}%"),
+                    EDDR.document_no.ilike(f"%{word}%"),
+                )
+            )
         results = q.limit(limit).all()
         return [{"document_no": row.document_no, "title": row.title} for row in results]
     finally:
@@ -153,7 +159,7 @@ def search_query_by_name(doc_no: str, limit: int = 20) -> list[dict[str, str]]:
                 QueryEntry.item_type,
             )
             .filter(QueryEntry.name.ilike(term))
-            .order_by(QueryEntry.modified.desc())
+            .order_by(QueryEntry.item_type.desc(), QueryEntry.modified.desc())
             .limit(limit)
             .all()
         )

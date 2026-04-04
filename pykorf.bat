@@ -13,7 +13,7 @@ REM              Bump on any launcher fix/improvement; enables auto-update.
 REM AUTO_UPDATE: TRUE = silently self-update when a newer launcher is on GitHub.
 REM              FALSE = never self-update; user must get new bat from administrator.
 set "BAT_MAJOR=0"
-set "BAT_VERSION=0.6"
+set "BAT_VERSION=0.5"
 set "AUTO_UPDATE=TRUE"
 
 chcp 65001 > nul
@@ -34,10 +34,6 @@ REM Uninstall flag check
 REM ============================================
 if /i "%~1"=="/uninstall" goto :uninstall
 if /i "%~1"=="--uninstall" goto :uninstall
-if /i "%~1"=="--uninstall-app" (
-    set "CONFIRM=Y"
-    goto :uninstall_app_only
-)
 
 REM ============================================
 REM Launcher self-update check
@@ -127,12 +123,18 @@ if not "!INST_MAJOR!"=="!BAT_MAJOR!" (
 )
 
 REM ============================================
-REM App version update check (GitHub API)
+REM App version update check
 REM ============================================
+set "APP_VER_URL=https://github.com/Unmask06/pykorf/releases/latest/download/VERSION"
+set "APP_VER_TMP=%TEMP%\pk_app_ver.txt"
 set "APP_ZIP_URL=https://github.com/Unmask06/pykorf/releases/latest/download/pykorf-v!BAT_MAJOR!.zip"
 
-for /f %%v in ('powershell -command "(Invoke-RestMethod 'https://api.github.com/repos/Unmask06/pykorf/releases/latest').tag_name" 2^>nul') do set "REMOTE_APP_VER=%%v"
-set "REMOTE_APP_VER=!REMOTE_APP_VER:v=!"
+curl -L --fail --silent --max-time 10 -o "!APP_VER_TMP!" "!APP_VER_URL!" 2>nul
+if %errorlevel% neq 0 goto :app_update_done
+
+set "REMOTE_APP_VER="
+set /p REMOTE_APP_VER=<"!APP_VER_TMP!"
+del "!APP_VER_TMP!" >nul 2>&1
 if "!REMOTE_APP_VER!"=="" goto :app_update_done
 if "!INST_VER!"=="!REMOTE_APP_VER!" goto :app_update_done
 
@@ -171,11 +173,12 @@ set "PYTHON_EXE=py -3.13"
 !PYTHON_EXE! -m uv venv .venv --quiet
 
 echo %GRAY%  Installing dependencies...%RESET%
-py -3.13 -m uv pip install --python ".venv\Scripts\python.exe" -e .
-if %errorlevel% neq 0 (
-    echo %YELLOW%  Update download failed — launching existing version%RESET%
-    echo.
-    goto :app_update_done
+set "VENV_UV=%APPDATA_DIR%\.venv\Scripts\uv.exe"
+if exist "!VENV_UV!" (
+    "!VENV_UV!" pip install --python ".venv\Scripts\python.exe" -e . --quiet
+) else (
+    ".venv\Scripts\python.exe" -m uv pip install --python ".venv\Scripts\python.exe" -e . --quiet 2>nul
+    if %errorlevel% neq 0 ".venv\Scripts\python.exe" -m pip install -e . --quiet
 )
 
 echo %GREEN%  ✓  Updated to !REMOTE_APP_VER!%RESET%
@@ -184,104 +187,15 @@ echo.
 :app_update_done
 
 cd /d "%APPDATA_DIR%"
-
-REM ── Show banner before launch ────────────────────────────────────────────────
-goto :show_banner
-
-:banner_launch
 ".venv\Scripts\python.exe" -m pykorf
-set "LAUNCH_ERR=%errorlevel%"
-if "!LAUNCH_ERR!"=="0" exit /b
-
-REM Non-zero exit — attempt one venv rebuild before giving up
-echo.
-echo %YELLOW%  pyKorf exited with error !LAUNCH_ERR! — attempting venv repair...%RESET%
-echo.
-
-if exist ".venv" rd /s /q ".venv" >nul 2>&1
-py -3.13 -m uv venv .venv --quiet
-if %errorlevel% neq 0 (
-    echo %RED%  Failed to create virtual environment.%RESET%
-    goto :launch_reinstall
-)
-
-set "VENV_UV=%APPDATA_DIR%\.venv\Scripts\uv.exe"
-if exist "!VENV_UV!" (
-    "!VENV_UV!" pip install --python ".venv\Scripts\python.exe" -e .
-) else (
-    py -3.13 -m uv pip install --python ".venv\Scripts\python.exe" -e .
-)
-if %errorlevel% neq 0 (
-    echo %RED%  Failed to reinstall dependencies.%RESET%
-    goto :launch_reinstall
-)
-
-echo %GREEN%  Venv repaired — relaunching...%RESET%
-echo.
-goto :banner_launch
-if %errorlevel% equ 0 exit /b
-
-:launch_reinstall
-echo.
-echo %YELLOW%  Venv repair failed — attempting full reinstall...%RESET%
-echo.
-
-REM Run uninstall_app_only silently (CONFIRM=Y skips prompt)
-set "CONFIRM=Y"
-goto :uninstall_app_only_no_pause
-
-:uninstall_app_only_no_pause
-echo %GRAY%  Removing application...%RESET%
-if exist "%APPDATA_DIR%\data" (
-    robocopy "%APPDATA_DIR%\data" "%TEMP%\pykorf_data_bak" /E /MOVE /NFL /NDL /NJH /NJS >nul 2>&1
-)
-if exist "%APPDATA_DIR%\config.json" (
-    copy /y "%APPDATA_DIR%\config.json" "%TEMP%\pykorf_cfg_bak.json" >nul 2>&1
-)
-rd /s /q "%APPDATA_DIR%" >nul 2>&1
-mkdir "%APPDATA_DIR%" >nul 2>&1
-if exist "%TEMP%\pykorf_data_bak" (
-    robocopy "%TEMP%\pykorf_data_bak" "%APPDATA_DIR%\data" /E /MOVE /NFL /NDL /NJH /NJS >nul 2>&1
-)
-if exist "%TEMP%\pykorf_cfg_bak.json" (
-    copy /y "%TEMP%\pykorf_cfg_bak.json" "%APPDATA_DIR%\config.json" >nul 2>&1
-    del "%TEMP%\pykorf_cfg_bak.json" >nul 2>&1
-)
-echo %GREEN%  ✓  Application removed.%RESET%
-echo.
-
-REM Now perform fresh install
-echo %GRAY%  Performing fresh installation...%RESET%
-cd /d "%APPDATA_DIR%"
-set "PYTHON_EXE=py -3.13"
-!PYTHON_EXE! -m uv venv .venv --quiet
-py -3.13 -m uv pip install --python ".venv\Scripts\python.exe" -e .
-if %errorlevel% neq 0 (
-    echo %RED%  Failed to install dependencies.%RESET%
-    goto :launch_failed
-)
-echo %GREEN%  ✓  Installation complete.%RESET%
-echo.
-goto :banner_launch
-
-:launch_failed
-echo.
-echo %RED%  ┌─────────────────────────────────────────────────────────┐%RESET%
-echo %RED%  │   pyKorf failed to start                                │%RESET%
-echo %RED%  │                                                         │%RESET%
-echo %RED%  │   Automatic repair and reinstall were attempted but     │%RESET%
-echo %RED%  │   did not resolve the issue.                            │%RESET%
-echo %RED%  │                                                         │%RESET%
-echo %RED%  │   Please contact: Prasanna Palanivel                    │%RESET%
-echo %RED%  └─────────────────────────────────────────────────────────┘%RESET%
-echo.
-pause
-exit /b 1
+exit /b
 
 REM ============================================
-REM PYKORF ASCII banner (single source of truth)
+REM First-time install
 REM ============================================
-:print_banner
+:first_install
+cls
+echo.
 echo %CYAN%        ######  #     # #    # ####### ######  ####### %RESET%
 echo %CYAN%        #     #  #   #  #   #  #     # #     # #       %RESET%
 echo %CYAN%        #     #   # #   #  #   #     # #     # #       %RESET%
@@ -291,32 +205,6 @@ echo %CYAN%        #          #    #   #  #     # #    #  #       %RESET%
 echo %CYAN%        #          #    #    # ####### #     # #       %RESET%
 echo.
 echo %GRAY%            Enterprise Hydraulic Modeling Toolkit%RESET%
-goto :eof
-
-REM ============================================
-REM Banner display (shared by update, repair, and reinstall paths)
-REM ============================================
-:show_banner
-timeout /t 1 >nul
-cls
-echo.
-call :print_banner
-echo.
-echo %GRAY%  ────────────────────────────────────────────────────────%RESET%
-echo %WHITE%    Starting...%RESET%
-echo %GRAY%  ────────────────────────────────────────────────────────%RESET%
-echo.
-echo %GREEN%  ℹ  Browser will automatically open. Don't close this terminal.%RESET%
-echo.
-goto :banner_launch
-
-REM ============================================
-REM First-time install
-REM ============================================
-:first_install
-cls
-echo.
-call :print_banner
 echo.
 echo %GRAY%  ────────────────────────────────────────────────────────%RESET%
 echo %WHITE%    First-time setup  ·  Steps 1 – 4  ·  Runs once%RESET%
@@ -492,7 +380,27 @@ echo.
 REM ============================================
 REM Launch
 REM ============================================
-goto :banner_launch
+timeout /t 1 >nul
+cls
+echo.
+echo %CYAN%        ######  #     # #    # ####### ######  ####### %RESET%
+echo %CYAN%        #     #  #   #  #   #  #     # #     # #       %RESET%
+echo %CYAN%        #     #   # #   #  #   #     # #     # #       %RESET%
+echo %CYAN%        ######     #    ####   #     # ######  #####   %RESET%
+echo %CYAN%        #          #    #  #   #     # #   #   #       %RESET%
+echo %CYAN%        #          #    #   #  #     # #    #  #       %RESET%
+echo %CYAN%        #          #    #    # ####### #     # #       %RESET%
+echo.
+echo %GRAY%            Enterprise Hydraulic Modeling Toolkit%RESET%
+echo.
+echo %GRAY%  ────────────────────────────────────────────────────────%RESET%
+echo %WHITE%    Starting...%RESET%
+echo %GRAY%  ────────────────────────────────────────────────────────%RESET%
+echo.
+echo %GREEN%  ℹ  Browser will automatically open. Don't close this terminal.%RESET%
+echo.
+
+".venv\Scripts\python.exe" -m pykorf
 
 endlocal
 goto :eof
@@ -503,7 +411,13 @@ REM ============================================
 :uninstall
 cls
 echo.
-call :print_banner
+echo %CYAN%        ######  #     # #    # ####### ######  ####### %RESET%
+echo %CYAN%        #     #  #   #  #   #  #     # #     # #       %RESET%
+echo %CYAN%        #     #   # #   #  #   #     # #     # #       %RESET%
+echo %CYAN%        ######     #    ####   #     # ######  #####   %RESET%
+echo %CYAN%        #          #    #  #   #     # #   #   #       %RESET%
+echo %CYAN%        #          #    #   #  #     # #    #  #       %RESET%
+echo %CYAN%        #          #    #    # ####### #     # #       %RESET%
 echo.
 echo %GRAY%  ────────────────────────────────────────────────────────%RESET%
 echo %WHITE%    Uninstall pyKorf%RESET%
@@ -545,9 +459,7 @@ exit /b 1
 echo.
 echo %WHITE%  This will remove the pyKorf application but keep your saved data.%RESET%
 echo.
-if /i "!CONFIRM!"=="Y" goto :confirm_skip
 set /p CONFIRM=  Are you sure? (Y/N):
-:confirm_skip
 if /i not "!CONFIRM!"=="Y" (
     echo.
     echo %GRAY%  Cancelled.%RESET%

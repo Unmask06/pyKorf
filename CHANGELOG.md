@@ -5,6 +5,19 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-04-04
+
+### What's New
+
+- Pipe sizing exports now include an **Overall Criteria Check** row that shows a single PASS or FAIL for the entire model — if any pipe fails, the overall result is FAIL.
+
+### Improved
+
+- Document Register search now finds results by **Document Number** as well as Title, and you can search using words from both fields together.
+- The search modal pre-fills your query from the Name field and runs the search automatically when a valid document is selected.
+
+---
+
 ## [0.9.0] - 2026-04-03
 
 ### What's New
