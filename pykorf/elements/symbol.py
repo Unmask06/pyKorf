@@ -17,6 +17,7 @@ class Symbol(BaseElement):
     # ------------------------------------------------------------------
     # Parameter constants (moved from definitions/symbol.py)
     # ------------------------------------------------------------------
+    XY = "XY"  # [icon_x, icon_y, pad_x, pad_y] - 2 coordinate pairs (icon anchor + padding)
     TYPE = "TYPE"  # ["symbol_type"]
     TEXT = "TEXT"  # ["text_content"]
     STYLL = "STYLL"  # [style_l]

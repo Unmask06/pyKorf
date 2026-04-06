@@ -129,7 +129,6 @@ class BaseElement:
     # ------------------------------------------------------------------
     NAME = "NAME"  # ["tag", "description"]
     NUM = "NUM"  # [index]
-    XY = "XY"  # [x1, y1, x2, y2, ...]
     NOTES = "NOTES"  # ["notes_text"]
     CON = "CON"  # [conn1, conn2, ...]
     NOZI = "NOZI"  # [id, x, y, unit]

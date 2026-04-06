@@ -33,8 +33,6 @@ def _apply_pms_from_source(model, pms_source: Path) -> None:
     from pykorf.use_case.config import set_pms_excel_last_imported
     from pykorf.use_case.pms import apply_pms as _apply_pms, import_pms_from_excel
 
-    model.io.save()
-
     # Convert Excel → pms.json in the data dir, then apply from JSON
     if pms_source.suffix.lower() in (".xlsx", ".xls"):
         json_path = import_pms_from_excel(pms_source)
@@ -94,14 +92,10 @@ def apply_data():
 
     kdf_path = _sess.get_kdf_path()
     pms_excel = get_pms_excel_path()
-    default_pms = pms_excel or (
-        str(kdf_path.with_name(f"{kdf_path.stem}_pms.xlsx")) if kdf_path else ""
-    )
+    default_pms = pms_excel or ""
 
     hmb_excel = get_last_hmb_path()
-    default_hmb = hmb_excel or (
-        str(kdf_path.with_name(f"{kdf_path.stem}_hmb.xlsx")) if kdf_path else ""
-    )
+    default_hmb = hmb_excel or ""
 
     active_tab = "pms"
 
@@ -127,18 +121,21 @@ def apply_data():
         active_tab = "pms"
         from pykorf.use_case.config import set_pms_excel_path
 
-        pms_source = Path(pms_source_str) if pms_source_str else get_pms_excel_path()
+        pms_excel = get_pms_excel_path()
+        pms_source = (
+            Path(pms_source_str) if pms_source_str else Path(pms_excel) if pms_excel else None
+        )
 
         if not pms_source or not Path(pms_source).is_file():
             errors.append(f"PMS data file not found: {pms_source}")
         else:
             try:
-                from pykorf.use_case.pms import apply_pms as _apply_pms
-
-                _apply_pms(pms_source, model, save=False)
+                _apply_pms_from_source(model, pms_source)
                 set_pms_excel_path(pms_source)
-                result_lines.append(("success", "PMS data applied successfully."))
+                logger.info("pms_applied_and_saved", pms_source=str(pms_source))
+                result_lines.append(("success", "PMS data applied and saved successfully."))
             except Exception as exc:
+                logger.error("pms_apply_error", error=str(exc))
                 errors.append(f"Error applying PMS: {exc}")
 
         return render_template(
@@ -165,9 +162,13 @@ def apply_data():
                 from pykorf.use_case.hmb import apply_hmb as _apply_hmb
 
                 _apply_hmb(hmb_source, model, save=False)
+                model.io.save()
+                _sess.reload()
                 set_last_hmb_path(hmb_source)
-                result_lines.append(("success", "HMB data applied successfully."))
+                logger.info("hmb_applied_and_saved", hmb_source=str(hmb_source))
+                result_lines.append(("success", "HMB data applied and saved successfully."))
             except Exception as exc:
+                logger.error("hmb_apply_error", error=str(exc))
                 errors.append(f"Error applying HMB: {exc}")
 
         return render_template(

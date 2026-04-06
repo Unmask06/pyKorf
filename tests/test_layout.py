@@ -341,14 +341,17 @@ class TestCenterLayout:
     def test_center_layout_smoke(self):
         m = Model(CWC_KDF)
         m.layout.center_layout()
-        positioned = [
-            m.get_position(e) for e in m.elements if m.get_position(e) not in (None, (0.0, 0.0))
+        # Collect ALL non-zero coords (primary + waypoints) — same logic as center_layout
+        all_coords = [
+            coord
+            for e in m.elements
+            for coord in m.layout._all_nonzero_coords(e)
         ]
-        if not positioned:
+        if not all_coords:
             return
         x_min, y_min, x_max, y_max = m.layout.boundary_coordinates
-        xs = [p[0] for p in positioned]
-        ys = [p[1] for p in positioned]
+        xs = [c[0] for c in all_coords]
+        ys = [c[1] for c in all_coords]
         page_cx = (x_min + x_max) / 2
         page_cy = (y_min + y_max) / 2
         bbox_cx = (min(xs) + max(xs)) / 2

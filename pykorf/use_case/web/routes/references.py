@@ -64,40 +64,16 @@ def references_page() -> Any:
     return render_template("references.html", **_refs_context(kdf_path, store))
 
 
-@bp.route("/model/references/basis", methods=["POST"])
-def references_save_basis() -> Any:
-    """Save only the design basis text."""
+@bp.route("/model/references/save-all", methods=["POST"])
+def references_save_all() -> Any:
+    """Save basis, remarks, and hold items together."""
     model = require_model()
     if is_redirect(model):
         return model
     kdf_path = _sess.get_kdf_path()
     store = _load_refs()
     store.basis = request.form.get("basis", "")
-    store.save(kdf_path)
-    return redirect(url_for("references.references_page"))
-
-
-@bp.route("/model/references/remarks", methods=["POST"])
-def references_save_remarks() -> Any:
-    """Save only the remarks text."""
-    model = require_model()
-    if is_redirect(model):
-        return model
-    kdf_path = _sess.get_kdf_path()
-    store = _load_refs()
     store.remarks = request.form.get("remarks", "")
-    store.save(kdf_path)
-    return redirect(url_for("references.references_page"))
-
-
-@bp.route("/model/references/hold", methods=["POST"])
-def references_save_hold() -> Any:
-    """Save only the hold items text."""
-    model = require_model()
-    if is_redirect(model):
-        return model
-    kdf_path = _sess.get_kdf_path()
-    store = _load_refs()
     store.hold = request.form.get("hold", "")
     store.save(kdf_path)
     return redirect(url_for("references.references_page"))

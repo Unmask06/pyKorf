@@ -20,6 +20,7 @@ class Expander(BaseElement):
     # ------------------------------------------------------------------
     # Parameter constants (moved from definitions/expand.py)
     # ------------------------------------------------------------------
+    XY = "XY"  # [icon_x, icon_y, conn_x, conn_y] - 2 coordinate pairs (icon anchor + connection point)
     TYPE = "TYPE"  # [expand_type_int]
     ELEV = "ELEV"  # [elevation, unit]
     DP = "DP"  # [dp_str, dp_num, unit]

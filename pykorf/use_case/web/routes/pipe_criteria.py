@@ -434,7 +434,6 @@ def pipe_criteria():
     if request.method == "POST":
         action = request.form.get("action", "set_criteria")
         logger.debug("pipe_criteria_post", action=action, kdf_path=str(kdf_path or ""))
-        model.io.save()
 
         if action == "predict":
             logger.debug("predict_action_triggered")

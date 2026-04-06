@@ -32,6 +32,7 @@ COMFORT_SPACING_Y = GRID_SIZE * 15
 _PAGE_BOUNDARIES: dict[str, tuple[float, float, float, float]] = {
     "A4": (1000.0, 1000.0, 15500.0, 9000.0),
     "A3": (1000.0, 1000.0, 22500.0, 13000.0),
+    "A2": (1000.0, 1000.0, 32500.0, 21000.0),
 }
 _DEFAULT_PAGE = "A4"
 
@@ -72,6 +73,32 @@ class LayoutService:
         if len(vals) >= 2:
             vals[0] = str(x)
             vals[1] = str(y)
+            rec.values = vals
+            rec.raw_line = ""
+
+    def _translate_xy(self, elem: BaseElement, dx: float, dy: float) -> None:
+        """Translate all non-zero XY coordinate pairs by (dx, dy).
+
+        Updates every non-(0, 0) pair in the XY record while leaving
+        (0, 0) padding pairs untouched.
+        """
+        rec = elem.get_param("XY")
+        if rec is None:
+            return
+        vals = list(rec.values)
+        modified = False
+        for i in range(0, len(vals) - 1, 2):
+            try:
+                x = float(vals[i])
+                y = float(vals[i + 1])
+            except (ValueError, TypeError):
+                continue
+            if x == 0.0 and y == 0.0:
+                continue
+            vals[i] = str(x + dx)
+            vals[i + 1] = str(y + dy)
+            modified = True
+        if modified:
             rec.values = vals
             rec.raw_line = ""
 
@@ -584,8 +611,44 @@ class LayoutService:
     # Grid snapping and centering
     # ------------------------------------------------------------------
 
+    def _snap_xy_to_grid(self, elem: BaseElement, grid_size: float) -> None:
+        """Snap all non-zero XY coordinate pairs to the nearest grid point.
+
+        Args:
+            elem: Element to snap.
+            grid_size: Grid cell size in model units.
+        """
+        rec = elem.get_param("XY")
+        if rec is None:
+            return
+        vals = list(rec.values)
+        modified = False
+        for i in range(0, len(vals), 2):
+            if i + 1 >= len(vals):
+                break
+            try:
+                x = float(vals[i])
+                y = float(vals[i + 1])
+            except (ValueError, TypeError):
+                continue
+            # Skip (0, 0) padding pairs
+            if x == 0.0 and y == 0.0:
+                continue
+            snapped_x = round(x / grid_size) * grid_size
+            snapped_y = round(y / grid_size) * grid_size
+            if snapped_x != x or snapped_y != y:
+                vals[i] = str(snapped_x)
+                vals[i + 1] = str(snapped_y)
+                modified = True
+        if modified:
+            rec.values = vals
+            rec.raw_line = ""
+
     def snap_to_grid(self, grid_size: float = 500.0) -> None:
         """Round every placed element's position to the nearest grid point.
+
+        This method snaps all XY coordinate pairs (icon positions, bend waypoints,
+        nozzle positions, connection points) while preserving (0, 0) padding pairs.
 
         Args:
             grid_size: Grid cell size in model units. Defaults to 500.
@@ -596,37 +659,58 @@ class LayoutService:
             pos = self.get_position(elem)
             if pos is None or pos == (0.0, 0.0):
                 continue
-            snapped_x = round(pos[0] / grid_size) * grid_size
-            snapped_y = round(pos[1] / grid_size) * grid_size
-            self._apply_position(elem, snapped_x, snapped_y)
+            self._snap_xy_to_grid(elem, grid_size)
+
+    def _all_nonzero_coords(self, elem: BaseElement) -> list[tuple[float, float]]:
+        """Return every non-zero (x, y) pair from an element's XY record."""
+        rec = elem.get_param("XY")
+        if rec is None:
+            return []
+        vals = rec.values
+        coords: list[tuple[float, float]] = []
+        for i in range(0, len(vals) - 1, 2):
+            try:
+                x, y = float(vals[i]), float(vals[i + 1])
+            except (ValueError, TypeError):
+                continue
+            if x == 0.0 and y == 0.0:
+                continue
+            coords.append((x, y))
+        return coords
 
     def center_layout(self) -> None:
         """Translate all placed elements so the bounding box is centred on the page boundary.
 
-        All elements are shifted by the same offset so that the mid-point of
-        their collective bounding box coincides with the centre of the detected
-        page boundary (A4 or A3 as read from ``GEN.DWGSTD``).
+        The bounding box is computed from every non-zero XY coordinate pair across
+        all elements — primary positions *and* pipe bend waypoints — so the true
+        visual extent of the drawing is used as the reference.  Every element is
+        then shifted by the same (dx, dy) offset so the bounding-box midpoint
+        coincides with the page centre.
         """
-        positioned = [
-            (elem, pos)
-            for elem in self.model.elements
-            for pos in (self.get_position(elem),)
-            if pos is not None and pos != (0.0, 0.0)
-        ]
-        if not positioned:
+        all_coords: list[tuple[float, float]] = []
+        elems_to_move: list[BaseElement] = []
+        for elem in self.model.elements:
+            coords = self._all_nonzero_coords(elem)
+            if coords:
+                all_coords.extend(coords)
+                elems_to_move.append(elem)
+
+        if not all_coords:
             return
 
-        x_min, y_min, x_max, y_max = self.boundary_coordinates
-        xs = [p[0] for _, p in positioned]
-        ys = [p[1] for _, p in positioned]
+        xs = [c[0] for c in all_coords]
+        ys = [c[1] for c in all_coords]
         bbox_cx = (min(xs) + max(xs)) / 2
         bbox_cy = (min(ys) + max(ys)) / 2
+
+        x_min, y_min, x_max, y_max = self.boundary_coordinates
         page_cx = (x_min + x_max) / 2
         page_cy = (y_min + y_max) / 2
         dx = page_cx - bbox_cx
         dy = page_cy - bbox_cy
-        for elem, pos in positioned:
-            self._apply_position(elem, pos[0] + dx, pos[1] + dy)
+
+        for elem in elems_to_move:
+            self._translate_xy(elem, dx, dy)
 
     def _symbol_in_top_margin(self, margin_height: float = 500.0) -> bool:
         """Check if any symbol exists in the top margin area.
