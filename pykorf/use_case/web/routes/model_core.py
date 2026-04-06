@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import structlog
-from flask import Blueprint, redirect, render_template, request, url_for
+from flask import Blueprint, flash, redirect, render_template, request, url_for
 
+from pykorf.log import flash_logs, get_logger
 from pykorf.use_case.web import session as _sess
 from pykorf.use_case.web.helpers import is_redirect, require_model
 
-logger = structlog.get_logger(__name__)
+logger = get_logger(__name__)
 bp = Blueprint("model_core", __name__)
 
 
@@ -77,8 +77,12 @@ def reload_model():
         logger.info("reload_model", kdf_path=str(kdf_path))
         _sess.reload()
         logger.info("reload_model_complete", kdf_path=str(kdf_path))
+        flash("Model reloaded from disk", "success")
     next_url = request.form.get("next", "").strip()
-    return redirect(next_url or url_for("model_core.main_menu"))
+    if next_url:
+        if next_url.startswith("/"):
+            return redirect(next_url)
+    return redirect(url_for("model_core.main_menu"))
 
 
 @bp.route("/model/save", methods=["POST"])
@@ -89,8 +93,11 @@ def save_model():
         return model
     kdf_path = _sess.get_kdf_path()
     if kdf_path:
-        logger.info("save_model", kdf_path=str(kdf_path))
-        model.io.save(kdf_path)
-        _sess.reload()
-        logger.info("save_model_complete", kdf_path=str(kdf_path))
+        with flash_logs() as logs:
+            logger.info("save_model", kdf_path=str(kdf_path))
+            model.io.save(kdf_path)
+            _sess.reload()
+            logger.info("save_model_complete", kdf_path=str(kdf_path))
+        for alert_type, message in logs:
+            flash(message, alert_type)
     return redirect(url_for("model_core.main_menu"))

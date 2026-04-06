@@ -8,15 +8,26 @@
 
   // Debounced search helper
   function debounceSearch(fn, delay) {
+    var t = null;
     return function(term) {
-      clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(function() { fn(term); }, delay);
+      clearTimeout(t);
+      t = setTimeout(function() { fn(term); }, delay);
     };
   }
 
-  // Fetch wrapper with error handling
+  // Fetch wrapper with optional AbortSignal
   function apiFetch(url, options) {
     return fetch(url, options).then(function(resp) {
+      if (!resp.ok) throw new Error('API error: ' + resp.status);
+      return resp.json();
+    });
+  }
+
+  // Cancellable fetch — aborts the previous controller before starting a new one
+  function apiFetchCancellable(url, abortRef) {
+    if (abortRef.current) abortRef.current.abort();
+    abortRef.current = new AbortController();
+    return fetch(url, { signal: abortRef.current.signal }).then(function(resp) {
       if (!resp.ok) throw new Error('API error: ' + resp.status);
       return resp.json();
     });
@@ -49,16 +60,17 @@
 
   // ── Step 1: EDDR Search ──────────────────────────────────────────────────
 
+  var _eddrAbortRef = { current: null };
   var searchEDDR = debounceSearch(function(term) {
     if (!term || term.length < 2) {
       showEmpty('eddr-results', 'Type at least 2 characters to search');
       return;
     }
     showLoading('eddr-results');
-    apiFetch('/api/doc-register/search-eddr?q=' + encodeURIComponent(term))
+    apiFetchCancellable('/api/doc-register/search-eddr?q=' + encodeURIComponent(term), _eddrAbortRef)
       .then(function(results) { renderEDDRResults(results); })
-      .catch(function(err) { showEmpty('eddr-results', 'Search failed: ' + err.message); });
-  }, 300);
+      .catch(function(err) { if (err.name !== 'AbortError') showEmpty('eddr-results', 'Search failed: ' + err.message); });
+  }, 200);
 
   function renderEDDRResults(results) {
     var container = document.getElementById('eddr-results');
@@ -101,21 +113,101 @@
 
   function searchQuery(docNo) {
     if (!docNo) return;
+    isDirectSearch = false;
     showLoading('query-results');
     apiFetch('/api/doc-register/search-query?doc_no=' + encodeURIComponent(docNo))
-      .then(function(results) { renderQueryResults(results, docNo); })
+      .then(function(results) {
+        currentQueryResults = results;
+        currentDocNo = docNo;
+        // Clear filter when new results load
+        var filterInput = document.getElementById('query-search');
+        if (filterInput) filterInput.value = '';
+        renderQueryResults(results, docNo, false);
+      })
       .catch(function(err) { showEmpty('query-results', 'Search failed: ' + err.message); });
   }
 
-  function renderQueryResults(results, docNo) {
+  // Store current query results for filtering
+  var currentQueryResults = null;
+  var currentDocNo = null;
+  var isDirectSearch = false;
+
+  // Debounced direct file search (Step 2 independent search)
+  var _filesAbortRef = { current: null };
+  var searchFiles = debounceSearch(function(term) {
+    if (!term || term.length < 2) {
+      showEmpty('query-results', 'Type at least 2 characters to search files/folders');
+      currentQueryResults = null;
+      currentDocNo = null;
+      isDirectSearch = false;
+      return;
+    }
+    isDirectSearch = true;
+    showLoading('query-results');
+    apiFetchCancellable('/api/doc-register/search-files?q=' + encodeURIComponent(term), _filesAbortRef)
+      .then(function(results) {
+        currentQueryResults = results;
+        currentDocNo = null;
+        renderQueryResults(results, null, false);
+      })
+      .catch(function(err) { if (err.name !== 'AbortError') showEmpty('query-results', 'Search failed: ' + err.message); });
+  }, 200);
+
+  // Filter query results based on search term (show/hide existing rows — no DOM rebuild)
+  var filterTimeout = null;
+  function filterQueryResults(term) {
+    clearTimeout(filterTimeout);
+    filterTimeout = setTimeout(function() {
+      var container = document.getElementById('query-results');
+      if (!container) return;
+      var rows = container.querySelectorAll('tr.query-row');
+      if (!rows.length) return;
+      var lowerTerm = term ? term.trim().toLowerCase() : '';
+      var visibleCount = 0;
+      rows.forEach(function(row) {
+        var haystack = row.getAttribute('data-search') || '';
+        var show = !lowerTerm || haystack.includes(lowerTerm);
+        row.style.display = show ? '' : 'none';
+        if (show) visibleCount++;
+      });
+      // Update or remove the no-match message
+      var noMatch = container.querySelector('.query-no-match');
+      if (visibleCount === 0) {
+        if (!noMatch) {
+          noMatch = document.createElement('tr');
+          noMatch.className = 'query-no-match';
+          noMatch.innerHTML = '<td colspan="6" class="text-center text-secondary py-3">' +
+            '<i class="bi bi-search d-block fs-5 mb-1"></i>No files match your search. Try a different term.</td>';
+          var tbody = container.querySelector('tbody');
+          if (tbody) tbody.appendChild(noMatch);
+        }
+      } else if (noMatch) {
+        noMatch.remove();
+      }
+    }, 80);
+  }
+
+  function renderQueryResults(results, docNo, isFiltered) {
     var container = document.getElementById('query-results');
     if (!container) return;
 
     if (!results || results.length === 0) {
-      container.innerHTML = '<div class="text-center text-secondary py-3">' +
-        '<i class="bi bi-file-earmark-x d-block fs-5 mb-1"></i>' +
-        'No files found for document <strong>' + escapeHtml(docNo) + '</strong>. ' +
-        'The file may not be synced or available in the register.</div>';
+      if (isFiltered) {
+        container.innerHTML = '<div class="text-center text-secondary py-3">' +
+          '<i class="bi bi-search d-block fs-5 mb-1"></i>' +
+          'No files match your search. Try a different term.</div>';
+      } else if (isDirectSearch) {
+        container.innerHTML = '<div class="text-center text-secondary py-3">' +
+          '<i class="bi bi-file-earmark-x d-block fs-5 mb-1"></i>' +
+          'No files found matching your search.</div>';
+      } else if (docNo) {
+        container.innerHTML = '<div class="text-center text-secondary py-3">' +
+          '<i class="bi bi-file-earmark-x d-block fs-5 mb-1"></i>' +
+          'No files found for document <strong>' + escapeHtml(docNo) + '</strong>. ' +
+          'The file may not be synced or available in the register.</div>';
+      } else {
+        showEmpty('query-results', 'Select a document above to see available files');
+      }
       return;
     }
 
@@ -132,10 +224,12 @@
       var modDisplay = r.modified && r.modified !== '' ? escapeHtml(r.modified.substring(0, 10)) : '—';
       var fullUrl = buildSpUrl(r.path, r.name);
 
+      var searchKey = (r.name + ' ' + (r.path || '') + ' ' + (r.item_type || '')).toLowerCase();
       html += '<tr class="query-row" style="cursor:pointer;font-size:.75rem" ' +
         'data-name="' + escapeHtml(r.name) + '" ' +
         'data-path="' + escapeHtml(r.path) + '" ' +
-        'data-type="' + escapeHtml(r.item_type) + '">' +
+        'data-type="' + escapeHtml(r.item_type) + '" ' +
+        'data-search="' + escapeHtml(searchKey) + '">' +
         '<td class="fw-semibold text-truncate" style="max-width:280px" title="' + escapeHtml(r.name) + '">' + escapeHtml(r.name) + '</td>' +
         '<td>' + typeBadge + '</td>' +
         '<td class="text-secondary">' + modDisplay + '</td>' +
@@ -259,6 +353,9 @@
     // Reset state
     selectedDocNo = null;
     selectedTitle = null;
+    currentQueryResults = null;
+    currentDocNo = null;
+    isDirectSearch = false;
 
     // Pre-fill search from the Name field (works for both Add and Edit flows)
     var nameInput = document.getElementById('add-name');
@@ -267,13 +364,17 @@
     var searchInput = document.getElementById('eddr-search');
     if (searchInput) searchInput.value = prefill;
 
+    // Clear Step 2 filter
+    var querySearchInput = document.getElementById('query-search');
+    if (querySearchInput) querySearchInput.value = '';
+
     if (prefill.length >= 2) {
       showLoading('eddr-results');
       searchEDDR(prefill);
     } else {
       showEmpty('eddr-results', 'Type to search documents by title...');
     }
-    showEmpty('query-results', 'Select a document above to see available files');
+    showEmpty('query-results', 'Type to search files directly, or select a document above');
     checkDBStatus();
   }
 
@@ -284,6 +385,34 @@
     if (searchInput) {
       searchInput.addEventListener('input', function() {
         searchEDDR(this.value);
+      });
+    }
+
+    // Step 2: filter already-loaded results instantly; fall back to API search
+    var querySearchInput = document.getElementById('query-search');
+    if (querySearchInput) {
+      querySearchInput.addEventListener('input', function() {
+        var val = this.value;
+        if (!val.trim()) {
+          if (isDirectSearch) {
+            // Cleared a direct API search — reset to empty state
+            currentQueryResults = null;
+            currentDocNo = null;
+            isDirectSearch = false;
+            showEmpty('query-results', 'Type to search files directly, or select a document above');
+          } else if (currentQueryResults) {
+            // Cleared a Step-1 filter — restore all rows for the loaded doc
+            filterQueryResults('');
+          }
+          return;
+        }
+        if (currentQueryResults) {
+          // Results already in DOM — just show/hide rows, no rebuild
+          filterQueryResults(val);
+        } else {
+          // Nothing loaded yet — do a direct API search
+          searchFiles(val);
+        }
       });
     }
 

@@ -13,8 +13,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import pandas as pd
-import structlog
 
+from pykorf.log import get_logger
 from pykorf.use_case.paths import ensure_data_dir
 from pykorf.use_case.preferences import (
     get_doc_register_db_last_imported,
@@ -24,7 +24,7 @@ from pykorf.use_case.preferences import (
 )
 from pykorf.use_case.web.doc_register._cols import Cols
 
-logger = structlog.get_logger()
+logger = get_logger(__name__)
 
 
 def get_db_path() -> Path:

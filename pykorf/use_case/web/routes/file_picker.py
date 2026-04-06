@@ -7,11 +7,10 @@ from pathlib import Path
 
 from flask import Blueprint, redirect, render_template, request, url_for
 
+from pykorf.log import get_logger
 from pykorf.use_case.web import session as _sess
 
-import structlog
-
-logger = structlog.get_logger(__name__)
+logger = get_logger(__name__)
 bp = Blueprint("file_picker", __name__)
 
 

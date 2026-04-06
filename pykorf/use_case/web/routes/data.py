@@ -7,12 +7,11 @@ from pathlib import Path
 
 from flask import Blueprint, render_template, request
 
+from pykorf.log import get_logger
 from pykorf.use_case.web import session as _sess
 from pykorf.use_case.web.helpers import is_redirect, require_model
 
-import structlog
-
-logger = structlog.get_logger(__name__)
+logger = get_logger(__name__)
 bp = Blueprint("data", __name__)
 
 
@@ -33,7 +32,6 @@ def _apply_pms_from_source(model, pms_source: Path) -> None:
     from pykorf.use_case.config import set_pms_excel_last_imported
     from pykorf.use_case.pms import apply_pms as _apply_pms, import_pms_from_excel
 
-    # Convert Excel → pms.json in the data dir, then apply from JSON
     if pms_source.suffix.lower() in (".xlsx", ".xls"):
         json_path = import_pms_from_excel(pms_source)
         _apply_pms(json_path, model, save=False)
@@ -77,7 +75,7 @@ def apply_pms_if_stale(model) -> bool:
         _apply_pms_from_source(model, pms_source)
         return True
     except Exception as exc:
-        logger.warning("auto_apply_pms_failed", error=str(exc), exc_info=True)
+        logger.warning("auto_apply_pms_failed", error=str(exc))
         return False
 
 

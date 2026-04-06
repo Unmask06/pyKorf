@@ -1,23 +1,34 @@
-{% extends "base.html" %}
-{% block title %}References{% endblock %}
-
-{% block head_extra %}
+{% extends "base.html" %} {% block title %}References{% endblock %} {% block
+head_extra %}
 <style>
-  .ref-row td { vertical-align: middle; }
-  .ref-row .ref-link { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .cat-badge { font-size: .72rem; }
+  .ref-row td {
+    vertical-align: middle;
+  }
+  .ref-row .ref-link {
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .cat-badge {
+    font-size: 0.72rem;
+  }
   /* Edit modal */
-  #editModal .input-group-text { min-width: 2.2rem; justify-content: center; }
+  #editModal .input-group-text {
+    min-width: 2.2rem;
+    justify-content: center;
+  }
 </style>
-{% endblock %}
-
-{% block content %}
+{% endblock %} {% block content %}
 <div class="row g-4">
-
   <!-- ── Left: Design Basis ──────────────────────────────────────────────── -->
   <div class="col-lg-4">
-
-    <form method="post" action="/model/references/save-all" id="save-all-form" class="mb-3">
+    <form
+      method="post"
+      action="/model/references/save-all"
+      id="save-all-form"
+      class="mb-3"
+    >
       <div class="card shadow-sm mb-3">
         <div class="card-header fw-semibold d-flex align-items-center gap-2">
           <i class="bi bi-journal-text text-primary"></i>Design Basis
@@ -29,8 +40,10 @@
             name="basis"
             rows="12"
             placeholder="Enter design basis, project notes, assumptions, or any free-text context for this model…"
-            style="resize: vertical; font-size: .85rem;"
-          >{{ store.basis }}</textarea>
+            style="resize: vertical; font-size: 0.85rem"
+          >
+{{ store.basis }}</textarea
+          >
         </div>
       </div>
 
@@ -45,8 +58,10 @@
             name="remarks"
             rows="6"
             placeholder="General remarks, comments, or observations…"
-            style="resize: vertical; font-size: .85rem;"
-          >{{ store.remarks }}</textarea>
+            style="resize: vertical; font-size: 0.85rem"
+          >
+{{ store.remarks }}</textarea
+          >
         </div>
       </div>
 
@@ -61,8 +76,10 @@
             name="hold"
             rows="6"
             placeholder="Open actions, holds, or items pending resolution…"
-            style="resize: vertical; font-size: .85rem;"
-          >{{ store.hold }}</textarea>
+            style="resize: vertical; font-size: 0.85rem"
+          >
+{{ store.hold }}</textarea
+          >
         </div>
       </div>
 
@@ -72,14 +89,33 @@
     </form>
 
     <div class="card shadow-sm">
-      <div class="card-header fw-semibold"><i class="bi bi-lightbulb me-1"></i>How to Use</div>
+      <div class="card-header fw-semibold">
+        <i class="bi bi-lightbulb me-1"></i>How to Use
+      </div>
       <div class="card-body small text-secondary">
         <ol class="ps-3 mb-0">
-          <li>Write design basis, remarks, and hold items in the text areas and click <strong>Save All</strong>.</li>
-          <li>Click the <i class="bi bi-search"></i> button next to the Name field to search the Document Register and auto-fill Name, Link, and Description.</li>
-          <li>Select a <strong>Category</strong> and click <strong>Add Reference</strong>.</li>
-          <li>Shortcuts are <strong>auto-created</strong> in the <code>reference/</code> folder when you add, edit, or delete references.</li>
-          <li>Use the browse button on the Link field to auto-detect SharePoint URLs for synced folders.</li>
+          <li>
+            Write design basis, remarks, and hold items in the text areas and
+            click <strong>Save All</strong>.
+          </li>
+          <li>
+            Click the <i class="bi bi-search"></i> button next to the Name field
+            to search the Document Register and auto-fill Name, Link, and
+            Description.
+          </li>
+          <li>
+            Select a <strong>Category</strong> and click
+            <strong>Add Reference</strong>.
+          </li>
+          <li>
+            Shortcuts are <strong>auto-created</strong> in the
+            <code>reference/</code> folder when you add, edit, or delete
+            references.
+          </li>
+          <li>
+            Use the browse button on the Link field to auto-detect SharePoint
+            URLs for synced folders.
+          </li>
         </ol>
       </div>
     </div>
@@ -87,11 +123,15 @@
 
   <!-- ── Right: References table + Add form ─────────────────────────────── -->
   <div class="col-lg-8">
-
     <!-- Flash message -->
     {% if flash %}
-    <div class="alert alert-{{ flash.type }} alert-dismissible fade show py-2" role="alert">
-      <i class="bi bi-{% if flash.type == 'success' %}check-circle{% else %}exclamation-triangle{% endif %} me-1"></i>
+    <div
+      class="alert alert-{{ flash.type }} alert-dismissible fade show py-2"
+      role="alert"
+    >
+      <i
+        class="bi bi-{% if flash.type == 'success' %}check-circle{% else %}exclamation-triangle{% endif %} me-1"
+      ></i>
       {{ flash.msg }}
       <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
@@ -99,8 +139,12 @@
 
     <!-- Add reference form (collapsible) -->
     <div class="card shadow-sm mb-3">
-      <div class="card-header fw-semibold d-flex align-items-center gap-2" style="cursor:pointer"
-           data-bs-toggle="collapse" data-bs-target="#add-form-body">
+      <div
+        class="card-header fw-semibold d-flex align-items-center gap-2"
+        style="cursor: pointer"
+        data-bs-toggle="collapse"
+        data-bs-target="#add-form-body"
+      >
         <i class="bi bi-plus-circle text-success"></i>Add Reference
         <i class="bi bi-chevron-down ms-auto small"></i>
       </div>
@@ -110,22 +154,48 @@
             <input type="hidden" id="edit-id-hidden" name="edit_id" value="" />
             <div class="row g-2 mb-2">
               <div class="col-md-5">
-                <label class="form-label small fw-semibold mb-1">Name <span class="text-danger">*</span></label>
+                <label class="form-label small fw-semibold mb-1"
+                  >Name <span class="text-danger">*</span></label
+                >
                 <div class="input-group input-group-sm">
-                  <input type="text" class="form-control form-control-sm" name="name"
-                         id="add-name" placeholder="e.g. P&amp;ID-001" required autocomplete="off" />
-                  <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#docRegisterModal"
-                          title="Search Document Register">
+                  <input
+                    type="text"
+                    class="form-control form-control-sm"
+                    name="name"
+                    id="add-name"
+                    placeholder="e.g. P&amp;ID-001"
+                    required
+                    autocomplete="off"
+                  />
+                  <button
+                    type="button"
+                    class="btn btn-outline-info"
+                    data-bs-toggle="modal"
+                    data-bs-target="#docRegisterModal"
+                    title="Search Document Register"
+                  >
                     <i class="bi bi-search"></i>
                   </button>
                 </div>
-                <div class="form-text" style="font-size:.7rem; margin-top:2px;">
-                  <i class="bi bi-info-circle me-1"></i>Click <i class="bi bi-search"></i> to search the Document Register and auto-fill fields.
+                <div
+                  class="form-text"
+                  style="font-size: 0.7rem; margin-top: 2px"
+                >
+                  <i class="bi bi-info-circle me-1"></i>Click
+                  <i class="bi bi-search"></i> to search the Document Register
+                  and auto-fill fields.
                 </div>
               </div>
               <div class="col-md-3">
-                <label class="form-label small fw-semibold mb-1">Category <span class="text-danger">*</span></label>
-                <select class="form-select form-select-sm" name="category" id="add-category" required>
+                <label class="form-label small fw-semibold mb-1"
+                  >Category <span class="text-danger">*</span></label
+                >
+                <select
+                  class="form-select form-select-sm"
+                  name="category"
+                  id="add-category"
+                  required
+                >
                   <option value="" disabled selected>Select…</option>
                   {% for cat in categories %}
                   <option value="{{ cat }}">{{ cat }}</option>
@@ -133,24 +203,44 @@
                 </select>
               </div>
               <div class="col-md-4">
-                <label class="form-label small fw-semibold mb-1">Link / URL <span class="text-danger">*</span></label>
+                <label class="form-label small fw-semibold mb-1"
+                  >Link / URL <span class="text-danger">*</span></label
+                >
                 <div class="input-group input-group-sm">
-                  <input type="text" class="form-control font-monospace" name="link" id="add-link"
-                         placeholder="https://… or C:\path\to\file" required autocomplete="off" />
-                  <button type="button" class="btn btn-outline-secondary"
-                          data-browse-target="add-link"
-                          data-browse-filter="any"
-                          data-browse-pref-sp="true"
-                          title="Browse — SharePoint URL auto-detected for synced folders">
+                  <input
+                    type="text"
+                    class="form-control font-monospace"
+                    name="link"
+                    id="add-link"
+                    placeholder="https://… or C:\path\to\file"
+                    required
+                    autocomplete="off"
+                  />
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    data-browse-target="add-link"
+                    data-browse-filter="any"
+                    data-browse-pref-sp="true"
+                    title="Browse — SharePoint URL auto-detected for synced folders"
+                  >
                     <i class="bi bi-folder2-open"></i>
                   </button>
                 </div>
               </div>
             </div>
             <div class="mb-2">
-              <label class="form-label small fw-semibold mb-1">Description</label>
-              <input type="text" class="form-control form-control-sm" name="description" id="add-description"
-                     placeholder="Brief note about this reference (optional)" autocomplete="off" />
+              <label class="form-label small fw-semibold mb-1"
+                >Description</label
+              >
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                name="description"
+                id="add-description"
+                placeholder="Brief note about this reference (optional)"
+                autocomplete="off"
+              />
             </div>
             <button type="submit" class="btn btn-sm btn-success" id="add-btn">
               <i class="bi bi-plus me-1"></i>Add Reference
@@ -164,9 +254,16 @@
     <div class="card shadow-sm">
       <div class="card-header fw-semibold d-flex align-items-center gap-2">
         <i class="bi bi-list-ul text-primary"></i>References
-        <span class="badge bg-primary rounded-pill ms-1">{{ store.references | length }}</span>
-        <input type="text" class="form-control form-control-sm ms-auto"
-               id="ref-filter" placeholder="Filter…" style="max-width:180px" />
+        <span class="badge bg-primary rounded-pill ms-1"
+          >{{ store.references | length }}</span
+        >
+        <input
+          type="text"
+          class="form-control form-control-sm ms-auto"
+          id="ref-filter"
+          placeholder="Filter…"
+          style="max-width: 180px"
+        />
       </div>
 
       {% if store.references %}
@@ -174,11 +271,11 @@
         <table class="table table-hover table-sm mb-0" id="ref-table">
           <thead class="table-dark">
             <tr>
-              <th style="width:28%">Name</th>
-              <th style="width:12%">Category</th>
+              <th style="width: 28%">Name</th>
+              <th style="width: 12%">Category</th>
               <th>Link</th>
-              <th style="width:22%">Description</th>
-              <th style="width:6rem"></th>
+              <th style="width: 22%">Description</th>
+              <th style="width: 6rem"></th>
             </tr>
           </thead>
           <tbody>
@@ -186,38 +283,49 @@
             <tr class="ref-row" data-id="{{ ref.id }}">
               <td class="fw-semibold">{{ ref.name }}</td>
               <td>
-                <span class="badge cat-badge
-                  {% if ref.category == 'P&ID' %}bg-info text-dark
-                  {% elif ref.category == 'PFD' %}bg-primary
-                  {% elif ref.category == 'Datasheet' %}bg-success
-                  {% elif ref.category == 'Specification' %}bg-warning text-dark
-                  {% elif ref.category == 'Calculation' %}bg-danger
-                  {% elif ref.category == 'Drawing' %}bg-secondary
-                  {% elif ref.category == 'Report' %}bg-dark border
-                  {% elif ref.category == 'Standard' %}bg-light text-dark border
-                  {% else %}bg-secondary{% endif %}">
+                <span
+                  class="badge cat-badge {% if ref.category == 'P&ID' %}bg-info text-dark {% elif ref.category == 'PFD' %}bg-primary {% elif ref.category == 'Datasheet' %}bg-success {% elif ref.category == 'Specification' %}bg-warning text-dark {% elif ref.category == 'Calculation' %}bg-danger {% elif ref.category == 'Drawing' %}bg-secondary {% elif ref.category == 'Report' %}bg-dark border {% elif ref.category == 'Standard' %}bg-light text-dark border {% else %}bg-secondary{% endif %}"
+                >
                   {{ ref.category }}
                 </span>
               </td>
               <td>
-                <a href="{{ ref.link }}" target="_blank" rel="noopener"
-                   class="ref-link d-inline-block" title="{{ ref.link }}">
-                  <i class="bi bi-box-arrow-up-right me-1 small"></i>{{ ref.link }}
+                <a
+                  href="{{ ref.link }}"
+                  target="_blank"
+                  rel="noopener"
+                  class="ref-link d-inline-block"
+                  title="{{ ref.link }}"
+                >
+                  <i class="bi bi-box-arrow-up-right me-1 small"></i>{{ ref.link
+                  }}
                 </a>
               </td>
               <td class="text-secondary small">{{ ref.description }}</td>
               <td class="text-end">
-                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-1 me-1"
-                        title="Edit"
-                        data-ref-id="{{ ref.id }}"
-                        data-ref='{{ ref | tojson }}'
-                        onclick="editReference(this)">
+                <button
+                  type="button"
+                  class="btn btn-xs btn-outline-secondary py-0 px-1 me-1"
+                  title="Edit"
+                  data-ref-id="{{ ref.id }}"
+                  data-ref="{{ ref | tojson }}"
+                  onclick="editReference(this)"
+                >
                   <i class="bi bi-pencil"></i>
                 </button>
-                <form method="post" action="/model/references/delete" class="d-inline delete-form"
-                      data-ref-id="{{ ref.id }}" onsubmit="return confirm('Delete this reference?')">
+                <form
+                  method="post"
+                  action="/model/references/delete"
+                  class="d-inline delete-form"
+                  data-ref-id="{{ ref.id }}"
+                  onsubmit="return confirm('Delete this reference?');"
+                >
                   <input type="hidden" name="ref_id" value="{{ ref.id }}" />
-                  <button type="submit" class="btn btn-xs btn-outline-danger py-0 px-1" title="Delete">
+                  <button
+                    type="submit"
+                    class="btn btn-xs btn-outline-danger py-0 px-1"
+                    title="Delete"
+                  >
                     <i class="bi bi-trash"></i>
                   </button>
                 </form>
@@ -234,39 +342,64 @@
       </div>
       {% endif %}
     </div>
-
   </div>
 </div>
 
 <!-- ── Document Register Search Modal ────────────────────────────────────── -->
-<div class="modal fade" id="docRegisterModal" tabindex="-1" aria-labelledby="docRegisterModalLabel" aria-hidden="true">
+<div
+  class="modal fade"
+  id="docRegisterModal"
+  tabindex="-1"
+  aria-labelledby="docRegisterModalLabel"
+  aria-hidden="true"
+>
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header py-2">
         <h6 class="modal-title" id="docRegisterModalLabel">
-          <i class="bi bi-journal-bookmark text-info me-1"></i>Search Document Register
+          <i class="bi bi-journal-bookmark text-info me-1"></i>Search Document
+          Register
         </h6>
         <div>
-          <span class="badge bg-secondary me-2" id="doc-register-modal-status">Checking...</span>
-          <button type="button" class="btn btn-sm btn-outline-info me-1" id="doc-register-rebuild-btn">
+          <span class="badge bg-secondary me-2" id="doc-register-modal-status"
+            >Checking...</span
+          >
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-info me-1"
+            id="doc-register-rebuild-btn"
+          >
             <i class="bi bi-arrow-clockwise me-1"></i>Refresh DB
           </button>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          ></button>
         </div>
       </div>
       <div class="modal-body p-3">
-
         <!-- Step 1: EDDR Search -->
         <div class="mb-3">
           <label class="form-label small fw-semibold mb-1">
-            <span class="badge bg-primary me-1">Step 1</span>Search Document by Title
+            <span class="badge bg-primary me-1">Step 1</span>Search Document by Title in EDDR
           </label>
-          <input type="text" class="form-control form-control-sm" id="eddr-search"
-                 placeholder="Type to search EDDR titles (e.g. 'Single Line Diagram', 'P&ID')..."
-                 autocomplete="off" />
-          <div id="eddr-results" class="mt-2" style="max-height:280px; overflow-y:auto;">
+          <input
+            type="text"
+            class="form-control form-control-sm"
+            id="eddr-search"
+            placeholder="Type to search EDDR titles (e.g. 'Data sheet', 'P&ID')..."
+            autocomplete="off"
+          />
+          <div
+            id="eddr-results"
+            class="mt-2"
+            style="max-height: 280px; overflow-y: auto"
+          >
             <div class="text-center text-secondary py-3">
-              <i class="bi bi-search d-block fs-5 mb-1"></i>Type to search documents by title...
+              <i class="bi bi-search d-block fs-5 mb-1"></i>Type to search
+              documents by title...
             </div>
           </div>
         </div>
@@ -276,42 +409,66 @@
         <!-- Step 2: Query Results -->
         <div>
           <label class="form-label small fw-semibold mb-1">
-            <span class="badge bg-success me-1">Step 2</span>Select File or Folder
+            <span class="badge bg-success me-1">Step 2</span>Select File or
+            Folder from Sharepoint
           </label>
-          <div id="query-results" style="max-height:360px; overflow-y:auto;">
+          <input
+            type="text"
+            class="form-control form-control-sm mb-2"
+            id="query-search"
+            placeholder="Filter files/folders from sharepoint (e.g. '1060-2304-....)"
+            autocomplete="off"
+          />
+          <div id="query-results" style="max-height: 360px; overflow-y: auto">
             <div class="text-center text-secondary py-3">
-              <i class="bi bi-hand-index d-block fs-5 mb-1"></i>Select a document above to see available files
+              <i class="bi bi-hand-index d-block fs-5 mb-1"></i>Select a
+              document above to see available files
             </div>
           </div>
         </div>
-
       </div>
       <div class="modal-footer py-1">
         <small class="text-secondary me-auto">
           <i class="bi bi-info-circle me-1"></i>
-          Step 1: Search by title → click a document. Step 2: Pick a file → auto-fills Name, Link, Description.
+          Step 1: Search by Document Title → click a document. Step 2: Pick a
+          file from sharepoint → auto-fills Name, Link, Description.
         </small>
-        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button
+          type="button"
+          class="btn btn-sm btn-secondary"
+          data-bs-dismiss="modal"
+        >
+          Close
+        </button>
       </div>
     </div>
   </div>
 </div>
 
+<!-- Update the footer help text -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var footerText = document.querySelector(
+      "#docRegisterModal .modal-footer small",
+    );
+    if (footerText) {
+      footerText.innerHTML =
+        '<i class="bi bi-info-circle me-1"></i>Step 1: Search by Document Title → click a document. Step 2: Pick a file → auto-fills fields. <strong>Or use Step 2 search directly</strong> to find files by Document Number.';
+    }
+  });
+</script>
 
-{% endblock %}
-
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <script src="{{ url_for('static', filename='references.js') }}"></script>
 <script src="{{ url_for('static', filename='doc_register.js') }}"></script>
 <script>
-window.DOC_REGISTER_SP_SITE_URL = '{{ doc_register_sp_site_url or "" }}';
-document.getElementById('add-form').addEventListener('submit', function() {
-  document.getElementById('edit-id-hidden').value = '';
-  var btn = document.getElementById('add-btn');
-  btn.innerHTML = '<i class="bi bi-plus me-1"></i>Add Reference';
-  btn.classList.remove('btn-warning');
-  btn.classList.add('btn-success');
-});
-
+  window.DOC_REGISTER_SP_SITE_URL = '{{ doc_register_sp_site_url or "" }}';
+  document.getElementById("add-form").addEventListener("submit", function () {
+    document.getElementById("edit-id-hidden").value = "";
+    var btn = document.getElementById("add-btn");
+    btn.innerHTML = '<i class="bi bi-plus me-1"></i>Add Reference';
+    btn.classList.remove("btn-warning");
+    btn.classList.add("btn-success");
+  });
 </script>
 {% endblock %}

@@ -46,7 +46,7 @@ def test_model(label: str, kdf_path: Path) -> None:
     bx_min, by_min, bx_max, by_max = before
     before_cx = (bx_min + bx_max) / 2
     before_cy = (by_min + by_max) / 2
-    print(f"\nBefore center_layout()")
+    print("\nBefore center_layout()")
     print(f"  Bbox  : [{bx_min:.1f},{by_min:.1f}] -> [{bx_max:.1f},{by_max:.1f}]")
     print(f"  Centre: ({before_cx:.1f}, {before_cy:.1f})")
     print(f"  Offset from page centre: dx={page_cx - before_cx:.1f}, dy={page_cy - before_cy:.1f}")
@@ -61,7 +61,7 @@ def test_model(label: str, kdf_path: Path) -> None:
     ax_min, ay_min, ax_max, ay_max = after
     after_cx = (ax_min + ax_max) / 2
     after_cy = (ay_min + ay_max) / 2
-    print(f"\nAfter  center_layout()")
+    print(f"After  center_layout()")
     print(f"  Bbox  : [{ax_min:.1f},{ay_min:.1f}] -> [{ax_max:.1f},{ay_max:.1f}]")
     print(f"  Centre: ({after_cx:.1f}, {after_cy:.1f})")
     print(f"  Offset from page centre: dx={page_cx - after_cx:.1f}, dy={page_cy - after_cy:.1f}")

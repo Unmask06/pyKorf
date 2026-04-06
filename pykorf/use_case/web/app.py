@@ -43,11 +43,14 @@ def create_app() -> Flask:
     Returns:
         Configured Flask app with all Blueprints registered.
     """
+    import os
+
     app = Flask(
         __name__,
         template_folder=str(_TEMPLATES_DIR),
         static_folder=str(_STATIC_DIR),
     )
+    app.secret_key = os.urandom(24)
 
     app.register_blueprint(file_picker_bp)
     app.register_blueprint(model_core_bp)

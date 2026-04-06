@@ -408,13 +408,13 @@ document.addEventListener("DOMContentLoaded", function () {
     pipe:         (row) => row.querySelector("td:nth-child(3)"),
     state:        (row) => row.querySelector(".state-select"),
     criteria:     (row) => row.querySelector(".criteria-select"),
+    dp_calc:      (row) => row.querySelector(".calc-dp"),
     dp_max:       (row) => row.querySelector(".crit-dp"),
+    vel_calc:     (row) => row.querySelector(".calc-vel"),
     v_min:        (row) => row.querySelector(".crit-vmin"),
     v_max:        (row) => row.querySelector(".crit-vmax"),
-    rho_v2_range: (row) => row.querySelector(".crit-rhov2"),
     rho_v2_calc:  (row) => row.querySelector(".calc-rhov2"),
-    dp_calc:      (row) => row.querySelector(".calc-dp"),
-    vel_calc:     (row) => row.querySelector(".calc-vel"),
+    rho_v2_range: (row) => row.querySelector(".crit-rhov2"),
   };
 
   function getCellValue(row, column) {
@@ -439,12 +439,13 @@ document.addEventListener("DOMContentLoaded", function () {
     const rows = Array.from(tbody.querySelectorAll(".pipe-row"));
     const isNumeric = [
       "index",
+      "dp_calc",
       "dp_max",
+      "vel_calc",
       "v_min",
       "v_max",
       "rho_v2_calc",
-      "dp_calc",
-      "vel_calc",
+      "rho_v2_range",
     ].includes(column);
 
     rows.sort((a, b) => {

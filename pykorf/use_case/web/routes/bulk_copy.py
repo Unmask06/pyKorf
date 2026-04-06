@@ -4,12 +4,11 @@ from __future__ import annotations
 
 from flask import Blueprint, render_template, request
 
+from pykorf.log import get_logger
 from pykorf.use_case.web import session as _sess
 from pykorf.use_case.web.helpers import is_redirect, pipe_names, require_model
 
-import structlog
-
-logger = structlog.get_logger(__name__)
+logger = get_logger(__name__)
 bp = Blueprint("bulk_copy", __name__)
 
 

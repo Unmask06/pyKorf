@@ -103,7 +103,7 @@
   </span>
   {% endif %}
   <form method="post" action="/model/reload" class="d-inline ms-1">
-    <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}" />
+    <input type="hidden" name="next" value="{{ request.path }}" />
     <button type="submit" class="btn btn-sm btn-outline-secondary border-0 py-0 px-1"
             title="Reload model from disk" id="btn-reload-model">
       <i class="bi bi-arrow-clockwise"></i>
@@ -126,6 +126,29 @@
     </ul>
   </div>
 </nav>
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="container-fluid px-4 mt-3">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+          {% if category == 'success' %}
+            <i class="bi bi-check-circle-fill me-2"></i>
+          {% elif category == 'warning' %}
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+          {% elif category == 'danger' %}
+            <i class="bi bi-x-circle-fill me-2"></i>
+          {% else %}
+            <i class="bi bi-info-circle-fill me-2"></i>
+          {% endif %}
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
 
 <!-- Main content -->
 <main class="container-fluid py-4">
