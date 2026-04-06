@@ -171,7 +171,7 @@
               <input type="text" class="form-control font-monospace" name="local_path" id="local_path"
                      value="{{ edit_entry.local | e }}" required autocomplete="off" />
               <button type="button" class="btn btn-outline-secondary"
-                      data-browse-target="local_path" data-browse-filter="any"
+                      data-browse-target="local_path" data-browse-filter="folder"
                       title="Browse for local folder">
                 <i class="bi bi-folder2-open"></i>
               </button>
@@ -203,7 +203,7 @@
                      required autocomplete="off" />
               <button type="button" class="btn btn-outline-secondary"
                       data-browse-target="local_path"
-                      data-browse-filter="any"
+                      data-browse-filter="folder"
                       title="Browse for local folder">
                 <i class="bi bi-folder2-open"></i>
               </button>
@@ -218,12 +218,31 @@
                      placeholder="https://tenant.sharepoint.com/sites/Site/Shared Documents/Subfolder"
                      value="https://cc7ges.sharepoint.com/sites/25002TAZIZSALT-ADNOCUAE/Shared Documents/2 EXECUTION/2. ENG/2A-PROCESS"
                      required autocomplete="off" />
+              <a href="https://cc7ges.sharepoint.com/sites/25002TAZIZSALT-ADNOCUAE/Shared Documents/2 EXECUTION/2. ENG/2A-PROCESS"
+                 target="_blank" rel="noopener"
+                 class="btn btn-outline-primary"
+                 title="Open in browser to verify">
+                <i class="bi bi-box-arrow-up-right"></i>
+              </a>
             </div>
             <div class="form-text">
               The corresponding SharePoint folder URL. From SharePoint, open the folder → copy the
               <code>id=</code> value from the URL and decode it, or paste the direct folder URL.
             </div>
           </div>
+          
+          <div class="alert alert-warning py-2 mb-3">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="sp-confirm-check" required />
+              <label class="form-check-label small" for="sp-confirm-check">
+                <i class="bi bi-check-circle text-warning me-1"></i>
+                <strong>I confirm this SharePoint URL works:</strong>
+                I clicked the link button (
+                <i class="bi bi-box-arrow-up-right"></i>) to open it in my browser and verified it opens correctly.
+              </label>
+            </div>
+          </div>
+          
           <button type="submit" class="btn btn-sm btn-success">
             <i class="bi bi-plus-circle me-1"></i>Add Override
           </button>

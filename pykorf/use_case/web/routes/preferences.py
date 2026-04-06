@@ -13,6 +13,36 @@ bp = Blueprint("preferences", __name__)
 DEFAULT_SP_SITE_URL = "https://cc7ges.sharepoint.com"
 
 
+def _validate_override(local: str, sp_url: str) -> str | None:
+    """Validate a SharePoint override entry.
+
+    Checks:
+    - Both fields are non-empty
+    - Local path exists on disk and is a directory
+    - SP URL is well-formed (https scheme + netloc)
+
+    Args:
+        local: Local folder path string.
+        sp_url: SharePoint URL string.
+
+    Returns:
+        Error message string if invalid, None if valid.
+    """
+    from urllib.parse import urlparse
+
+    if not local or not sp_url:
+        return "Both local path and SharePoint URL are required."
+
+    if not Path(local).is_dir():
+        return f"Local path does not exist or is not a folder: {local}"
+
+    parsed = urlparse(sp_url)
+    if parsed.scheme not in ("http", "https") or not parsed.netloc:
+        return f"SharePoint URL is not valid (must start with http:// or https://): {sp_url}"
+
+    return None
+
+
 def _format_timestamp(iso_str: str | None) -> str:
     """Format an ISO timestamp for display.
 
@@ -98,16 +128,14 @@ def preferences_page():
         if action == "add":
             local = (request.form.get("local_path") or "").strip().rstrip("\\/")
             sp_url = (request.form.get("sp_url") or "").strip().rstrip("/")
-            if local and sp_url:
+            err = _validate_override(local, sp_url)
+            if err:
+                flash = {"type": "danger", "msg": err}
+            else:
                 overrides[local] = sp_url
                 set_sp_overrides(overrides)
                 clear_cache()
                 flash = {"type": "success", "msg": "Override added."}
-            else:
-                flash = {
-                    "type": "warning",
-                    "msg": "Both local path and SharePoint URL are required.",
-                }
 
         elif action == "delete":
             local = (request.form.get("local_path") or "").strip()

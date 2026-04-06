@@ -47,6 +47,21 @@ var PathBrowser = (function () {
     var inputVal = (_el(targetInputId) || {}).value || '';
     var start    = startPath || inputVal || _currentPath || '';
 
+    // Update modal title and button label based on mode
+    var isFolderBrowse = (_filterMode === 'folder');
+    var titleEl = document.querySelector('#pathBrowser .modal-title');
+    if (titleEl) {
+      titleEl.innerHTML = isFolderBrowse
+        ? '<i class="bi bi-folder2-open me-2 text-success"></i>Browse Folders'
+        : '<i class="bi bi-folder2-open me-2 text-warning"></i>Browse Files';
+    }
+    var selectBtn = _el('pb-select-btn');
+    if (selectBtn) {
+      selectBtn.innerHTML = isFolderBrowse
+        ? '<i class="bi bi-folder-check me-1"></i>Select Folder'
+        : '<i class="bi bi-check2 me-1"></i>Select';
+    }
+
     _modal.show();
     _el('pb-filter').value = '';
     _el('pb-select-btn').disabled = true;
@@ -109,6 +124,22 @@ var PathBrowser = (function () {
     list.innerHTML = '';
     var filter = (_el('pb-filter').value || '').toLowerCase();
 
+    var isFolderMode = (_filterMode === 'folder');
+
+    // ── "Select this folder" shortcut (folder mode only) ───────────────────
+    if (isFolderMode && data.current) {
+      var selfItem = document.createElement('div');
+      selfItem.className = 'pb-item pb-dir-self';
+      selfItem.style.cssText = 'color: var(--bs-success); border-bottom: 1px dashed var(--bs-border-color);';
+      selfItem.title = data.current;
+      selfItem.innerHTML =
+        '<i class="bi bi-folder-check"></i>' +
+        '<span class="flex-grow-1 fw-semibold">Select this folder</span>' +
+        '<span class="badge bg-success ms-auto small">current</span>';
+      selfItem.onclick = function () { selectItem(selfItem, data.current, null); };
+      list.appendChild(selfItem);
+    }
+
     // ── Directories ────────────────────────────────────────────────────────
     data.dirs.forEach(function (d) {
       if (filter && d.name.toLowerCase().indexOf(filter) === -1) return;
@@ -125,36 +156,46 @@ var PathBrowser = (function () {
         '<span class="flex-grow-1">' + esc(d.name) + '</span>' +
         syncBadge;
 
-      item.onclick = function () { browse(d.path); };
+      if (isFolderMode) {
+        // Single click = select, double click = navigate into
+        item.onclick    = function () { selectItem(item, d.path, null); };
+        item.ondblclick = function () { browse(d.path); };
+        item.title = 'Click to select, double-click to open';
+      } else {
+        item.onclick = function () { browse(d.path); };
+      }
       list.appendChild(item);
     });
 
-    // ── Files ──────────────────────────────────────────────────────────────
-    var icon = _fileIcon[_filterMode] || _fileIcon.any;
-    data.files.forEach(function (f) {
-      if (filter && f.name.toLowerCase().indexOf(filter) === -1) return;
+    // ── Files (hidden in folder mode) ──────────────────────────────────────
+    if (!isFolderMode) {
+      var icon = _fileIcon[_filterMode] || _fileIcon.any;
+      data.files.forEach(function (f) {
+        if (filter && f.name.toLowerCase().indexOf(filter) === -1) return;
 
-      var item = document.createElement('div');
-      item.className = 'pb-item pb-file';
-      item.dataset.path = f.path;
-      item.dataset.spUrl = f.sharepoint_url || '';
+        var item = document.createElement('div');
+        item.className = 'pb-item pb-file';
+        item.dataset.path = f.path;
+        item.dataset.spUrl = f.sharepoint_url || '';
 
-      var spBadge = f.sharepoint_url
-        ? '<span class="badge bg-primary ms-1 pb-sp-badge" title="' + esc(f.sharepoint_url) + '">☁ SP</span>'
-        : '';
+        var spBadge = f.sharepoint_url
+          ? '<span class="badge bg-primary ms-1 pb-sp-badge" title="' + esc(f.sharepoint_url) + '">☁ SP</span>'
+          : '';
 
-      item.innerHTML =
-        '<i class="bi ' + icon + '"></i>' +
-        '<span class="flex-grow-1">' + esc(f.name) + '</span>' +
-        spBadge;
+        item.innerHTML =
+          '<i class="bi ' + icon + '"></i>' +
+          '<span class="flex-grow-1">' + esc(f.name) + '</span>' +
+          spBadge;
 
-      item.onclick    = function () { selectItem(item, f.path, f.sharepoint_url || null); };
-      item.ondblclick = function () { selectItem(item, f.path, f.sharepoint_url || null); confirmSelect(); };
-      list.appendChild(item);
-    });
+        item.onclick    = function () { selectItem(item, f.path, f.sharepoint_url || null); };
+        item.ondblclick = function () { selectItem(item, f.path, f.sharepoint_url || null); confirmSelect(); };
+        list.appendChild(item);
+      });
+    }
 
-    if (!list.children.length) {
-      list.innerHTML = '<div class="pb-item text-secondary"><i class="bi bi-inbox me-2"></i>No matching files</div>';
+    if (list.children.length === 0) {
+      list.innerHTML = '<div class="pb-item text-secondary"><i class="bi bi-inbox me-2"></i>' +
+        (isFolderMode ? 'No subfolders here' : 'No matching files') + '</div>';
     }
   }
 
@@ -176,7 +217,7 @@ var PathBrowser = (function () {
     var toggle = _el('pb-sp-toggle');
 
     if (!localPath) {
-      label.textContent = 'No file selected';
+      label.textContent = _filterMode === 'folder' ? 'No folder selected' : 'No file selected';
       if (toggle) toggle.classList.add('d-none');
       return;
     }

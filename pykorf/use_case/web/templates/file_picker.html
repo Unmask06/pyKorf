@@ -13,6 +13,23 @@
       <p class="text-secondary small">Copilot for Hydraulic Network Modeling using KORF</p>
     </div>
 
+    {% if not setup_ok %}
+    <div class="alert alert-warning" role="alert">
+      <div class="fw-semibold mb-1"><i class="bi bi-shield-lock-fill me-1"></i>Setup Required Before Opening a Model</div>
+      <ul class="mb-2 ps-3 small">
+        {% if not sp_ok %}
+        <li>SharePoint Override — not configured</li>
+        {% endif %}
+        {% if not doc_register_ok %}
+        <li>Document Register Excel path — not set or file not found</li>
+        {% endif %}
+      </ul>
+      <a href="{{ url_for('preferences.preferences_page') }}" class="btn btn-sm btn-warning">
+        <i class="bi bi-gear-fill me-1"></i>Go to Preferences
+      </a>
+    </div>
+    {% endif %}
+
     {% if error %}
     <div class="alert alert-danger d-flex align-items-center" role="alert">
       <i class="bi bi-exclamation-triangle-fill me-2"></i>
@@ -53,7 +70,7 @@
             </div>
             <div class="form-text">Paste the absolute path or choose from recent files below.</div>
           </div>
-          <button type="submit" class="btn btn-primary w-100" id="open-btn">
+          <button type="submit" class="btn btn-primary w-100" id="open-btn" {% if not setup_ok %}disabled title="Complete setup in Preferences first"{% endif %}>
             <span id="open-spinner" class="spinner-border spinner-border-sm d-none me-2" role="status"></span>
             <i class="bi bi-box-arrow-in-right me-1"></i>Open Model
           </button>
@@ -71,9 +88,10 @@
         <li class="list-group-item p-0">
           <a
             href="#"
-            class="d-flex align-items-center gap-2 py-2 px-3 text-decoration-none recent-file-open-btn"
+            class="d-flex align-items-center gap-2 py-2 px-3 text-decoration-none recent-file-open-btn{% if not setup_ok %} disabled pe-none text-muted{% endif %}"
             data-path="{{ f }}"
-            title="{{ f }}"
+            title="{% if not setup_ok %}Complete setup in Preferences first{% else %}{{ f }}{% endif %}"
+            {% if not setup_ok %}aria-disabled="true"{% endif %}
           >
             <i class="bi bi-file-earmark-text text-secondary flex-shrink-0"></i>
             <span class="font-monospace small flex-grow-1 text-body">{{ f | basename }}</span>
