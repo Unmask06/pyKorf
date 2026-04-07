@@ -58,11 +58,33 @@ def main_menu():
     apply_pms_if_stale(model)
     kdf_path = _sess.get_kdf_path()
     prereqs = _build_prereqs(model, kdf_path)
+
+    from pykorf.use_case.project_info import build_smart_defaults
+
+    gen = model.general
+    project_info = {
+        "company1": gen.company or "",
+        "company2": gen.company2 or "",
+        "project_name1": gen.project or "",
+        "project_name2": gen.project_name2 or "",
+        "item_name1": gen.item_name1 or "",
+        "item_name2": gen.item_name2 or "",
+        "prepared_by": gen.prepared_by or "",
+        "checked_by": gen.checked_by or "",
+        "approved_by": gen.approved_by or "",
+        "date": gen.date or "",
+        "project_no": gen.project_no or "",
+        "revision": gen.revision or "",
+    }
+    smart_defaults = build_smart_defaults(kdf_path)
+
     return render_template(
         "main_menu.html",
         kdf_path=str(kdf_path or ""),
         summary=model.summary(),
         prereqs=prereqs,
+        project_info=project_info,
+        smart_defaults=smart_defaults,
     )
 
 
@@ -100,4 +122,41 @@ def save_model():
             logger.info("save_model_complete", kdf_path=str(kdf_path))
         for alert_type, message in logs:
             flash(message, alert_type)
+    return redirect(url_for("model_core.main_menu"))
+
+
+@bp.route("/model/project-info", methods=["POST"])
+def save_project_info():
+    """Save project metadata (COM, PRJ, ENG) to the active KDF file."""
+    model = require_model()
+    if is_redirect(model):
+        return model
+    kdf_path = _sess.get_kdf_path()
+    if not kdf_path:
+        flash("No model loaded.", "warning")
+        return redirect(url_for("model_core.main_menu"))
+
+    company1 = request.form.get("company1", "").strip()
+    company2 = request.form.get("company2", "").strip()
+    project_name1 = request.form.get("project_name1", "").strip()
+    project_name2 = request.form.get("project_name2", "").strip()
+    item_name1 = request.form.get("item_name1", "").strip()
+    item_name2 = request.form.get("item_name2", "").strip()
+    prepared_by = request.form.get("prepared_by", "").strip()
+    checked_by = request.form.get("checked_by", "").strip()
+    approved_by = request.form.get("approved_by", "").strip()
+    date = request.form.get("date", "").strip()
+    project_no = request.form.get("project_no", "").strip()
+    revision = request.form.get("revision", "").strip()
+
+    with flash_logs() as logs:
+        logger.info("save_project_info", kdf_path=str(kdf_path))
+        model.general.set_company(company1, company2)
+        model.general.set_project(project_name1, project_name2, item_name1, item_name2)
+        model.general.set_engineering(prepared_by, checked_by, approved_by, date, project_no, revision)
+        model.io.save(kdf_path)
+        _sess.reload()
+    for alert_type, message in logs:
+        flash(message, alert_type)
+    flash("Project info saved.", "success")
     return redirect(url_for("model_core.main_menu"))

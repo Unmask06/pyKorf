@@ -119,6 +119,7 @@ class KdfParser:
         self.path = Path(path)
         self.encoding = encoding
         self._records: list[KdfRecord] = []
+        self._line_ending: str = "\r\n"  # default to Windows-style
 
     # ------------------------------------------------------------------
     # Loading
@@ -128,6 +129,15 @@ class KdfParser:
         """Parse the .kdf file and return the list of :class:`KdfRecord`."""
         if not self.path.exists():
             raise ParseError(f"File not found: {self.path}")
+
+        # Detect line ending style from the file
+        with self.path.open("rb") as f:
+            sample = f.read(4096)
+            if b"\r\n" in sample:
+                self._line_ending = "\r\n"
+            elif b"\n" in sample:
+                self._line_ending = "\n"
+
         self._records = []
         with self.path.open(encoding=self.encoding, errors="replace") as fh:
             for lineno, raw in enumerate(fh, 1):
@@ -174,11 +184,23 @@ class KdfParser:
         """
         dest = Path(path) if path else self.path
         dest.parent.mkdir(parents=True, exist_ok=True)
+
+        # Use the line ending detected during load, or detect from existing file
+        line_ending = self._line_ending
+        if dest.exists() and dest != self.path:
+            # If saving to a different file that already exists, detect its line ending
+            with dest.open("rb") as f:
+                sample = f.read(4096)
+                if b"\r\n" in sample:
+                    line_ending = "\r\n"
+                elif b"\n" in sample:
+                    line_ending = "\n"
+
         with dest.open("w", encoding=self.encoding, newline="") as fh:
             for rec in self._records:
                 if rec.element_type is not None and rec.param == "NUM" and rec.index != 0:
                     continue
-                fh.write(rec.to_line() + "\r\n")
+                fh.write(rec.to_line() + line_ending)
 
     # ------------------------------------------------------------------
     # Query helpers

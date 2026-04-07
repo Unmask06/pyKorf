@@ -138,6 +138,175 @@
 
     </div><!-- /operations row -->
 
+    <!-- Project Info Card -->
+    <div class="card shadow-sm mt-3" id="project-info-card">
+      <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-card-text me-1 text-primary"></i>Project Info</span>
+        <button type="button" class="btn btn-sm btn-outline-secondary"
+                id="project-info-toggle-btn"
+                onclick="toggleProjectInfoEdit()">
+          <i class="bi bi-pencil me-1"></i>Edit
+        </button>
+      </div>
+
+      <!-- Read-only view (default) -->
+      <div class="card-body py-2" id="project-info-view">
+        <div class="row g-2 small">
+          <div class="col-sm-6">
+            <span class="text-secondary">Company:</span>
+            <span class="fw-semibold ms-1">
+              {{ project_info.company1 }}{% if project_info.company2 %} / {{ project_info.company2 }}{% endif %}
+            </span>
+          </div>
+          <div class="col-sm-6">
+            <span class="text-secondary">Project:</span>
+            <span class="fw-semibold ms-1">{{ project_info.project_name1 }}</span>
+          </div>
+          <div class="col-sm-6">
+            <span class="text-secondary">Document No:</span>
+            <span class="fw-semibold ms-1">{{ project_info.item_name1 }}</span>
+          </div>
+          <div class="col-sm-6">
+            <span class="text-secondary">Item / Tag:</span>
+            <span class="fw-semibold ms-1">{{ project_info.item_name2 }}</span>
+          </div>
+          <div class="col-sm-4">
+            <span class="text-secondary">Prepared by:</span>
+            <span class="fw-semibold ms-1">{{ project_info.prepared_by }}</span>
+          </div>
+          <div class="col-sm-4">
+            <span class="text-secondary">Date:</span>
+            <span class="fw-semibold ms-1">{{ project_info.date }}</span>
+          </div>
+          <div class="col-sm-4">
+            <span class="text-secondary">Rev:</span>
+            <span class="fw-semibold ms-1">{{ project_info.revision }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit form (hidden initially) -->
+      <div id="project-info-form-wrapper" style="display:none">
+        <form method="post" action="/model/project-info" class="card-body pt-2">
+
+          <!-- Row 1: Company -->
+          <div class="row g-2 mb-2">
+            <div class="col-sm-6">
+              <label class="form-label small fw-semibold mb-1" for="pi-company1">Company</label>
+              <input type="text" class="form-control form-control-sm" id="pi-company1" name="company1"
+                     value="{{ project_info.company1 }}"
+                     placeholder="{{ smart_defaults.company1 }}" />
+              <div class="form-text" style="font-size:.72rem;">COM[0]: first company name</div>
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label small fw-semibold mb-1" for="pi-company2">Company 2 / Sub</label>
+              <input type="text" class="form-control form-control-sm" id="pi-company2" name="company2"
+                     value="{{ project_info.company2 }}"
+                     placeholder="{{ smart_defaults.company2 }}" />
+              <div class="form-text" style="font-size:.72rem;">COM[1]: second company / sub-company</div>
+            </div>
+          </div>
+
+          <!-- Row 2: Project names -->
+          <div class="row g-2 mb-2">
+            <div class="col-sm-6">
+              <label class="form-label small fw-semibold mb-1" for="pi-project-name1">Project Name</label>
+              <input type="text" class="form-control form-control-sm" id="pi-project-name1" name="project_name1"
+                     value="{{ project_info.project_name1 }}"
+                     placeholder="{{ smart_defaults.project_name1 }}" />
+              <div class="form-text" style="font-size:.72rem;">PRJ[0]: primary project name</div>
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label small fw-semibold mb-1" for="pi-project-name2">Project Name 2</label>
+              <input type="text" class="form-control form-control-sm" id="pi-project-name2" name="project_name2"
+                     value="{{ project_info.project_name2 }}"
+                     placeholder="{{ smart_defaults.project_name2 }}" />
+              <div class="form-text" style="font-size:.72rem;">PRJ[1]: secondary project name</div>
+            </div>
+          </div>
+
+          <!-- Row 3: Document / Item -->
+          <div class="row g-2 mb-2">
+            <div class="col-sm-6">
+              <label class="form-label small fw-semibold mb-1" for="pi-item-name1">Document No</label>
+              <input type="text" class="form-control form-control-sm" id="pi-item-name1" name="item_name1"
+                     value="{{ project_info.item_name1 }}"
+                     placeholder="{{ smart_defaults.item_name1 }}" />
+              <div class="form-text" style="font-size:.72rem;">PRJ[2]: document number / item name 1</div>
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label small fw-semibold mb-1" for="pi-item-name2">Item / Tag</label>
+              <input type="text" class="form-control form-control-sm" id="pi-item-name2" name="item_name2"
+                     value="{{ project_info.item_name2 }}"
+                     placeholder="{{ smart_defaults.item_name2 }}" />
+              <div class="form-text" style="font-size:.72rem;">PRJ[3]: item tag / drawing reference</div>
+            </div>
+          </div>
+
+          <!-- Row 4: Prepared / Checked / Approved -->
+          <div class="row g-2 mb-2">
+            <div class="col-sm-4">
+              <label class="form-label small fw-semibold mb-1" for="pi-prepared-by">Prepared By</label>
+              <input type="text" class="form-control form-control-sm" id="pi-prepared-by" name="prepared_by"
+                     value="{{ project_info.prepared_by }}"
+                     placeholder="{{ smart_defaults.prepared_by }}" />
+              <div class="form-text" style="font-size:.72rem;">ENG[0]: prepared by initials</div>
+            </div>
+            <div class="col-sm-4">
+              <label class="form-label small fw-semibold mb-1" for="pi-checked-by">Checked By</label>
+              <input type="text" class="form-control form-control-sm" id="pi-checked-by" name="checked_by"
+                     value="{{ project_info.checked_by }}"
+                     placeholder="{{ smart_defaults.checked_by }}" />
+              <div class="form-text" style="font-size:.72rem;">ENG[1]: checked by initials</div>
+            </div>
+            <div class="col-sm-4">
+              <label class="form-label small fw-semibold mb-1" for="pi-approved-by">Approved By</label>
+              <input type="text" class="form-control form-control-sm" id="pi-approved-by" name="approved_by"
+                     value="{{ project_info.approved_by }}"
+                     placeholder="{{ smart_defaults.approved_by }}" />
+              <div class="form-text" style="font-size:.72rem;">ENG[2]: approved by initials</div>
+            </div>
+          </div>
+
+          <!-- Row 5: Date / Project No / Revision -->
+          <div class="row g-2 mb-3">
+            <div class="col-sm-4">
+              <label class="form-label small fw-semibold mb-1" for="pi-date">Date</label>
+              <input type="text" class="form-control form-control-sm" id="pi-date" name="date"
+                     value="{{ project_info.date }}"
+                     placeholder="{{ smart_defaults.date }}" />
+              <div class="form-text" style="font-size:.72rem;">ENG[3]: document date</div>
+            </div>
+            <div class="col-sm-4">
+              <label class="form-label small fw-semibold mb-1" for="pi-project-no">Project No</label>
+              <input type="text" class="form-control form-control-sm" id="pi-project-no" name="project_no"
+                     value="{{ project_info.project_no }}"
+                     placeholder="{{ smart_defaults.project_no }}" />
+              <div class="form-text" style="font-size:.72rem;">ENG[4]: project number</div>
+            </div>
+            <div class="col-sm-4">
+              <label class="form-label small fw-semibold mb-1" for="pi-revision">Rev</label>
+              <input type="text" class="form-control form-control-sm" id="pi-revision" name="revision"
+                     value="{{ project_info.revision }}"
+                     placeholder="{{ smart_defaults.revision }}" />
+              <div class="form-text" style="font-size:.72rem;">ENG[5]: document revision</div>
+            </div>
+          </div>
+
+          <!-- Form buttons -->
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-sm btn-primary">
+              <i class="bi bi-floppy me-1"></i>Save
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary"
+                    onclick="toggleProjectInfoEdit()">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div><!-- /project-info-card -->
+
     <!-- Prerequisites & Validation (2 sub-columns inside the right column) -->
     <div class="row g-3 mt-2">
 
@@ -289,4 +458,18 @@
   </div><!-- /right col-lg-9 -->
 
 </div><!-- /outer row -->
+
+<script>
+function toggleProjectInfoEdit() {
+  var view = document.getElementById('project-info-view');
+  var form = document.getElementById('project-info-form-wrapper');
+  var btn  = document.getElementById('project-info-toggle-btn');
+  var isEditing = form.style.display !== 'none';
+  view.style.display = isEditing ? '' : 'none';
+  form.style.display = isEditing ? 'none' : '';
+  btn.innerHTML = isEditing
+    ? '<i class="bi bi-pencil me-1"></i>Edit'
+    : '<i class="bi bi-x me-1"></i>Cancel';
+}
+</script>
 {% endblock %}

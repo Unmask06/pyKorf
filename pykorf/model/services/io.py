@@ -525,6 +525,8 @@ class IOService:
         result: dict[str, pd.DataFrame] = {}
         if header_rows:
             result[_HEADER_SHEET] = pd.DataFrame(header_rows, columns=_HEADER_COLUMNS)
+            # Store line ending for round-trip fidelity
+            result[_HEADER_SHEET].attrs["line_ending"] = self.model._parser._line_ending
         for etype, rows in typed_rows.items():
             result[etype] = pd.DataFrame(rows, columns=_DF_COLUMNS)
         return result
@@ -634,6 +636,15 @@ class IOService:
             for sheet_name, df in dfs.items():
                 # Excel sheet names max 31 chars
                 safe_name = sheet_name[:31]
+                # Embed line_ending metadata as a sentinel row in _HEADER sheet
+                # so it survives the Excel round-trip (attrs are not preserved).
+                if sheet_name == _HEADER_SHEET and "line_ending" in df.attrs:
+                    le_encoded = "CRLF" if df.attrs["line_ending"] == "\r\n" else "LF"
+                    sentinel = pd.DataFrame(
+                        [{_LINE_NO_COL: -1, _RAW_LINE_COL: f"__LINE_ENDING__={le_encoded}"}],
+                        columns=df.columns,
+                    )
+                    df = pd.concat([sentinel, df], ignore_index=True)
                 df.to_excel(writer, sheet_name=safe_name, index=False)
 
     @staticmethod
@@ -665,6 +676,14 @@ class IOService:
         for sheet_name, df in sheets.items():
             if _LINE_NO_COL in df.columns:
                 df[_LINE_NO_COL] = df[_LINE_NO_COL].astype(int)
+            # Restore line_ending from sentinel row (written by _dataframes_to_excel)
+            if sheet_name == _HEADER_SHEET and _RAW_LINE_COL in df.columns:
+                sentinel_mask = df[_RAW_LINE_COL].str.startswith("__LINE_ENDING__=", na=False)
+                if sentinel_mask.any():
+                    sentinel_val = df.loc[sentinel_mask, _RAW_LINE_COL].iloc[0]
+                    df = df[~sentinel_mask].reset_index(drop=True)
+                    le_encoded = sentinel_val.split("=", 1)[1]
+                    df.attrs["line_ending"] = "\r\n" if le_encoded == "CRLF" else "\n"
             result[sheet_name] = df
         return result
 
@@ -752,6 +771,9 @@ class IOService:
         model = _Model()  # blank model from default template
         model._parser._records = records
         model._parser.path = Path("untitled.kdf")  # prevent accidental template overwrite
+        # Restore line ending from dataframe metadata if available
+        if _HEADER_SHEET in dfs and "line_ending" in dfs[_HEADER_SHEET].attrs:
+            model._parser._line_ending = dfs[_HEADER_SHEET].attrs["line_ending"]
         model._build_collections()
         return model
 

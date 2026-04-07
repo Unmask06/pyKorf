@@ -26,9 +26,9 @@ class General(BaseElement):
     # Parameter constants (moved from definitions/gen.py)
     # ------------------------------------------------------------------
     VERNO = "VERNO"  # [version_str]
-    COM = "COM"  # [company, location]
-    PRJ = "PRJ"  # [company, location, project, empty]
-    ENG = "ENG"  # [eng1, eng2, eng3, eng4, eng5, eng6]
+    COM = "COM"  # [company1, company2]
+    PRJ = "PRJ"  # [project_name1, project_name2, item_name1, item_name2]
+    ENG = "ENG"  # [prepared_by, checked_by, approved_by, date, project_no, revision]
     UNITS = "UNITS"  # ["unit_system"]
     UNITS1 = "UNITS1"  # [u1, u2, u3, u4, u5, u6]
     UNITS2 = "UNITS2"  # [u1, u2, u3, u4, u5, u6]
@@ -173,6 +173,103 @@ class General(BaseElement):
     @property
     def project(self) -> str:
         return self._scalar("PRJ", 0)
+
+    @property
+    def company2(self) -> str:
+        """COM[1]: second company name / sub-company."""
+        return self._scalar("COM", 1)
+
+    @property
+    def project_name2(self) -> str:
+        """PRJ[1]: secondary project name."""
+        return self._scalar("PRJ", 1)
+
+    @property
+    def item_name1(self) -> str:
+        """PRJ[2]: document number / item name 1."""
+        return self._scalar("PRJ", 2)
+
+    @property
+    def item_name2(self) -> str:
+        """PRJ[3]: item tag / item name 2."""
+        return self._scalar("PRJ", 3)
+
+    @property
+    def prepared_by(self) -> str:
+        """ENG[0]: prepared by initials or name."""
+        return self._scalar("ENG", 0)
+
+    @property
+    def checked_by(self) -> str:
+        """ENG[1]: checked by initials or name."""
+        return self._scalar("ENG", 1)
+
+    @property
+    def approved_by(self) -> str:
+        """ENG[2]: approved by initials or name."""
+        return self._scalar("ENG", 2)
+
+    @property
+    def date(self) -> str:
+        """ENG[3]: document date string."""
+        return self._scalar("ENG", 3)
+
+    @property
+    def project_no(self) -> str:
+        """ENG[4]: project number."""
+        return self._scalar("ENG", 4)
+
+    @property
+    def revision(self) -> str:
+        """ENG[5]: document revision."""
+        return self._scalar("ENG", 5)
+
+    def set_company(self, company1: str, company2: str = "") -> None:
+        """Set company names (COM record).
+
+        Args:
+            company1: Primary company name. COM[0].
+            company2: Secondary company / sub-company. COM[1].
+        """
+        self.set_param("COM", [company1, company2])
+
+    def set_project(
+        self,
+        name1: str,
+        name2: str = "",
+        item_name1: str = "",
+        item_name2: str = "",
+    ) -> None:
+        """Set project names (PRJ record).
+
+        Args:
+            name1: Primary project name. PRJ[0].
+            name2: Secondary project name. PRJ[1].
+            item_name1: Document number / item name 1. PRJ[2].
+            item_name2: Item tag / item name 2. PRJ[3].
+        """
+        self.set_param("PRJ", [name1, name2, item_name1, item_name2])
+
+    def set_engineering(
+        self,
+        prepared_by: str = "",
+        checked_by: str = "",
+        approved_by: str = "",
+        date: str = "",
+        project_no: str = "",
+        revision: str = "",
+    ) -> None:
+        """Set engineering title block fields (ENG record).
+
+        Args:
+            prepared_by: Prepared by initials. ENG[0].
+            checked_by: Checked by initials. ENG[1].
+            approved_by: Approved by initials. ENG[2].
+            date: Document date string. ENG[3].
+            project_no: Project number. ENG[4].
+            revision: Document revision. ENG[5].
+        """
+        self.set_param("ENG", [prepared_by, checked_by, approved_by, date, project_no, revision])
 
     @property
     def units(self) -> str:

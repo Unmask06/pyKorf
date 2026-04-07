@@ -459,3 +459,25 @@ def set_doc_register_db_last_imported(timestamp: str) -> None:
     config = load_config()
     config["doc_register_db_last_imported"] = timestamp
     save_config(config)
+
+
+def get_project_info_overrides() -> dict[str, Any]:
+    """Get user project info overrides from config.json.
+
+    Returns:
+        Flat dict of project info overrides stored under the "project_info" key.
+        Returns empty dict if none set.
+    """
+    config = load_config()
+    return config.get("project_info", {})
+
+
+def set_project_info_overrides(overrides: dict[str, Any]) -> None:
+    """Persist user project info overrides to config.json.
+
+    Args:
+        overrides: Flat dict of field overrides, e.g. ``{"company1": "ACME"}``.
+    """
+    config = load_config()
+    config["project_info"] = overrides
+    save_config(config)

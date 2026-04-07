@@ -102,6 +102,7 @@ include-package-data = true
 pykorf = [
     "library/*.kdf", "library/*.lib", "library/*.csv",
     "py.typed", "reports/*.json", "reports/*.toml",
+    "use_case/*.toml",
     "use_case/web/templates/*.html",
     "use_case/web/static/**/*",
     "use_case/web/static/vendor/fonts/*",

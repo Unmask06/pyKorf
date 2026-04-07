@@ -48,8 +48,13 @@ from pykorf.use_case.pms import (
     save_pms_data,
 )
 
+# Re-export project info functions
+from pykorf.use_case.project_info import build_smart_defaults
+
 # Re-export preference functions
 from pykorf.use_case.preferences import (
+    get_project_info_overrides,
+    set_project_info_overrides,
     add_recent_file,
     get_global_parameters_selected,
     get_license_key,
@@ -103,6 +108,7 @@ __all__ = [
     "_migrate_from_legacy",
     "_needs_migration",
     "add_recent_file",
+    "build_smart_defaults",
     "ensure_config_dir",
     "ensure_data_dir",
     "get_config_dir",
@@ -123,6 +129,7 @@ __all__ = [
     "get_pms_excel_last_imported",
     "get_pms_excel_path",
     "get_pms_path",
+    "get_project_info_overrides",
     "get_recent_files",
     "get_sp_overrides",
     "get_stream_excel_last_imported",
@@ -152,6 +159,7 @@ __all__ = [
     "set_license_key",
     "set_pms_excel_last_imported",
     "set_pms_excel_path",
+    "set_project_info_overrides",
     "set_sp_overrides",
     "set_stream_excel_last_imported",
     "set_trial_start",
