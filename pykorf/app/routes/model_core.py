@@ -113,10 +113,9 @@ def save_model():
     model = require_model()
     if is_redirect(model):
         return model
-    kdf_path = _sess.get_kdf_path()
-    if kdf_path:
+    if _sess.has_model():
         with flash_logs() as logs:
-            model.save(kdf_path)
+            model.save()
             _sess.reload()
         for alert_type, message in logs:
             flash(message, alert_type)
@@ -155,7 +154,7 @@ def save_project_info():
         model.general.set_engineering(
             prepared_by, checked_by, approved_by, date, project_no, revision
         )
-        model.save(kdf_path)
+        model.save()
         _sess.reload()
     for alert_type, message in logs:
         flash(message, alert_type)

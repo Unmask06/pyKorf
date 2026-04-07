@@ -58,7 +58,6 @@ class SummaryService:
         self,
         *,
         check_connectivity: bool = True,
-        check_layout: bool = True,
     ) -> list[str]:
         """Validate KDF format compliance.
 
@@ -66,7 +65,6 @@ class SummaryService:
 
         Args:
             check_connectivity: Whether to check connectivity consistency (deprecated, ignored).
-            check_layout: Whether to check for layout issues (deprecated, ignored).
 
         Returns:
             List of validation issue descriptions.
@@ -188,7 +186,10 @@ class SummaryService:
         else:
             nps = line_data.nominal_pipe_size
             try:
-                from pykorf.app.operation.data_import.pms import load_all_pms, lookup_pms_across_materials
+                from pykorf.app.operation.data_import.pms import (
+                    load_all_pms,
+                    lookup_pms_across_materials,
+                )
 
                 all_materials = load_all_pms(pms_path)
                 _, spec, _, _ = lookup_pms_across_materials(all_materials, pms_val, float(nps))

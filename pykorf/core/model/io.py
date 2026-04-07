@@ -62,18 +62,13 @@ class IOService:
 
     model: Model
 
-    def save(
-        self, path: str | Path | None = None, *, check_layout: bool = True, overwrite: bool = True
-    ) -> None:
+    def save(self, path: str | Path | None = None, *, overwrite: bool = True) -> None:
         """Serialize the (possibly modified) model back to a .kdf file.
 
         Parameters
         ----------
         path:
             Destination path. If *None*, overwrites the source file.
-        check_layout:
-            If True (default), validate layout before saving and warn about
-            overlapping elements or elements outside bounds.
         overwrite:
             If True (default), allow overwriting existing files. If False,
             raise an error if the destination file already exists.
@@ -94,22 +89,18 @@ class IOService:
         self.model._parser.save(path)
         logger.info(f"   Saved | {dest_path}")
 
-    def save_as(
-        self, path: str | Path, *, check_layout: bool = True, overwrite: bool = False
-    ) -> None:
+    def save_as(self, path: str | Path, *, overwrite: bool = False) -> None:
         """Save to a new path (alias for :meth:`save` with a path argument).
 
         Parameters
         ----------
         path:
             Destination path for the saved file.
-        check_layout:
-            If True (default), validate layout before saving.
         overwrite:
             If False (default), raise an error if the file already exists.
             Set to True to allow overwriting existing files.
         """
-        self.save(path, check_layout=check_layout, overwrite=overwrite)
+        self.save(path, overwrite=overwrite)
 
     def to_dataframes(self) -> dict[str, pd.DataFrame]:
         """Convert the model to a dict of DataFrames (one per element type).

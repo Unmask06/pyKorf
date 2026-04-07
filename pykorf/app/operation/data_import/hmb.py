@@ -28,6 +28,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from pykorf.app.exceptions import UseCaseError
+
 from pykorf.core.fluid import Fluid
 from pykorf.app.exceptions import ExcelConversionError, StreamNotFoundError
 from pykorf.app.operation.data_import.line_number import parse_stream_from_notes
@@ -169,8 +171,11 @@ class HmbReader:
             hmb_data[stream_no] = props
 
         json_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(json_path, "w", encoding="utf-8") as f:
-            json.dump(hmb_data, f, indent=2)
+        try:
+            with open(json_path, "w", encoding="utf-8") as f:
+                json.dump(hmb_data, f, indent=2)
+        except OSError as e:
+            raise UseCaseError(f"Failed to save HMB JSON: {e}") from e
 
         return json_path
 
@@ -179,11 +184,17 @@ class HmbReader:
 
         Args:
             json_path: Path to JSON file
+
+        Raises:
+            UseCaseError: If loading the JSON file fails.
         """
         json_path = Path(json_path)
 
-        with open(json_path, encoding="utf-8") as f:
-            data = json.load(f)
+        try:
+            with open(json_path, encoding="utf-8") as f:
+                data = json.load(f)
+        except (OSError, json.JSONDecodeError) as e:
+            raise UseCaseError(f"Failed to load HMB JSON: {e}") from e
 
         self._data = {}
         for stream_no, props in data.items():

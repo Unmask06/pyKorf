@@ -458,8 +458,8 @@ def pipe_criteria():
         existing = updated
 
         set_result = _handle_set_criteria(model, pipes, existing)
-        if kdf_path:
-            model.save(kdf_path)
+        if _sess.has_model():
+            model.save()
             _sess.reload()
 
     pipe_criteria_values = _precompute_criteria_values(model, pipes, codes)

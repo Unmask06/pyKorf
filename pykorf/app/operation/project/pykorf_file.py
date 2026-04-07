@@ -21,6 +21,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from pykorf.app.exceptions import UseCaseError
+
 _VERSION = 1
 
 
@@ -40,15 +42,21 @@ def _load(kdf_path: Path) -> dict:
     path = get_pykorf_path(kdf_path)
     if not path.is_file():
         return {"version": _VERSION}
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError) as e:
+        raise UseCaseError(f"Failed to load {path.name}: {e}") from e
 
 
 def _save(kdf_path: Path, data: dict) -> None:
     data["version"] = _VERSION
     path = get_pykorf_path(kdf_path)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+    except OSError as e:
+        raise UseCaseError(f"Failed to save {path.name}: {e}") from e
 
 
 def get_pipe_criteria(kdf_path: Path) -> dict[str, dict]:

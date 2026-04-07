@@ -115,11 +115,28 @@ class KdfParser:
 
     ENCODING = "latin-1"
 
-    def __init__(self, path: str | Path, encoding: str = ENCODING):
+    def __init__(self, path: str | Path, encoding: str | None = None):
         self.path = Path(path)
-        self.encoding = encoding
+        self.encoding = encoding if encoding is not None else self.ENCODING
         self._records: list[KdfRecord] = []
         self._line_ending: str = "\r\n"  # default to Windows-style
+
+    @staticmethod
+    def _detect_encoding(path: Path) -> str:
+        """Detect file encoding by trying UTF-8 first, then falling back to Latin-1.
+
+        Args:
+            path: Path to the file to detect encoding for.
+
+        Returns:
+            "utf-8" if the file is valid UTF-8, otherwise "latin-1".
+        """
+        try:
+            with path.open("r", encoding="utf-8") as f:
+                f.read(1024)
+            return "utf-8"
+        except UnicodeDecodeError:
+            return "latin-1"
 
     # ------------------------------------------------------------------
     # Loading
@@ -138,8 +155,13 @@ class KdfParser:
             elif b"\n" in sample:
                 self._line_ending = "\n"
 
+        # Detect encoding if not explicitly set
+        encoding = self.encoding
+        if encoding == self.ENCODING:
+            encoding = self._detect_encoding(self.path)
+
         self._records = []
-        with self.path.open(encoding=self.encoding, errors="replace") as fh:
+        with self.path.open(encoding=encoding, errors="replace") as fh:
             for lineno, raw in enumerate(fh, 1):
                 stripped = raw.rstrip("\r\n")
                 record = self._parse_line(stripped, lineno)

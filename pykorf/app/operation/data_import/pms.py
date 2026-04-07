@@ -126,12 +126,16 @@ def load_pms_data(filename: str = "pms.json") -> dict[str, Any]:
         Dictionary containing PMS data.
 
     Raises:
-        FileNotFoundError: If the file doesn't exist.
-        json.JSONDecodeError: If the file contains invalid JSON.
+        UseCaseError: If loading the PMS file fails.
     """
     pms_path = get_pms_path(filename)
-    with open(pms_path, encoding="utf-8") as f:
-        return json.load(f)
+    try:
+        with open(pms_path, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError) as e:
+        from pykorf.app.exceptions import UseCaseError
+
+        raise UseCaseError(f"Failed to load PMS data: {e}") from e
 
 
 def save_pms_data(data: dict[str, Any], filename: str = "pms.json") -> None:
@@ -140,10 +144,18 @@ def save_pms_data(data: dict[str, Any], filename: str = "pms.json") -> None:
     Args:
         data: Dictionary containing PMS data.
         filename: Name of the PMS file to save.
+
+    Raises:
+        UseCaseError: If saving the PMS file fails.
     """
     pms_path = get_pms_path(filename)
-    with open(pms_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+    try:
+        with open(pms_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+    except OSError as e:
+        from pykorf.app.exceptions import UseCaseError
+
+        raise UseCaseError(f"Failed to save PMS data: {e}") from e
 
 
 def import_pms_from_excel(

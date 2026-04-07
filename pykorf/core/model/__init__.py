@@ -153,11 +153,11 @@ class Model(_ModelBase):
         return self._layout_service.check_layout()
 
     # I/O operations (delegate to _io_service)
-    def save(self, path: str | Path | None = None) -> None:
-        return self._io_service.save(path)
+    def save(self, path: str | Path | None = None, *, overwrite: bool = True) -> None:
+        return self._io_service.save(path, overwrite=overwrite)
 
-    def save_as(self, path: str | Path, *, check_layout: bool = True, overwrite: bool = False) -> None:
-        return self._io_service.save_as(path, check_layout=check_layout, overwrite=overwrite)
+    def save_as(self, path: str | Path, *, overwrite: bool = False) -> None:
+        return self._io_service.save_as(path, overwrite=overwrite)
 
     def to_excel(self, path: str | Path) -> str:
         return self._io_service.to_excel(path)

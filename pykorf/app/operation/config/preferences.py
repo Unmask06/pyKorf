@@ -13,6 +13,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from pykorf.app.exceptions import UseCaseError
 from pykorf.app.operation.config.paths import get_config_path
 
 
@@ -37,10 +38,16 @@ def save_config(config: dict[str, Any]) -> None:
 
     Args:
         config: Dictionary of configuration values to save.
+
+    Raises:
+        UseCaseError: If saving the configuration file fails.
     """
     config_path = get_config_path()
-    with open(config_path, "w", encoding="utf-8") as f:
-        json.dump(config, f, indent=2)
+    try:
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(config, f, indent=2)
+    except OSError as e:
+        raise UseCaseError(f"Failed to save configuration: {e}") from e
 
 
 def get_last_kdf_path() -> str | None:
