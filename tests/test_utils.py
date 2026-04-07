@@ -1,6 +1,6 @@
 """Tests for pyKorf utility functions."""
 
-from pykorf.utils import (
+from pykorf.core.utils import (
     _is_numeric_str,
     is_calculated,
     join_cases,

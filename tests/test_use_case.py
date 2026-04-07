@@ -12,8 +12,8 @@ from pathlib import Path
 import pytest
 
 from pykorf import Model
-from pykorf.elements import Pipe
-from pykorf.use_case import (
+from pykorf.core.elements import Pipe
+from pykorf.app import (
     FluidProperties,
     HmbReader,
     LineNumber,
@@ -27,9 +27,9 @@ from pykorf.use_case import (
     lookup_stream,
     parse_stream_from_notes,
 )
-from pykorf.use_case.exceptions import ProcessError
-from pykorf.use_case.hmb import get_stream_path, import_stream_from_excel
-from pykorf.use_case.pms import get_pms_path, import_pms_from_excel
+from pykorf.app.exceptions import ProcessError
+from pykorf.app.operation.data_import.hmb import get_stream_path, import_stream_from_excel
+from pykorf.app.operation.data_import.pms import get_pms_path, import_pms_from_excel
 
 SAMPLES_DIR = Path(__file__).parent.parent / "pykorf" / "library"
 PUMP_KDF = SAMPLES_DIR / "Pumpcases.kdf"
@@ -205,7 +205,7 @@ class TestPmsFunctions:
     def test_lookup_schedule_exact_required(self):
         """lookup_schedule() requires exact NPS match - no fallback to closest."""
         material, pms_data, od_data = load_pms(PMS_JSON, "Steel")
-        from pykorf.use_case.exceptions import PmsLookupError
+        from pykorf.app.exceptions import PmsLookupError
 
         # 5.5 is not in the table - should raise error
         with pytest.raises(PmsLookupError, match="not defined"):
@@ -218,7 +218,7 @@ class TestPmsFunctions:
     def test_lookup_schedule_unknown_class(self):
         """lookup_schedule() raises for unknown PMS class."""
         material, pms_data, od_data = load_pms(PMS_JSON, "Steel")
-        from pykorf.use_case.exceptions import PmsLookupError
+        from pykorf.app.exceptions import PmsLookupError
 
         with pytest.raises(PmsLookupError, match="PMS class not found"):
             lookup_schedule(pms_data, "UNKNOWN-CLASS", 6.0)
@@ -268,7 +268,7 @@ class TestHmbFunctions:
     def test_lookup_stream_not_found(self):
         """lookup_stream() raises for unknown stream."""
         hmb_data = load_hmb(HMB_JSON)
-        from pykorf.use_case.exceptions import StreamNotFoundError
+        from pykorf.app.exceptions import StreamNotFoundError
 
         with pytest.raises(StreamNotFoundError, match="Stream not found"):
             lookup_stream(hmb_data, "S-999")

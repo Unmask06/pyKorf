@@ -7,39 +7,52 @@ pyKorf provides a comprehensive Python API for working with KORF hydraulic model
 ```
 pykorf/
 ├── __init__.py          # Public API exports
-├── model.py             # Model, KorfModel
-├── parser.py            # KdfParser, KdfRecord
-├── elements/            # Element wrapper classes
-│   ├── base.py          # BaseElement
-│   ├── pipe.py          # Pipe
-│   ├── pump.py          # Pump
-│   └── ...
-├── definitions/         # Constants
-│   ├── element.py       # Element types
-│   ├── pipe.py          # Pipe parameters
-│   └── ...
-├── cases.py             # CaseSet
-├── results.py           # Results
-├── connectivity.py      # Connection management
-├── layout.py            # Positioning
-├── validation.py        # Validation
-├── export.py            # Export functions
-├── query.py             # Query DSL
-├── types.py             # Pydantic models
-├── config.py            # Configuration
-├── log.py               # Logging
-└── exceptions.py        # Exceptions
+├── _version.py          # Version info
+├── cli.py               # CLI entry point
+├── core/                # Core implementation
+│   ├── model/           # Model services
+│   │   ├── __init__.py  # Model class (composition pattern)
+│   │   ├── core.py      # _ModelBase
+│   │   ├── element.py   # ElementService
+│   │   ├── query.py     # QueryService
+│   │   ├── connectivity.py  # ConnectivityService
+│   │   ├── layout.py    # LayoutService
+│   │   ├── io.py        # IOService
+│   │   └── summary.py   # SummaryService
+│   ├── elements/        # Element classes
+│   │   ├── base.py      # BaseElement
+│   │   ├── pipe.py      # Pipe
+│   │   └── ...
+│   ├── parser.py        # KdfParser
+│   ├── cases.py         # CaseSet
+│   ├── fluid.py         # Fluid
+│   ├── types.py         # Pydantic models
+│   ├── log.py           # Logging
+│   ├── utils.py         # Utilities
+│   ├── exceptions.py    # Exceptions
+│   └── reports/         # Report generation
+└── app/                 # Application layer
+    ├── __init__.py      # Flask app factory
+    ├── automation.py    # KorfApp (pywinauto)
+    ├── web/             # Web utilities
+    ├── operation/       # Business logic
+    │   ├── config/      # Configuration
+    │   ├── data_import/ # PMS, HMB
+    │   ├── processor/   # Batch processing
+    │   ├── project/     # Project info
+    │   └── integration/ # SharePoint, etc.
+    ├── routes/          # Flask Blueprints
+    └── templates/       # HTML templates
 ```
 
 ## Main Classes
 
 | Class | Description |
 |-------|-------------|
-| `Model` | Top-level container for KDF files |
+| `Model` | Top-level container for KDF files (composition-based services) |
 | `KdfParser` | Low-level file tokenizer |
 | `CaseSet` | Multi-case scenario management |
-| `Results` | Extract calculated results |
-| `Query` | Fluent query DSL |
+| `Fluid` | Fluid properties |
 
 ## Element Classes
 
@@ -74,14 +87,14 @@ model.save_as("new.kdf")       # Save to new file
 
 ```python
 # Access
-elem = model["name"]          # By name
-pipe = model.pipes[1]          # By index
+elem = model.get_element("L1")   # By name
+pipe = model.pipes[1]            # By index (collection)
 
 # Modify
-model.update_element("L1", {Pipe.LEN: 100})
+model.update_element("L1", {"LEN": 100})
 
 # Add
-model.add_element(Element.PUMP, "P1")
+model.add_element("PUMP", "P1")
 
 # Delete
 model.delete_element("L1")
@@ -112,8 +125,8 @@ pipes = model.get_elements(etype="PIPE")
 p_elements = model.get_elements(name="P*")
 
 # Get/set parameters
-params = model.get_params("L1")
-model.set_params("L1", {"LEN": 200})
+value = model.get_param("L1", "LEN")
+model.set_param("L1", "LEN", 200)
 ```
 
 ## Type Hints
@@ -127,15 +140,11 @@ def update_element(self, name: str, params: dict[str, Any]) -> None: ...
 
 ## Documentation Sections
 
-- [Model](model.md) - Core model class
+- [Model](model.md) - Core model class with service architecture
 - [Elements](elements.md) - Element wrapper classes
 
-Coming soon:
-- Parser - Low-level file parsing
-- Cases - Multi-case utilities
-- Results - Results extraction
-- Export - Export functions
-- Config - Configuration
-- Logging - Structured logging
-- Exceptions - Exception hierarchy
-- Types - Pydantic models
+Related:
+- Cases - Multi-case utilities (`pykorf.core.cases`)
+- Fluid - Fluid properties (`pykorf.core.fluid`)
+- Types - Pydantic models (`pykorf.core.types`)
+- Exceptions - Exception hierarchy (`pykorf.core.exceptions`)

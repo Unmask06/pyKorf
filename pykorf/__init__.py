@@ -35,7 +35,7 @@ Example Usage
 
     >>> from pykorf import Model
     >>> model = Model("model.kdf")
-    >>> print(model.summary())
+    >>> print(model.get_summary())
     {
         'file': 'model.kdf',
         'version': 'KORF_3.6',
@@ -47,7 +47,7 @@ Example Usage
 
 ### Using Type-Safe Models
 
-    >>> from pykorf.types import PipeData, FlowParameters
+    >>> from pykorf.core.types import PipeData, FlowParameters
     >>> pipe = PipeData(
     ...     name="L1",
     ...     diameter_inch="6",
@@ -58,7 +58,7 @@ Example Usage
 ### Exporting
 
     >>> model.to_excel("model.xlsx")
-    >>> model.io.export_to_json("model.json")
+    >>> model._io_service.export_to_json("model.json")
 
 ### Querying
 
@@ -68,7 +68,7 @@ Example Usage
 
 ### Logging
 
-    >>> from pykorf.log import get_logger, log_operation
+    >>> from pykorf.core.log import get_logger, log_operation
     >>> logger = get_logger()
     >>> with log_operation("process_model", model="test.kdf"):
     ...     model = Model("test.kdf")
@@ -77,9 +77,9 @@ Example Usage
 
 from pathlib import Path
 
-from pykorf.cases import CaseSet
-from pykorf.elements import Element
-from pykorf.exceptions import (
+from pykorf.core.cases import CaseSet
+from pykorf.core.elements import Element
+from pykorf.core.exceptions import (
     AutomationError,
     CaseError,
     ConnectivityError,
@@ -95,10 +95,9 @@ from pykorf.exceptions import (
     ValidationError,
     VersionError,
 )
-from pykorf.fluid import Fluid
-from pykorf.model import KorfModel, Model
-from pykorf.results import Results
-from pykorf.types import (
+from pykorf.core.fluid import Fluid
+from pykorf.core.model import Model
+from pykorf.core.types import (
     CaseInfo,
     CompressorData,
     ElementBase,
@@ -191,7 +190,6 @@ __all__ = [
     "KdfBaseModel",
     "KdfVersion",
     "KorfError",
-    "KorfModel",
     "LayoutError",
     "Model",
     "ModelMetadata",
@@ -202,7 +200,6 @@ __all__ = [
     "ProductData",
     "PumpData",
     "PumpType",
-    "Results",
     "UnitConfiguration",
     "UnitSystem",
     "ValidationError",
@@ -221,9 +218,9 @@ def open_ui(*args, **kwargs):
     """Open a file in the running KORF instance.
 
     Lazy import to avoid requiring pywinauto at import time.
-    See :func:`pykorf.automation.open_ui` for full documentation.
+    See :func:`pykorf.app.automation.open_ui` for full documentation.
     """
-    from pykorf.automation import open_ui as _open_ui
+    from pykorf.app.automation import open_ui as _open_ui
 
     return _open_ui(*args, **kwargs)
 

@@ -1,13 +1,12 @@
 """
-Tests for CaseSet and Results helpers.
+Tests for CaseSet and element summary helpers.
 Run with:  pytest tests/
 """
 
 from pathlib import Path
 
-from pykorf.cases import CaseSet
-from pykorf.model import KorfModel
-from pykorf.results import Results
+from pykorf.core.cases import CaseSet
+from pykorf.core.model import Model
 
 SAMPLES_DIR = Path(__file__).parent.parent / "pykorf" / "library"
 PUMP_KDF = SAMPLES_DIR / "Pumpcases.kdf"
@@ -15,7 +14,7 @@ PUMP_KDF = SAMPLES_DIR / "Pumpcases.kdf"
 
 class TestCaseSet:
     def _cs(self):
-        return CaseSet(KorfModel.load(PUMP_KDF))  # type: ignore[arg-type]
+        return CaseSet(Model.load(PUMP_KDF))  # type: ignore[arg-type]
 
     def test_names(self):
         cs = self._cs()
@@ -38,7 +37,7 @@ class TestCaseSet:
     def test_invalid_case_raises(self):
         import pytest
 
-        from pykorf.exceptions import CaseError
+        from pykorf.core.exceptions import CaseError
 
         cs = self._cs()
         with pytest.raises(CaseError):
@@ -52,33 +51,36 @@ class TestCaseSet:
         assert "NORMAL" in table[0]
 
 
-class TestResults:
-    def _res(self):
-        return Results(KorfModel.load(PUMP_KDF))
+class TestElementSummary:
+    """Test direct element summary() methods (replaces old Results class)."""
+
+    def _model(self):
+        return Model.load(PUMP_KDF)
 
     def test_pump_summary(self):
-        r = self._res()
-        s = r.pump_summary(1)
-        assert "power_kW" in s
-        assert s["power_kW"] > 0
+        model = self._model()
+        pump = model.pump(1)
+        s = pump.summary(export=True)
+        assert "Hydraulic Power [kW]" in s
+        assert s["Hydraulic Power [kW]"] > 0
 
-    def test_all_pump_results(self):
-        r = self._res()
-        results = r.all_pump_results()
-        assert len(results) == 1
+    def test_all_pumps(self):
+        model = self._model()
+        pumps = [p.summary(export=True) for idx, p in model.pumps.items() if idx > 0]
+        assert len(pumps) == 1
 
     def test_pipe_velocities(self):
-        r = self._res()
-        vels = r.pipe_velocities()
+        model = self._model()
+        vels = {idx: pipe.velocity for idx, pipe in model.pipes.items() if idx > 0}
         assert 1 in vels
         assert isinstance(vels[1], list)
 
     def test_pipe_pressures(self):
-        r = self._res()
-        p = r.pipe_pressures()
+        model = self._model()
+        p = {idx: pipe.pressure for idx, pipe in model.pipes.items() if idx > 0}
         assert 1 in p
 
     def test_valve_dp(self):
-        r = self._res()
-        dp = r.valve_dp()
+        model = self._model()
+        dp = {idx: v.dp_kPag for idx, v in model.valves.items() if idx > 0}
         assert 1 in dp

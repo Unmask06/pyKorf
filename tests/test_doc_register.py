@@ -21,7 +21,7 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 
-from pykorf.use_case.preferences import (
+from pykorf.app.operation.config.preferences import (
     get_doc_register_db_last_imported,
     get_doc_register_excel_path,
     get_doc_register_sp_site_url,
@@ -99,22 +99,22 @@ def mock_config(tmp_path):
     config_file = tmp_path / "config.json"
     config_file.write_text("{}", encoding="utf-8")
 
-    with patch("pykorf.use_case.preferences.get_config_path", return_value=config_file):
+    with patch("pykorf.app.preferences.get_config_path", return_value=config_file):
         yield config_file
 
 
 @pytest.fixture
 def mock_data_dir(tmp_path):
     """Mock the data directory for DB storage."""
-    from pykorf.use_case.web.doc_register.db_ops import reset_engine
+    from pykorf.app.doc_register.db_ops import reset_engine
 
     reset_engine()
 
     data_dir = tmp_path / "data"
     data_dir.mkdir()
 
-    with patch("pykorf.use_case.paths.get_config_dir", return_value=tmp_path):
-        with patch("pykorf.use_case.paths.ensure_data_dir", return_value=data_dir):
+    with patch("pykorf.app.paths.get_config_dir", return_value=tmp_path):
+        with patch("pykorf.app.paths.ensure_data_dir", return_value=data_dir):
             yield data_dir
 
     reset_engine()
@@ -123,7 +123,7 @@ def mock_data_dir(tmp_path):
 @pytest.fixture
 def populated_db(mock_data_dir, sample_eddr_df, sample_query_df):
     """Create a pre-populated SQLite DB for testing queries."""
-    from pykorf.use_case.web.doc_register.db_ops import (
+    from pykorf.app.doc_register.db_ops import (
         Base,
         EDDR,
         QueryEntry,
@@ -199,30 +199,30 @@ class TestExcelToDB:
     """Tests for Excel-to-SQLite conversion."""
 
     def test_get_db_path(self, mock_data_dir):
-        from pykorf.use_case.web.doc_register.excel_to_db import get_db_path
+        from pykorf.app.doc_register.excel_to_db import get_db_path
 
         db_path = get_db_path()
         assert db_path == mock_data_dir / "doc_register.db"
 
     def test_is_excel_stale_no_config(self, mock_config):
-        from pykorf.use_case.web.doc_register.excel_to_db import is_excel_stale
+        from pykorf.app.doc_register.excel_to_db import is_excel_stale
 
         assert is_excel_stale() is False
 
     def test_is_excel_stale_no_excel(self, mock_config):
-        from pykorf.use_case.web.doc_register.excel_to_db import is_excel_stale
+        from pykorf.app.doc_register.excel_to_db import is_excel_stale
 
         set_doc_register_excel_path(r"C:\nonexistent\file.xlsx")
         assert is_excel_stale() is False
 
     def test_is_excel_stale_no_db(self, mock_config, mock_data_dir, sample_excel_path):
-        from pykorf.use_case.web.doc_register.excel_to_db import is_excel_stale
+        from pykorf.app.doc_register.excel_to_db import is_excel_stale
 
         set_doc_register_excel_path(str(sample_excel_path))
         assert is_excel_stale() is True
 
     def test_is_excel_stale_excel_newer(self, mock_config, mock_data_dir, sample_excel_path):
-        from pykorf.use_case.web.doc_register.excel_to_db import is_excel_stale
+        from pykorf.app.doc_register.excel_to_db import is_excel_stale
 
         set_doc_register_excel_path(str(sample_excel_path))
         set_doc_register_db_last_imported("2020-01-01T00:00:00+00:00")
@@ -230,7 +230,7 @@ class TestExcelToDB:
 
     def test_is_excel_stale_db_newer(self, mock_config, mock_data_dir, sample_excel_path):
         import time
-        from pykorf.use_case.web.doc_register.excel_to_db import build_db_from_excel, is_excel_stale
+        from pykorf.app.doc_register.excel_to_db import build_db_from_excel, is_excel_stale
 
         set_doc_register_excel_path(str(sample_excel_path))
         # Ensure Excel mtime is in the past
@@ -242,8 +242,8 @@ class TestExcelToDB:
         assert is_excel_stale() is False
 
     def test_build_db_from_excel(self, mock_config, mock_data_dir, sample_excel_path):
-        from pykorf.use_case.web.doc_register.excel_to_db import build_db_from_excel
-        from pykorf.use_case.web.doc_register.db_ops import EDDR, QueryEntry, get_engine
+        from pykorf.app.doc_register.excel_to_db import build_db_from_excel
+        from pykorf.app.doc_register.db_ops import EDDR, QueryEntry, get_engine
 
         db_path = build_db_from_excel(sample_excel_path, "https://tenant.sharepoint.com")
 
@@ -258,7 +258,7 @@ class TestExcelToDB:
         assert len(query_count) == 4
 
     def test_build_db_updates_timestamp(self, mock_config, mock_data_dir, sample_excel_path):
-        from pykorf.use_case.web.doc_register.excel_to_db import build_db_from_excel
+        from pykorf.app.doc_register.excel_to_db import build_db_from_excel
 
         build_db_from_excel(sample_excel_path, "https://tenant.sharepoint.com")
 
@@ -275,7 +275,7 @@ class TestDBOps:
     """Tests for SQLAlchemy database operations."""
 
     def test_search_eddr_by_title_match(self, populated_db):
-        from pykorf.use_case.web.doc_register.db_ops import search_eddr_by_title
+        from pykorf.app.doc_register.db_ops import search_eddr_by_title
 
         results = search_eddr_by_title("Single Line")
         assert len(results) == 1
@@ -283,25 +283,25 @@ class TestDBOps:
         assert "Single Line" in results[0]["title"]
 
     def test_search_eddr_by_title_no_match(self, populated_db):
-        from pykorf.use_case.web.doc_register.db_ops import search_eddr_by_title
+        from pykorf.app.doc_register.db_ops import search_eddr_by_title
 
         results = search_eddr_by_title("NonExistent")
         assert len(results) == 0
 
     def test_search_eddr_by_title_empty(self, populated_db):
-        from pykorf.use_case.web.doc_register.db_ops import search_eddr_by_title
+        from pykorf.app.doc_register.db_ops import search_eddr_by_title
 
         results = search_eddr_by_title("")
         assert len(results) == 0
 
     def test_search_eddr_case_insensitive(self, populated_db):
-        from pykorf.use_case.web.doc_register.db_ops import search_eddr_by_title
+        from pykorf.app.doc_register.db_ops import search_eddr_by_title
 
         results = search_eddr_by_title("single line")
         assert len(results) == 1
 
     def test_search_eddr_unordered_words(self, populated_db):
-        from pykorf.use_case.web.doc_register.db_ops import search_eddr_by_title
+        from pykorf.app.doc_register.db_ops import search_eddr_by_title
 
         # Words reversed — "Diagram Instrument Process" should still match
         # "Process and Instrument Diagram"
@@ -310,7 +310,7 @@ class TestDBOps:
         assert results[0]["document_no"] == "DOC-001"
 
     def test_search_eddr_by_document_no(self, populated_db):
-        from pykorf.use_case.web.doc_register.db_ops import search_eddr_by_title
+        from pykorf.app.doc_register.db_ops import search_eddr_by_title
 
         # Search by document number directly
         results = search_eddr_by_title("DOC-002")
@@ -318,7 +318,7 @@ class TestDBOps:
         assert results[0]["document_no"] == "DOC-002"
 
     def test_search_eddr_mixed_doc_no_and_title(self, populated_db):
-        from pykorf.use_case.web.doc_register.db_ops import search_eddr_by_title
+        from pykorf.app.doc_register.db_ops import search_eddr_by_title
 
         # "DOC-001" matches document_no, "Instrument" matches title — both words
         # must appear across either field
@@ -327,40 +327,40 @@ class TestDBOps:
         assert results[0]["document_no"] == "DOC-001"
 
     def test_search_eddr_unordered_partial_words_no_match(self, populated_db):
-        from pykorf.use_case.web.doc_register.db_ops import search_eddr_by_title
+        from pykorf.app.doc_register.db_ops import search_eddr_by_title
 
         # All words must appear — this extra word should yield no results
         results = search_eddr_by_title("Single Line Nonexistent")
         assert len(results) == 0
 
     def test_search_query_by_name_match(self, populated_db):
-        from pykorf.use_case.web.doc_register.db_ops import search_query_by_name
+        from pykorf.app.doc_register.db_ops import search_query_by_name
 
         results = search_query_by_name("DOC-001")
         assert len(results) == 2
         assert all(r["name"].startswith("DOC-001") for r in results)
 
     def test_search_query_by_name_no_match(self, populated_db):
-        from pykorf.use_case.web.doc_register.db_ops import search_query_by_name
+        from pykorf.app.doc_register.db_ops import search_query_by_name
 
         results = search_query_by_name("NONEXISTENT")
         assert len(results) == 0
 
     def test_search_query_empty(self, populated_db):
-        from pykorf.use_case.web.doc_register.db_ops import search_query_by_name
+        from pykorf.app.doc_register.db_ops import search_query_by_name
 
         results = search_query_by_name("")
         assert len(results) == 0
 
     def test_search_query_includes_folders(self, populated_db):
-        from pykorf.use_case.web.doc_register.db_ops import search_query_by_name
+        from pykorf.app.doc_register.db_ops import search_query_by_name
 
         results = search_query_by_name("DOC-002")
         assert len(results) == 1
 
     def test_search_query_entries_scoring(self, populated_db):
         """Test that search_query_entries ranks results by match quality."""
-        from pykorf.use_case.web.doc_register.db_ops import search_query_entries
+        from pykorf.app.doc_register.db_ops import search_query_entries
 
         # Search for "DOC" - should match DOC-001, DOC-002
         results = search_query_entries("DOC")
@@ -375,7 +375,7 @@ class TestDBOps:
 
     def test_search_query_entries_exact_match_ranks_first(self, populated_db):
         """Test that exact matches rank highest."""
-        from pykorf.use_case.web.doc_register.db_ops import (
+        from pykorf.app.doc_register.db_ops import (
             search_query_entries,
             reset_engine,
             get_session,
@@ -431,7 +431,7 @@ class TestDBOps:
             reset_engine()
 
     def test_construct_sharepoint_url(self):
-        from pykorf.use_case.web.doc_register.db_ops import construct_sharepoint_url
+        from pykorf.app.doc_register.db_ops import construct_sharepoint_url
 
         url = construct_sharepoint_url(
             "sites/Project/Documents/folder",
@@ -441,7 +441,7 @@ class TestDBOps:
         assert url == "https://tenant.sharepoint.com/sites/Project/Documents/folder/file.pdf"
 
     def test_construct_sharepoint_url_strips_slashes(self):
-        from pykorf.use_case.web.doc_register.db_ops import construct_sharepoint_url
+        from pykorf.app.doc_register.db_ops import construct_sharepoint_url
 
         url = construct_sharepoint_url(
             "/sites/Project/Documents/",
@@ -451,7 +451,7 @@ class TestDBOps:
         assert url == "https://tenant.sharepoint.com/sites/Project/Documents/file.pdf"
 
     def test_get_db_stats(self, populated_db):
-        from pykorf.use_case.web.doc_register.db_ops import get_db_stats
+        from pykorf.app.doc_register.db_ops import get_db_stats
 
         stats = get_db_stats()
         assert stats["db_exists"] is True
@@ -459,7 +459,7 @@ class TestDBOps:
         assert stats["query_count"] == 4
 
     def test_get_db_stats_no_db(self, mock_data_dir):
-        from pykorf.use_case.web.doc_register.db_ops import get_db_stats
+        from pykorf.app.doc_register.db_ops import get_db_stats
 
         stats = get_db_stats()
         assert stats["db_exists"] is False
@@ -476,11 +476,11 @@ class TestDocRegisterAPI:
     @pytest.fixture
     def client(self, mock_config, mock_data_dir):
         """Create a Flask test client."""
-        from pykorf.use_case.web.doc_register.db_ops import reset_engine
+        from pykorf.app.doc_register.db_ops import reset_engine
 
         reset_engine()
 
-        from pykorf.use_case.web.app import create_app
+        from pykorf.app import create_app
 
         app = create_app()
         app.config["TESTING"] = True

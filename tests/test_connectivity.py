@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from pykorf.exceptions import ConnectivityError
-from pykorf.model import Model
+from pykorf.core.exceptions import ConnectivityError
+from pykorf.core.model import Model
 
 SAMPLES_DIR = Path(__file__).parent.parent / "pykorf" / "library"
 PUMP_KDF = SAMPLES_DIR / "Pumpcases.kdf"

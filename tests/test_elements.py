@@ -5,7 +5,7 @@ Run with:  pytest tests/
 
 from pathlib import Path
 
-from pykorf.model import KorfModel
+from pykorf.core.model import Model
 
 SAMPLES_DIR = Path(__file__).parent.parent / "pykorf" / "library"
 PUMP_KDF = SAMPLES_DIR / "Pumpcases.kdf"
@@ -14,7 +14,7 @@ CRANE_KDF = SAMPLES_DIR / "crane10.kdf"
 
 class TestPipe:
     def _model(self, kdf=PUMP_KDF):
-        return KorfModel.load(kdf)
+        return Model.load(kdf)
 
     def test_pipe_name(self):
         m = self._model()
@@ -52,7 +52,7 @@ class TestPipe:
 
 class TestPump:
     def _pump(self):
-        return KorfModel.load(PUMP_KDF).pumps[1]
+        return Model.load(PUMP_KDF).pumps[1]
 
     def test_pump_name(self):
         assert self._pump().name == "P1"
@@ -78,7 +78,7 @@ class TestPump:
         assert len(p.curve_q) == len(p.curve_h) == len(p.curve_eff)
 
     def test_set_efficiency(self):
-        m = KorfModel.load(PUMP_KDF)
+        m = Model.load(PUMP_KDF)
         # Set efficiency override (stored at index 0)
         m.pumps[1].set_efficiency(0.75)
         # Verify it was set correctly by checking the raw value
@@ -96,7 +96,7 @@ class TestPump:
 
 class TestFeedProduct:
     def _model(self):
-        return KorfModel.load(PUMP_KDF)
+        return Model.load(PUMP_KDF)
 
     def test_feed_pressure(self):
         m = self._model()
@@ -116,7 +116,7 @@ class TestFeedProduct:
 
 class TestValveOrifice:
     def _model(self):
-        return KorfModel.load(PUMP_KDF)
+        return Model.load(PUMP_KDF)
 
     def test_valve_exists(self):
         m = self._model()
@@ -133,7 +133,7 @@ class TestValveOrifice:
 
 class TestHeatExchanger:
     def _model(self):
-        return KorfModel.load(PUMP_KDF)
+        return Model.load(PUMP_KDF)
 
     def test_hx_exists(self):
         m = self._model()

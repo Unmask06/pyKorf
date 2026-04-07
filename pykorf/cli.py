@@ -11,8 +11,6 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 
-from pykorf.update import check_for_update, install_update
-
 TRIAL_START_DATE = datetime(2026, 3, 15)
 TRIAL_DURATION_DAYS = 7
 DEVELOPER_CONTACT = "Prasanna Palanivel"
@@ -116,74 +114,6 @@ def show_trial_info(days_left: int) -> None:
     console.print()
 
 
-def show_update_prompt(update_info: dict) -> None:
-    """Display update available prompt and handle user response.
-
-    Args:
-        update_info: Dict with 'latest_version', 'release_url', and 'zipball_url' keys.
-    """
-    latest_version = update_info["latest_version"]
-    release_url = update_info.get("release_url", "")
-    zipball_url = update_info.get("zipball_url", "")
-    release_notes = update_info.get("release_notes", "")
-
-    body = f"A newer version of pyKorf is available: [bold cyan]v{latest_version}[/bold cyan]\n"
-    if release_notes:
-        body += "\n[bold]What's new:[/bold]\n"
-        body += f"[dim]{release_notes}[/dim]\n"
-    body += "\n\nInstall now? [Y/n]"
-
-    console.print(
-        Panel(body, title="📦 Update Available", border_style="green", padding=(0, 1)),
-        justify="center",
-    )
-
-    response = console.input().strip().lower()
-
-    if response not in ("", "y", "yes"):
-        return
-
-    console.print()
-
-    if not zipball_url:
-        console.print("[yellow]No download URL available — please update manually.[/yellow]")
-        console.print()
-        console.print("[dim]Press Enter to continue...[/dim]")
-        console.input()
-        return
-
-    success = False
-    message = ""
-
-    with console.status("[dim]Downloading update...[/dim]", spinner="dots"):
-        success, message = install_update(zipball_url)
-
-    if success:
-        console.print(
-            Panel(
-                f"[green]{message}[/green]",
-                title="✅ Update Installed",
-                border_style="green",
-                padding=(0, 1),
-            ),
-            justify="center",
-        )
-    else:
-        console.print(
-            Panel(
-                f"[red]{message}[/red]",
-                title="❌ Update Failed",
-                border_style="red",
-                padding=(0, 1),
-            ),
-            justify="center",
-        )
-
-    console.print()
-    console.print("[dim]Press Enter to continue...[/dim]")
-    console.input()
-
-
 def main():
     """Launch the pyKorf web application."""
     parser = argparse.ArgumentParser(
@@ -217,13 +147,7 @@ def main():
         days_left = (TRIAL_START_DATE + timedelta(days=TRIAL_DURATION_DAYS) - datetime.now()).days
         show_trial_info(max(0, days_left))
 
-    pkg_version = get_version()
-    if pkg_version != "dev":
-        update_info = check_for_update(pkg_version)
-        if update_info:
-            show_update_prompt(update_info)
-
-    from pykorf.use_case.web.app import run_server
+    from pykorf.app import run_server
 
     run_server(port=args.port)
 

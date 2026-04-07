@@ -6,7 +6,7 @@ from pathlib import Path
 import openpyxl
 import pytest
 
-from pykorf.use_case.batch_report import BatchReportGenerator
+from pykorf.app.operation.processor.batch_report import BatchReportGenerator
 
 
 class TestBatchReportSheetPreservation:

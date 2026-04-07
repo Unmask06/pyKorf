@@ -1,0 +1,25 @@
+# Factory defaults for project metadata fields.
+# These are the bundled defaults. User overrides are stored in config.json
+# under the "project_info" key and take precedence.
+
+[company]
+company1 = ""
+company2 = ""
+
+[project]
+name1 = ""
+name2 = ""
+item_name1 = ""
+item_name2_from_filename = true   # auto-populate item_name2 from KDF filename stem
+item_name2 = ""
+
+[engineering]
+prepared_by_from_username = true  # derive initials from %USERNAME% env var
+prepared_by_format = "initials"   # "initials" = uppercase letters only; "full" = whole username
+prepared_by = ""                  # static override (used when prepared_by_from_username = false)
+checked_by = ""
+approved_by = ""
+date_auto = true                  # populate from today's date
+date_format = "%d/%m/%y"
+project_no = "1060-2501"
+revision = "A"

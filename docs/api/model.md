@@ -4,7 +4,7 @@ The `Model` class is the main entry point for working with KDF files.
 
 ## Model Class
 
-::: pykorf.model.Model
+::: pykorf.core.model.Model
     options:
       show_root_heading: true
       show_source: true
@@ -12,14 +12,15 @@ The `Model` class is the main entry point for working with KDF files.
         - __init__
         - load
         - save
-        - save_as
         - to_dataframes
         - from_dataframes
         - to_excel
         - from_excel
-        - summary
+        - get_summary
         - validate
         - get_element
+        - get_elements
+        - get_elements_by_type
         - update_element
         - update_elements
         - add_element
@@ -27,18 +28,11 @@ The `Model` class is the main entry point for working with KDF files.
         - delete_element
         - delete_elements
         - copy_element
-        - copy_elements
         - move_element
         - connect_elements
         - disconnect_elements
-        - check_connectivity
-        - get_connection
-        - get_unconnected_elements
-        - check_layout
-        - visualize
-        - visualize_network
-        - get_elements_by_type
-        - compact_indices
+        - set_param
+        - get_param
 
 ## Model Properties
 
@@ -49,22 +43,34 @@ The `Model` class is the main entry point for working with KDF files.
 | `num_pipes` | `int` | Number of pipes |
 | `num_pumps` | `int` | Number of pumps |
 | `num_cases` | `int` | Number of cases |
-| `elements` | `list[BaseElement]` | All real elements |
 | `general` | `General` | General settings |
-| `pipes` | `dict[int, Pipe]` | Pipe collection |
-| `pumps` | `dict[int, Pump]` | Pump collection |
-| `valves` | `dict[int, Valve]` | Valve collection |
-| `feeds` | `dict[int, Feed]` | Feed collection |
-| `products` | `dict[int, Product]` | Product collection |
-| `exchangers` | `dict[int, HeatExchanger]` | HX collection |
-| `compressors` | `dict[int, Compressor]` | Compressor collection |
-| `vessels` | `dict[int, Vessel]` | Vessel collection |
-| `tees` | `dict[int, Tee]` | Tee collection |
+| `pipes` | `dict[int, Pipe]` | Pipe collection (index 0 = default) |
+| `pumps` | `dict[int, Pump]` | Pump collection (index 0 = default) |
+| `valves` | `dict[int, Valve]` | Valve collection (index 0 = default) |
+| `feeds` | `dict[int, Feed]` | Feed collection (index 0 = default) |
+| `products` | `dict[int, Product]` | Product collection (index 0 = default) |
 | `junctions` | `dict[int, Junction]` | Junction collection |
+| `tees` | `dict[int, Tee]` | Tee collection |
 | `check_valves` | `dict[int, CheckValve]` | Check valve collection |
 | `orifices` | `dict[int, FlowOrifice]` | Orifice collection |
+| `exchangers` | `dict[int, HeatExchanger]` | Heat exchanger collection |
+| `compressors` | `dict[int, Compressor]` | Compressor collection |
+| `vessels` | `dict[int, Vessel]` | Vessel collection |
 | `expanders` | `dict[int, Expander]` | Expander collection |
 | `misc_equipment` | `dict[int, MiscEquipment]` | Misc equipment collection |
+| `pseudos` | `dict[int, Pseudo]` | Pseudo collection |
+| `symbols` | `dict[int, Symbol]` | Symbol collection |
+
+## Service Attributes (Internal)
+
+| Service | Attribute | Purpose |
+|---------|-----------|---------|
+| `ElementService` | `model._element_service` | CRUD operations |
+| `QueryService` | `model._query_service` | Filtering, get/set params |
+| `ConnectivityService` | `model._connectivity_service` | Connect/disconnect |
+| `LayoutService` | `model._layout_service` | Positioning, routing |
+| `IOService` | `model._io_service` | Save, export, import |
+| `SummaryService` | `model._summary_service` | Validate, summary |
 
 ## Examples
 
@@ -74,17 +80,15 @@ The `Model` class is the main entry point for working with KDF files.
 from pykorf import Model
 
 model = Model("Pumpcases.kdf")
-print(model.summary())
+print(model.get_summary())
 ```
 
 ### Modifying Elements
 
 ```python
-from pykorf.elements import Pipe
-
 model.update_element("L1", {
-    Pipe.LEN: 200,
-    Pipe.TFLOW: "50;55;20"
+    "LEN": 200,
+    "TFLOW": "50;55;20"
 })
 model.save()
 ```
@@ -92,11 +96,20 @@ model.save()
 ### Adding Elements
 
 ```python
-from pykorf.elements import Element, Pump
-
-model.add_element(Element.PUMP, "P2")
+model.add_element("PUMP", "P2")
 model.connect_elements("L1", "P2")
 model.save()
+```
+
+### Query and Parameters
+
+```python
+# Get all pipes
+pipes = model.get_elements(etype="PIPE")
+
+# Get/set parameter
+flow = model.get_param("L1", "TFLOW")
+model.set_param("L1", "TFLOW", "60;65;25")
 ```
 
 ## KorfModel Alias

@@ -64,10 +64,10 @@ pyKorf is a comprehensive Python library that enables programmatic manipulation 
 | **Edit Models** | Modify element parameters, add/remove elements, update connectivity |
 | **Multi-Case** | Handle multiple simulation scenarios in a single file |
 | **Validate** | Check model integrity and KDF format compliance |
-| **Export** | Export to JSON, YAML, Excel, and CSV formats |
-| **Visualize** | Generate interactive network diagrams with PyVis |
+| **Export** | Export to Excel and DataFrames |
 | **Automate** | Control the KORF GUI programmatically (Windows) |
-| **Type Safe** | Full Pydantic models for data validation |
+| **Type Safe** | Full type hints for IDE support |
+| **Web UI** | Interactive browser-based model editor |
 
 ---
 
@@ -109,6 +109,10 @@ pipes = model.get_elements(etype="PIPE")
 
 # Filter by name pattern
 p_elements = model.get_elements(name="P*")
+
+# Get/set parameters
+flow = model.get_param("L1", "TFLOW")
+model.set_param("L1", "TFLOW", "80;90;60")
 
 # Save changes
 model.save("Pumpcases_modified.kdf")

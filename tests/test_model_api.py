@@ -9,9 +9,9 @@ from pathlib import Path
 
 import pytest
 
-from pykorf.elements import Element, Feed
-from pykorf.exceptions import ElementNotFound
-from pykorf.model import KorfModel, Model
+from pykorf.core.elements import Element, Feed
+from pykorf.core.exceptions import ElementNotFound
+from pykorf.core.model import Model
 
 SAMPLES_DIR = Path(__file__).parent.parent / "pykorf" / "library"
 PUMP_KDF = SAMPLES_DIR / "Pumpcases.kdf"
@@ -45,18 +45,9 @@ class TestModelConstructor:
         m = Model.load(PUMP_KDF)
         assert m.num_pipes == 5
 
-    def test_korf_model_alias(self):
-        """KorfModel is an alias for Model."""
-        assert KorfModel is Model
-
-    def test_backward_compat_load(self):
-        """KorfModel.load() still works."""
-        m = KorfModel.load(PUMP_KDF)
-        assert "NORMAL" in m.general.case_descriptions
-
     def test_repr(self):
         m = Model(PUMP_KDF)
-        assert "KorfModel(" in repr(m)
+        assert "Model(" in repr(m)
 
     def test_load_v36(self):
         m = Model(CWC_KDF)
