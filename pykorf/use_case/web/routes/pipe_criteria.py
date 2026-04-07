@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import structlog
 from flask import Blueprint, render_template, request
 
+from pykorf.log import get_logger
 from pykorf.use_case.web import session as _sess
 from pykorf.use_case.web.helpers import is_redirect, require_model
 
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from pykorf.elements.pipe import Pipe
     from pykorf.model import Model
 
-logger = structlog.get_logger(__name__)
+logger = get_logger(__name__)
 bp = Blueprint("pipe_criteria", __name__)
 
 

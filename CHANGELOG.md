@@ -5,6 +5,22 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] - 2026-04-07
+
+### What's New
+
+- File picker now remembers your recently visited folders for quick access.
+- Document Register search ranks results by match quality, showing the best matches first.
+- You can now search files directly in Step 2 without selecting a document from Step 1.
+
+### Improved
+
+- SharePoint URL validation is simpler and includes a test link to verify URLs in your browser.
+- File browsing is faster with better navigation and clearer error messages.
+- Operation logs now appear as colored messages in the web interface for better visibility.
+
+---
+
 ## [0.11.0] - 2026-04-06
 
 ### What's New

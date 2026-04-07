@@ -29,7 +29,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
-import structlog
+from pykorf.log import get_logger
 
 
 # ── Data model ────────────────────────────────────────────────────────────────
@@ -127,7 +127,7 @@ class ReferencesStore:
         Returns:
             ReferencesStore instance.
         """
-        logger = structlog.get_logger()
+        logger = get_logger(__name__)
         try:
             data: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
             refs = [Reference(**r) for r in data.get("references", [])]

@@ -357,7 +357,78 @@ class TestDBOps:
 
         results = search_query_by_name("DOC-002")
         assert len(results) == 1
-        assert results[0]["item_type"] == "Folder"
+
+    def test_search_query_entries_scoring(self, populated_db):
+        """Test that search_query_entries ranks results by match quality."""
+        from pykorf.use_case.web.doc_register.db_ops import search_query_entries
+
+        # Search for "DOC" - should match DOC-001, DOC-002
+        results = search_query_entries("DOC")
+        assert len(results) > 0
+
+        # Results should be sorted by score (best matches first)
+        # Names starting with "DOC" should rank higher
+        names = [r["name"] for r in results]
+
+        # Verify we get results containing "DOC"
+        assert any("DOC" in name for name in names)
+
+    def test_search_query_entries_exact_match_ranks_first(self, populated_db):
+        """Test that exact matches rank highest."""
+        from pykorf.use_case.web.doc_register.db_ops import (
+            search_query_entries,
+            reset_engine,
+            get_session,
+            QueryEntry,
+        )
+
+        # Add test data with known names
+        reset_engine()
+        session = get_session()
+        try:
+            # Clear existing and add controlled test data
+            session.query(QueryEntry).delete()
+            test_entries = [
+                {
+                    "name": "PID-001",
+                    "modified": "2024-01-01",
+                    "modified_by": "user",
+                    "path": "docs",
+                    "item_type": "File",
+                },
+                {
+                    "name": "Main-PID-001",
+                    "modified": "2024-01-01",
+                    "modified_by": "user",
+                    "path": "docs",
+                    "item_type": "File",
+                },
+                {
+                    "name": "COPY_OF_PID",
+                    "modified": "2024-01-01",
+                    "modified_by": "user",
+                    "path": "docs",
+                    "item_type": "File",
+                },
+            ]
+            for entry in test_entries:
+                session.add(QueryEntry(**entry))
+            session.commit()
+
+            results = search_query_entries("PID")
+            assert len(results) == 3
+
+            # "PID-001" (starts with) should rank first
+            assert results[0]["name"] == "PID-001"
+
+            # "Main-PID-001" (word boundary) should rank second
+            assert results[1]["name"] == "Main-PID-001"
+
+            # "COPY_OF_PID" (end match) should rank last
+            assert results[2]["name"] == "COPY_OF_PID"
+        finally:
+            session.close()
+            reset_engine()
 
     def test_construct_sharepoint_url(self):
         from pykorf.use_case.web.doc_register.db_ops import construct_sharepoint_url

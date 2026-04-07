@@ -6,8 +6,7 @@ from pathlib import Path
 
 from flask import Blueprint, jsonify, request
 
-import structlog
-
+from pykorf.log import get_logger
 from pykorf.use_case.config import (
     get_doc_register_excel_path,
     get_doc_register_sp_site_url,
@@ -23,9 +22,10 @@ from pykorf.use_case.web.doc_register.db_ops import (
     get_db_stats,
     search_eddr_by_title,
     search_query_by_name,
+    search_query_entries,
 )
 
-logger = structlog.get_logger()
+logger = get_logger(__name__)
 
 bp = Blueprint("doc_register", __name__)
 
@@ -88,6 +88,24 @@ def api_search_query():
         return jsonify([])
 
     results = search_query_by_name(doc_no)
+    return jsonify(results)
+
+
+@bp.route("/api/doc-register/search-files")
+def api_search_files():
+    """Search query entries by name or path.
+
+    Query params:
+        q (str): Search term (min 2 chars, matched against name and path).
+
+    Returns:
+        JSON list of {name, modified, modified_by, path, item_type}.
+    """
+    q = (request.args.get("q") or "").strip()
+    if len(q) < 2:
+        return jsonify([])
+
+    results = search_query_entries(q)
     return jsonify(results)
 
 

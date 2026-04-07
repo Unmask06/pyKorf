@@ -25,7 +25,7 @@ import time
 from pathlib import Path
 from urllib.parse import quote
 
-import structlog
+from pykorf.log import get_logger
 
 
 # ── Registry helpers ──────────────────────────────────────────────────────────
@@ -49,7 +49,7 @@ def _read_sync_roots() -> list[tuple[str, str]]:
     """
     global _sync_roots_cache, _cache_timestamp
 
-    logger = structlog.get_logger()
+    logger = get_logger(__name__)
 
     now = time.time()
     if _sync_roots_cache is not None and (now - _cache_timestamp) < _CACHE_TTL_SECONDS:

@@ -7,11 +7,10 @@ from pathlib import Path
 
 from flask import Blueprint, redirect, render_template, request, url_for
 
+from pykorf.log import get_logger
 from pykorf.use_case.web import session as _sess
 
-import structlog
-
-logger = structlog.get_logger(__name__)
+logger = get_logger(__name__)
 bp = Blueprint("file_picker", __name__)
 
 
@@ -27,6 +26,30 @@ def _get_username() -> str:
     return os.environ.get("USERNAME") or os.environ.get("USER") or "there"
 
 
+def _check_setup() -> tuple[bool, bool, bool]:
+    """Check whether mandatory preferences are configured.
+
+    Returns:
+        (setup_ok, sp_ok, doc_register_ok) — all True means ready to open a model.
+    """
+    from pathlib import Path as _Path
+
+    from pykorf.use_case.config import get_doc_register_excel_path, get_sp_overrides
+
+    sp_ok = bool(get_sp_overrides())
+    excel_path = get_doc_register_excel_path()
+    doc_register_ok = bool(excel_path and _Path(excel_path).is_file())
+    setup_ok = sp_ok and doc_register_ok
+
+    logger.info(
+        "setup_check",
+        sp_ok=sp_ok,
+        doc_register_ok=doc_register_ok,
+        setup_ok=setup_ok,
+    )
+    return setup_ok, sp_ok, doc_register_ok
+
+
 @bp.route("/", methods=["GET"])
 def file_picker_page():
     """Render the KDF file picker page."""
@@ -34,12 +57,16 @@ def file_picker_page():
 
     recent: list[str] = get_recent_files() or []
     default_path: str = recent[0] if recent else ""
+    setup_ok, sp_ok, doc_register_ok = _check_setup()
     return render_template(
         "file_picker.html",
         recent_files=recent,
         default_path=default_path,
         filename=_get_filename(default_path),
         username=_get_username(),
+        setup_ok=setup_ok,
+        sp_ok=sp_ok,
+        doc_register_ok=doc_register_ok,
     )
 
 
@@ -48,6 +75,22 @@ def open_file():
     """Load a KDF file into the global model state."""
     from pykorf import Model
     from pykorf.use_case.config import get_recent_files, record_opened_file
+
+    setup_ok, sp_ok, doc_register_ok = _check_setup()
+    if not setup_ok:
+        recent: list[str] = get_recent_files() or []
+        default_path = (request.form.get("kdf_path") or "").strip()
+        return render_template(
+            "file_picker.html",
+            recent_files=recent,
+            default_path=default_path,
+            filename=_get_filename(default_path),
+            username=_get_username(),
+            setup_ok=False,
+            sp_ok=sp_ok,
+            doc_register_ok=doc_register_ok,
+            error="Complete the required setup in Preferences before opening a model.",
+        ), 403
 
     kdf_path_str = (request.form.get("kdf_path") or "").strip()
     # Strip surrounding double quotes if present

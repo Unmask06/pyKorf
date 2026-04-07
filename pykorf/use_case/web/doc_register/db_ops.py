@@ -76,8 +76,25 @@ def get_engine():
     """
     global _engine, _SessionFactory
     if _engine is None:
+        from sqlalchemy import event
+
         db_path = get_db_path()
-        _engine = create_engine(f"sqlite:///{db_path}", pool_pre_ping=True)
+        _engine = create_engine(
+            f"sqlite:///{db_path}",
+            pool_pre_ping=True,
+            connect_args={"check_same_thread": False},
+        )
+
+        @event.listens_for(_engine, "connect")
+        def _set_pragmas(dbapi_conn, _record):
+            cur = dbapi_conn.cursor()
+            cur.execute("PRAGMA journal_mode=WAL")       # faster concurrent reads
+            cur.execute("PRAGMA synchronous=NORMAL")     # safe but not fsync on every write
+            cur.execute("PRAGMA cache_size=-4000")       # 4 MB page cache
+            cur.execute("PRAGMA mmap_size=16777216")     # 16 MB memory-mapped I/O
+            cur.execute("PRAGMA temp_store=MEMORY")      # temp tables in RAM
+            cur.close()
+
         _SessionFactory = sessionmaker(bind=_engine)
     return _engine
 
@@ -172,6 +189,152 @@ def search_query_by_name(doc_no: str, limit: int = 20) -> list[dict[str, str]]:
                 "item_type": row.item_type,
             }
             for row in results
+        ]
+    finally:
+        session.close()
+
+
+def _score_match(query: str, target: str) -> int:
+    """Score how well a query matches a target string.
+
+    Uses multi-factor scoring:
+    - Exact match: 1000 pts
+    - Starts with query: 500 pts
+    - Word boundary match (after -, _, space, .): 200 pts
+    - Position-based: 100 * (1 - position/len)
+    - Length bonus: 50 * (1 - target_len/query_len)
+
+    Args:
+        query: Search query string.
+        target: Target string to match against.
+
+    Returns:
+        Score (higher = better match).
+    """
+    if not query or not target:
+        return 0
+
+    query_lower = query.lower()
+    target_lower = target.lower()
+    query_len = len(query_lower)
+    target_len = len(target_lower)
+
+    # Exact match (case-insensitive)
+    if query_lower == target_lower:
+        return 1000
+
+    # Starts with query
+    if target_lower.startswith(query_lower):
+        # Bonus for shorter targets (more specific)
+        length_bonus = (
+            int(50 * (1 - target_len / (query_len * 3))) if target_len > query_len else 50
+        )
+        return 500 + max(0, length_bonus)
+
+    # Find all match positions
+    position = target_lower.find(query_lower)
+    if position == -1:
+        return 0
+
+    score = 0
+
+    # Check if match is at word boundary (after -, _, space, ., or digit-letter transition)
+    if position > 0:
+        prev_char = target[position - 1]
+        if prev_char in "-_ .":
+            score += 200  # Word boundary match
+        elif prev_char.isdigit() and query[0].isalpha():
+            score += 150  # Digit-letter transition (e.g., "001P" in "DWG-001-PID")
+    else:
+        # Match at start but not exact (already handled above for starts-with)
+        score += 100
+
+    # Position score (earlier = better)
+    if position > 0:
+        position_score = int(100 * (1 - position / target_len))
+        score += max(0, position_score)
+
+    # Length bonus (shorter targets that contain the query are more specific)
+    if target_len > query_len:
+        length_bonus = int(50 * (1 - (target_len - query_len) / target_len))
+        score += max(0, length_bonus)
+
+    return score
+
+
+def search_query_entries(term: str, limit: int = 50) -> list[dict[str, str]]:
+    """Search query entries by name or path.
+
+    Returns both Items (files) and Folders, sorted by match score (best first),
+    then by modified time descending.
+
+    Args:
+        term: Search term (matched against name and path).
+        limit: Maximum number of results to return.
+
+    Returns:
+        List of dicts with keys 'name', 'modified', 'modified_by',
+        'path', 'item_type'.
+    """
+    if not term or len(term.strip()) < 2:
+        return []
+
+    search_term = f"%{term.strip()}%"
+    session = get_session()
+    try:
+        # Fetch at most limit*4 rows from SQLite — never pull the whole table
+        results = (
+            session.query(
+                QueryEntry.name,
+                QueryEntry.modified,
+                QueryEntry.modified_by,
+                QueryEntry.path,
+                QueryEntry.item_type,
+            )
+            .filter(
+                or_(
+                    QueryEntry.name.ilike(search_term),
+                    QueryEntry.path.ilike(search_term),
+                )
+            )
+            .limit(limit * 4)
+            .all()
+        )
+
+        # Score and sort results
+        scored_results = []
+        for row in results:
+            # Score based on name match (primary) and path match (secondary)
+            name_score = _score_match(term, row.name)
+            path_score = _score_match(term, row.path) if row.path else 0
+            # Use the higher of name or path score, with name getting priority
+            final_score = name_score * 2 + path_score
+
+            scored_results.append(
+                {
+                    "name": row.name,
+                    "modified": row.modified,
+                    "modified_by": row.modified_by,
+                    "path": row.path,
+                    "item_type": row.item_type,
+                    "_score": final_score,
+                    "_modified_ts": row.modified,
+                }
+            )
+
+        # Sort by score (descending), then by modified time (descending)
+        scored_results.sort(key=lambda x: (-x["_score"], x["_modified_ts"] or ""), reverse=False)
+
+        # Remove internal scoring fields and apply limit
+        return [
+            {
+                "name": r["name"],
+                "modified": r["modified"],
+                "modified_by": r["modified_by"],
+                "path": r["path"],
+                "item_type": r["item_type"],
+            }
+            for r in scored_results[:limit]
         ]
     finally:
         session.close()

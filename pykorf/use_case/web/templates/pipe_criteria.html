@@ -154,6 +154,16 @@ block content %} {% if set_result %}
               <i class="bi bi-arrow-down-up sort-icon"></i>
             </th>
             <th
+              style="width: 90px"
+              class="text-center text-nowrap sortable"
+              data-column="dp_calc"
+            >
+              dP calc<br /><small class="fw-normal text-secondary"
+                >kPa/100m</small
+              >
+              <i class="bi bi-arrow-down-up sort-icon"></i>
+            </th>
+            <th
               style="width: 100px"
               class="text-center text-nowrap sortable"
               data-column="dp_max"
@@ -161,6 +171,14 @@ block content %} {% if set_result %}
               dP max<br /><small class="fw-normal text-secondary"
                 >kPa/100m</small
               >
+              <i class="bi bi-arrow-down-up sort-icon"></i>
+            </th>
+            <th
+              style="width: 80px"
+              class="text-center text-nowrap sortable"
+              data-column="vel_calc"
+            >
+              vel calc<br /><small class="fw-normal text-secondary">m/s</small>
               <i class="bi bi-arrow-down-up sort-icon"></i>
             </th>
             <th
@@ -180,16 +198,6 @@ block content %} {% if set_result %}
               <i class="bi bi-arrow-down-up sort-icon"></i>
             </th>
             <th
-              style="width: 120px"
-              class="text-center text-nowrap sortable"
-              data-column="rho_v2_range"
-            >
-              &rho;V&sup2; range<br /><small class="fw-normal text-secondary"
-                >Pa</small
-              >
-              <i class="bi bi-arrow-down-up sort-icon"></i>
-            </th>
-            <th
               style="width: 90px"
               class="text-center text-nowrap sortable"
               data-column="rho_v2_calc"
@@ -200,21 +208,13 @@ block content %} {% if set_result %}
               <i class="bi bi-arrow-down-up sort-icon"></i>
             </th>
             <th
-              style="width: 90px"
+              style="width: 120px"
               class="text-center text-nowrap sortable"
-              data-column="dp_calc"
+              data-column="rho_v2_range"
             >
-              dP/DL calc<br /><small class="fw-normal text-secondary"
-                >kPa/100m</small
+              &rho;V&sup2; range<br /><small class="fw-normal text-secondary"
+                >Pa</small
               >
-              <i class="bi bi-arrow-down-up sort-icon"></i>
-            </th>
-            <th
-              style="width: 80px"
-              class="text-center text-nowrap sortable"
-              data-column="vel_calc"
-            >
-              vel calc<br /><small class="fw-normal text-secondary">m/s</small>
               <i class="bi bi-arrow-down-up sort-icon"></i>
             </th>
           </tr>
@@ -263,7 +263,19 @@ block content %} {% if set_result %}
               </select>
             </td>
             <td
+              class="text-center font-monospace small calc-dp"
+              data-pipe="{{ pipe_name }}"
+            >
+              —
+            </td>
+            <td
               class="text-center font-monospace small crit-dp"
+              data-pipe="{{ pipe_name }}"
+            >
+              —
+            </td>
+            <td
+              class="text-center font-monospace small calc-vel"
               data-pipe="{{ pipe_name }}"
             >
               —
@@ -281,25 +293,13 @@ block content %} {% if set_result %}
               —
             </td>
             <td
-              class="text-center font-monospace small crit-rhov2"
-              data-pipe="{{ pipe_name }}"
-            >
-              —
-            </td>
-            <td
               class="text-center font-monospace small calc-rhov2"
               data-pipe="{{ pipe_name }}"
             >
               —
             </td>
             <td
-              class="text-center font-monospace small calc-dp"
-              data-pipe="{{ pipe_name }}"
-            >
-              —
-            </td>
-            <td
-              class="text-center font-monospace small calc-vel"
+              class="text-center font-monospace small crit-rhov2"
               data-pipe="{{ pipe_name }}"
             >
               —
@@ -381,6 +381,14 @@ rho_v2_calc}} #}
   .sortable.sort-asc .sort-icon,
   .sortable.sort-desc .sort-icon {
     opacity: 1;
+  }
+  /* Grey out criteria (limit) columns */
+  .crit-dp,
+  .crit-vmin,
+  .crit-vmax,
+  .crit-rhov2 {
+    background-color: #f1f3f5 !important;
+    color: #6c757d;
   }
 </style>
 <script src="{{ url_for('static', filename='pipe_criteria.js') }}"></script>
