@@ -23,3 +23,9 @@ date_auto = true                  # populate from today's date
 date_format = "%d/%m/%y"
 project_no = "1060-2501"
 revision = "A"
+
+[sharepoint]
+default_site_url = "https://cc7ges.sharepoint.com"
+# Full SharePoint URL to the Document Register Excel file
+# Format: https://tenant.sharepoint.com/sites/Site/Shared Documents/Path/File.xlsx
+doc_register_url = "https://cc7ges.sharepoint.com/sites/25002TAZIZSALT-ADNOCUAE/Shared Documents/2 EXECUTION/2. ENG/2A-PROCESS/08) Calculations/Hydraulics/Document Register.xlsx"

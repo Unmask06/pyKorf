@@ -9,6 +9,11 @@
       "target_unit": "barg",
       "multiplier": 0.01,
       "offset": 0.0
+    },
+    "t/h": {
+      "target_unit": "kg/h",
+      "multiplier": 1000,
+      "offset": 0.0
     }
   }
 }

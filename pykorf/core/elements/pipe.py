@@ -239,6 +239,16 @@ class Pipe(BaseElement):
     def flow_unit(self) -> str:
         return str(self._scalar(Pipe.TFLOW, 2))
 
+    @property
+    def flow_rate(self) -> tuple[float, str]:
+        """Return (flow_rate_numeric, flow_unit) tuple."""
+        try:
+            flow_val = float(self._scalar(Pipe.TFLOW, 1))
+            flow_unit = str(self._scalar(Pipe.TFLOW, 2))
+            return (flow_val, flow_unit)
+        except (TypeError, ValueError):
+            return (0.0, "")
+
     def get_flow(self) -> list[str]:
         """Return the input flow for each case."""
         return split_cases(self.flow_string)
@@ -729,7 +739,10 @@ class Pipe(BaseElement):
         if export:
             # Local import to avoid circular dependency with use_case module
             from pykorf.app.operation.data_import.line_number import LineNumber
-            from pykorf.app.operation.integration.sizing_criteria import code_to_state, lookup_criteria
+            from pykorf.app.operation.integration.sizing_criteria import (
+                code_to_state,
+                lookup_criteria,
+            )
 
             dp_crit_val, dp_crit_unit = self.get_value_and_unit(Pipe.SIZ, val_index=1, unit_index=2)
             if isinstance(dp_crit_val, float) and dp_crit_val >= 9999:

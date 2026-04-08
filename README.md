@@ -358,7 +358,6 @@ uv run mypy pykorf
 pyKorf/
 ├── pykorf/                       # Package source
 │   ├── __init__.py               # Public API exports
-│   ├── _version.py               # Version info
 │   ├── cli.py                    # CLI entry point (launches web UI)
 │   ├── core/                     # Core implementation
 │   │   ├── model/                # Model services (composition pattern)
@@ -400,65 +399,6 @@ pyKorf/
 │   ├── library/                  # Sample .kdf files
 │   └── docs/                     # Documentation source
 ├── tests/                        # Test suite
-├── pyproject.toml
-└── README.md
-```
-pyKorf/
-├── pykorf/                       # Package source
-│   ├── __init__.py               # Public API
-│   ├── _version.py               # Version info
-│   ├── cli.py                    # CLI entry point (launches web UI)
-│   ├── parser.py                 # KdfParser (tokeniser / serializer)
-│   ├── cases.py                  # CaseSet
-│   ├── results.py                # Results
-│   ├── fluid.py                  # Fluid
-│   ├── types.py                  # Pydantic models, enums, typed data
-│   ├── log.py                    # Structured logging (structlog)
-│   ├── update.py                 # Auto-update checker
-│   ├── utils.py                  # CSV / value helpers
-│   ├── exceptions.py             # Custom exceptions
-│   ├── automation.py             # KorfApp (pywinauto)
-│   ├── model/                    # Model layer (service-based)
-│   │   ├── __init__.py           # Model class (facade)
-│   │   ├── core.py               # _ModelBase (collections, parsing)
-│   │   └── services/             # 6 service classes
-│   │       ├── element.py        # ElementService (CRUD)
-│   │       ├── query.py          # QueryService (filtering, params)
-│   │       ├── connectivity.py   # ConnectivityService
-│   │       ├── layout.py         # LayoutService (positioning, routing)
-│   │       ├── io.py             # IOService (save, export, import)
-│   │       └── summary.py        # SummaryService (validate, stats)
-│   ├── elements/                 # 17+ element type classes
-│   │   ├── base.py               # BaseElement
-│   │   ├── gen.py, pipe.py, ...  # Element implementations
-│   │   └── __init__.py           # ELEMENT_REGISTRY
-│   ├── use_case/                 # High-level workflows
-│   │   ├── config.py             # Unified facade (paths, prefs, PMS, HMB)
-│   │   ├── preferences.py        # User preferences (config.json)
-│   │   ├── paths.py              # Config/data directory management
-│   │   ├── pms.py                # PMS processing
-│   │   ├── hmb.py                # HMB processing
-│   │   ├── global_parameters.py  # Global design parameters
-│   │   ├── sizing_criteria.py    # Pipe sizing criteria
-│   │   ├── line_number.py        # Line number parsing from NOTES
-│   │   ├── processor.py          # PipedataProcessor (batch processing)
-│   │   ├── batch_report.py       # BatchReportGenerator
-│   │   ├── bulk_calc/            # Bulk calculation tools
-│   │   ├── pykorf_file.py        # Per-file metadata
-│   │   └── web/                  # Flask web UI
-│   │       ├── app.py            # Flask app factory
-│   │       ├── session.py        # In-process model state
-│   │       ├── sharepoint.py     # OneDrive/SharePoint URL resolution
-│   │       ├── references.py     # ReferencesStore
-│   │       ├── routes/           # 11 Flask Blueprints
-│   │       ├── templates/        # 12 HTML templates
-│   │       └── static/           # CSS, JS, vendor assets
-│   ├── visualization/            # PyVis network visualization
-│   ├── reports/                  # Excel report generation
-│   ├── templates/                # Template files
-│   ├── library/                  # Sample .kdf files
-│   └── docs/                     # Documentation source
-├── tests/                        # Test suite (17 files)
 ├── pyproject.toml
 └── README.md
 ```

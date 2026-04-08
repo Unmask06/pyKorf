@@ -172,3 +172,82 @@ def clear_cache() -> None:
     global _sync_roots_cache, _cache_timestamp
     _sync_roots_cache = None
     _cache_timestamp = 0.0
+
+
+def get_local_path_from_sp_url(sp_url: str) -> str | None:
+    r"""Convert a SharePoint URL to its local OneDrive-synced path.
+
+    Reads the user-configured SharePoint overrides and returns the
+    corresponding local path for SharePoint URLs that match a configured
+    override mapping. Returns ``None`` if no match is found.
+
+    This is the reverse operation of :func:`get_sharepoint_url`.
+
+    Args:
+        sp_url: SharePoint URL string (e.g. ``https://tenant.sharepoint.com/sites/...``).
+
+    Returns:
+        Local path string if a matching override is found, ``None`` otherwise.
+
+    Example::
+
+        # User configured override:
+        # Local: C:\Users\alice\OneDrive - CC7\ProjectA\Documents
+        # SP URL: https://cc7ges.sharepoint.com/sites/ProjectA/Documents
+
+        local = get_local_path_from_sp_url(
+            "https://cc7ges.sharepoint.com/sites/ProjectA/Documents/file.pdf"
+        )
+        # "C:\\Users\\alice\\OneDrive - CC7\\ProjectA\\Documents\\file.pdf"
+    """
+    from urllib.parse import unquote
+
+    from pykorf.app.operation.config.preferences import get_sp_overrides
+
+    logger = get_logger(__name__)
+
+    # Normalize SP URL: decode, replace forward slashes with backslashes
+    sp_url_normalized = unquote(sp_url).replace("/", "\\").rstrip("\\")
+
+    # Check against user-configured overrides (most specific first)
+    overrides = get_sp_overrides()
+    if not overrides:
+        logger.debug("no_sp_overrides_configured")
+        return None
+
+    for local_root, sp_root in sorted(overrides.items(), key=lambda t: -len(t[1])):
+        sp_root_normalized = unquote(sp_root).replace("/", "\\").rstrip("\\")
+        if sp_url_normalized.lower().startswith(sp_root_normalized.lower()):
+            relative = sp_url_normalized[len(sp_root_normalized) :].lstrip("\\/")
+
+            # Security: Prevent path traversal attacks
+            # Normalize and verify the resulting path stays within local_root
+            safe_path = Path(local_root.rstrip("\\/")).joinpath(relative)
+            try:
+                safe_path_resolved = safe_path.resolve()
+                local_root_resolved = Path(local_root.rstrip("\\/")).resolve()
+                if not str(safe_path_resolved).startswith(str(local_root_resolved)):
+                    logger.warning(
+                        "path_traversal_attempt_blocked",
+                        sp_url=sp_url,
+                        attempted_path=str(safe_path),
+                    )
+                    return None
+            except (OSError, ValueError) as e:
+                logger.warning(
+                    "path_normalization_failed",
+                    sp_url=sp_url,
+                    error=str(e),
+                )
+                return None
+
+            local_path = str(safe_path)
+            logger.info(
+                "sp_url_converted_to_local",
+                sp_url=sp_url,
+                local_path=local_path,
+            )
+            return local_path
+
+    logger.debug("sp_url_no_matching_override", sp_url=sp_url)
+    return None

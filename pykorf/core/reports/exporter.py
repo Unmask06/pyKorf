@@ -465,8 +465,7 @@ class ResultExporter:
         def _fmt(col: str) -> str | None:
             try:
                 numeric = pd.to_numeric(df[col], errors="coerce")
-                lo = numeric.min()
-                hi = numeric.max()
+                lo,hi = numeric.min() , numeric.max()
                 if pd.isna(lo) or pd.isna(hi):
                     return None
                 return f"{lo:.4g} - {hi:.4g}"
@@ -538,7 +537,11 @@ class ResultExporter:
         return [prod.summary(export=True) for idx, prod in self.model.products.items() if idx != 0]
 
     def _extract_valves(self) -> list[dict]:
-        return [valve.summary(export=True) for idx, valve in self.model.valves.items() if idx != 0]
+        return [
+            valve.summary(export=True, model=self.model)
+            for idx, valve in self.model.valves.items()
+            if idx != 0
+        ]
 
     def _extract_heat_exchangers(self) -> list[dict]:
         return [hx.summary(export=True) for idx, hx in self.model.exchangers.items() if idx != 0]

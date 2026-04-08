@@ -2,6 +2,8 @@ r"""Control valve element (``\\VALVE``)."""
 
 from __future__ import annotations
 
+from typing import Any
+
 from pykorf.core.elements.base import BaseElement
 from pykorf.core.utils import join_cases
 
@@ -154,7 +156,14 @@ class Valve(BaseElement):
         except (IndexError, TypeError, ValueError):
             return (0, 0)
 
-    def summary(self, export: bool = False) -> dict:
+    def summary(self, export: bool = False, model: Any | None = None) -> dict:
+        inlet_idx, _ = self.connection
+        flow_rate_val = 0.0
+        flow_unit = ""
+        if model and inlet_idx > 0 and inlet_idx in model.pipes:
+            inlet_pipe = model.pipes[inlet_idx]
+            flow_rate_val, flow_unit = inlet_pipe.flow_rate
+
         if export:
             dp_val, dp_unit = self.get_value_and_unit(Valve.DP, val_index=1, unit_index=-1)
             pin_val, pin_unit = self.get_value_and_unit(Valve.PIN, val_index=1, unit_index=-1)
@@ -164,6 +173,9 @@ class Valve(BaseElement):
                 "Valve Name": self.name,
                 "Type": self.valve_type,
                 "CV": self.cv,
+                self.format_export_header("Flow Rate", flow_unit): flow_rate_val
+                if flow_unit
+                else "",
                 self.format_export_header("Differential Pressure", dp_unit): dp_val,
                 self.format_export_header("Inlet Pressure", pin_unit): pin_val,
                 self.format_export_header("Outlet Pressure", pout_unit): pout_val,
@@ -174,6 +186,7 @@ class Valve(BaseElement):
             "name": self.name,
             "type": self.valve_type,
             "cv": self.cv,
+            "flow_rate": flow_rate_val,
             "dp_kPag": self.dp_kPag,
             "inlet_pressure_kPag": self.inlet_pressure_kPag,
             "outlet_pressure_kPag": self.outlet_pressure_kPag,
