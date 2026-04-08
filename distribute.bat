@@ -108,10 +108,26 @@ if exist pykorf\py.typed (
 )
 
 REM Copy JSON and TOML data files (excluded from PyArmor obfuscation, must be copied manually)
-if exist pykorf\reports (
-    mkdir %DIST_DIR%\pykorf\reports 2>nul
-    copy /y pykorf\reports\*.json  %DIST_DIR%\pykorf\reports\ >nul
-    copy /y pykorf\reports\*.toml  %DIST_DIR%\pykorf\reports\ >nul
+REM Copy project_defaults.toml from app directory (required for smart defaults)
+if exist pykorf\app\project_defaults.toml (
+    echo Copying project_defaults.toml...
+    copy /y pykorf\app\project_defaults.toml %DIST_DIR%\pykorf\app\ >nul
+)
+
+REM Copy sizing criteria TOML files from core/reports directory
+if exist pykorf\core\reports\*.toml (
+    echo Copying sizing criteria TOML files...
+    mkdir %DIST_DIR%\pykorf\core\reports 2>nul
+    copy /y pykorf\core\reports\*.toml %DIST_DIR%\pykorf\core\reports\ >nul
+)
+
+REM Copy JSON files from core/reports directory
+if exist pykorf\core\reports\*.json (
+    echo Copying report JSON files...
+    if not exist %DIST_DIR%\pykorf\core\reports (
+        mkdir %DIST_DIR%\pykorf\core\reports 2>nul
+    )
+    copy /y pykorf\core\reports\*.json %DIST_DIR%\pykorf\core\reports\ >nul
 )
 
 REM Copy pyproject.toml (full file — uv pip install -e . only uses [project].dependencies)
