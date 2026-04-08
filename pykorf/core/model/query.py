@@ -230,12 +230,12 @@ class QueryService:
         etype:
             Optional element type to narrow the search.
 
-        Returns
+        Returns:
         -------
         BaseElement
             The element matching the name (and type if specified).
 
-        Raises
+        Raises:
         ------
         ElementNotFound
             If no element with the given name exists.
@@ -244,10 +244,10 @@ class QueryService:
 
         # Get all elements matching the name
         candidates = self.get_elements(etype=etype, name=name)
-        
+
         if not candidates:
             available = [e.name for e in self.elements]
             raise ElementNotFound(name, available_names=available)
-        
+
         # Return first match
         return candidates[0]
