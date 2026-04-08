@@ -5,6 +5,22 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.0] - 2026-04-08
+
+### What's New
+
+- Preferences button now appears in the navigation bar for quick access to settings.
+- Launcher automatically repairs or reinstalls pyKorf if the application fails to start.
+- New `--uninstall-app` flag removes the application while preserving your saved data and configuration.
+
+### Improved
+
+- Launcher uses PowerShell for GitHub API calls, improving reliability on Windows systems.
+- Error messages and user interface elements are clearer during installation and updates.
+- Distribution package structure keeps the launcher script separate for easier updates.
+
+---
+
 ## [0.14.1] - 2026-04-08
 
 ### Fixed
