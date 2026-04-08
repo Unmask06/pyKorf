@@ -144,27 +144,6 @@ echo.
 echo Creating VERSION file...
 echo %VERSION%> %DIST_DIR%\VERSION
 
-REM Copy launcher batch script
-echo.
-echo Creating launcher...
-copy /y pykorf.bat %DIST_DIR%\
-
-REM Create bat_version.txt from BAT_VERSION constant in pykorf.bat
-echo.
-echo Creating bat_version.txt...
-set "BAT_VER="
-for /f "tokens=2 delims==" %%v in ('findstr /r /c:"^set .BAT_VERSION=" pykorf.bat') do (
-    if not defined BAT_VER set "BAT_VER=%%v"
-)
-set "BAT_VER=%BAT_VER:"=%"
-set "BAT_VER=%BAT_VER: =%"
-if "%BAT_VER%"=="" (
-    echo ERROR: Could not extract BAT_VERSION from pykorf.bat
-    exit /b 1
-)
-echo %BAT_VER%> %DIST_DIR%\bat_version.txt
-echo BAT_VERSION: %BAT_VER%
-
 REM Step 4: Create distribution zip
 echo.
 echo Creating distribution package...
@@ -178,8 +157,13 @@ if errorlevel 1 (
     echo WARNING: Failed to generate SHA256 checksum
 )
 
+REM Copy launcher batch script (after zip — kept as separate release asset, not inside zip)
+echo.
+echo Copying launcher...
+copy /y pykorf.bat %DIST_DIR%\ >nul
+
 REM Clean up unzipped content
-REM Keep pykorf.bat and bat_version.txt — uploaded as separate release assets
+REM Keep pykorf.bat — uploaded as separate release asset
 echo Cleaning up...
 for /d %%d in (%DIST_DIR%\*) do rd /s /q "%%d"
 del /q %DIST_DIR%\pyproject.toml 2>nul
