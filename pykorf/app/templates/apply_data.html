@@ -45,7 +45,6 @@
                     autocomplete="off"
                     rows="2"
                     style="resize: none;"
-                    required
                   >{{ pms_excel_path }}</textarea>
                   <button type="button" class="btn btn-outline-secondary"
                           data-browse-target="pms_source"
@@ -56,7 +55,7 @@
                   </button>
                 </div>
                 <div class="form-text">
-                  Path to the PMS Excel file.
+                  Path to the PMS Excel file. Supports local paths or SharePoint URLs (auto-converted using configured overrides).
                 </div>
               </div>
               <button type="submit" class="btn btn-primary" id="btn-apply-pms">
@@ -154,4 +153,33 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='apply_data.js') }}"></script>
+<script>
+  // PMS: Detect SharePoint URL and show conversion preview
+  var pmsSourceInput = document.getElementById("pms_source");
+  var pmsFormGroup = pmsSourceInput ? pmsSourceInput.closest(".mb-3") : null;
+
+  if (pmsSourceInput && pmsFormGroup) {
+    var pmsPreview = pmsFormGroup.querySelector("#pms-conversion-preview");
+    if (!pmsPreview) {
+      pmsPreview = document.createElement("div");
+      pmsPreview.id = "pms-conversion-preview";
+      pmsPreview.className = "form-text mt-1";
+      pmsPreview.style.cssText = "font-size: 0.7rem; display: none;";
+      pmsFormGroup.appendChild(pmsPreview);
+    }
+
+    pmsSourceInput.addEventListener("blur", function () {
+      var val = this.value.trim();
+      if (val && val.startsWith("https://")) {
+        pmsPreview.innerHTML =
+          '<i class="bi bi-arrow-repeat me-1"></i>' +
+          "SharePoint URL — will convert to local path on Apply.";
+        pmsPreview.className = "form-text mt-1 text-info";
+        pmsPreview.style.display = "block";
+      } else {
+        pmsPreview.style.display = "none";
+      }
+    });
+  }
+</script>
 {% endblock %}

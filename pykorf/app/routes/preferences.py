@@ -72,6 +72,16 @@ def _clear_config_cache() -> None:
     _CACHE_TIMESTAMP = 0.0
 
 
+def _invalidate_all_caches() -> None:
+    """Clear both SharePoint URL cache and config cache.
+
+    Call this after modifying SharePoint overrides to ensure
+    changes are immediately visible.
+    """
+    clear_cache()
+    _clear_config_cache()
+
+
 def _get_project_defaults() -> dict:
     """Load project defaults from project_defaults.toml.
 
@@ -195,7 +205,7 @@ def preferences_page():
             else:
                 overrides[local] = sp_url
                 set_sp_overrides(overrides)
-                clear_cache()
+                _invalidate_all_caches()
                 flash = {"type": "success", "msg": "Override added."}
 
         elif action == "delete":
@@ -203,7 +213,7 @@ def preferences_page():
             if local in overrides:
                 del overrides[local]
                 set_sp_overrides(overrides)
-                clear_cache()
+                _invalidate_all_caches()
                 flash = {"type": "success", "msg": "Override removed."}
 
         elif action == "edit":
@@ -215,7 +225,7 @@ def preferences_page():
                     del overrides[original_local]
                 overrides[new_local] = new_sp_url
                 set_sp_overrides(overrides)
-                clear_cache()
+                _invalidate_all_caches()
                 flash = {"type": "success", "msg": "Override updated."}
             else:
                 flash = {

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import tomllib
 from datetime import datetime, UTC
 from pathlib import Path
 
@@ -27,6 +28,21 @@ def _get_filename(path_str: str) -> str:
     if not path_str:
         return ""
     return Path(path_str).name
+
+
+def _get_project_defaults() -> dict:
+    """Load project defaults from project_defaults.toml.
+
+    Returns:
+        Dictionary of default values from the TOML file.
+    """
+    defaults_path = Path(__file__).parent.parent / "project_defaults.toml"
+    try:
+        with defaults_path.open("rb") as f:
+            return tomllib.load(f)
+    except (OSError, tomllib.TOMLDecodeError):
+        logger.warning("failed_to_load_project_defaults")
+        return {}
 
 
 def _apply_pms_from_source(model, pms_source: Path) -> None:
@@ -119,9 +135,21 @@ def apply_data():
         from pykorf.app.operation.config.config import set_pms_excel_path
 
         pms_excel = get_pms_excel_path()
-        pms_source = (
-            Path(pms_source_str) if pms_source_str else Path(pms_excel) if pms_excel else None
-        )
+
+        # If field is empty, use saved path or default from project_defaults.toml
+        if not pms_source_str:
+            if pms_excel:
+                pms_source_str = pms_excel
+                logger.info("pms_use_saved_path", pms_path=pms_excel)
+            else:
+                # Load default from project_defaults.toml
+                defaults = _get_project_defaults()
+                default_pms_url = defaults.get("sharepoint", {}).get("pms_excel_url", "")
+                if default_pms_url:
+                    pms_source_str = default_pms_url
+                    logger.info("pms_use_default_url", pms_url=default_pms_url)
+
+        pms_source = Path(pms_source_str) if pms_source_str else None
 
         if not pms_source or not Path(pms_source).is_file():
             errors.append(f"PMS data file not found: {pms_source}")

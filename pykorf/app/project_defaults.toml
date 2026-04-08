@@ -3,8 +3,8 @@
 # under the "project_info" key and take precedence.
 
 [company]
-company1 = ""
-company2 = ""
+company1 = "ADNOC "
+company2 = "cc7 ges"
 
 [project]
 name1 = ""
@@ -29,3 +29,4 @@ default_site_url = "https://cc7ges.sharepoint.com"
 # Full SharePoint URL to the Document Register Excel file
 # Format: https://tenant.sharepoint.com/sites/Site/Shared Documents/Path/File.xlsx
 doc_register_url = "https://cc7ges.sharepoint.com/sites/25002TAZIZSALT-ADNOCUAE/Shared Documents/2 EXECUTION/2. ENG/2A-PROCESS/08) Calculations/Hydraulics/Document Register.xlsx"
+pms_excel_url = "https://cc7ges.sharepoint.com/sites/25002TAZIZSALT-ADNOCUAE/Shared Documents/2 EXECUTION/2. ENG/2A-PROCESS/08) Calculations/Hydraulics/Consolidated PMS.xlsx"
