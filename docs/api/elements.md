@@ -6,7 +6,7 @@ Element wrapper classes for all KORF element types.
 
 All element classes inherit from `BaseElement`.
 
-::: pykorf.elements.base.BaseElement
+::: pykorf.core.elements.base.BaseElement
     options:
       show_root_heading: true
       show_source: true
@@ -22,70 +22,70 @@ All element classes inherit from `BaseElement`.
 
 ## Pipe
 
-::: pykorf.elements.pipe.Pipe
+::: pykorf.core.elements.pipe.Pipe
     options:
       show_root_heading: true
       show_source: true
 
 ## Pump
 
-::: pykorf.elements.pump.Pump
+::: pykorf.core.elements.pump.Pump
     options:
       show_root_heading: true
       show_source: true
 
 ## Valve
 
-::: pykorf.elements.valve.Valve
+::: pykorf.core.elements.valve.Valve
     options:
       show_root_heading: true
       show_source: true
 
 ## Feed
 
-::: pykorf.elements.feed.Feed
+::: pykorf.core.elements.feed.Feed
     options:
       show_root_heading: true
       show_source: true
 
 ## Product
 
-::: pykorf.elements.prod.Product
+::: pykorf.core.elements.prod.Product
     options:
       show_root_heading: true
       show_source: true
 
 ## HeatExchanger
 
-::: pykorf.elements.hx.HeatExchanger
+::: pykorf.core.elements.hx.HeatExchanger
     options:
       show_root_heading: true
       show_source: true
 
 ## Compressor
 
-::: pykorf.elements.compressor.Compressor
+::: pykorf.core.elements.compressor.Compressor
     options:
       show_root_heading: true
       show_source: true
 
 ## Vessel
 
-::: pykorf.elements.vessel.Vessel
+::: pykorf.core.elements.vessel.Vessel
     options:
       show_root_heading: true
       show_source: true
 
 ## Tee
 
-::: pykorf.elements.tee.Tee
+::: pykorf.core.elements.tee.Tee
     options:
       show_root_heading: true
       show_source: true
 
 ## Junction
 
-::: pykorf.elements.junction.Junction
+::: pykorf.core.elements.junction.Junction
     options:
       show_root_heading: true
       show_source: true

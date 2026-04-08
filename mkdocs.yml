@@ -157,6 +157,7 @@ exclude_docs: |
   PMS_AND_FLUID_WORKFLOW.md
   includes/abbreviations.md
   README.md
+  layout_enhancements.md
 
 nav:
   - Home: index.md

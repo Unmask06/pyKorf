@@ -46,7 +46,7 @@ hide:
 
     Command-line interface for automation and scripting.
 
-    [:octicons-arrow-right-24: CLI Reference](cli/overview.md)
+    [:octicons-arrow-right-24: CLI Reference](#)
 
 </div>
 
