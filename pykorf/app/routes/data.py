@@ -10,6 +10,13 @@ from flask import Blueprint, render_template, request
 from pykorf.core.log import get_logger
 from pykorf.app.web import session as _sess
 from pykorf.app.web.helpers import is_redirect, require_model
+from pykorf.app.operation.config.config import set_pms_excel_last_imported
+from pykorf.app.operation.data_import.pms import (
+    apply_pms as _apply_pms,
+    import_pms_from_excel,
+    is_pms_excel_stale,
+)
+from pykorf.app.operation.config.config import get_pms_excel_path, get_last_hmb_path
 
 logger = get_logger(__name__)
 bp = Blueprint("data", __name__)
@@ -29,9 +36,6 @@ def _apply_pms_from_source(model, pms_source: Path) -> None:
         model: The active model to apply PMS to.
         pms_source: Path to PMS Excel or JSON file.
     """
-    from pykorf.app.operation.config.config import set_pms_excel_last_imported
-    from pykorf.app.operation.data_import.pms import apply_pms as _apply_pms, import_pms_from_excel
-
     if pms_source.suffix.lower() in (".xlsx", ".xls"):
         json_path = import_pms_from_excel(pms_source)
         _apply_pms(json_path, model, save=False)
@@ -53,9 +57,6 @@ def apply_pms_if_stale(model) -> bool:
     Returns:
         True if PMS was applied, False otherwise.
     """
-    from pykorf.app.operation.config.config import get_pms_excel_path
-    from pykorf.app.operation.data_import.pms import is_pms_excel_stale
-
     if not is_pms_excel_stale():
         logger.info("pms_stale_check", stale=False)
         return False
@@ -85,8 +86,6 @@ def apply_data():
     model = require_model()
     if is_redirect(model):
         return model
-
-    from pykorf.app.operation.config.config import get_pms_excel_path, get_last_hmb_path
 
     kdf_path = _sess.get_kdf_path()
     pms_excel = get_pms_excel_path()

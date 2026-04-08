@@ -52,11 +52,11 @@ if errorlevel 1 (
 REM Copy web templates (HTML - not obfuscated by PyArmor)
 echo.
 echo Copying web templates...
-robocopy "pykorf\use_case\web\templates" "%DIST_DIR%\pykorf\use_case\web\templates" /E /NFL /NDL /NJH /NJS >nul 2>&1
+robocopy "pykorf\app\templates" "%DIST_DIR%\pykorf\app\templates" /E /NFL /NDL /NJH /NJS >nul 2>&1
 
 REM Copy web static files (JS, CSS, fonts - not obfuscated by PyArmor)
 echo Copying web static files...
-robocopy "pykorf\use_case\web\static" "%DIST_DIR%\pykorf\use_case\web\static" /E /NFL /NDL /NJH /NJS >nul 2>&1
+robocopy "pykorf\app\static" "%DIST_DIR%\pykorf\app\static" /E /NFL /NDL /NJH /NJS >nul 2>&1
 
 REM Generate static _version.py for distribution with dynamic version parsing
 echo.

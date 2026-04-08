@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 import tomllib
 from datetime import datetime, UTC
 from pathlib import Path
@@ -9,6 +10,19 @@ from pathlib import Path
 from flask import Blueprint, render_template, request
 
 from pykorf.core.log import get_logger
+from pykorf.app.operation.integration.license import validate_license_key
+from pykorf.app.operation.config.preferences import (
+    get_doc_register_db_last_imported,
+    get_doc_register_excel_path,
+    get_doc_register_sp_site_url,
+    get_license_key,
+    get_sp_overrides,
+    set_doc_register_excel_path,
+    set_doc_register_sp_site_url,
+    set_license_key,
+    set_sp_overrides,
+)
+from pykorf.app.operation.integration.sharepoint import clear_cache
 
 logger = get_logger(__name__)
 
@@ -16,6 +30,46 @@ bp = Blueprint("preferences", __name__)
 
 # Default SharePoint site URL shown as placeholder in the UI
 DEFAULT_SP_SITE_URL = "https://cc7ges.sharepoint.com"
+
+# Config cache with TTL (5 minutes)
+_CONFIG_CACHE: dict = {}
+_CACHE_TIMESTAMP: float = 0.0
+_CONFIG_CACHE_TTL = 300  # seconds
+
+
+def _get_cached_config() -> dict:
+    """Get config values with TTL-based caching.
+
+    Returns:
+        Cached config dictionary, refreshed if TTL expired.
+    """
+    global _CONFIG_CACHE, _CACHE_TIMESTAMP
+
+    now = time.time()
+    if _CONFIG_CACHE and (now - _CACHE_TIMESTAMP) < _CONFIG_CACHE_TTL:
+        return _CONFIG_CACHE
+
+    # Read config.json
+    from pykorf.app.operation.config.paths import get_config_path
+    import json
+
+    config_path = get_config_path()
+    try:
+        with open(config_path, encoding="utf-8") as f:
+            config = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        config = {}
+
+    _CONFIG_CACHE = config
+    _CACHE_TIMESTAMP = now
+    return config
+
+
+def _clear_config_cache() -> None:
+    """Clear config cache (call after set operations)."""
+    global _CONFIG_CACHE, _CACHE_TIMESTAMP
+    _CONFIG_CACHE = {}
+    _CACHE_TIMESTAMP = 0.0
 
 
 def _get_project_defaults() -> dict:
@@ -86,20 +140,6 @@ def _format_timestamp(iso_str: str | None) -> str:
 @bp.route("/preferences", methods=["GET", "POST"])
 def preferences_page():
     """Render and handle the global preferences page (SharePoint overrides, etc.)."""
-    from pykorf.app.operation.integration.license import validate_license_key
-    from pykorf.app.operation.config.preferences import (
-        get_doc_register_db_last_imported,
-        get_doc_register_excel_path,
-        get_doc_register_sp_site_url,
-        get_license_key,
-        get_sp_overrides,
-        set_doc_register_excel_path,
-        set_doc_register_sp_site_url,
-        set_license_key,
-        set_sp_overrides,
-    )
-    from pykorf.app.operation.integration.sharepoint import clear_cache
-
     flash: dict[str, str] | None = None
     license_flash: dict[str, str] | None = None
     dr_flash: dict[str, str] | None = None
@@ -116,6 +156,7 @@ def preferences_page():
                 valid, expiry, err = validate_license_key(key)
                 if valid:
                     set_license_key(key)
+                    _clear_config_cache()
                     license_flash = {
                         "type": "success",
                         "msg": f"License key accepted — valid until {expiry}.",
@@ -189,6 +230,11 @@ def preferences_page():
             excel_path = (request.form.get("dr_excel_path") or "").strip()
             sp_site_url = (request.form.get("dr_sp_site_url") or "").strip()
 
+            # Clear cache when config changes
+            def _invalidate_and_reload():
+                _clear_config_cache()
+                return get_doc_register_excel_path(), get_doc_register_sp_site_url()
+
             # Convert SharePoint URL to local path if needed
             if excel_path and excel_path.startswith("https://"):
                 logger.info("detected_sp_url_in_excel_path", excel_path=excel_path)
@@ -227,36 +273,43 @@ def preferences_page():
                 set_doc_register_sp_site_url(sp_site_url)
                 changed = True
 
-            if changed and excel_path:
-                try:
-                    build_db_from_excel(Path(excel_path), sp_site_url)
-                    dr_flash = {"type": "success", "msg": "Config saved and database rebuilt."}
-                except Exception as exc:
-                    dr_flash = {
-                        "type": "warning",
-                        "msg": f"Config saved, but DB rebuild failed: {exc}",
-                    }
-            elif excel_path:
-                dr_flash = {"type": "success", "msg": "Document Register config saved."}
+            if changed:
+                _invalidate_and_reload()
+                if excel_path:
+                    try:
+                        build_db_from_excel(Path(excel_path), sp_site_url)
+                        dr_flash = {"type": "success", "msg": "Config saved and database rebuilt."}
+                    except Exception as exc:
+                        dr_flash = {
+                            "type": "warning",
+                            "msg": f"Config saved, but DB rebuild failed: {exc}",
+                        }
+                else:
+                    dr_flash = {"type": "success", "msg": "Document Register config saved."}
 
+    # Batch config reads (cached)
     overrides = get_sp_overrides()
+    current_key = get_license_key()
+    doc_register_excel_path_saved = get_doc_register_excel_path()
+    doc_register_sp_site_url_saved = get_doc_register_sp_site_url()
+    doc_register_db_last_imported_val = get_doc_register_db_last_imported()
+
+    # Get default Document Register URL from project_defaults.toml (cached)
+    defaults = _get_project_defaults()
+    default_doc_register_url = defaults.get("sharepoint", {}).get("doc_register_url", "")
+
+    # Use saved path or default if blank
+    doc_register_excel_path = doc_register_excel_path_saved or default_doc_register_url
+
+    # Check if SharePoint overrides are configured (required for SP URL conversion)
+    sp_overrides_configured = len(overrides) > 0
+
     edit_key = request.args.get("edit", "").strip()
     edit_entry = (
         {"local": edit_key, "sp_url": overrides.get(edit_key, "")}
         if edit_key and edit_key in overrides
         else None
     )
-    current_key = get_license_key()
-
-    # Get default Document Register URL from project_defaults.toml
-    defaults = _get_project_defaults()
-    default_doc_register_url = defaults.get("sharepoint", {}).get("doc_register_url", "")
-
-    # Use saved path or default if blank
-    doc_register_excel_path = get_doc_register_excel_path() or default_doc_register_url
-
-    # Check if SharePoint overrides are configured (required for SP URL conversion)
-    sp_overrides_configured = len(overrides) > 0
 
     return render_template(
         "preferences.html",
@@ -264,11 +317,11 @@ def preferences_page():
         flash=flash,
         license_flash=license_flash,
         edit_entry=edit_entry,
-        current_license_key=current_key,
+        current_key=current_key,
         doc_register_excel_path=doc_register_excel_path,
-        doc_register_sp_site_url=get_doc_register_sp_site_url() or DEFAULT_SP_SITE_URL,
+        doc_register_sp_site_url=doc_register_sp_site_url_saved or DEFAULT_SP_SITE_URL,
         doc_register_sp_site_url_default=DEFAULT_SP_SITE_URL,
-        doc_register_db_last_imported=_format_timestamp(get_doc_register_db_last_imported()),
+        doc_register_db_last_imported=_format_timestamp(doc_register_db_last_imported_val),
         dr_flash=dr_flash,
         default_doc_register_url=default_doc_register_url,
         sp_overrides_configured=sp_overrides_configured,
