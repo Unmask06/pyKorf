@@ -1,0 +1,19 @@
+{
+  "Engg_SI": {
+    "kPa/100m": {
+      "target_unit": "bar/100m",
+      "multiplier": 0.01,
+      "offset": 0.0
+    },
+    "kPag": {
+      "target_unit": "barg",
+      "multiplier": 0.01,
+      "offset": 0.0
+    },
+    "t/h": {
+      "target_unit": "kg/h",
+      "multiplier": 1000,
+      "offset": 0.0
+    }
+  }
+}

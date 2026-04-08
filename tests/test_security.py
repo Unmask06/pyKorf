@@ -1,10 +1,10 @@
 import pytest
 
-from pykorf.exceptions import ExportError
-from pykorf.model import Model
-from pykorf.use_case.config import get_pms_path, get_stream_path
-from pykorf.use_case.line_number import MAX_LINE_NUMBER_LENGTH, LineNumber
-from pykorf.utils import MAX_FIELD_COUNT, MAX_LINE_LENGTH, parse_line
+from pykorf.core.exceptions import ExportError
+from pykorf.core.model import Model
+from pykorf.app.operation.config.config import get_pms_path, get_stream_path
+from pykorf.app.operation.data_import.line_number import MAX_LINE_NUMBER_LENGTH, LineNumber
+from pykorf.core.utils import MAX_FIELD_COUNT, MAX_LINE_LENGTH, parse_line
 
 
 def test_path_traversal_sanitization():

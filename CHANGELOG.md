@@ -5,6 +5,26 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.0] - 2026-04-08
+
+### What's New
+
+- Document Register configuration now accepts SharePoint URLs directly — they're automatically converted to local paths using your configured SharePoint overrides.
+- Default SharePoint URLs are pre-filled from project settings, so you don't need to enter them manually.
+- Valve exports now include flow rates from connected upstream pipes for complete valve data in reports.
+
+### Improved
+
+- SharePoint Path Overrides must be configured before saving Document Register settings, preventing conversion errors.
+- Path security is enhanced with protection against malicious URL manipulation attempts.
+- File I/O operations handle encoding issues more gracefully with better error messages.
+
+### Fixed
+
+- SharePoint URL conversion now safely validates paths to prevent directory traversal attacks.
+
+---
+
 ## [0.12.0] - 2026-04-07
 
 ### What's New

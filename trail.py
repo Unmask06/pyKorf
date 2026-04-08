@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from pykorf import KorfModel
+from pykorf import Model
 
 LIBRARY = Path(__file__).parent / "pykorf" / "library"
 CWC_KDF = LIBRARY / "Cooling Water Circuit.kdf"
@@ -12,7 +12,7 @@ TEST_FILE = Path(
 )
 
 
-def _bbox(model: KorfModel) -> tuple[float, float, float, float] | None:
+def _bbox(model: Model) -> tuple[float, float, float, float] | None:
     """Return (x_min, y_min, x_max, y_max) across all non-zero XY coords."""
     coords = [coord for elem in model.elements for coord in model.layout._all_nonzero_coords(elem)]
     if not coords:
@@ -28,7 +28,7 @@ def test_model(label: str, kdf_path: Path) -> None:
     print(f"  {kdf_path.name}")
     print(f"{'=' * 60}")
 
-    m = KorfModel.load(kdf_path)
+    m = Model.load(kdf_path)
 
     # Page info
     page = m.layout.page_size

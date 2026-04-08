@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from pykorf.model import Model
+from pykorf.core.model import Model
 
 SAMPLES_DIR = Path(__file__).parent.parent / "pykorf" / "library"
 PUMP_KDF = SAMPLES_DIR / "Pumpcases.kdf"
@@ -181,7 +181,7 @@ class TestExportFunctions:
     """Tests for the standalone export functions."""
 
     def test_model_to_dataframes_function(self):
-        from pykorf.model.services.io import model_to_dataframes
+        from pykorf.core.model.services.io import model_to_dataframes
 
         model = Model(PUMP_KDF)
         dfs = model_to_dataframes(model)
@@ -189,7 +189,7 @@ class TestExportFunctions:
         assert "_HEADER" in dfs
 
     def test_dataframes_to_kdf_function(self):
-        from pykorf.model.services.io import dataframes_to_kdf, model_to_dataframes
+        from pykorf.core.model.services.io import dataframes_to_kdf, model_to_dataframes
 
         model = Model(PUMP_KDF)
         original_bytes = _save_model_bytes(model)
@@ -205,7 +205,7 @@ class TestExportFunctions:
             Path(tmp_path).unlink(missing_ok=True)
 
     def test_dataframes_to_excel_and_back(self):
-        from pykorf.model.services.io import (
+        from pykorf.core.model.services.io import (
             dataframes_to_excel,
             excel_to_dataframes,
             model_to_dataframes,

@@ -50,6 +50,7 @@ examples/examples/
 *.kilo/
 
 # ── Local / personal settings ─────────────────────────────
-*.local
+*.local*
 .local/
 settings.local.jsonnul
+*.opencode

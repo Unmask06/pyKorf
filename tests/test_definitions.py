@@ -1,4 +1,4 @@
-from pykorf.elements import PROPERTIES_BY_ELEMENT, Common, Element, Orifice, Pipe
+from pykorf.core.elements import PROPERTIES_BY_ELEMENT, Common, Element, Orifice, Pipe
 
 
 def test_element_tokens():

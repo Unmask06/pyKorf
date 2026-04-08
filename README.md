@@ -10,19 +10,17 @@ pyKorf lets you programmatically work with [KORF](https://www.korf.co.uk/) hydra
 
 | Module | Purpose |
 | --- | --- |
-| `pykorf.model` | `Model` – load / edit / save a `.kdf` file (service-based architecture) |
-| `pykorf.parser` | `KdfParser` – low-level tokeniser / serializer for `.kdf` files |
-| `pykorf.cases` | `CaseSet` – multi-case helpers |
-| `pykorf.results` | `Results` – extract calculated output values |
-| `pykorf.fluid` | `Fluid` – fluid properties |
-| `pykorf.types` | Pydantic models: `PipeData`, `PumpData`, `ValveData`, etc. |
-| `pykorf.automation` | `KorfApp` – connect to a running KORF and drive the GUI |
-| `pykorf.elements` | One class per KORF element type (17+ types) |
-| `pykorf.use_case` | High-level workflows: PMS, HMB, pipe criteria, batch reports |
-| `pykorf.use_case.web` | Flask web UI for interactive model editing |
-| `pykorf.visualization` | PyVis network visualization |
-| `pykorf.reports` | Excel report generation |
-| `pykorf.exceptions` | Package-wide exception hierarchy |
+| `pykorf.core.model` | `Model` – load / edit / save a `.kdf` file (composition-based services) |
+| `pykorf.core.parser` | `KdfParser` – low-level tokeniser / serializer for `.kdf` files |
+| `pykorf.core.cases` | `CaseSet` – multi-case helpers |
+| `pykorf.core.fluid` | `Fluid` – fluid properties |
+| `pykorf.core.types` | Pydantic models: `PipeData`, `PumpData`, `ValveData`, etc. |
+| `pykorf.app.automation` | `KorfApp` – connect to a running KORF and drive the GUI |
+| `pykorf.core.elements` | One class per KORF element type (17+ types) |
+| `pykorf.app.operation` | High-level workflows: PMS, HMB, pipe criteria, batch reports |
+| `pykorf.app` | Flask web UI for interactive model editing |
+| `pykorf.core.reports` | Excel report generation |
+| `pykorf.core.exceptions` | Package-wide exception hierarchy |
 
 ---
 
@@ -66,12 +64,19 @@ The `Model` class uses a **composition-based service architecture** with six ser
 
 | Service | Attribute | Responsibility |
 |---|---|---|
-| `ElementService` | `model.elements_service` | CRUD: add, update, delete, copy, move, reindex, compact |
-| `QueryService` | `model.query` | Filtering by type/name (glob support), get/set params |
-| `ConnectivityService` | `model.connectivity` | Connect/disconnect elements, check connectivity |
-| `LayoutService` | `model.layout` | XY positioning, polyline/bend management, orthogonal routing, alignment, grid snapping, centering |
-| `IOService` | `model.io` | save/save_as, to_dataframes, to_excel, from_excel, from_dataframes |
-| `SummaryService` | `model.summary_service` | validate(), summary(), indexed element accessors |
+| `ElementService` | `model._element_service` | CRUD: add, update, delete, copy, move, reindex |
+| `QueryService` | `model._query_service` | Filtering by type/name (glob support), get/set params |
+| `ConnectivityService` | `model._connectivity_service` | Connect/disconnect elements, check connectivity |
+| `LayoutService` | `model._layout_service` | XY positioning, auto-place, orthogonal routing, grid snapping, centering |
+| `IOService` | `model._io_service` | save, to_dataframes, to_excel, from_excel, from_dataframes |
+| `SummaryService` | `model._summary_service` | validate(), summary(), element statistics |
+
+Services are accessed via wrapper methods on `Model`:
+- `model.add_element()`, `model.update_element()`, `model.delete_element()`
+- `model.get_element()`, `model.get_elements()`, `model.set_param()`, `model.get_param()`
+- `model.connect_elements()`, `model.disconnect_elements()`
+- `model.save()`, `model.to_excel()`, `model.from_excel()`
+- `model.get_summary()`, `model.validate()`
 
 ### Create a basic model from defaults
 
@@ -224,7 +229,7 @@ The `pykorf` CLI launches a Flask web application for interactive model editing.
 ### PMS (Piping Material Specification)
 
 ```python
-from pykorf.use_case.pms import apply_pms
+from pykorf.app.operation.data_import.pms import apply_pms
 
 # Apply PMS from Excel or JSON to pipes
 apply_pms(model, pms_source="pms.xlsx")
@@ -239,7 +244,7 @@ apply_pms(model, pms_source="pms.xlsx")
 ### HMB (Heat & Material Balance)
 
 ```python
-from pykorf.use_case.hmb import apply_hmb
+from pykorf.app.operation.data_import.hmb import apply_hmb
 
 # Apply HMB stream data from Excel or JSON
 apply_hmb(model, hmb_source="hmb.xlsx")
@@ -251,7 +256,7 @@ apply_hmb(model, hmb_source="hmb.xlsx")
 ### Pipe Sizing Criteria
 
 ```python
-from pykorf.use_case.sizing_criteria import lookup_criteria, apply_criteria
+from pykorf.app.operation.integration.sizing_criteria import lookup_criteria, apply_criteria
 
 # Look up criteria by state and code
 criteria = lookup_criteria("LIQUID", "DP10")
@@ -267,25 +272,25 @@ apply_criteria(model, criteria_code="DP10")
 ### Global Parameters
 
 ```python
-from pykorf.use_case.global_parameters import apply_global_parameters
+from pykorf.app.operation.config.global_parameters import apply_global_settings
 
 # Apply design parameters (DP margins, shutoff margins)
-apply_global_parameters(model, parameter_ids=[1, 2, 3])
+apply_global_settings(model, selected_ids=[1, 2, 3], dp_margin=1.25)
 ```
 
 ### Bulk Fluid Copy
 
 ```python
-from pykorf.use_case.bulk_calc import copy_fluids
+from pykorf.app import copy_fluids
 
 # Copy fluid properties from reference pipe to multiple targets
-copy_fluids(model, source_pipe_idx=1, target_pipe_indices=[2, 3, 4])
+copy_fluids(model, ref_pipe="L1", target_pipes=["L2", "L3", "L4"])
 ```
 
 ### Batch Reports
 
 ```python
-from pykorf.use_case.batch_report import BatchReportGenerator
+from pykorf.app.operation.processor.batch_report import BatchReportGenerator
 
 # Generate reports across multiple KDF files
 reporter = BatchReportGenerator(folder_path="/path/to/kdf/files")
@@ -352,60 +357,48 @@ uv run mypy pykorf
 ```
 pyKorf/
 ├── pykorf/                       # Package source
-│   ├── __init__.py               # Public API
-│   ├── _version.py               # Version info
+│   ├── __init__.py               # Public API exports
 │   ├── cli.py                    # CLI entry point (launches web UI)
-│   ├── parser.py                 # KdfParser (tokeniser / serializer)
-│   ├── cases.py                  # CaseSet
-│   ├── results.py                # Results
-│   ├── fluid.py                  # Fluid
-│   ├── types.py                  # Pydantic models, enums, typed data
-│   ├── log.py                    # Structured logging (structlog)
-│   ├── update.py                 # Auto-update checker
-│   ├── utils.py                  # CSV / value helpers
-│   ├── exceptions.py             # Custom exceptions
-│   ├── automation.py             # KorfApp (pywinauto)
-│   ├── model/                    # Model layer (service-based)
-│   │   ├── __init__.py           # Model class (facade)
-│   │   ├── core.py               # _ModelBase (collections, parsing)
-│   │   └── services/             # 6 service classes
-│   │       ├── element.py        # ElementService (CRUD)
-│   │       ├── query.py          # QueryService (filtering, params)
-│   │       ├── connectivity.py   # ConnectivityService
-│   │       ├── layout.py         # LayoutService (positioning, routing)
-│   │       ├── io.py             # IOService (save, export, import)
-│   │       └── summary.py        # SummaryService (validate, stats)
-│   ├── elements/                 # 17+ element type classes
-│   │   ├── base.py               # BaseElement
-│   │   ├── gen.py, pipe.py, ...  # Element implementations
-│   │   └── __init__.py           # ELEMENT_REGISTRY
-│   ├── use_case/                 # High-level workflows
-│   │   ├── config.py             # Unified facade (paths, prefs, PMS, HMB)
-│   │   ├── preferences.py        # User preferences (config.json)
-│   │   ├── paths.py              # Config/data directory management
-│   │   ├── pms.py                # PMS processing
-│   │   ├── hmb.py                # HMB processing
-│   │   ├── global_parameters.py  # Global design parameters
-│   │   ├── sizing_criteria.py    # Pipe sizing criteria
-│   │   ├── line_number.py        # Line number parsing from NOTES
-│   │   ├── processor.py          # PipedataProcessor (batch processing)
-│   │   ├── batch_report.py       # BatchReportGenerator
-│   │   ├── bulk_calc/            # Bulk calculation tools
-│   │   ├── pykorf_file.py        # Per-file metadata
-│   │   └── web/                  # Flask web UI
-│   │       ├── app.py            # Flask app factory
-│   │       ├── session.py        # In-process model state
-│   │       ├── sharepoint.py     # OneDrive/SharePoint URL resolution
-│   │       ├── references.py     # ReferencesStore
-│   │       ├── routes/           # 11 Flask Blueprints
-│   │       ├── templates/        # 12 HTML templates
-│   │       └── static/           # CSS, JS, vendor assets
-│   ├── visualization/            # PyVis network visualization
-│   ├── reports/                  # Excel report generation
-│   ├── templates/                # Template files
+│   ├── core/                     # Core implementation
+│   │   ├── model/                # Model services (composition pattern)
+│   │   │   ├── __init__.py       # Model class with service delegation
+│   │   │   ├── core.py           # _ModelBase (collections, parsing)
+│   │   │   ├── element.py        # ElementService (CRUD)
+│   │   │   ├── query.py          # QueryService (filtering, params)
+│   │   │   ├── connectivity.py   # ConnectivityService
+│   │   │   ├── layout.py         # LayoutService (positioning, routing)
+│   │   │   ├── io.py             # IOService (save, export, import)
+│   │   │   └── summary.py        # SummaryService (validate, stats)
+│   │   ├── elements/             # 17+ element type classes
+│   │   │   ├── base.py           # BaseElement
+│   │   │   ├── pipe.py, ...      # Element implementations
+│   │   │   └── __init__.py       # ELEMENT_REGISTRY
+│   │   ├── parser.py             # KdfParser (tokeniser / serializer)
+│   │   ├── cases.py              # CaseSet (multi-case helpers)
+│   │   ├── fluid.py              # Fluid properties
+│   │   ├── types.py              # Pydantic models, enums, typed data
+│   │   ├── log.py                # Structured logging (structlog)
+│   │   ├── utils.py              # CSV / value helpers
+│   │   ├── exceptions.py         # Custom exceptions
+│   │   └── reports/              # Excel report generation
+│   ├── app/                      # Application layer
+│   │   ├── __init__.py           # Flask app factory, run_server
+│   │   ├── automation.py         # KorfApp (pywinauto)
+│   │   ├── web/                  # Web utilities
+│   │   │   ├── helpers.py        # Route helpers (require_model, etc.)
+│   │   │   └── session.py        # In-process model state management
+│   │   ├── operation/            # Business logic workflows
+│   │   │   ├── config/           # Configuration, paths, settings, preferences
+│   │   │   ├── data_import/      # PMS, HMB, line_number parsing
+│   │   │   ├── processor/        # processor, batch_report, bulk_copy
+│   │   │   ├── project/          # project_info, pykorf_file, references
+│   │   │   └── integration/      # sharepoint, license, sizing_criteria
+│   │   ├── routes/               # Flask Blueprints (15 route modules)
+│   │   └── templates/            # HTML templates
+│   ├── templates/                # Template files (KDF, Excel)
 │   ├── library/                  # Sample .kdf files
 │   └── docs/                     # Documentation source
-├── tests/                        # Test suite (17 files)
+├── tests/                        # Test suite
 ├── pyproject.toml
 └── README.md
 ```

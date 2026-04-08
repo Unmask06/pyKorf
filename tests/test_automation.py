@@ -10,8 +10,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from pykorf.automation import KorfApp
-from pykorf.exceptions import AutomationError
+from pykorf.app.automation import KorfApp
+from pykorf.core.exceptions import AutomationError
 
 # ------------------------------------------------------------------
 # KorfApp tests (with pywinauto mocked)
@@ -71,9 +71,9 @@ class TestOpenUi:
         """open_ui must connect to KORF and reload the model, never start a new process."""
         mock_app = MagicMock()
 
-        with patch("pykorf.automation.KorfApp") as MockKorfApp:
+        with patch("pykorf.app.automation.KorfApp") as MockKorfApp:
             MockKorfApp.connect.return_value = mock_app
-            from pykorf.automation import open_ui
+            from pykorf.app.automation import open_ui
 
             result = open_ui("library/Pumpcases.kdf")
 
@@ -86,9 +86,9 @@ class TestOpenUi:
         mock_app = MagicMock()
         custom_path = r"D:\CustomKorf\korf.exe"
 
-        with patch("pykorf.automation.KorfApp") as MockKorfApp:
+        with patch("pykorf.app.automation.KorfApp") as MockKorfApp:
             MockKorfApp.connect.return_value = mock_app
-            from pykorf.automation import open_ui
+            from pykorf.app.automation import open_ui
 
             open_ui("model.kdf", korf_path=custom_path)
 
@@ -96,9 +96,9 @@ class TestOpenUi:
 
     def test_open_ui_propagates_error(self):
         """open_ui raises AutomationError if no KORF instance is running."""
-        with patch("pykorf.automation.KorfApp") as MockKorfApp:
+        with patch("pykorf.app.automation.KorfApp") as MockKorfApp:
             MockKorfApp.connect.side_effect = AutomationError("KORF not running")
-            from pykorf.automation import open_ui
+            from pykorf.app.automation import open_ui
 
             with pytest.raises(AutomationError, match="KORF not running"):
                 open_ui("model.kdf")
@@ -107,9 +107,9 @@ class TestOpenUi:
         """open_ui accepts both str and pathlib.Path for the file path."""
         mock_app = MagicMock()
 
-        with patch("pykorf.automation.KorfApp") as MockKorfApp:
+        with patch("pykorf.app.automation.KorfApp") as MockKorfApp:
             MockKorfApp.connect.return_value = mock_app
-            from pykorf.automation import open_ui
+            from pykorf.app.automation import open_ui
 
             open_ui(Path("library/Pumpcases.kdf"))
 
@@ -126,9 +126,9 @@ class TestOpenUiNeverStartsKorf:
         """The Application.start() method must never be called."""
         mock_app = MagicMock()
 
-        with patch("pykorf.automation.KorfApp") as MockKorfApp:
+        with patch("pykorf.app.automation.KorfApp") as MockKorfApp:
             MockKorfApp.connect.return_value = mock_app
-            from pykorf.automation import open_ui
+            from pykorf.app.automation import open_ui
 
             open_ui("model.kdf")
 
