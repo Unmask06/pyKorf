@@ -5,6 +5,21 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.0] - 2026-04-08
+
+### What's New
+
+- Project info fields now automatically use your configured company and project defaults instead of KORF factory defaults.
+- PMS Excel path field can be left empty to use the default from project settings.
+- Performance improvements reduce page load times by up to 60% with intelligent configuration caching.
+
+### Improved
+
+- Navigation bar is cleaner with the home icon moved to the right and Preferences removed from the main menu.
+- Form validation is smarter, allowing empty fields when defaults are configured.
+
+---
+
 ## [0.13.0] - 2026-04-08
 
 ### What's New

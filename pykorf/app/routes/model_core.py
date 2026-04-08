@@ -13,6 +13,71 @@ from pykorf.app.web.helpers import is_redirect, require_model
 logger = get_logger(__name__)
 bp = Blueprint("model_core", __name__)
 
+# KORF default values that should be replaced with pyKorf defaults
+KORF_DEFAULTS: dict[str, list[str]] = {
+    "company1": ["KORF", ""],
+    "company2": ["Town, Country", ""],
+    "project_name1": ["Company", ""],
+    "project_name2": ["Town, Country", ""],
+    "item_name1": ["Project", ""],
+    "item_name2": [""],  # Special: derived from filename if not set
+}
+
+
+def _is_korf_default(field: str, value: str) -> bool:
+    """Check if a field value matches KORF default.
+
+    Args:
+        field: Field name (e.g., 'company1', 'project_name1').
+        value: Current field value.
+
+    Returns:
+        True if value matches KORF default for this field.
+    """
+    korf_values = KORF_DEFAULTS.get(field, [])
+    return value in korf_values
+
+
+def _build_project_info(model, kdf_path, smart_defaults: dict) -> dict:
+    """Build project info dict, replacing KORF defaults with pyKorf defaults.
+
+    Args:
+        model: Active model instance.
+        kdf_path: Path to KDF file.
+        smart_defaults: Pre-computed smart defaults from build_smart_defaults().
+
+    Returns:
+        Dict with project info fields, using pyKorf defaults where KORF
+        defaults were detected.
+    """
+    gen = model.general
+    raw_values = {
+        "company1": gen.company or "",
+        "company2": gen.company2 or "",
+        "project_name1": gen.project or "",
+        "project_name2": gen.project_name2 or "",
+        "item_name1": gen.item_name1 or "",
+        "item_name2": gen.item_name2 or "",
+        "prepared_by": gen.prepared_by or "",
+        "checked_by": gen.checked_by or "",
+        "approved_by": gen.approved_by or "",
+        "date": gen.date or "",
+        "project_no": gen.project_no or "",
+        "revision": gen.revision or "",
+    }
+
+    # Replace KORF defaults with pyKorf defaults
+    project_info = {}
+    for field, value in raw_values.items():
+        if _is_korf_default(field, value):
+            # Field has KORF default → use pyKorf default
+            project_info[field] = smart_defaults.get(field, "")
+        else:
+            # Field has user value → keep it
+            project_info[field] = value
+
+    return project_info
+
 
 def _build_prereqs(model, kdf_path) -> dict:
     """Build prerequisite check results for the main menu.
@@ -61,22 +126,8 @@ def main_menu():
 
     from pykorf.app.operation.project.project_info import build_smart_defaults
 
-    gen = model.general
-    project_info = {
-        "company1": gen.company or "",
-        "company2": gen.company2 or "",
-        "project_name1": gen.project or "",
-        "project_name2": gen.project_name2 or "",
-        "item_name1": gen.item_name1 or "",
-        "item_name2": gen.item_name2 or "",
-        "prepared_by": gen.prepared_by or "",
-        "checked_by": gen.checked_by or "",
-        "approved_by": gen.approved_by or "",
-        "date": gen.date or "",
-        "project_no": gen.project_no or "",
-        "revision": gen.revision or "",
-    }
     smart_defaults = build_smart_defaults(kdf_path)
+    project_info = _build_project_info(model, kdf_path, smart_defaults)
 
     return render_template(
         "main_menu.html",

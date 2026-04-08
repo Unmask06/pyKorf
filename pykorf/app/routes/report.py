@@ -10,6 +10,12 @@ from flask import Blueprint, render_template, request
 from pykorf.core.log import get_logger
 from pykorf.app.web import session as _sess
 from pykorf.app.web.helpers import is_redirect, require_model
+from pykorf.app.operation.config.config import (
+    get_last_batch_folder_path,
+    get_last_report_path,
+    set_last_batch_folder_path,
+    set_last_report_path,
+)
 
 logger = get_logger(__name__)
 bp = Blueprint("report", __name__)
@@ -21,13 +27,6 @@ def generate_report():
     model = require_model()
     if is_redirect(model):
         return model
-
-    from pykorf.app.operation.config.config import (
-        get_last_batch_folder_path,
-        get_last_report_path,
-        set_last_batch_folder_path,
-        set_last_report_path,
-    )
 
     kdf_path = _sess.get_kdf_path()
 

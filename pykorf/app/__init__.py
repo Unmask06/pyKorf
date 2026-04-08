@@ -120,6 +120,34 @@ def create_app() -> Flask:
     )
     app.secret_key = os.urandom(24)
 
+    # Performance timing middleware
+    @app.before_request
+    def before_request():
+        """Record request start time for performance monitoring."""
+        from flask import g
+        import time
+
+        g.start_time = time.time()
+
+    @app.after_request
+    def log_request_duration(response):
+        """Log request duration for performance monitoring."""
+        from flask import g, request
+        from pykorf.core.log import get_logger
+        import time
+
+        if hasattr(g, "start_time"):
+            elapsed = time.time() - g.start_time
+            app_logger = get_logger(__name__)
+            app_logger.info(
+                "request_timing",
+                path=request.path,
+                method=request.method,
+                status=response.status_code,
+                duration_ms=round(elapsed * 1000, 2),
+            )
+        return response
+
     app.register_blueprint(file_picker_bp)
     app.register_blueprint(model_core_bp)
     app.register_blueprint(settings_bp)

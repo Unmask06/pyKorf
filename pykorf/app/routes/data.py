@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import tomllib
 from datetime import datetime, UTC
 from pathlib import Path
 
@@ -10,6 +11,13 @@ from flask import Blueprint, render_template, request
 from pykorf.core.log import get_logger
 from pykorf.app.web import session as _sess
 from pykorf.app.web.helpers import is_redirect, require_model
+from pykorf.app.operation.config.config import set_pms_excel_last_imported
+from pykorf.app.operation.data_import.pms import (
+    apply_pms as _apply_pms,
+    import_pms_from_excel,
+    is_pms_excel_stale,
+)
+from pykorf.app.operation.config.config import get_pms_excel_path, get_last_hmb_path
 
 logger = get_logger(__name__)
 bp = Blueprint("data", __name__)
@@ -22,6 +30,21 @@ def _get_filename(path_str: str) -> str:
     return Path(path_str).name
 
 
+def _get_project_defaults() -> dict:
+    """Load project defaults from project_defaults.toml.
+
+    Returns:
+        Dictionary of default values from the TOML file.
+    """
+    defaults_path = Path(__file__).parent.parent / "project_defaults.toml"
+    try:
+        with defaults_path.open("rb") as f:
+            return tomllib.load(f)
+    except (OSError, tomllib.TOMLDecodeError):
+        logger.warning("failed_to_load_project_defaults")
+        return {}
+
+
 def _apply_pms_from_source(model, pms_source: Path) -> None:
     """Apply PMS from a given source (Excel or JSON) to the model.
 
@@ -29,9 +52,6 @@ def _apply_pms_from_source(model, pms_source: Path) -> None:
         model: The active model to apply PMS to.
         pms_source: Path to PMS Excel or JSON file.
     """
-    from pykorf.app.operation.config.config import set_pms_excel_last_imported
-    from pykorf.app.operation.data_import.pms import apply_pms as _apply_pms, import_pms_from_excel
-
     if pms_source.suffix.lower() in (".xlsx", ".xls"):
         json_path = import_pms_from_excel(pms_source)
         _apply_pms(json_path, model, save=False)
@@ -53,9 +73,6 @@ def apply_pms_if_stale(model) -> bool:
     Returns:
         True if PMS was applied, False otherwise.
     """
-    from pykorf.app.operation.config.config import get_pms_excel_path
-    from pykorf.app.operation.data_import.pms import is_pms_excel_stale
-
     if not is_pms_excel_stale():
         logger.info("pms_stale_check", stale=False)
         return False
@@ -85,8 +102,6 @@ def apply_data():
     model = require_model()
     if is_redirect(model):
         return model
-
-    from pykorf.app.operation.config.config import get_pms_excel_path, get_last_hmb_path
 
     kdf_path = _sess.get_kdf_path()
     pms_excel = get_pms_excel_path()
@@ -120,9 +135,21 @@ def apply_data():
         from pykorf.app.operation.config.config import set_pms_excel_path
 
         pms_excel = get_pms_excel_path()
-        pms_source = (
-            Path(pms_source_str) if pms_source_str else Path(pms_excel) if pms_excel else None
-        )
+
+        # If field is empty, use saved path or default from project_defaults.toml
+        if not pms_source_str:
+            if pms_excel:
+                pms_source_str = pms_excel
+                logger.info("pms_use_saved_path", pms_path=pms_excel)
+            else:
+                # Load default from project_defaults.toml
+                defaults = _get_project_defaults()
+                default_pms_url = defaults.get("sharepoint", {}).get("pms_excel_url", "")
+                if default_pms_url:
+                    pms_source_str = default_pms_url
+                    logger.info("pms_use_default_url", pms_url=default_pms_url)
+
+        pms_source = Path(pms_source_str) if pms_source_str else None
 
         if not pms_source or not Path(pms_source).is_file():
             errors.append(f"PMS data file not found: {pms_source}")
