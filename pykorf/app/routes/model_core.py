@@ -21,6 +21,12 @@ KORF_DEFAULTS: dict[str, list[str]] = {
     "project_name2": ["Town, Country", ""],
     "item_name1": ["Project", ""],
     "item_name2": [""],  # Special: derived from filename if not set
+    "project_no": [""],
+    "prepared_by": [""],
+    "checked_by": [""],
+    "approved_by": [""],
+    "date": [""],
+    "revision": [""],
 }
 
 

@@ -24,6 +24,9 @@ class UnitConverter:
 
         def _fmt(v):
             if isinstance(v, float):
+                # Show 4 decimals for values less than 1 (whole number part is 0)
+                if abs(v) < 1:
+                    return round(v, 4)
                 return round(v, 2)
             if isinstance(v, (list, tuple)):
                 return [_fmt(x) for x in v]

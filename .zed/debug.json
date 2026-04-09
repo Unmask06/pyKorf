@@ -8,22 +8,13 @@
     "cwd": "$ZED_WORKTREE_ROOT",
     "env": {
       "FLASK_APP": "pykorf.app:create_app",
-      "FLASK_DEBUG": "1",
+      "FLASK_DEBUG": "1"
     },
     "args": ["--debug", "--port", "8000"],
     "autoReload": {
-      "enable": true,
+      "enable": true
     },
     "jinja": true,
-    "justMyCode": true,
-  },
-  {
-    "label": "pyKorf: Run Tests",
-    "adapter": "Debugpy",
-    "request": "launch",
-    "module": "pytest",
-    "cwd": "$ZED_WORKTREE_ROOT",
-    "args": ["tests/", "-v"],
-    "justMyCode": false,
-  },
+    "justMyCode": true
+  }
 ]
