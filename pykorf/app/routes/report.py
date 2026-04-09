@@ -104,7 +104,13 @@ def generate_report():
                     if ref_store
                     else []
                 )
-                exporter = ResultExporter(model, basis=basis, references=references)
+                exporter = ResultExporter(
+                    model,
+                    basis=basis,
+                    remarks=ref_store.remarks if ref_store else "",
+                    hold=ref_store.hold if ref_store else "",
+                    references=references,
+                )
                 exporter.export_to_excel(str(report_file))
                 set_last_report_path(str(report_file))
                 last_report_file = str(report_file)
