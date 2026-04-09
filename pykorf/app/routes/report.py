@@ -91,6 +91,8 @@ def generate_report():
 
                 ref_store = ReferencesStore.load(kdf_path) if kdf_path else None
                 basis = ref_store.basis if ref_store else ""
+                remarks = ref_store.remarks if ref_store else ""
+                hold = ref_store.hold if ref_store else ""
                 references = (
                     [
                         {
@@ -104,7 +106,13 @@ def generate_report():
                     if ref_store
                     else []
                 )
-                exporter = ResultExporter(model, basis=basis, references=references)
+                exporter = ResultExporter(
+                    model,
+                    basis=basis,
+                    remarks=remarks,
+                    hold=hold,
+                    references=references,
+                )
                 exporter.export_to_excel(str(report_file))
                 set_last_report_path(str(report_file))
                 last_report_file = str(report_file)

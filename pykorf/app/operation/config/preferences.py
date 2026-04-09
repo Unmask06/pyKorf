@@ -300,6 +300,28 @@ def set_sp_overrides(overrides: dict[str, str]) -> None:
     save_config(config)
 
 
+def get_skip_sp_override() -> bool:
+    """Check if SharePoint override validation should be skipped.
+
+    Returns:
+        True if validation should be skipped (allow local paths only).
+        False by default (SharePoint overrides required).
+    """
+    config = load_config()
+    return config.get("skip_sp_override", False)
+
+
+def set_skip_sp_override(skip: bool) -> None:
+    """Save the skip SharePoint override preference.
+
+    Args:
+        skip: True to skip validation, False to require overrides.
+    """
+    config = load_config()
+    config["skip_sp_override"] = skip
+    save_config(config)
+
+
 def get_trial_start() -> str | None:
     """Get the ISO date string of when the trial period started.
 

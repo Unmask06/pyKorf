@@ -34,9 +34,20 @@ def _check_setup() -> tuple[bool, bool, bool]:
     """
     from pathlib import Path as _Path
 
-    from pykorf.app.operation.config.config import get_doc_register_excel_path, get_sp_overrides
+    from pykorf.app.operation.config.config import (
+        get_doc_register_excel_path,
+        get_sp_overrides,
+        get_skip_sp_override,
+    )
 
-    sp_ok = bool(get_sp_overrides())
+    skip_sp = get_skip_sp_override()
+
+    # If skip toggle is ON, sp_ok is always True
+    if skip_sp:
+        sp_ok = True
+    else:
+        sp_ok = bool(get_sp_overrides())
+
     excel_path = get_doc_register_excel_path()
     doc_register_ok = bool(excel_path and _Path(excel_path).is_file())
     setup_ok = sp_ok and doc_register_ok
@@ -53,11 +64,12 @@ def _check_setup() -> tuple[bool, bool, bool]:
 @bp.route("/", methods=["GET"])
 def file_picker_page():
     """Render the KDF file picker page."""
-    from pykorf.app.operation.config.config import get_recent_files
+    from pykorf.app.operation.config.config import get_recent_files, get_skip_sp_override
 
     recent: list[str] = get_recent_files() or []
     default_path: str = recent[0] if recent else ""
     setup_ok, sp_ok, doc_register_ok = _check_setup()
+    skip_sp_override = get_skip_sp_override()
     return render_template(
         "file_picker.html",
         recent_files=recent,
@@ -67,6 +79,7 @@ def file_picker_page():
         setup_ok=setup_ok,
         sp_ok=sp_ok,
         doc_register_ok=doc_register_ok,
+        skip_sp_override=skip_sp_override,
     )
 
 
@@ -74,9 +87,14 @@ def file_picker_page():
 def open_file():
     """Load a KDF file into the global model state."""
     from pykorf import Model
-    from pykorf.app.operation.config.config import get_recent_files, record_opened_file
+    from pykorf.app.operation.config.config import (
+        get_recent_files,
+        get_skip_sp_override,
+        record_opened_file,
+    )
 
     setup_ok, sp_ok, doc_register_ok = _check_setup()
+    skip_sp_override = get_skip_sp_override()
     if not setup_ok:
         recent: list[str] = get_recent_files() or []
         default_path = (request.form.get("kdf_path") or "").strip()
@@ -89,6 +107,7 @@ def open_file():
             setup_ok=False,
             sp_ok=sp_ok,
             doc_register_ok=doc_register_ok,
+            skip_sp_override=skip_sp_override,
             error="Complete the required setup in Preferences before opening a model.",
         ), 403
 
@@ -106,6 +125,10 @@ def open_file():
             default_path=kdf_path_str,
             filename=_get_filename(kdf_path_str),
             username=_get_username(),
+            setup_ok=setup_ok,
+            sp_ok=sp_ok,
+            doc_register_ok=doc_register_ok,
+            skip_sp_override=skip_sp_override,
             error=f"File not found: {path}",
         ), 400
 
@@ -119,6 +142,10 @@ def open_file():
             default_path=kdf_path_str,
             filename=_get_filename(kdf_path_str),
             username=_get_username(),
+            setup_ok=setup_ok,
+            sp_ok=sp_ok,
+            doc_register_ok=doc_register_ok,
+            skip_sp_override=skip_sp_override,
             error=f"Failed to load model: {exc}",
         ), 400
 

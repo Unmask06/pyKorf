@@ -17,10 +17,12 @@ from pykorf.app.operation.config.preferences import (
     get_doc_register_sp_site_url,
     get_license_key,
     get_sp_overrides,
+    get_skip_sp_override,
     set_doc_register_excel_path,
     set_doc_register_sp_site_url,
     set_license_key,
     set_sp_overrides,
+    set_skip_sp_override,
 )
 from pykorf.app.operation.integration.sharepoint import clear_cache
 
@@ -233,6 +235,17 @@ def preferences_page():
                     "msg": "Both local path and SharePoint URL are required.",
                 }
 
+        elif action == "set_skip_sp_override":
+            skip = request.form.get("skip_sp_override") == "on"
+            set_skip_sp_override(skip)
+            _clear_config_cache()
+            flash = {
+                "type": "success" if skip else "info",
+                "msg": "SharePoint override validation "
+                + ("disabled" if skip else "enabled")
+                + ".",
+            }
+
         elif action == "set_doc_register_config":
             from pykorf.app.doc_register.excel_to_db import build_db_from_excel
             from pykorf.app.operation.integration.sharepoint import get_local_path_from_sp_url
@@ -303,10 +316,23 @@ def preferences_page():
     doc_register_excel_path_saved = get_doc_register_excel_path()
     doc_register_sp_site_url_saved = get_doc_register_sp_site_url()
     doc_register_db_last_imported_val = get_doc_register_db_last_imported()
+    skip_sp_override = get_skip_sp_override()
 
     # Get default Document Register URL from project_defaults.toml (cached)
     defaults = _get_project_defaults()
-    default_doc_register_url = defaults.get("sharepoint", {}).get("doc_register_url", "")
+
+    # Auto-detect toggle state: if overrides exist, default to OFF (enforce validation)
+    if not skip_sp_override and len(overrides) > 0:
+        skip_sp_override = False
+    elif not skip_sp_override and len(overrides) == 0:
+        # No overrides configured - user can enable toggle to skip validation
+        skip_sp_override = get_skip_sp_override()  # Keep saved preference
+
+    # Default URL handling: hide when skip_sp_override is ON
+    if skip_sp_override:
+        default_doc_register_url = ""  # Hidden, user must enter local path
+    else:
+        default_doc_register_url = defaults.get("sharepoint", {}).get("doc_register_url", "")
 
     # Use saved path or default if blank
     doc_register_excel_path = doc_register_excel_path_saved or default_doc_register_url
@@ -335,4 +361,5 @@ def preferences_page():
         dr_flash=dr_flash,
         default_doc_register_url=default_doc_register_url,
         sp_overrides_configured=sp_overrides_configured,
+        skip_sp_override=skip_sp_override,
     )

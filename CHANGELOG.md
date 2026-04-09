@@ -5,6 +5,20 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0] - 2026-04-09
+
+### What's New
+
+- SharePoint override validation can now be skipped with a toggle in Preferences, allowing you to load models using local paths only.
+- Excel reports now include Remarks and Hold Items sections alongside Design Basis on the first sheet.
+
+### Improved
+
+- The SharePoint override toggle is positioned at the top of the SharePoint Path Overrides section for easier access.
+- Reference search button is hidden when SharePoint overrides are not configured, with a clear message explaining why.
+
+---
+
 ## [0.15.1] - 2026-04-09
 
 ### Improved
