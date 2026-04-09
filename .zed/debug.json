@@ -8,14 +8,14 @@
     "cwd": "$ZED_WORKTREE_ROOT",
     "env": {
       "FLASK_APP": "pykorf.app:create_app",
-      "FLASK_DEBUG": "1",
+      "FLASK_DEBUG": "0"
     },
     "args": ["--debug", "--port", "8000"],
     "autoReload": {
-      "enable": true,
+      "enable": false
     },
     "jinja": true,
-    "justMyCode": true,
+    "justMyCode": true
   },
   {
     "label": "pyKorf: Run Tests",
