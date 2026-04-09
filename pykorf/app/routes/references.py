@@ -38,8 +38,15 @@ def _refs_context(kdf_path: Path, store: Any, **extra: Any) -> dict[str, Any]:
     Returns:
         Template context dict.
     """
+    from pykorf.app.operation.config.config import get_sp_overrides, get_skip_sp_override
     from pykorf.app.operation.config.preferences import get_doc_register_sp_site_url
     from pykorf.app.operation.project.references import CATEGORIES
+
+    skip_sp = get_skip_sp_override()
+    sp_overrides_configured = len(get_sp_overrides()) > 0
+
+    # Search available only if overrides are configured OR skip_sp_override is OFF
+    search_available = sp_overrides_configured and not skip_sp
 
     return {
         "kdf_path": str(kdf_path),
@@ -49,6 +56,8 @@ def _refs_context(kdf_path: Path, store: Any, **extra: Any) -> dict[str, Any]:
         "flash": None,
         "shortcut_result": None,
         "doc_register_sp_site_url": get_doc_register_sp_site_url() or "",
+        "sp_overrides_configured": sp_overrides_configured,
+        "search_available": search_available,
         **extra,
     }
 
@@ -60,6 +69,8 @@ def references_page() -> Any:
     if is_redirect(model):
         return model
     kdf_path = _sess.get_kdf_path()
+    if kdf_path is None:
+        return redirect(url_for("file_picker.file_picker_page"))
     store = _load_refs()
     return render_template("references.html", **_refs_context(kdf_path, store))
 
@@ -168,6 +179,9 @@ def references_create_shortcuts() -> Any:
         shortcut_result = {"count": count, "path": str(ref_dir)}
     except Exception as exc:
         shortcut_result = {"error": str(exc)}
+
+    if kdf_path is None:
+        return redirect(url_for("file_picker.file_picker_page"))
 
     return render_template(
         "references.html",

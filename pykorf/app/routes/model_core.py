@@ -92,7 +92,11 @@ def _build_prereqs(model, kdf_path) -> dict:
         Dict with keys: notes_ok, pms_ok, validation_ok, sharepoint_ok,
         issues (full list), pms_path.
     """
-    from pykorf.app.operation.config.config import get_pms_excel_path, get_sp_overrides
+    from pykorf.app.operation.config.config import (
+        get_pms_excel_path,
+        get_sp_overrides,
+        get_skip_sp_override,
+    )
 
     issues = model.validate()
 
@@ -105,8 +109,12 @@ def _build_prereqs(model, kdf_path) -> dict:
     pms_path = str(pms_raw) if pms_raw else ""
     pms_ok = bool(pms_path and Path(pms_path).is_file())
 
-    sp_overrides = get_sp_overrides()
-    sharepoint_ok = bool(sp_overrides)
+    skip_sp = get_skip_sp_override()
+    if skip_sp:
+        sharepoint_ok = True
+    else:
+        sp_overrides = get_sp_overrides()
+        sharepoint_ok = bool(sp_overrides)
 
     return {
         "notes_ok": notes_ok,

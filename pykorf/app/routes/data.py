@@ -142,12 +142,18 @@ def apply_data():
                 pms_source_str = pms_excel
                 logger.info("pms_use_saved_path", pms_path=pms_excel)
             else:
-                # Load default from project_defaults.toml
-                defaults = _get_project_defaults()
-                default_pms_url = defaults.get("sharepoint", {}).get("pms_excel_url", "")
-                if default_pms_url:
-                    pms_source_str = default_pms_url
-                    logger.info("pms_use_default_url", pms_url=default_pms_url)
+                # Check skip_sp_override preference
+                from pykorf.app.operation.config.config import get_skip_sp_override
+
+                skip_sp = get_skip_sp_override()
+
+                # Only auto-populate default URL if skip_sp_override is OFF
+                if not skip_sp:
+                    defaults = _get_project_defaults()
+                    default_pms_url = defaults.get("sharepoint", {}).get("pms_excel_url", "")
+                    if default_pms_url:
+                        pms_source_str = default_pms_url
+                        logger.info("pms_use_default_url", pms_url=default_pms_url)
 
         pms_source = Path(pms_source_str) if pms_source_str else None
 

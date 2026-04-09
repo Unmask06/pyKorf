@@ -8,6 +8,33 @@ head_extra %}{% endblock %} {% block content %}
         <i class="bi bi-cloud-check text-primary"></i>SharePoint Path Overrides
       </div>
       <div class="card-body">
+        <!-- Skip SharePoint Override Toggle -->
+        <form method="post" action="/preferences" class="mb-3">
+          <input type="hidden" name="action" value="set_skip_sp_override" />
+          <div class="form-check form-switch">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="skip_sp_override"
+              name="skip_sp_override"
+              {%
+              if
+              skip_sp_override
+              %}checked{%
+              endif
+              %}
+              onchange="this.form.submit()"
+            />
+            <label class="form-check-label" for="skip_sp_override">
+              Skip SharePoint Override Validation
+            </label>
+            <small class="text-secondary d-block mt-1">
+              <i class="bi bi-info-circle me-1"></i>
+              When enabled, you can load models using local paths only. Reference search will be disabled.
+            </small>
+          </div>
+        </form>
+
         {% if flash %}
         <div
           class="alert alert-{{ flash.type }} alert-dismissible fade show py-2"
@@ -315,7 +342,7 @@ head_extra %}{% endblock %} {% block content %}
         </div>
         {% endif %}
 
-        {% if not sp_overrides_configured %}
+        {% if not sp_overrides_configured and not skip_sp_override %}
         <div class="alert alert-warning py-2 mb-3">
           <i class="bi bi-exclamation-triangle-fill me-1"></i>
           <strong>SharePoint Path Overrides Required:</strong>
@@ -344,7 +371,7 @@ head_extra %}{% endblock %} {% block content %}
                 class="form-control font-monospace"
                 id="dr_excel_path"
                 name="dr_excel_path"
-                placeholder="{{ default_doc_register_url or 'C:\path\to\Document Register.xlsx' }}"
+                placeholder="{% if skip_sp_override %}C:\path\to\Document Register.xlsx{% else %}{{ default_doc_register_url or 'C:\path\to\Document Register.xlsx' }}{% endif %}"
                 value="{{ doc_register_excel_path or '' }}"
                 autocomplete="off"
               />
@@ -361,7 +388,7 @@ head_extra %}{% endblock %} {% block content %}
             <div class="form-text" style="font-size: 0.7rem;">
               <i class="bi bi-info-circle me-1"></i>
               Supports local paths or SharePoint URLs (auto-converted).
-              {% if not doc_register_excel_path and default_doc_register_url %}
+              {% if not doc_register_excel_path and default_doc_register_url and not skip_sp_override %}
               <br /><i class="bi bi-arrow-return-right me-1"></i>
               Default: <code class="small">{{ default_doc_register_url[:60] }}...</code>
               {% endif %}
@@ -388,7 +415,7 @@ head_extra %}{% endblock %} {% block content %}
           </div>
           <div class="col-lg-2">
             <label class="form-label small fw-semibold mb-1">&nbsp;</label>
-            {% if not sp_overrides_configured %}
+            {% if not sp_overrides_configured and not skip_sp_override %}
             <button
               type="button"
               class="btn btn-sm btn-secondary w-100"

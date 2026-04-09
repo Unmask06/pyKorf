@@ -167,6 +167,7 @@ head_extra %}
                     required
                     autocomplete="off"
                   />
+                  {% if search_available %}
                   <button
                     type="button"
                     class="btn btn-outline-info"
@@ -176,7 +177,9 @@ head_extra %}
                   >
                     <i class="bi bi-search"></i>
                   </button>
+                  {% endif %}
                 </div>
+                {% if search_available %}
                 <div
                   class="form-text"
                   style="font-size: 0.7rem; margin-top: 2px"
@@ -185,6 +188,14 @@ head_extra %}
                   <i class="bi bi-search"></i> to search the Document Register
                   and auto-fill fields.
                 </div>
+                {% else %}
+                <div
+                  class="form-text text-warning"
+                  style="font-size: 0.7rem; margin-top: 2px"
+                >
+                  <i class="bi bi-exclamation-triangle me-1"></i>Document Register search is disabled. Configure SharePoint overrides in Preferences to enable.
+                </div>
+                {% endif %}
               </div>
               <div class="col-md-3">
                 <label class="form-label small fw-semibold mb-1"
