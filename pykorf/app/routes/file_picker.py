@@ -42,21 +42,23 @@ def _check_setup() -> tuple[bool, bool, bool]:
 
     skip_sp = get_skip_sp_override()
 
-    # If skip toggle is ON, sp_ok is always True
-    if skip_sp:
-        sp_ok = True
-    else:
-        sp_ok = bool(get_sp_overrides())
-
+    # Check individual statuses for granular display
+    sp_ok = bool(get_sp_overrides()) if not skip_sp else True
     excel_path = get_doc_register_excel_path()
     doc_register_ok = bool(excel_path and _Path(excel_path).is_file())
-    setup_ok = sp_ok and doc_register_ok
+
+    # If skip_sp_override is ON, bypass all validation
+    if skip_sp:
+        setup_ok = True
+    else:
+        setup_ok = sp_ok and doc_register_ok
 
     logger.info(
         "setup_check",
         sp_ok=sp_ok,
         doc_register_ok=doc_register_ok,
         setup_ok=setup_ok,
+        skip_sp_override=skip_sp,
     )
     return setup_ok, sp_ok, doc_register_ok
 

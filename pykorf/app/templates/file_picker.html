@@ -20,7 +20,7 @@
         {% if not sp_ok and not skip_sp_override %}
         <li>SharePoint Override — not configured</li>
         {% endif %}
-        {% if not doc_register_ok %}
+        {% if not doc_register_ok and not skip_sp_override %}
         <li>Document Register Excel path — not set or file not found</li>
         {% endif %}
       </ul>
