@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import time
 from pathlib import Path
 
 from flask import Blueprint, redirect, render_template, request, url_for
@@ -72,6 +73,13 @@ def file_picker_page():
     default_path: str = recent[0] if recent else ""
     setup_ok, sp_ok, doc_register_ok = _check_setup()
     skip_sp_override = get_skip_sp_override()
+    file_age_mins: float | None = None
+    if default_path:
+        try:
+            mtime = Path(default_path).stat().st_mtime
+            file_age_mins = (time.time() - mtime) / 60
+        except OSError:
+            pass
     return render_template(
         "file_picker.html",
         recent_files=recent,
@@ -82,6 +90,7 @@ def file_picker_page():
         sp_ok=sp_ok,
         doc_register_ok=doc_register_ok,
         skip_sp_override=skip_sp_override,
+        file_age_mins=file_age_mins,
     )
 
 
