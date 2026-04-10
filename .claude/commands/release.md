@@ -83,6 +83,30 @@ git push origin dev
 The `--ff-only` merge after switching back to dev fast-forwards dev to include the release merge commit on main.
 This keeps both branches at the same tip and prevents main from drifting ahead of dev.
 
+---
+
+## ⚠️ Critical: Do NOT Create Git Tags Manually
+
+**Never run `git tag` or `git push origin --tags` during the release process.**
+
+The GitHub Actions workflow (`.github/workflows/release.yml`) automatically:
+1. Detects the new version from `pyproject.toml`
+2. Creates the Git tag when publishing the GitHub release
+3. Uploads release assets
+
+**If you manually create a tag:**
+- The workflow will detect it and skip the build/release steps
+- No GitHub release will be created
+- No distribution assets will be uploaded
+
+**To fix an accidentally created tag:**
+```bash
+git tag -d vX.Y.Z
+git push origin --delete vX.Y.Z
+```
+
+---
+
 ## Step 8 — Report back
 
 Show the user:
