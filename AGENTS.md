@@ -110,9 +110,12 @@ Public surface: `Model` (alias `KorfModel`), a facade that delegates to six serv
 Single-user, localhost-only Flask application. Entry point: `pykorf.cli:main`.
 
 **Session State** (`session.py`): One model lives in process memory at a time. Key functions:
-- `load(model, kdf_path)` — store model after opening
+- `load(model, kdf_path)` — store model after opening (tracks file mtime)
 - `get_model()` / `get_kdf_path()` — retrieve active model
 - `reload()` — re-parse KDF from disk (call after every `model.io.save()`)
+- `is_stale()` — check if KDF file changed externally (e.g., by KORF GUI)
+
+**External Change Detection**: `require_model()` automatically checks if the KDF file has been modified since last load/save. If stale (e.g., user edited in KORF GUI), it reloads from disk and shows an info flash message. This ensures KORF's data always takes priority — unsaved pyKorf changes are discarded when external changes detected.
 
 **Route Guards**: All routes except `/` and `/preferences` require active session:
 ```python
@@ -142,6 +145,7 @@ Test markers: `unit`, `integration`, `slow`, `automation` (requires KORF GUI ins
 - All model operations are **in-memory**. Persistent only on `model.save()`.
 - Use `uv` for all package management and running commands.
 - After `model.io.save()`, always call `_sess.reload()` so in-memory state matches disk.
+- **KORF data priority**: If KDF file is modified externally (e.g., by KORF GUI), pyKorf automatically reloads from disk on next navigation. Unsaved pyKorf changes are discarded — users should save before switching applications.
 
 ## Guardrails
 

@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
 _model: Model | None = None
 _kdf_path: Path | None = None
+_model_mtime: float | None = None
 _lock = threading.Lock()
 
 
@@ -25,10 +26,11 @@ def load(model: Model, kdf_path: Path) -> None:
         model: Loaded KorfModel instance.
         kdf_path: Source .kdf file path.
     """
-    global _model, _kdf_path
+    global _model, _kdf_path, _model_mtime
     with _lock:
         _model = model
         _kdf_path = kdf_path
+        _model_mtime = kdf_path.stat().st_mtime if kdf_path.exists() else None
 
 
 def get_model() -> Model | None:
@@ -68,18 +70,39 @@ def reload() -> None:
     displayed state always matches what was actually persisted.
     Does nothing if no model is currently loaded.
     """
-    global _model
+    global _model, _model_mtime
     with _lock:
         if _kdf_path is None:
             return
         from pykorf import Model
 
         _model = Model(_kdf_path)
+        _model_mtime = _kdf_path.stat().st_mtime if _kdf_path.exists() else None
 
 
 def clear() -> None:
     """Unload the current model."""
-    global _model, _kdf_path
+    global _model, _kdf_path, _model_mtime
     with _lock:
         _model = None
         _kdf_path = None
+        _model_mtime = None
+
+
+def is_stale() -> bool:
+    """Check if the KDF file on disk is newer than the in-memory model.
+
+    Returns:
+        True if the file has been modified externally since last load/save.
+    """
+    global _kdf_path, _model_mtime
+    with _lock:
+        if _kdf_path is None or _model_mtime is None:
+            return False
+        if not _kdf_path.exists():
+            return False
+        try:
+            file_mtime = _kdf_path.stat().st_mtime
+            return file_mtime > _model_mtime
+        except OSError:
+            return False

@@ -239,3 +239,102 @@ class TestSharepointUrl:
         with patch("pykorf.app.sharepoint._read_sync_roots", return_value=roots):
             result = get_sharepoint_url(r"D:\OtherDrive\model.kdf")
         assert result is None
+
+
+# ── Session stale detection ────────────────────────────────────────────────────
+
+
+class TestSessionStaleDetection:
+    def test_is_stale_false_on_fresh_load(self, tmp_path: Path) -> None:
+        from pykorf import Model
+        from pykorf.app.web import session as sess
+
+        kdf = tmp_path / "model.kdf"
+        kdf.write_bytes(b"test content")
+        model = Model(kdf)
+        sess.load(model, kdf)
+
+        assert sess.is_stale() is False
+
+        sess.clear()
+
+    def test_is_stale_true_after_file_modified(self, tmp_path: Path) -> None:
+        from pykorf import Model
+        from pykorf.app.web import session as sess
+
+        kdf = tmp_path / "model.kdf"
+        kdf.write_bytes(b"test content")
+        model = Model(kdf)
+        sess.load(model, kdf)
+
+        import time
+
+        time.sleep(0.1)
+        kdf.write_bytes(b"modified content")
+
+        assert sess.is_stale() is True
+
+        sess.clear()
+
+    def test_is_stale_false_after_reload(self, tmp_path: Path) -> None:
+        from pykorf import Model
+        from pykorf.app.web import session as sess
+
+        kdf = tmp_path / "model.kdf"
+        kdf.write_bytes(b"test content")
+        model = Model(kdf)
+        sess.load(model, kdf)
+
+        import time
+
+        time.sleep(0.1)
+        kdf.write_bytes(b"modified content")
+
+        sess.reload()
+        assert sess.is_stale() is False
+
+        sess.clear()
+
+    def test_is_stale_false_when_no_model(self) -> None:
+        from pykorf.app.web import session as sess
+
+        sess.clear()
+        assert sess.is_stale() is False
+
+    def test_is_stale_false_when_file_deleted(self, tmp_path: Path) -> None:
+        from pykorf import Model
+        from pykorf.app.web import session as sess
+
+        kdf = tmp_path / "model.kdf"
+        kdf.write_bytes(b"test content")
+        model = Model(kdf)
+        sess.load(model, kdf)
+
+        kdf.unlink()
+        assert sess.is_stale() is False
+
+        sess.clear()
+
+    def test_require_model_reload_on_stale(self, tmp_path: Path) -> None:
+        from pykorf import Model
+        from pykorf.app.web import session as sess
+        from pykorf.app.web.helpers import require_model
+        from pykorf.app import create_app
+
+        kdf = tmp_path / "model.kdf"
+        kdf.write_bytes(b"test content")
+        model = Model(kdf)
+        sess.load(model, kdf)
+
+        import time
+
+        time.sleep(0.1)
+        kdf.write_bytes(b"modified content")
+
+        flask_app = create_app()
+        with flask_app.test_request_context():
+            result = require_model()
+            assert result is not None
+            assert sess.is_stale() is False
+
+        sess.clear()

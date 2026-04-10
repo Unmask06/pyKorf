@@ -5,6 +5,19 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.2] - 2026-04-10
+
+### Fixed
+
+- pyKorf now automatically reloads model files when they are modified externally by the KORF GUI, preventing your changes from being overwritten.
+- Launcher now downloads a fresh release when reinstalling after a failed startup, ensuring a clean installation.
+
+### Improved
+
+- A warning message now appears when you navigate away from a page with unsaved KDF file changes.
+
+---
+
 ## [0.16.1] - 2026-04-10
 
 ### Fixed
