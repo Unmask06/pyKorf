@@ -109,7 +109,7 @@ set "PYTHON_EXE=py -3.13"
 !PYTHON_EXE! -m uv venv .venv --quiet
 
 echo %GRAY%  Installing dependencies...%RESET%
-py -3.13 -m uv pip install --python ".venv\Scripts\python.exe" -e .
+py -3.13 -m uv pip install --python ".venv\Scripts\python.exe" -e . --quiet
 if %errorlevel% neq 0 (
     echo %YELLOW%  Update download failed - launching existing version%RESET%
     echo.
@@ -142,9 +142,9 @@ if %errorlevel% neq 0 (
 
 set "VENV_UV=%APPDATA_DIR%\.venv\Scripts\uv.exe"
 if exist "!VENV_UV!" (
-    "!VENV_UV!" pip install --python ".venv\Scripts\python.exe" -e .
+    "!VENV_UV!" pip install --python ".venv\Scripts\python.exe" -e . --quiet
 ) else (
-    py -3.13 -m uv pip install --python ".venv\Scripts\python.exe" -e .
+    py -3.13 -m uv pip install --python ".venv\Scripts\python.exe" -e . --quiet
 )
 if %errorlevel% neq 0 (
     echo %RED%  Failed to reinstall dependencies.%RESET%
@@ -185,12 +185,44 @@ if exist "%TEMP%\pykorf_cfg_bak.json" (
 echo %GREEN%  OK  Application removed.%RESET%
 echo.
 
+REM Download fresh release before reinstall
+echo %GRAY%  Downloading latest release...%RESET%
+set "REINSTALL_ZIP_URL=https://github.com/Unmask06/pykorf/releases/latest/download/pykorf-v!BAT_MAJOR!.zip"
+set "REINSTALL_ZIP_PATH=%TEMP%\pykorf_reinstall.zip"
+set "REINSTALL_EXTRACT_DIR=%TEMP%\pykorf_reinstall"
+
+curl -L --fail --silent --max-time 120 -o "!REINSTALL_ZIP_PATH!" "!REINSTALL_ZIP_URL!" 2>nul
+if %errorlevel% neq 0 (
+    echo %RED%  Failed to download latest release.%RESET%
+    echo %YELLOW%  Please check your internet connection and try again.%RESET%
+    goto :launch_failed
+)
+
+if exist "!REINSTALL_EXTRACT_DIR!" rd /s /q "!REINSTALL_EXTRACT_DIR!"
+mkdir "!REINSTALL_EXTRACT_DIR!"
+powershell -Command "Expand-Archive -Path '!REINSTALL_ZIP_PATH!' -DestinationPath '!REINSTALL_EXTRACT_DIR!' -Force" 2>nul
+if %errorlevel% neq 0 (
+    echo %RED%  Failed to extract release archive.%RESET%
+    del "!REINSTALL_ZIP_PATH!" >nul 2>&1
+    goto :launch_failed
+)
+
+REM Copy files to APPDATA_DIR (preserving data/ and config.json that were restored)
+robocopy "!REINSTALL_EXTRACT_DIR!" "%APPDATA_DIR%" /E /NFL /NDL /NJH /NJS >nul 2>&1
+del "!REINSTALL_ZIP_PATH!" >nul 2>&1
+rd /s /q "!REINSTALL_EXTRACT_DIR!" >nul 2>&1
+
+if not exist "%APPDATA_DIR%\pyproject.toml" (
+    echo %RED%  Downloaded release is missing pyproject.toml.%RESET%
+    goto :launch_failed
+)
+
 REM Now perform fresh install
 echo %GRAY%  Performing fresh installation...%RESET%
 cd /d "%APPDATA_DIR%"
 set "PYTHON_EXE=py -3.13"
 !PYTHON_EXE! -m uv venv .venv --quiet
-py -3.13 -m uv pip install --python ".venv\Scripts\python.exe" -e .
+py -3.13 -m uv pip install --python ".venv\Scripts\python.exe" -e . --quiet
 if %errorlevel% neq 0 (
     echo %RED%  Failed to install dependencies.%RESET%
     goto :launch_failed
