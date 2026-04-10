@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from flask import Blueprint, render_template, request
 
 from pykorf.core.log import get_logger
+from pykorf.core.reports.unit_converter import UnitConverter
 from pykorf.app.web import session as _sess
 from pykorf.app.web.helpers import is_redirect, require_model
 
@@ -18,6 +19,44 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 bp = Blueprint("pipe_criteria", __name__)
+
+_converter = UnitConverter()  # Engg_SI unit system (default)
+
+
+def _get_dp_unit_info() -> tuple[float, str]:
+    """Return (multiplier, target_unit_label) for kPa/100m in the active unit system."""
+    system_conv = _converter.conversions.get(_converter.unit_system, {})
+    conv = system_conv.get("kPa/100m", {})
+    return conv.get("multiplier", 1.0), conv.get("target_unit", "kPa/100m")
+
+
+def _apply_dp_unit_conversion(
+    pipe_calcs: dict,
+    pipe_criteria_values: dict,
+) -> tuple[dict, dict, str]:
+    """Convert dp_calc and max_dp from kPa/100m to the Engg_SI target unit (bar/100m).
+
+    Returns (converted_pipe_calcs, converted_criteria_values, dp_unit_label).
+    """
+    multiplier, target_unit = _get_dp_unit_info()
+
+    converted_calcs: dict[str, dict] = {}
+    for name, vals in pipe_calcs.items():
+        entry = dict(vals)
+        if entry.get("dp_calc") is not None:
+            entry["dp_calc"] = entry["dp_calc"] * multiplier
+        converted_calcs[name] = entry
+
+    converted_criteria: dict[str, dict[str, dict]] = {}
+    for pipe_name, criteria_map in pipe_criteria_values.items():
+        converted_criteria[pipe_name] = {}
+        for key, cvals in criteria_map.items():
+            centry = dict(cvals)
+            if centry.get("max_dp") is not None:
+                centry["max_dp"] = centry["max_dp"] * multiplier
+            converted_criteria[pipe_name][key] = centry
+
+    return converted_calcs, converted_criteria, target_unit
 
 
 def _get_pipes_list(model: Model) -> list[tuple[int, str]]:
@@ -392,6 +431,7 @@ def _render_page(
     codes: dict,
     pipe_criteria_values: dict,
     pipe_calcs: dict,
+    dp_unit: str = "bar/100m",
     set_result: dict | None = None,
     predict_result: dict | None = None,
 ):
@@ -407,6 +447,7 @@ def _render_page(
         fluid_labels=FLUID_LABELS,
         pipe_criteria_values=pipe_criteria_values,
         pipe_calcs=pipe_calcs,
+        dp_unit=dp_unit,
         set_result=set_result,
         predict_result=predict_result,
     )
@@ -440,6 +481,7 @@ def pipe_criteria():
             existing, predict_result = _handle_predict_action(model, pipes, existing)
             pipe_criteria_values = _precompute_criteria_values(model, pipes, codes)
             pipe_calcs = _compute_pipe_calcs(model, pipes)
+            pipe_calcs, pipe_criteria_values, dp_unit = _apply_dp_unit_conversion(pipe_calcs, pipe_criteria_values)
             return _render_page(
                 kdf_path,
                 pipes,
@@ -447,6 +489,7 @@ def pipe_criteria():
                 codes,
                 pipe_criteria_values,
                 pipe_calcs,
+                dp_unit,
                 set_result,
                 predict_result,
             )
@@ -464,6 +507,7 @@ def pipe_criteria():
 
     pipe_criteria_values = _precompute_criteria_values(model, pipes, codes)
     pipe_calcs = _compute_pipe_calcs(model, pipes)
+    pipe_calcs, pipe_criteria_values, dp_unit = _apply_dp_unit_conversion(pipe_calcs, pipe_criteria_values)
     return _render_page(
         kdf_path,
         pipes,
@@ -471,6 +515,7 @@ def pipe_criteria():
         codes,
         pipe_criteria_values,
         pipe_calcs,
+        dp_unit,
         set_result,
         predict_result,
     )
