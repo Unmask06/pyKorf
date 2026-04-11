@@ -12,7 +12,7 @@ import pandas as pd
 from pykorf import Model
 from pykorf.app.operation.project.references import ReferencesStore
 from pykorf.core.log import get_logger
-from pykorf.core.reports.exporter import ResultExporter
+from pykorf.core.reports.exporter import ResultExporter, _classify_issue
 
 logger = get_logger()
 
@@ -42,6 +42,7 @@ class BatchReportGenerator:
         "Valves",
         "Remarks",
         "Hold Items",
+        "Validation",
     ]
 
     def __init__(self, folder_path: str | Path):
@@ -164,6 +165,38 @@ class BatchReportGenerator:
                     except Exception as e:
                         logger.warning(
                             "batch_pykorf_load_failed",
+                            file=str(kdf_file),
+                            error=str(e),
+                        )
+
+                # Extract validation issues
+                if "Validation" in types_to_process:
+                    try:
+                        meta = {
+                            "source_file": kdf_file.name,
+                            "source_path": str(kdf_file),
+                        }
+                        for msg in model.validate():
+                            severity, category, elem = _classify_issue(msg)
+                            elements_by_type["Validation"].append({
+                                **meta,
+                                "Severity": severity,
+                                "Category": category,
+                                "Element": elem,
+                                "Message": msg,
+                            })
+                        for msg in model.connectivity.check_connectivity():
+                            severity, category, elem = _classify_issue(msg)
+                            elements_by_type["Validation"].append({
+                                **meta,
+                                "Severity": severity,
+                                "Category": category,
+                                "Element": elem,
+                                "Message": msg,
+                            })
+                    except Exception as e:
+                        logger.warning(
+                            "batch_validation_failed",
                             file=str(kdf_file),
                             error=str(e),
                         )

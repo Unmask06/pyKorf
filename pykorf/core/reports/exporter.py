@@ -14,6 +14,49 @@ from pykorf.core.reports.unit_converter import UnitConverter
 _logger = logging.getLogger(__name__)
 
 
+# ── Validation string parsing ──────────────────────────────────────────
+
+_SEVERITY_RULES: list[tuple[re.Pattern, str, str]] = [
+    (re.compile(r"fails sizing|exceeds criteria|mismatch|not found in PMS", re.I), "Error", "Sizing"),
+    (re.compile(r"references pipe index .+ which does not exist", re.I), "Error", "Connectivity"),
+    (re.compile(r"missing line number|missing NAME|missing CON|missing", re.I), "Warning", "Missing Data"),
+    (re.compile(r"Add Title", re.I), "Info", "Model Setup"),
+    (re.compile(r"pipe.*criteria", re.I), "Error", "Sizing"),
+    (re.compile(r"CONN|connectiv|nozzle|CON value", re.I), "Error", "Connectivity"),
+]
+
+
+def _classify_issue(msg: str) -> tuple[str, str, str]:
+    """Classify a validation message into (severity, category, element_name).
+
+    Args:
+        msg: Human-readable validation issue string.
+
+    Returns:
+        Tuple of (severity, category, element_name_or_empty).
+    """
+    # Extract element name from common patterns:
+    # "Pipe 'L1': ..." → L1
+    # "PIPE L4 (idx 5): ..." → L4
+    # "V1 (VALVE): ..." → V1
+    elem_name = ""
+    for pat in [
+        re.compile(r"Pipe ['\"]?(\S+?)['\"]?[:\s]"),
+        re.compile(r"PIPE (\S+?) \("),
+        re.compile(r"^(\S+?) \((?:VALVE|PUMP|FEED|PRODUCT|COMPRESSOR|TEE|JUNC|VESSEL)\)"),
+    ]:
+        m = pat.search(msg)
+        if m:
+            elem_name = m.group(1)
+            break
+
+    for pattern, severity, category in _SEVERITY_RULES:
+        if pattern.search(msg):
+            return severity, category, elem_name
+
+    return "Warning", "Other", elem_name
+
+
 class ResultExporter:
     """A scalable exporter to extract calculated results and input criteria from a pyKorf Model
     and save them into a multi-sheet Excel report or DataFrame dictionary.
@@ -79,6 +122,45 @@ class ResultExporter:
                 dfs[sheet_name] = pd.DataFrame(converted_data)
         return dfs
 
+    def _get_validation_dataframe(self) -> pd.DataFrame:
+        """Run model validation and connectivity checks, return a structured DataFrame.
+
+        Returns:
+            DataFrame with columns: Severity, Category, Element, Message.
+            Empty DataFrame if no issues found.
+        """
+        issues: list[dict[str, str]] = []
+
+        # Run model-level validation (pipe line numbers, sizing criteria, etc.)
+        try:
+            for msg in self.model.validate():
+                severity, category, elem = _classify_issue(msg)
+                issues.append({
+                    "Severity": severity,
+                    "Category": category,
+                    "Element": elem,
+                    "Message": msg,
+                })
+        except Exception as exc:
+            _logger.warning("validation failed: %s", exc)
+
+        # Run connectivity validation (dangling refs, invalid indices)
+        try:
+            for msg in self.model.connectivity.check_connectivity():
+                severity, category, elem = _classify_issue(msg)
+                issues.append({
+                    "Severity": severity,
+                    "Category": category,
+                    "Element": elem,
+                    "Message": msg,
+                })
+        except Exception as exc:
+            _logger.warning("connectivity check failed: %s", exc)
+
+        if not issues:
+            return pd.DataFrame(columns=["Severity", "Category", "Element", "Message"])
+        return pd.DataFrame(issues)
+
     def export_to_excel(
         self,
         output_path: str,
@@ -114,6 +196,9 @@ class ResultExporter:
         # Insert References & Design Basis sheet as the first sheet (if data present)
         if self._basis or self._remarks or self._hold or self._references:
             self._write_references_sheet(workbook)
+
+        # Insert Validation sheet as the first sheet (if issues exist)
+        self._write_validation_sheet(workbook)
 
         # Row 1 — Model title from KORF SYMBOL (FSIZ=2)
         model_title = self._get_model_title()
@@ -447,6 +532,77 @@ class ResultExporter:
 
             # Outer border around the table
             self._apply_table_formatting(ref_ws, header_row, row - 1, len(headers), 1)
+
+    def _write_validation_sheet(self, workbook: Any) -> None:
+        """Create a 'Validation' sheet with model-level and connectivity issues.
+
+        Only added if there are actual issues. A4 Landscape, 90% scale.
+        """
+        df = self._get_validation_dataframe()
+        if df.empty:
+            return
+
+        val_ws = workbook.create_sheet("Validation", 0)
+        val_ws.page_setup.paperSize = val_ws.PAPERSIZE_A4
+        val_ws.page_setup.orientation = val_ws.ORIENTATION_LANDSCAPE
+        val_ws.page_setup.scale = 90
+
+        for col_idx, width in enumerate([12, 18, 15, 80], start=1):
+            val_ws.column_dimensions[get_column_letter(col_idx)].width = width
+
+        row = 1
+
+        # Sheet title
+        title_cell = val_ws.cell(row=row, column=1, value="Validation Results")
+        title_cell.font = self._styles["model_title"]
+        val_ws.row_dimensions[row].height = 28
+        row += 1
+
+        # Issue count summary
+        error_count = (df["Severity"] == "Error").sum()
+        warning_count = (df["Severity"] == "Warning").sum()
+        info_count = (df["Severity"] == "Info").sum()
+        summary = f"{len(df)} issue(s) found — {error_count} error(s), {warning_count} warning(s), {info_count} info"
+        val_ws.cell(row=row, column=1, value=summary).font = Font(italic=True, size=10, color="555555")
+        row += 2
+
+        # Table headers
+        headers = list(df.columns)
+        severity_colors = {"Error": "9C0006", "Warning": "9C5700", "Info": "003366"}
+        severity_fills = {"Error": "FFC7CE", "Warning": "FFEB9C", "Info": "D9E2F3"}
+        for c_idx, header in enumerate(headers, start=1):
+            cell = val_ws.cell(row=row, column=c_idx, value=header)
+            cell.font = self._styles["header"]
+            cell.fill = self._styles["fill"]
+            cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        val_ws.row_dimensions[row].height = 20
+        header_row = row
+        row += 1
+
+        # Table rows
+        for _, r in df.iterrows():
+            severity = r.get("Severity", "")
+            color = severity_colors.get(severity, "555555")
+            fill = severity_fills.get(severity, "F2F2F2")
+
+            val_ws.cell(row=row, column=1, value=r.get("Severity", "")).font = Font(
+                bold=True, size=10, color=color
+            )
+            val_ws.cell(row=row, column=1).fill = PatternFill(
+                start_color=fill, end_color=fill, fill_type="solid"
+            )
+            val_ws.cell(row=row, column=2, value=r.get("Category", "")).font = Font(size=10)
+            val_ws.cell(row=row, column=3, value=r.get("Element", "")).font = Font(
+                bold=True, size=10
+            )
+            msg_cell = val_ws.cell(row=row, column=4, value=r.get("Message", ""))
+            msg_cell.font = Font(size=10)
+            msg_cell.alignment = Alignment(wrap_text=True, vertical="top")
+            val_ws.row_dimensions[row].height = 15
+            row += 1
+
+        # Outer border
+        self._apply_table_formatting(val_ws, header_row, row - 1, len(headers), 1)
 
     def _write_pipe_stats(self, ws: Any, df: Any, row: int, start_col: int) -> int:
         """Writes a Min-Max summary row and an overall Criteria Check row below the pipe table."""
