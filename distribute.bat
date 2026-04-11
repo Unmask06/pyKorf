@@ -89,8 +89,7 @@ if exist "%DIST_DIR%\pykorf\_version.py" (
 
 REM Create __main__.py for module execution (python -m pykorf)
 echo.
-echo Creating __main__.py for module execution...
-echo from pykorf.cli import main; main() > %DIST_DIR%\pykorf\__main__.py
+echo CLI entry point is now in pykorf/__main__.py — no need to generate.
 
 REM Step 3: Copy non-Python files
 echo.

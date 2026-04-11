@@ -124,7 +124,7 @@ echo.
 cd /d "%APPDATA_DIR%"
 
 REM -- Launch with auto-repair on venv errors ------------------------------------
-".venv\Scripts\python.exe" -m pykorf
+".venv\Scripts\pykorf.exe" --no-debug
 set "LAUNCH_ERR=%errorlevel%"
 if "!LAUNCH_ERR!"=="0" exit /b
 
@@ -153,7 +153,7 @@ if %errorlevel% neq 0 (
 
 echo %GREEN%  OK Venv repaired - relaunching...%RESET%
 echo.
-".venv\Scripts\python.exe" -m pykorf
+".venv\Scripts\pykorf.exe" --no-debug
 if %errorlevel% equ 0 exit /b
 
 :launch_reinstall
@@ -231,7 +231,7 @@ echo %GREEN%  OK  Installation complete.%RESET%
 echo.
 echo %GRAY%  Launching pyKorf...%RESET%
 echo.
-".venv\Scripts\python.exe" -m pykorf
+".venv\Scripts\pykorf.exe" --no-debug
 if %errorlevel% equ 0 exit /b
 
 :launch_failed
@@ -458,7 +458,7 @@ echo.
 echo %GREEN%  INFO: Browser will automatically open. Don't close this terminal.%RESET%
 echo.
 
-".venv\Scripts\python.exe" -m pykorf
+".venv\Scripts\pykorf.exe" --no-debug
 
 endlocal
 goto :eof

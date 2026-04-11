@@ -55,7 +55,7 @@ dependencies = [
 ]
 
 [project.scripts]
-pykorf = "pykorf.cli:main"
+pykorf = "pykorf.__main__:main"
 
 [project.urls]
 Homepage = "https://github.com/Unmask06/pykorf"

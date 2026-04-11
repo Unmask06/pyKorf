@@ -1,4 +1,7 @@
-"""Command-line entry point for pyKorf."""
+"""Command-line entry point for pyKorf.
+
+Supports both ``python -m pykorf`` and the ``pykorf`` console script.
+"""
 
 from __future__ import annotations
 
@@ -128,7 +131,12 @@ def main():
     parser.add_argument(
         "--debug",
         action="store_true",
-        help="Enable debug mode",
+        help="Enable debug mode (default: on for development)",
+    )
+    parser.add_argument(
+        "--no-debug",
+        action="store_true",
+        help="Run in user mode with reduced terminal noise",
     )
     parser.add_argument(
         "--port",
@@ -137,6 +145,8 @@ def main():
         help="Port for the web UI server (default: 8000)",
     )
     args = parser.parse_args()
+
+    debug = not args.no_debug
 
     show_splash()
 
@@ -149,7 +159,7 @@ def main():
 
     from pykorf.app import run_server
 
-    run_server(port=args.port)
+    run_server(port=args.port, debug=debug)
 
 
 if __name__ == "__main__":

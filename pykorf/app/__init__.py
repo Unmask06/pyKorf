@@ -173,9 +173,10 @@ def create_app() -> Flask:
 
     @app.context_processor
     def inject_kdf_mtime():
-        """Inject kdf_mtime_str and update_available into every template context."""
+        """Inject kdf_mtime_str, update_available, and pykorf_version into every template context."""
         import os
         from datetime import datetime
+        from importlib.metadata import PackageNotFoundError, version
         from pykorf.app.update_check import is_update_available
         from pykorf.app.web import session as _sess
 
@@ -187,17 +188,32 @@ def create_app() -> Flask:
                 kdf_mtime_str = datetime.fromtimestamp(mtime).strftime("%d %b %H:%M")
             except OSError:
                 pass
-        return {"kdf_mtime_str": kdf_mtime_str, "update_available": is_update_available()}
+
+        try:
+            pkg_version = version("pykorf")
+        except PackageNotFoundError:
+            pkg_version = "dev"
+
+        return {"kdf_mtime_str": kdf_mtime_str, "update_available": is_update_available(), "pykorf_version": pkg_version}
 
     return app
 
 
-def _setup_console_logging() -> None:
-    """Add a stderr StreamHandler to the pykorf logger if none exists yet."""
+def _setup_console_logging(debug: bool = True) -> None:
+    """Add a stderr StreamHandler to the pykorf logger if none exists yet.
+
+    Args:
+        debug: When True, log at DEBUG level; otherwise WARNING to reduce noise.
+    """
+    from pykorf.core.log import set_log_level
+
+    level = "DEBUG" if debug else "WARNING"
+    set_log_level(level)
+
     pykorf_logger = logging.getLogger("pykorf")
     if not any(isinstance(h, logging.StreamHandler) for h in pykorf_logger.handlers):
         handler = logging.StreamHandler(sys.stderr)
-        handler.setLevel(logging.DEBUG)
+        handler.setLevel(logging.DEBUG if debug else logging.WARNING)
         handler.setFormatter(
             logging.Formatter(
                 "%(asctime)s [%(levelname)-8s] %(name)s: %(message)s",
@@ -205,19 +221,21 @@ def _setup_console_logging() -> None:
             )
         )
         pykorf_logger.addHandler(handler)
-    pykorf_logger.setLevel(logging.DEBUG)
     pykorf_logger.propagate = False  # don't double-print via root
 
 
-def run_server(port: int = 8000) -> None:
+def run_server(port: int = 8000, debug: bool = True) -> None:
     """Start the Flask development server and open the browser.
 
     Args:
         port: TCP port to listen on (default 8000).
+        debug: When True (developer mode), log at DEBUG level and enable
+            Flask's reloader. When False (user mode), log at WARNING level
+            and disable the reloader for a quieter terminal.
     """
     import os
 
-    _setup_console_logging()
+    _setup_console_logging(debug=debug)
     app = create_app()
     url = f"http://localhost:{port}"
     print(f"\n  pyKorf Web UI -> {url}\n  Press Ctrl+C to stop.\n")
@@ -227,7 +245,7 @@ def run_server(port: int = 8000) -> None:
     if os.environ.get("WERKZEUG_RUN_MAIN") != "true":
         threading.Timer(0.8, webbrowser.open, args=[url]).start()
 
-    app.run(host="127.0.0.1", port=port, debug=True, use_reloader=True)
+    app.run(host="127.0.0.1", port=port, debug=debug, use_reloader=debug)
 
 
 __all__ = [
