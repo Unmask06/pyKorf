@@ -48,6 +48,7 @@ examples/examples/
 *.log
 
 *.kilo/
+*.qwen/
 
 # ── Local / personal settings ─────────────────────────────
 *.local*

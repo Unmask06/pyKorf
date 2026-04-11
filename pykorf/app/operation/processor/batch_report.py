@@ -10,8 +10,9 @@ import openpyxl
 import pandas as pd
 
 from pykorf import Model
+from pykorf.app.operation.project.references import ReferencesStore
 from pykorf.core.log import get_logger
-from pykorf.core.reports.exporter import ResultExporter
+from pykorf.core.reports.exporter import ResultExporter, _classify_issue
 
 logger = get_logger()
 
@@ -23,13 +24,26 @@ class BatchReportGenerator:
     with multiple sheets (one per element type), each containing elements
     from all files with source_file metadata.
 
+    Also extracts model-level remarks and hold items from the ``.pykorf``
+    sidecar file (if present) into dedicated summary sheets.
+
     Example:
         >>> generator = BatchReportGenerator("/path/to/kdf/folder")
         >>> generator.generate_report("output.xlsx")
         '/path/to/kdf/folder/output.xlsx'
     """
 
-    ELEMENT_TYPES = ["Pipes", "Products", "Feeds", "Pumps", "Compressors", "Valves"]
+    ELEMENT_TYPES = [
+        "Pipes",
+        "Products",
+        "Feeds",
+        "Pumps",
+        "Compressors",
+        "Valves",
+        "Remarks",
+        "Hold Items",
+        "Validation",
+    ]
 
     def __init__(self, folder_path: str | Path):
         """Initialize batch report generator.
@@ -131,6 +145,61 @@ class BatchReportGenerator:
                         elem["source_path"] = str(kdf_file)
 
                     elements_by_type[sheet_name].extend(elements)
+
+                # Extract remarks and hold items from .pykorf sidecar
+                if "Remarks" in types_to_process or "Hold Items" in types_to_process:
+                    try:
+                        refs = ReferencesStore.load(kdf_file)
+                        meta = {
+                            "source_file": kdf_file.name,
+                            "source_path": str(kdf_file),
+                        }
+                        if "Remarks" in types_to_process:
+                            elements_by_type["Remarks"].append(
+                                {**meta, "Remarks": refs.remarks}
+                            )
+                        if "Hold Items" in types_to_process:
+                            elements_by_type["Hold Items"].append(
+                                {**meta, "Hold Items": refs.hold}
+                            )
+                    except Exception as e:
+                        logger.warning(
+                            "batch_pykorf_load_failed",
+                            file=str(kdf_file),
+                            error=str(e),
+                        )
+
+                # Extract validation issues
+                if "Validation" in types_to_process:
+                    try:
+                        meta = {
+                            "source_file": kdf_file.name,
+                            "source_path": str(kdf_file),
+                        }
+                        for msg in model.validate():
+                            severity, category, elem = _classify_issue(msg)
+                            elements_by_type["Validation"].append({
+                                **meta,
+                                "Severity": severity,
+                                "Category": category,
+                                "Element": elem,
+                                "Message": msg,
+                            })
+                        for msg in model.connectivity.check_connectivity():
+                            severity, category, elem = _classify_issue(msg)
+                            elements_by_type["Validation"].append({
+                                **meta,
+                                "Severity": severity,
+                                "Category": category,
+                                "Element": elem,
+                                "Message": msg,
+                            })
+                    except Exception as e:
+                        logger.warning(
+                            "batch_validation_failed",
+                            file=str(kdf_file),
+                            error=str(e),
+                        )
 
                 logger.info(
                     "batch_report_done", index=i, total=len(self.kdf_files), file=kdf_file.name
