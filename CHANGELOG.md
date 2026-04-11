@@ -5,6 +5,20 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.0] - 2026-04-11
+
+### What's New
+
+- Excel reports now include a Validation sheet that lists all model issues — sizing criteria failures, connectivity problems, missing data, and setup warnings — with severity levels for quick review.
+
+### Improved
+
+- Batch reports now include Remarks and Hold Items sheets so you can review model-level notes across all files in one workbook.
+- The batch report help text now shows the actual saved filename after generation, so you always know where the output went.
+- Path fields on the Reports page now wrap long paths across multiple lines so the full path is always visible.
+
+---
+
 ## [0.17.1] - 2026-04-11
 
 ### Improved
