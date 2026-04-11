@@ -133,6 +133,24 @@ def create_app() -> Flask:
     app.register_blueprint(doc_register_bp)
     app.register_blueprint(about_bp)
 
+    if os.environ.get("WERKZEUG_RUN_MAIN") != "true":
+        from pykorf.app.update_check import prefetch as _prefetch
+
+        _prefetch()
+
+    @app.route("/shutdown", methods=["POST"])
+    def shutdown():
+        """Stop the Flask server (localhost only)."""
+        import os
+        import threading as _threading
+
+        from flask import abort, request as _req
+
+        if _req.remote_addr != "127.0.0.1":
+            abort(403)
+        _threading.Timer(0.3, os._exit, args=[0]).start()
+        return ("", 204)
+
     from pathlib import Path as _Path
 
     from urllib.parse import quote as _quote
@@ -155,9 +173,10 @@ def create_app() -> Flask:
 
     @app.context_processor
     def inject_kdf_mtime():
-        """Inject kdf_mtime_str into every template context."""
+        """Inject kdf_mtime_str and update_available into every template context."""
         import os
         from datetime import datetime
+        from pykorf.app.update_check import is_update_available
         from pykorf.app.web import session as _sess
 
         kdf_path = _sess.get_kdf_path()
@@ -168,7 +187,7 @@ def create_app() -> Flask:
                 kdf_mtime_str = datetime.fromtimestamp(mtime).strftime("%d %b %H:%M")
             except OSError:
                 pass
-        return {"kdf_mtime_str": kdf_mtime_str}
+        return {"kdf_mtime_str": kdf_mtime_str, "update_available": is_update_available()}
 
     return app
 

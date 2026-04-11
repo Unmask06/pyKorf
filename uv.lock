@@ -1767,7 +1767,7 @@ wheels = [
 
 [[package]]
 name = "pykorf"
-version = "0.16.2"
+version = "0.17.0"
 source = { editable = "." }
 dependencies = [
     { name = "appdirs" },
@@ -1775,6 +1775,7 @@ dependencies = [
     { name = "networkx" },
     { name = "openpyxl" },
     { name = "orjson" },
+    { name = "packaging" },
     { name = "pandas" },
     { name = "pydantic" },
     { name = "pyvis" },
@@ -1822,6 +1823,7 @@ requires-dist = [
     { name = "networkx", specifier = ">=3.0" },
     { name = "openpyxl", specifier = ">=3.1" },
     { name = "orjson", specifier = ">=3.9" },
+    { name = "packaging", specifier = ">=24.0" },
     { name = "pandas", specifier = ">=2.0" },
     { name = "pydantic", specifier = ">=2.0,<3.0" },
     { name = "pyvis", specifier = ">=0.3" },

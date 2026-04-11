@@ -11,6 +11,20 @@
         <i class="bi bi-diagram-3-fill me-2"></i>pyKorf
       </h1>
       <p class="text-secondary small">Copilot for Hydraulic Network Modeling using KORF</p>
+      {% if update_available %}
+      <div class="mt-2">
+        <span class="badge bg-success me-2"
+              title="Close terminal and restart the application to apply the update.">
+          <i class="bi bi-arrow-up-circle me-1"></i>New Update Available
+        </span>
+        <form method="post" action="/shutdown" class="d-inline"
+              onsubmit="return confirm('Stop the pyKorf server now?\nClose this tab and restart from the terminal.')">
+          <button type="submit" class="btn btn-sm btn-outline-danger py-0">
+            <i class="bi bi-stop-circle me-1"></i>Stop Server
+          </button>
+        </form>
+      </div>
+      {% endif %}
     </div>
 
     {% if not setup_ok %}

@@ -16,6 +16,13 @@ document.addEventListener("DOMContentLoaded", function () {
   );
   // PIPE_CALCS = { pipe_name: { dp_calc, vel_calc, rho_v2_calc } }
 
+  const UNITS_DATA = JSON.parse(
+    document.getElementById("units-data").textContent,
+  );
+  // UNITS_DATA = { "Engg_SI": { "kPa/100m": { target_unit, multiplier, offset }, ... } }
+
+  let currentUnitSystem = "Engg_SI"; // default — no conversion
+
   // Build criteria <option> HTML for a given fluid type
   function buildOptions(fluidType, selected) {
     const entries = CODES[fluidType] || [];
@@ -35,6 +42,114 @@ document.addEventListener("DOMContentLoaded", function () {
     return min === 0.0
       ? "\u2264 " + fmtK(max)
       : fmtK(min) + " \u2013 " + fmtK(max);
+  }
+
+  // -----------------------------------------------------------------------
+  // Unit conversion helpers
+  // -----------------------------------------------------------------------
+  function getConversion(sourceUnit, unitSystem) {
+    if (unitSystem === "SI") return null;
+    const systemConvs = UNITS_DATA[unitSystem] || {};
+    return systemConvs[sourceUnit] || null;
+  }
+
+  function convertValue(rawValue, sourceUnit, unitSystem) {
+    const conv = getConversion(sourceUnit, unitSystem);
+    if (!conv || rawValue == null) return rawValue;
+    return rawValue * conv.multiplier + conv.offset;
+  }
+
+  function fmtConverted(v) {
+    if (v == null) return "-";
+    if (Math.abs(v) < 1 && v !== 0) return v.toFixed(4);
+    return v.toFixed(2);
+  }
+
+  // Map of source-unit → CSS selectors for cells that display that unit
+  const UNIT_CELL_MAP = {
+    "kPa/100m": [".calc-dp", ".crit-dp"],
+    "m/s": [".calc-vel", ".crit-vmin", ".crit-vmax"],
+    Pa: [".calc-rhov2", ".crit-rhov2"],
+  };
+
+  // Re-render all numeric cells using the current unit system
+  function refreshUnitDisplay() {
+    // Update column header unit labels
+    document.querySelectorAll("th[data-source-unit]").forEach(function (th) {
+      const sourceUnit = th.dataset.sourceUnit;
+      const conv = getConversion(sourceUnit, currentUnitSystem);
+      const labelEl = th.querySelector(".unit-label");
+      if (labelEl) {
+        labelEl.textContent = conv ? conv.target_unit : sourceUnit;
+      }
+    });
+
+    // Re-render each cell from its stored raw value
+    Object.entries(UNIT_CELL_MAP).forEach(function ([sourceUnit, selectors]) {
+      selectors.forEach(function (selector) {
+        document.querySelectorAll(selector).forEach(function (cell) {
+          // Special handling for rho_v2 range cells (two raw values)
+          if (cell.classList.contains("crit-rhov2")) {
+            const rawMin = cell.dataset.rawMin;
+            const rawMax = cell.dataset.rawMax;
+            if (rawMin == null || rawMax == null) return;
+            const min = parseFloat(rawMin);
+            const max = parseFloat(rawMax);
+            if (isNaN(min) || isNaN(max)) {
+              cell.textContent = "-";
+              return;
+            }
+            const cMin = convertValue(min, sourceUnit, currentUnitSystem);
+            const cMax = convertValue(max, sourceUnit, currentUnitSystem);
+            if (cMin == null || cMax == null) {
+              cell.textContent = "-";
+              return;
+            }
+            const fmtK = (v) =>
+              v >= 1000 ? (v / 1000).toFixed(0) + "k" : v.toFixed(0);
+            if (cMin === 0) {
+              cell.textContent = "\u2264 " + fmtK(cMax);
+            } else {
+              cell.textContent = fmtK(cMin) + " \u2013 " + fmtK(cMax);
+            }
+            return;
+          }
+
+          const raw = cell.dataset.raw;
+          if (raw == null || raw === "") return;
+          const rawNum = parseFloat(raw);
+          if (isNaN(rawNum) || rawNum === 0) {
+            cell.textContent = "-";
+            return;
+          }
+
+          const converted = convertValue(rawNum, sourceUnit, currentUnitSystem);
+
+          // Use rho_v2 calc formatting for single-value rho_v2 cells
+          if (cell.classList.contains("calc-rhov2")) {
+            if (converted == null || converted === 0) {
+              cell.textContent = "-";
+            } else if (converted >= 1000) {
+              cell.textContent = (converted / 1000).toFixed(1) + "k";
+            } else {
+              cell.textContent = converted.toFixed(0);
+            }
+          } else if (
+            cell.classList.contains("calc-vel") ||
+            cell.classList.contains("crit-vmin") ||
+            cell.classList.contains("crit-vmax") ||
+            cell.classList.contains("calc-dp") ||
+            cell.classList.contains("crit-dp")
+          ) {
+            // dP and velocity cells always use 2 decimal places
+            cell.textContent =
+              converted == null ? "-" : converted.toFixed(2);
+          } else {
+            cell.textContent = fmtConverted(converted);
+          }
+        });
+      });
+    });
   }
 
   // Update the read-only criteria value cells for a pipe
@@ -61,16 +176,42 @@ document.addEventListener("DOMContentLoaded", function () {
     const fmt = (v) => (v == null ? "-" : v.toFixed(2));
 
     if (vals && state && code) {
-      dpEl.textContent = fmt(vals.max_dp);
-      vminEl.textContent = vals.min_vel > 0 ? vals.min_vel.toFixed(2) : "-";
-      vmaxEl.textContent = fmt(vals.max_vel);
-      if (rhov2El)
-        rhov2El.textContent = fmtRhoV2Range(vals.rho_v2_min, vals.rho_v2_max);
+      // Store raw SI values as data attributes for unit conversion
+      dpEl.dataset.raw = vals.max_dp != null ? vals.max_dp : "";
+      vminEl.dataset.raw = vals.min_vel > 0 ? vals.min_vel : "";
+      vmaxEl.dataset.raw = vals.max_vel != null ? vals.max_vel : "";
+
+      // Display converted values based on current unit system
+      const dpConv = convertValue(vals.max_dp, "kPa/100m", currentUnitSystem);
+      dpEl.textContent = dpConv != null ? dpConv.toFixed(2) : "-";
+      const vminConv = convertValue(
+        vals.min_vel > 0 ? vals.min_vel : null,
+        "m/s",
+        currentUnitSystem,
+      );
+      vminEl.textContent = vminConv != null ? vminConv.toFixed(2) : "-";
+      const vmaxConv = convertValue(vals.max_vel, "m/s", currentUnitSystem);
+      vmaxEl.textContent = fmtConverted(vmaxConv);
+
+      if (rhov2El) {
+        rhov2El.dataset.rawMin = vals.rho_v2_min != null ? vals.rho_v2_min : "";
+        rhov2El.dataset.rawMax = vals.rho_v2_max != null ? vals.rho_v2_max : "";
+        const cMin = convertValue(vals.rho_v2_min, "Pa", currentUnitSystem);
+        const cMax = convertValue(vals.rho_v2_max, "Pa", currentUnitSystem);
+        rhov2El.textContent = fmtRhoV2Range(cMin, cMax);
+      }
     } else {
+      dpEl.dataset.raw = "";
+      vminEl.dataset.raw = "";
+      vmaxEl.dataset.raw = "";
       dpEl.textContent = "-";
       vminEl.textContent = "-";
       vmaxEl.textContent = "-";
-      if (rhov2El) rhov2El.textContent = "-";
+      if (rhov2El) {
+        rhov2El.dataset.rawMin = "";
+        rhov2El.dataset.rawMax = "";
+        rhov2El.textContent = "-";
+      }
     }
   }
 
@@ -177,20 +318,37 @@ document.addEventListener("DOMContentLoaded", function () {
   // Populate calculated values (dp_calc, vel_calc, rho_v2_calc) on page load
   // -----------------------------------------------------------------------
   (function () {
-    const fmtCalc = (v) => (v == null || v === 0 ? "-" : v.toFixed(2));
-    const fmtRhoV2Calc = (v) => {
-      if (v == null || v === 0) return "-";
-      return v >= 1000 ? (v / 1000).toFixed(1) + "k" : v.toFixed(0);
-    };
     document.querySelectorAll(".pipe-row").forEach(function (row) {
       const pipe = row.dataset.pipe;
       const c = PIPE_CALCS[pipe] || {};
-      const rhov2CalcEl = row.querySelector(".calc-rhov2");
       const dpCalcEl = row.querySelector(".calc-dp");
       const velCalcEl = row.querySelector(".calc-vel");
-      if (rhov2CalcEl) rhov2CalcEl.textContent = fmtRhoV2Calc(c.rho_v2_calc);
-      if (dpCalcEl) dpCalcEl.textContent = fmtCalc(c.dp_calc);
-      if (velCalcEl) velCalcEl.textContent = fmtCalc(c.vel_calc);
+      const rhov2CalcEl = row.querySelector(".calc-rhov2");
+
+      if (dpCalcEl) {
+        dpCalcEl.dataset.raw = c.dp_calc != null ? c.dp_calc : "";
+        const dpConv = convertValue(c.dp_calc, "kPa/100m", currentUnitSystem);
+        dpCalcEl.textContent =
+          dpConv == null || dpConv === 0 ? "-" : dpConv.toFixed(2);
+      }
+      if (velCalcEl) {
+        velCalcEl.dataset.raw = c.vel_calc != null ? c.vel_calc : "";
+        const velConv = convertValue(c.vel_calc, "m/s", currentUnitSystem);
+        velCalcEl.textContent =
+          velConv == null || velConv === 0 ? "-" : velConv.toFixed(2);
+      }
+      if (rhov2CalcEl) {
+        rhov2CalcEl.dataset.raw =
+          c.rho_v2_calc != null ? c.rho_v2_calc : "";
+        const rvConv = convertValue(c.rho_v2_calc, "Pa", currentUnitSystem);
+        if (rvConv == null || rvConv === 0) {
+          rhov2CalcEl.textContent = "-";
+        } else if (rvConv >= 1000) {
+          rhov2CalcEl.textContent = (rvConv / 1000).toFixed(1) + "k";
+        } else {
+          rhov2CalcEl.textContent = rvConv.toFixed(0);
+        }
+      }
     });
   })();
 
@@ -361,11 +519,15 @@ document.addEventListener("DOMContentLoaded", function () {
         .querySelectorAll(".crit-dp, .crit-vmin, .crit-vmax, .crit-rhov2")
         .forEach(function (el) {
           el.textContent = "-";
+          delete el.dataset.raw;
+          delete el.dataset.rawMin;
+          delete el.dataset.rawMax;
         });
       document
         .querySelectorAll(".calc-dp, .calc-vel, .calc-rhov2")
         .forEach(function (el) {
           el.classList.remove("text-danger", "fw-semibold");
+          delete el.dataset.raw;
         });
       document.querySelectorAll(".row-select").forEach(function (cb) {
         cb.checked = false;
@@ -395,6 +557,15 @@ document.addEventListener("DOMContentLoaded", function () {
       document.getElementById("btn-predict").disabled = true;
       document.getElementById("predict-spinner").classList.remove("d-none");
     });
+
+  // -----------------------------------------------------------------------
+  // Unit system dropdown
+  // -----------------------------------------------------------------------
+  const unitSystemSelect = document.getElementById("unit-system");
+  unitSystemSelect.addEventListener("change", function () {
+    currentUnitSystem = this.value;
+    refreshUnitDisplay();
+  });
 
   // -----------------------------------------------------------------------
   // Column sorting

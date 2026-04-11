@@ -5,6 +5,19 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0] - 2026-04-11
+
+### What's New
+
+- Update notifications: pyKorf now checks GitHub for new releases and shows a badge in the navbar when an update is available.
+- Unit system support in pipe sizing criteria for more flexible pipe design workflows.
+
+### Improved
+
+- A "Stop Server" button is now available on all pages when an update is ready, so you can quickly restart the application to apply changes.
+
+---
+
 ## [0.16.2] - 2026-04-10
 
 ### Fixed
