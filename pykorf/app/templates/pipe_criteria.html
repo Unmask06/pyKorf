@@ -67,6 +67,17 @@ block content %} {% if set_result %}
         />
       </div>
       <div class="col-auto">
+        <select
+          id="unit-system"
+          class="form-select form-select-sm"
+          style="width: 130px"
+          title="Unit system for displayed values"
+        >
+          <option value="SI">SI</option>
+          <option value="Engg_SI">Engg SI</option>
+        </select>
+      </div>
+      <div class="col-auto">
         <form method="post" action="/model/pipe-criteria" id="predict-form">
           <input type="hidden" name="action" value="predict" />
           <button
@@ -157,8 +168,9 @@ block content %} {% if set_result %}
               style="width: 90px"
               class="text-center text-nowrap sortable"
               data-column="dp_calc"
+              data-source-unit="kPa/100m"
             >
-              dP calc<br /><small class="fw-normal text-secondary"
+              dP calc<br /><small class="fw-normal text-secondary unit-label"
                 >kPa/100m</small
               >
               <i class="bi bi-arrow-down-up sort-icon"></i>
@@ -167,8 +179,9 @@ block content %} {% if set_result %}
               style="width: 100px"
               class="text-center text-nowrap sortable"
               data-column="dp_max"
+              data-source-unit="kPa/100m"
             >
-              dP max<br /><small class="fw-normal text-secondary"
+              dP max<br /><small class="fw-normal text-secondary unit-label"
                 >kPa/100m</small
               >
               <i class="bi bi-arrow-down-up sort-icon"></i>
@@ -177,32 +190,36 @@ block content %} {% if set_result %}
               style="width: 80px"
               class="text-center text-nowrap sortable"
               data-column="vel_calc"
+              data-source-unit="m/s"
             >
-              vel calc<br /><small class="fw-normal text-secondary">m/s</small>
+              vel calc<br /><small class="fw-normal text-secondary unit-label">m/s</small>
               <i class="bi bi-arrow-down-up sort-icon"></i>
             </th>
             <th
               style="width: 80px"
               class="text-center text-nowrap sortable"
               data-column="v_min"
+              data-source-unit="m/s"
             >
-              v min<br /><small class="fw-normal text-secondary">m/s</small>
+              v min<br /><small class="fw-normal text-secondary unit-label">m/s</small>
               <i class="bi bi-arrow-down-up sort-icon"></i>
             </th>
             <th
               style="width: 80px"
               class="text-center text-nowrap sortable"
               data-column="v_max"
+              data-source-unit="m/s"
             >
-              v max<br /><small class="fw-normal text-secondary">m/s</small>
+              v max<br /><small class="fw-normal text-secondary unit-label">m/s</small>
               <i class="bi bi-arrow-down-up sort-icon"></i>
             </th>
             <th
               style="width: 90px"
               class="text-center text-nowrap sortable"
               data-column="rho_v2_calc"
+              data-source-unit="Pa"
             >
-              &rho;V&sup2; calc<br /><small class="fw-normal text-secondary"
+              &rho;V&sup2; calc<br /><small class="fw-normal text-secondary unit-label"
                 >Pa</small
               >
               <i class="bi bi-arrow-down-up sort-icon"></i>
@@ -211,8 +228,9 @@ block content %} {% if set_result %}
               style="width: 120px"
               class="text-center text-nowrap sortable"
               data-column="rho_v2_range"
+              data-source-unit="Pa"
             >
-              &rho;V&sup2; range<br /><small class="fw-normal text-secondary"
+              &rho;V&sup2; range<br /><small class="fw-normal text-secondary unit-label"
                 >Pa</small
               >
               <i class="bi bi-arrow-down-up sort-icon"></i>
@@ -352,6 +370,11 @@ max_vel, min_vel, rho_v2_min, rho_v2_max}}} #}
 rho_v2_calc}} #}
 <script id="pipe-calcs" type="application/json">
   {{ pipe_calcs | tojson }}
+</script>
+
+{# Unit conversion mappings from units.json #}
+<script id="units-data" type="application/json">
+  {{ units_data | tojson }}
 </script>
 
 {% endblock %} {% block scripts %}

@@ -111,13 +111,48 @@ head_extra %}{% endblock %} {% block content %}
                 type="text"
                 class="form-control font-monospace"
                 name="sp_url"
+                id="sp_url_edit"
                 value="{{ edit_entry.sp_url | e }}"
                 required
+                pattern="https?://.*"
                 autocomplete="off"
               />
+              <button
+                type="button"
+                id="sp-edit-link"
+                class="btn btn-outline-primary"
+                title="Open SharePoint URL in browser to verify"
+                style="display: none"
+              >
+                <i class="bi bi-box-arrow-up-right"></i> Open
+              </button>
             </div>
           </div>
-          <button type="submit" class="btn btn-sm btn-warning">
+
+          <div class="alert alert-warning py-2 mb-3">
+            <div class="form-check">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="sp-edit-confirm-check"
+                required
+              />
+              <label class="form-check-label small" for="sp-edit-confirm-check">
+                <i class="bi bi-check-circle text-warning me-1"></i>
+                <strong>I confirm this SharePoint URL works:</strong>
+                I clicked the link button (
+                <i class="bi bi-box-arrow-up-right"></i>) to open it in my
+                browser and verified it opens correctly.
+              </label>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            id="edit-override-btn"
+            class="btn btn-sm btn-warning"
+            disabled
+          >
             <i class="bi bi-floppy me-1"></i>Save Changes
           </button>
         </form>
@@ -167,21 +202,21 @@ head_extra %}{% endblock %} {% block content %}
                 type="text"
                 class="form-control font-monospace"
                 name="sp_url"
+                id="sp_url"
                 placeholder="https://cc7ges.sharepoint.com/sites/25002TAZIZSALT-ADNOCUAE/Shared Documents/2 EXECUTION/2. ENG/2A-PROCESS"
                 required
+                pattern="https?://.*"
                 autocomplete="off"
               />
-              <a
-                href="#"
+              <button
+                type="button"
                 id="sp-example-link"
-                target="_blank"
-                rel="noopener"
                 class="btn btn-outline-primary"
-                title="Open example in browser to verify"
+                title="Open SharePoint URL in browser to verify"
                 style="display: none"
               >
-                <i class="bi bi-box-arrow-up-right"></i>
-              </a>
+                <i class="bi bi-box-arrow-up-right"></i> Open
+              </button>
             </div>
             <div class="form-text">
               The corresponding SharePoint folder URL. See right for an example.
@@ -206,7 +241,12 @@ head_extra %}{% endblock %} {% block content %}
             </div>
           </div>
 
-          <button type="submit" class="btn btn-sm btn-success">
+          <button
+            type="submit"
+            id="add-override-btn"
+            class="btn btn-sm btn-success"
+            disabled
+          >
             <i class="bi bi-plus-circle me-1"></i>Add Override
           </button>
         </form>
@@ -561,13 +601,119 @@ head_extra %}{% endblock %} {% block content %}
     spUrlInput.addEventListener("input", function () {
       var url = this.value.trim();
       if (url && url.startsWith("http")) {
-        spExampleLink.href = url;
+        spExampleLink.onclick = function () {
+          window.open(url, "_blank", "noopener,noreferrer");
+        };
         spExampleLink.style.display = "inline-block";
       } else {
         spExampleLink.style.display = "none";
       }
     });
   }
+
+  // Validate Add Override form - enable button only when all conditions are met
+  function validateAddOverrideForm() {
+    var localPathInput = document.getElementById("local_path");
+    var spUrlInput = document.getElementById("sp_url");
+    var confirmCheck = document.getElementById("sp-confirm-check");
+    var addOverrideBtn = document.getElementById("add-override-btn");
+
+    if (!localPathInput || !spUrlInput || !confirmCheck || !addOverrideBtn) {
+      return;
+    }
+
+    var localPathValid = localPathInput.value.trim() !== "";
+    var spUrlValid = spUrlInput.value.trim() !== "" && spUrlInput.value.trim().startsWith("http");
+    var confirmChecked = confirmCheck.checked;
+
+    if (localPathValid && spUrlValid && confirmChecked) {
+      addOverrideBtn.disabled = false;
+    } else {
+      addOverrideBtn.disabled = true;
+    }
+  }
+
+  // Attach validation listeners
+  var localPathInput = document.getElementById("local_path");
+  var spUrlInput = document.getElementById("sp_url");
+  var confirmCheck = document.getElementById("sp-confirm-check");
+
+  if (localPathInput) {
+    localPathInput.addEventListener("input", validateAddOverrideForm);
+  }
+  if (spUrlInput) {
+    spUrlInput.addEventListener("input", validateAddOverrideForm);
+  }
+  if (confirmCheck) {
+    confirmCheck.addEventListener("change", validateAddOverrideForm);
+  }
+
+  // Initial validation on page load
+  validateAddOverrideForm();
+
+  // -----------------------------------------------------------------------
+  // Edit Override form: Open link + confirmation flow
+  // -----------------------------------------------------------------------
+  var spUrlEditInput = document.getElementById("sp_url_edit");
+  var spEditLink = document.getElementById("sp-edit-link");
+
+  if (spUrlEditInput && spEditLink) {
+    // Show Open button immediately if edit_entry pre-fills an http URL
+    (function () {
+      var url = spUrlEditInput.value.trim();
+      if (url && url.startsWith("http")) {
+        spEditLink.onclick = function () {
+          window.open(url, "_blank", "noopener,noreferrer");
+        };
+        spEditLink.style.display = "inline-block";
+      }
+    })();
+
+    spUrlEditInput.addEventListener("input", function () {
+      var url = this.value.trim();
+      if (url && url.startsWith("http")) {
+        spEditLink.onclick = function () {
+          window.open(url, "_blank", "noopener,noreferrer");
+        };
+        spEditLink.style.display = "inline-block";
+      } else {
+        spEditLink.style.display = "none";
+      }
+    });
+  }
+
+  function validateEditOverrideForm() {
+    var localPathInput = document.getElementById("local_path");
+    var spUrlEditInput = document.getElementById("sp_url_edit");
+    var editConfirmCheck = document.getElementById("sp-edit-confirm-check");
+    var editOverrideBtn = document.getElementById("edit-override-btn");
+
+    if (!localPathInput || !spUrlEditInput || !editConfirmCheck || !editOverrideBtn) {
+      return;
+    }
+
+    var localPathValid = localPathInput.value.trim() !== "";
+    var spUrlValid = spUrlEditInput.value.trim() !== "" && spUrlEditInput.value.trim().startsWith("http");
+    var confirmChecked = editConfirmCheck.checked;
+
+    if (localPathValid && spUrlValid && confirmChecked) {
+      editOverrideBtn.disabled = false;
+    } else {
+      editOverrideBtn.disabled = true;
+    }
+  }
+
+  if (document.getElementById("local_path") && document.getElementById("sp_url_edit")) {
+    document.getElementById("local_path").addEventListener("input", validateEditOverrideForm);
+    document.getElementById("sp_url_edit").addEventListener("input", validateEditOverrideForm);
+  }
+  var editConfirmCheck = document.getElementById("sp-edit-confirm-check");
+  if (editConfirmCheck) {
+    editConfirmCheck.addEventListener("change", validateEditOverrideForm);
+  }
+
+  // Initial validation on page load (for pre-filled edit form)
+  validateEditOverrideForm();
 
   // Document Register: Detect SharePoint URL and show conversion preview
   var drExcelPathInput = document.getElementById("dr_excel_path");
@@ -584,35 +730,6 @@ head_extra %}{% endblock %} {% block content %}
       conversionPreview.style.cssText = "font-size: 0.7rem; display: none;";
       drExcelPathHelp.appendChild(conversionPreview);
     }
-
-    drExcelPathInput.addEventListener("blur", function () {
-      var val = this.value.trim();
-      if (val && val.startsWith("https://")) {
-        conversionPreview.innerHTML =
-          '<i class="bi bi-arrow-repeat me-1"></i>' +
-          "SharePoint URL — will convert to local path on save.";
-        conversionPreview.className = "form-text mt-1 text-info";
-        conversionPreview.style.display = "block";
-      } else {
-        conversionPreview.style.display = "none";
-      }
-    });
-  }
-
-  // Show/hide example link button when SharePoint URL is entered
-  var spUrlInput = document.getElementById("sp_url");
-  var spExampleLink = document.getElementById("sp-example-link");
-  if (spUrlInput && spExampleLink) {
-    spUrlInput.addEventListener("input", function () {
-      var url = this.value.trim();
-      if (url && url.startsWith("http")) {
-        spExampleLink.href = url;
-        spExampleLink.style.display = "inline-block";
-      } else {
-        spExampleLink.style.display = "none";
-      }
-    });
-  }
 
     drExcelPathInput.addEventListener("blur", function () {
       var val = this.value.trim();

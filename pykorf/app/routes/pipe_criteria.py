@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from flask import Blueprint, render_template, request
 
 from pykorf.core.log import get_logger
+from pykorf.core.reports.unit_converter import UNITS_JSON_PATH
 from pykorf.app.web import session as _sess
 from pykorf.app.web.helpers import is_redirect, require_model
 
@@ -385,6 +386,16 @@ def _compute_pipe_calcs(model: Model, pipes: list[tuple[int, str]]) -> dict:
     return result
 
 
+def _load_units_data() -> dict:
+    """Load units.json for client-side unit conversion."""
+    import json
+
+    if UNITS_JSON_PATH.exists():
+        with open(UNITS_JSON_PATH, encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+
 def _render_page(
     kdf_path: Path | str | None,
     pipes: list[tuple[int, str]],
@@ -409,6 +420,7 @@ def _render_page(
         pipe_calcs=pipe_calcs,
         set_result=set_result,
         predict_result=predict_result,
+        units_data=_load_units_data(),
     )
 
 
