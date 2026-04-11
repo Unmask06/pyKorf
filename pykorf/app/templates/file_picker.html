@@ -92,24 +92,6 @@
       </div>
     </div>
 
-    {% if file_age_mins is not none and file_age_mins > 5 %}
-    <div class="alert alert-warning alert-dismissible mt-3 py-2 small" role="alert">
-      <i class="bi bi-exclamation-triangle-fill me-1"></i>
-      <strong>Unsaved KORF changes?</strong>
-      This file was last saved {{ file_age_mins | int }} min ago.
-      If you have made changes in KORF since then, save them in KORF before loading here.
-      Conversely, if changes were made in pyKorf, re-open this file here without saving in KORF to pick up those changes.
-      <button type="button" class="btn-close btn-sm py-2" data-bs-dismiss="alert" aria-label="Dismiss"></button>
-    </div>
-    {% else %}
-    <div class="alert alert-info alert-dismissible mt-3 py-2 small" role="alert">
-      <i class="bi bi-info-circle me-1"></i>
-      If the file is opened in KORF now, save them in KORF before loading here.
-      Conversely, if changes were made in pyKorf, don't save file again in KORF as it will be overwritten.
-      <button type="button" class="btn-close btn-sm py-2" data-bs-dismiss="alert" aria-label="Dismiss"></button>
-    </div>
-    {% endif %}
-
     {% if recent_files %}
     <div class="card mt-3 shadow-sm">
       <div class="card-header fw-semibold">
