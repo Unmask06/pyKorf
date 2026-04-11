@@ -5,6 +5,20 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.1] - 2026-04-11
+
+### Improved
+
+- Pipe sizing criteria now defaults to Engg SI unit system and applies conversions immediately on page load.
+- User-facing launcher (pykorf.bat) now runs in quiet mode with reduced terminal noise.
+- pyKorf version is displayed in the navbar for easy reference.
+
+### Fixed
+
+- Removed redundant unsaved-changes banner from the file picker page — the model-level warning in base.html already covers this.
+
+---
+
 ## [0.17.0] - 2026-04-11
 
 ### What's New
