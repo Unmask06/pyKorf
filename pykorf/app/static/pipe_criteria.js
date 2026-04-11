@@ -352,6 +352,9 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   })();
 
+  // Apply unit conversion on initial page load (so default unit system is honoured)
+  refreshUnitDisplay();
+
   // -----------------------------------------------------------------------
   // State change → rebuild criteria dropdown + clear value cells
   // -----------------------------------------------------------------------

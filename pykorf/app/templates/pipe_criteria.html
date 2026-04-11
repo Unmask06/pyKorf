@@ -8,7 +8,7 @@ block content %} {% if set_result %}
     class="bi bi-{% if set_result.skipped %}exclamation-triangle-fill{% else %}check-circle-fill{% endif %} fs-5 flex-shrink-0 mt-1"
   ></i>
   <div>
-    Applied SIZ criteria to <strong>{{ set_result.applied }}</strong> pipe(s) in
+    Applied Pipe Sizing criteria to <strong>{{ set_result.applied }}</strong> pipe(s) in
     model. {% if set_result.skipped %} <br /><span class="small"
       >Skipped (no criteria assigned): {{ set_result.skipped | join(", ")
       }}</span
@@ -74,7 +74,7 @@ block content %} {% if set_result %}
           title="Unit system for displayed values"
         >
           <option value="SI">SI</option>
-          <option value="Engg_SI">Engg SI</option>
+          <option value="Engg_SI" selected>Engg SI</option>
         </select>
       </div>
       <div class="col-auto">

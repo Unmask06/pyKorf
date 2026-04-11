@@ -1,6 +1,20 @@
 Release a new version of pyKorf. Follow these steps exactly:
 
-## Step 0 — Pre-flight: ensure dev is in sync with main
+## Step 0 — Commit all working changes
+
+Run:
+```
+git status
+```
+
+If there are unstaged or uncommitted changes, review and commit them:
+```
+git diff --stat
+git add -A
+git commit -m "<describe what you're committing>"
+```
+
+## Step 1 — Pre-flight: ensure dev is in sync with main
 
 Run:
 ```
@@ -13,9 +27,7 @@ If this prints any commits, main is ahead of dev. Merge it first before proceedi
 git merge origin/main --no-ff -m "chore: sync dev with main"
 ```
 
-**Never skip this step.** Releasing when dev is behind main causes the branches to diverge permanently.
-
-## Step 1 — Determine version bump
+## Step 2 — Determine version bump
 
 Run `git log $(git describe --tags --abbrev=0)..HEAD --oneline` to see commits since the last tag.
 
@@ -23,11 +35,11 @@ Run `git log $(git describe --tags --abbrev=0)..HEAD --oneline` to see commits s
 - Only `fix:` / `chore:` / `refactor:` commits → **patch** bump (0.0.X)
 - Any breaking change noted → **major** bump (X.0.0)
 
-## Step 2 — Update `pyproject.toml`
+## Step 3 — Update `pyproject.toml`
 
 Set `version = "X.Y.Z"` in the `[project]` section.
 
-## Step 3 — Update `CHANGELOG.md`
+## Step 4 — Update `CHANGELOG.md`
 
 Add a new section at the top (below the header):
 
@@ -43,7 +55,7 @@ Write the changelog for **end users**, not developers:
 - Example good entry: "Reports now include the model title and source file at the top."
 - Example bad entry: "feat(exporter): add model_title from SYMBOL FSIZ=2 to export_to_excel"
 
-## Step 4 — Refresh lockfile
+## Step 5 — Refresh lockfile
 
 After updating the version in `pyproject.toml`, regenerate the lockfile so the release zip ships an up-to-date `uv.lock`:
 
@@ -51,7 +63,7 @@ After updating the version in `pyproject.toml`, regenerate the lockfile so the r
 uv lock
 ```
 
-## Step 5 — Verify CI passes
+## Step 6 — Verify CI passes
 
 Run:
 ```
@@ -62,14 +74,14 @@ uv run pytest -q
 
 Fix any failures before proceeding.
 
-## Step 6 — Commit on dev
+## Step 7 — Commit on dev
 
 ```
 git add pyproject.toml CHANGELOG.md uv.lock
 git commit -m "release: vX.Y.Z"
 ```
 
-## Step 7 — Merge to main, sync back to dev, and push
+## Step 8 — Merge to main, sync back to dev, and push
 
 ```
 git checkout main
@@ -87,8 +99,6 @@ This keeps both branches at the same tip and prevents main from drifting ahead o
 
 ## ⚠️ Critical: Do NOT Create Git Tags Manually
 
-**Never run `git tag` or `git push origin --tags` during the release process.**
-
 The GitHub Actions workflow (`.github/workflows/release.yml`) automatically:
 1. Detects the new version from `pyproject.toml`
 2. Creates the Git tag when publishing the GitHub release
@@ -99,15 +109,9 @@ The GitHub Actions workflow (`.github/workflows/release.yml`) automatically:
 - No GitHub release will be created
 - No distribution assets will be uploaded
 
-**To fix an accidentally created tag:**
-```bash
-git tag -d vX.Y.Z
-git push origin --delete vX.Y.Z
-```
-
 ---
 
-## Step 8 — Report back
+## Step 9 — Report back
 
 Show the user:
 - The new version number

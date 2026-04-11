@@ -243,6 +243,23 @@ def _configure_logging() -> None:
     root_logger.propagate = False
 
 
+def set_log_level(level: str) -> None:
+    """Change the log level of the pykorf root logger at runtime.
+
+    Updates both the console handler and the root logger itself.
+    Useful for switching between developer (DEBUG) and user (WARNING) modes.
+
+    Args:
+        level: Log level name (DEBUG, INFO, WARNING, ERROR, CRITICAL).
+    """
+    root_logger = logging.getLogger("pykorf")
+    numeric_level = getattr(logging, level.upper(), logging.INFO)
+    root_logger.setLevel(numeric_level)
+    for handler in root_logger.handlers:
+        if isinstance(handler, logging.StreamHandler):
+            handler.setLevel(numeric_level)
+
+
 def get_logger(name: str | None = None) -> BoundContextLogger:
     """Get a structured logger.
 
@@ -376,5 +393,6 @@ __all__ = [
     "get_captured_logs",
     "get_logger",
     "log_operation",
+    "set_log_level",
     "timed",
 ]

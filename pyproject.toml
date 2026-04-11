@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pykorf"
-version = "0.17.0"
+version = "0.17.1"
 description = "Enterprise Python toolkit for reading, editing and writing KORF hydraulic model files (.kdf)"
 readme = "README.md"
 license = { text = "MIT" }
@@ -55,7 +55,7 @@ dependencies = [
 ]
 
 [project.scripts]
-pykorf = "pykorf.cli:main"
+pykorf = "pykorf.__main__:main"
 
 [project.urls]
 Homepage = "https://github.com/Unmask06/pykorf"
