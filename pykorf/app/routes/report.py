@@ -46,6 +46,14 @@ def generate_report():
     last_batch = get_last_batch_folder_path()
     batch_folder_path = str(last_batch) if last_batch else kdf_folder
 
+    # Batch report output path (derived from last batch run)
+    last_batch_report = get_last_report_path()
+    batch_report_path = (
+        str(last_batch_report)
+        if last_batch_report and Path(last_batch_report).is_file()
+        else ""
+    )
+
     # Export/Import path - derived from KDF file path
     default_export_file = Path(kdf_folder) / default_export_name
     export_exists = bool(default_export_file.is_file())
@@ -64,6 +72,7 @@ def generate_report():
         "import_exists": import_exists,
         "last_report_file": last_report_file,
         "batch_folder_path": batch_folder_path,
+        "batch_report_path": batch_report_path,
     }
 
     if request.method == "GET":
@@ -178,5 +187,6 @@ def generate_report():
         import_exists=import_exists,
         last_report_file=last_report_file,
         batch_folder_path=batch_folder_path,
+        batch_report_path=last_report_file,
     )
     return render_template("report.html", **ctx, result={"lines": result_lines, "errors": errors})

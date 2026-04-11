@@ -29,8 +29,8 @@
             <label for="report_path" class="form-label fw-semibold">Output File</label>
             <div class="input-group">
               <span class="input-group-text"><i class="bi bi-file-earmark-text"></i></span>
-              <input type="text" class="form-control font-monospace" id="report_path"
-                     value="{{ report_path }}" readonly />
+              <textarea class="form-control font-monospace" id="report_path"
+                        rows="3" style="resize:none;font-size:.82rem;" readonly>{{ report_path }}</textarea>
               <button type="button" class="btn btn-outline-secondary copy-path-btn"
                       data-copy-source="report_path" title="Copy path">
                 <i class="bi bi-clipboard"></i>
@@ -60,15 +60,24 @@
             <label for="batch_folder" class="form-label fw-semibold">KDF Folder</label>
             <div class="input-group">
               <span class="input-group-text"><i class="bi bi-folder"></i></span>
-              <input type="text" class="form-control font-monospace" id="batch_folder"
-                     name="batch_folder" value="{{ batch_folder_path }}"
-                     placeholder="Folder containing .kdf files" />
+              <textarea class="form-control font-monospace" id="batch_folder"
+                        name="batch_folder" rows="3" style="resize:none;font-size:.82rem;"
+                        placeholder="Folder containing .kdf files">{{ batch_folder_path }}</textarea>
               <button type="button" class="btn btn-outline-secondary copy-path-btn"
                       data-copy-source="batch_folder" title="Copy path">
                 <i class="bi bi-clipboard"></i>
               </button>
             </div>
-            <div class="form-text">All <code>.kdf</code> files processed into <code>{folder}_batch_report.xlsx</code>.</div>
+            {% if batch_report_path %}
+            <div class="form-text text-success" title="{{ batch_report_path }}">
+              <i class="bi bi-check-circle me-1"></i>Saved to: <code>{{ batch_report_path | basename }}</code>
+            </div>
+            {% else %}
+            <div class="form-text">
+              All <code>.kdf</code> files in this folder will be processed into
+              <code>{{ (batch_folder_path | basename) if batch_folder_path else "folder" }}_batch_report.xlsx</code>.
+            </div>
+            {% endif %}
           </div>
           <button type="submit" class="btn btn-secondary w-100" id="btn-batch">
             <span class="spinner-border spinner-border-sm d-none me-1" id="batch-spinner"></span>
@@ -97,8 +106,8 @@
             <label for="export_path" class="form-label fw-semibold">Output Excel File</label>
             <div class="input-group">
               <span class="input-group-text"><i class="bi bi-file-earmark-spreadsheet"></i></span>
-              <input type="text" class="form-control font-monospace" id="export_path"
-                     value="{{ export_path }}" readonly />
+              <textarea class="form-control font-monospace" id="export_path"
+                        rows="3" style="resize:none;font-size:.82rem;" readonly>{{ export_path }}</textarea>
               <button type="button" class="btn btn-outline-secondary copy-path-btn"
                       data-copy-source="export_path" title="Copy path">
                 <i class="bi bi-clipboard"></i>
@@ -132,9 +141,9 @@
             <label for="import_path" class="form-label fw-semibold">Source Excel File</label>
             <div class="input-group">
               <span class="input-group-text"><i class="bi bi-file-earmark-spreadsheet"></i></span>
-              <input type="text" class="form-control font-monospace" id="import_path"
-                     name="file_path" value="{{ import_path }}"
-                     placeholder="Paste path to exported Excel file" />
+              <textarea class="form-control font-monospace" id="import_path"
+                        name="file_path" rows="3" style="resize:none;font-size:.82rem;"
+                        placeholder="Paste path to exported Excel file">{{ import_path }}</textarea>
               <button type="button" class="btn btn-outline-secondary copy-path-btn"
                       data-copy-source="import_path" title="Copy path"
                       {% if not import_exists %}disabled{% endif %}>
