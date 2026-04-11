@@ -137,9 +137,11 @@ document.addEventListener("DOMContentLoaded", function () {
           } else if (
             cell.classList.contains("calc-vel") ||
             cell.classList.contains("crit-vmin") ||
-            cell.classList.contains("crit-vmax")
+            cell.classList.contains("crit-vmax") ||
+            cell.classList.contains("calc-dp") ||
+            cell.classList.contains("crit-dp")
           ) {
-            // Velocity cells always use 2 decimal places
+            // dP and velocity cells always use 2 decimal places
             cell.textContent =
               converted == null ? "-" : converted.toFixed(2);
           } else {
@@ -181,7 +183,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       // Display converted values based on current unit system
       const dpConv = convertValue(vals.max_dp, "kPa/100m", currentUnitSystem);
-      dpEl.textContent = fmtConverted(dpConv);
+      dpEl.textContent = dpConv != null ? dpConv.toFixed(2) : "-";
       const vminConv = convertValue(
         vals.min_vel > 0 ? vals.min_vel : null,
         "m/s",
@@ -327,7 +329,7 @@ document.addEventListener("DOMContentLoaded", function () {
         dpCalcEl.dataset.raw = c.dp_calc != null ? c.dp_calc : "";
         const dpConv = convertValue(c.dp_calc, "kPa/100m", currentUnitSystem);
         dpCalcEl.textContent =
-          dpConv == null || dpConv === 0 ? "-" : fmtConverted(dpConv);
+          dpConv == null || dpConv === 0 ? "-" : dpConv.toFixed(2);
       }
       if (velCalcEl) {
         velCalcEl.dataset.raw = c.vel_calc != null ? c.vel_calc : "";

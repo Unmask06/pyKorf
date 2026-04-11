@@ -112,12 +112,27 @@
     </button>
   </form>
   {% endif %}
+  {% if update_available %}
+  <span class="badge bg-success ms-2" title="Close terminal and restart the application to apply the update.">
+    <i class="bi bi-arrow-up-circle me-1"></i>Update Available
+  </span>
+  {% endif %}
   <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse"
           data-bs-target="#navContent">
     <span class="navbar-toggler-icon"></span>
   </button>
   <div class="collapse navbar-collapse" id="navContent">
     <ul class="navbar-nav ms-auto gap-1">
+      {% if update_available %}
+      <li class="nav-item">
+        <form method="post" action="/shutdown" class="d-inline"
+              onsubmit="return confirm('Stop the pyKorf server now?\nClose this tab and restart from the terminal.')">
+          <button type="submit" class="btn btn-sm btn-outline-success" style="font-size:.78rem;">
+            <i class="bi bi-arrow-up-circle me-1"></i>Update Ready
+          </button>
+        </form>
+      </li>
+      {% endif %}
       <li class="nav-item"><a class="nav-link" href="/about"><i class="bi bi-info-circle me-1"></i>About</a></li>
       <li class="nav-item"><a class="nav-link" href="/preferences"><i class="bi bi-gear me-1"></i>Preferences</a></li>
       {% if kdf_path is defined and kdf_path %}
