@@ -62,6 +62,14 @@ for /f "tokens=1,2,3 delims=." %%a in ("!SELF_REMOTE_VER!") do (
     set "_RP=%%c"
 )
 
+REM Guard: all six parts must be present before comparing
+if "!_RM!"=="" goto :self_update_skip
+if "!_RN!"=="" goto :self_update_skip
+if "!_RP!"=="" goto :self_update_skip
+if "!_LM!"=="" goto :self_update_skip
+if "!_LN!"=="" goto :self_update_skip
+if "!_LP!"=="" goto :self_update_skip
+
 REM Compare: major, then minor, then patch
 set "_NEED_UPDATE=0"
 if !_RM! gtr !_LM! set "_NEED_UPDATE=1"
@@ -76,23 +84,23 @@ if "!_NEED_UPDATE!"=="1" (
     echo %CYAN%  Launcher update available: !SELF_LOCAL_VER! → !SELF_REMOTE_VER!%RESET%
     echo %GRAY%  Updating pykorf.bat...%RESET%
     copy /y "!SELF_TMP!" "%~f0" >nul 2>&1
-    del "!SELF_TMP!" >nul 2>&1
-    if %errorlevel% equ 0 (
+    if !errorlevel! equ 0 (
+        del "!SELF_TMP!" >nul 2>&1
         echo %GREEN%  OK  Launcher updated. Relaunching...%RESET%
         echo.
         endlocal
         call "%~f0" %*
         exit /b
     ) else (
+        del "!SELF_TMP!" >nul 2>&1
         echo %YELLOW%  WARNING: Could not replace launcher — permission denied?%RESET%
         echo %GRAY%  Continuing with existing version.%RESET%
         echo.
     )
 )
 
-del "!SELF_TMP!" >nul 2>&1
-
 :self_update_skip
+if defined SELF_TMP del "!SELF_TMP!" >nul 2>&1
 
 REM ============================================
 REM Uninstall flag check
@@ -136,7 +144,7 @@ REM App version update check (GitHub API)
 REM ============================================
 set "APP_ZIP_URL=https://github.com/Unmask06/pykorf/releases/latest/download/pykorf-v!BAT_MAJOR!.zip"
 
-for /f %%v in ('powershell -command "(Invoke-RestMethod 'https://api.github.com/repos/Unmask06/pykorf/releases/latest').tag_name" 2^>nul') do set "REMOTE_APP_VER=%%v"
+for /f %%v in ('powershell -command "try { (Invoke-RestMethod -Uri 'https://api.github.com/repos/Unmask06/pykorf/releases/latest' -TimeoutSec 15).tag_name } catch { '' }" 2^>nul') do set "REMOTE_APP_VER=%%v"
 set "REMOTE_APP_VER=!REMOTE_APP_VER:v=!"
 if "!REMOTE_APP_VER!"=="" goto :app_update_done
 if "!INST_VER!"=="!REMOTE_APP_VER!" goto :app_update_done
@@ -158,6 +166,13 @@ if %errorlevel% neq 0 (
 if exist "!UPD_DIR!" rd /s /q "!UPD_DIR!"
 mkdir "!UPD_DIR!"
 tar -xf "!UPD_ZIP!" -C "!UPD_DIR!" >nul 2>&1
+if !errorlevel! neq 0 (
+    del "!UPD_ZIP!" >nul 2>&1
+    rd /s /q "!UPD_DIR!" >nul 2>&1
+    echo %YELLOW%  Update extraction failed - launching existing version%RESET%
+    echo.
+    goto :app_update_done
+)
 del "!UPD_ZIP!" >nul 2>&1
 
 REM Overlay new files onto APPDATA_DIR, preserving data/ and config.json
@@ -178,7 +193,7 @@ set "PYTHON_EXE=py -3.13"
 echo %GRAY%  Installing dependencies...%RESET%
 py -3.13 -m uv pip install --python ".venv\Scripts\python.exe" -e . --quiet
 if %errorlevel% neq 0 (
-    echo %YELLOW%  Update download failed - launching existing version%RESET%
+    echo %YELLOW%  Dependency installation failed - launching existing version%RESET%
     echo.
     goto :app_update_done
 )
@@ -425,7 +440,7 @@ set "ZIP_URL=https://github.com/Unmask06/pykorf/releases/latest/download/pykorf-
 set "ZIP_PATH=%TEMP%\pykorf.zip"
 
 echo %CYAN%  ^|%RESET%  %GRAY%  Downloading...%RESET%
-curl -L --fail --silent -o "!ZIP_PATH!" "!ZIP_URL!"
+curl -L --fail --silent --max-time 120 -o "!ZIP_PATH!" "!ZIP_URL!"
 if %errorlevel% neq 0 (
     echo %CYAN%  ^|%RESET%
     echo %CYAN%  +--%RESET%  %RED%X  Download failed%RESET%
