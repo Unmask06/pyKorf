@@ -62,7 +62,9 @@ async function fetchReferences() {
     hold.value = data.hold
     references.value = data.references
     dirty.value = false
-  } catch { /* ignore */ }
+  } catch (err: any) {
+    toast.error(err.response?.data?.detail || err.message || 'Failed to load references.')
+  }
 }
 
 const saveAllLoading = useLoading(async () => {
