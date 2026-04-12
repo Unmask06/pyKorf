@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import os
+import string
 from pathlib import Path
 
 from fastapi import APIRouter, Query
 
-from pykorf.app.api.schemas import BrowseResponse, BrowseEntryDir, BrowseEntryFile
+from pykorf.app.api.schemas import BrowseEntryDir, BrowseEntryFile, BrowseResponse, PinnedFoldersResponse
 from pykorf.app.operation.integration.sharepoint import get_sharepoint_url, is_sharepoint_synced
 from pykorf.app.operation.config.preferences import (
     get_pinned_folders,
@@ -33,7 +34,7 @@ def _is_safe_path(path: Path) -> bool:
     home = Path.home().resolve()
     if os.name == "nt":
         allowed_roots = [home] + [
-            Path(f"{d}:\\") for d in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" if Path(f"{d}:\\").exists()
+            Path(f"{d}:\\") for d in string.ascii_uppercase if Path(f"{d}:\\").exists()
         ]
     else:
         allowed_roots = [home, Path("/")]
@@ -102,8 +103,6 @@ async def api_browse(
 
     drives = []
     if os.name == "nt":
-        import string
-
         drives = [f"{d}:\\" for d in string.ascii_uppercase if Path(f"{d}:\\").exists()]
 
     pinned = get_pinned_folders()
@@ -119,18 +118,18 @@ async def api_browse(
     )
 
 
-@router.post("/pin")
-async def pin_folder(folder: str = Query(..., alias="folder")):
+@router.post("/pin", response_model=PinnedFoldersResponse)
+async def pin_folder(folder: str = Query(..., alias="folder")) -> PinnedFoldersResponse:
     """Pin a folder for quick access in the path browser."""
     p = Path(folder)
     if not p.is_dir():
-        return {"success": False, "error": f"Not a valid directory: {folder}"}
+        return PinnedFoldersResponse(success=False, error=f"Not a valid directory: {folder}")
     add_pinned_folder(str(p.resolve()))
-    return {"success": True, "pinned_folders": get_pinned_folders()}
+    return PinnedFoldersResponse(pinned_folders=get_pinned_folders())
 
 
-@router.post("/unpin")
-async def unpin_folder(folder: str = Query(..., alias="folder")):
+@router.post("/unpin", response_model=PinnedFoldersResponse)
+async def unpin_folder(folder: str = Query(..., alias="folder")) -> PinnedFoldersResponse:
     """Unpin a folder from quick access."""
     remove_pinned_folder(folder)
-    return {"success": True, "pinned_folders": get_pinned_folders()}
+    return PinnedFoldersResponse(pinned_folders=get_pinned_folders())

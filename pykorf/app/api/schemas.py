@@ -131,6 +131,17 @@ class ApplyDataResponse(BaseModel):
     errors: list[str] = []
 
 
+# --- Generic ---
+
+
+class OkResponse(BaseModel):
+    """Generic success/failure response for simple write operations."""
+
+    success: bool
+    message: str = ""
+    error: str | None = None
+
+
 # --- Settings ---
 
 
@@ -153,6 +164,13 @@ class CenterLayoutResponse(BaseModel):
 class SnapOrthogonalRequest(BaseModel):
     threshold_deg: float = 10.0
     grid_size: float = 500.0
+
+
+class SettingsGetResponse(BaseModel):
+    settings: list[GlobalSettingSchema] = []
+    saved_selections: list[str] = []
+    saved_dp_margin: str = "1.25"
+    saved_shutoff_margin: str = "1.20"
 
 
 class SettingsApplyResponse(BaseModel):
@@ -216,8 +234,6 @@ class SetPipeCriteriaRequest(BaseModel):
 
 class PredictCriteriaRequest(BaseModel):
     """Empty — predicts for all pipes in current model."""
-
-    pass
 
 
 class PredictCriteriaResponse(BaseModel):
@@ -375,6 +391,12 @@ class DocRegisterRebuildResponse(BaseModel):
 
 
 # --- Browse ---
+
+
+class PinnedFoldersResponse(BaseModel):
+    success: bool = True
+    pinned_folders: list[str] = []
+    error: str | None = None
 
 
 class BrowseEntryDir(BaseModel):

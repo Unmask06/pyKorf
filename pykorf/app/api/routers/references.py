@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from pykorf.app.api import session_state as _sess
 from pykorf.app.api.deps import require_model
 from pykorf.app.api.schemas import (
     AddReferenceRequest,
     DeleteReferenceRequest,
+    OkResponse,
     ReferencesStoreSchema,
     SaveAllReferencesRequest,
     ShortcutsResponse,
@@ -53,30 +54,30 @@ async def get_references():
     )
 
 
-@router.post("/save-all")
-async def save_all(req: SaveAllReferencesRequest):
+@router.post("/save-all", response_model=OkResponse)
+async def save_all(req: SaveAllReferencesRequest) -> OkResponse:
     """Save basis, remarks, and hold items."""
     await require_model()
     kdf_path = await _sess.get_kdf_path()
     if not kdf_path:
-        return {"success": False, "error": "No model loaded."}
+        raise HTTPException(status_code=409, detail="No model path available.")
     store = _load_refs()
     store.basis = req.basis
     store.remarks = req.remarks
     store.hold = req.hold
     store.save(kdf_path)
-    return {"success": True}
+    return OkResponse(success=True)
 
 
-@router.post("/add")
-async def add_reference(req: AddReferenceRequest):
-    """Add a new reference entry."""
+@router.post("/add", response_model=OkResponse)
+async def add_reference(req: AddReferenceRequest) -> OkResponse:
+    """Add or update a reference entry."""
     await require_model()
     from pykorf.app.operation.project.references import Reference
 
     kdf_path = await _sess.get_kdf_path()
     if not kdf_path:
-        return {"success": False, "error": "No model loaded."}
+        raise HTTPException(status_code=409, detail="No model path available.")
     store = _load_refs()
 
     if req.name and req.link:
@@ -97,16 +98,16 @@ async def add_reference(req: AddReferenceRequest):
         store.save(kdf_path)
         store.create_shortcuts(kdf_path)
 
-    return {"success": True}
+    return OkResponse(success=True)
 
 
-@router.post("/update")
-async def update_reference(req: UpdateReferenceRequest):
+@router.post("/update", response_model=OkResponse)
+async def update_reference(req: UpdateReferenceRequest) -> OkResponse:
     """Update an existing reference by ID."""
     await require_model()
     kdf_path = await _sess.get_kdf_path()
     if not kdf_path:
-        return {"success": False, "error": "No model loaded."}
+        raise HTTPException(status_code=409, detail="No model path available.")
     store = _load_refs()
     if req.ref_id:
         store.update(
@@ -118,21 +119,21 @@ async def update_reference(req: UpdateReferenceRequest):
         )
         store.save(kdf_path)
         store.create_shortcuts(kdf_path)
-    return {"success": True}
+    return OkResponse(success=True)
 
 
-@router.post("/delete")
-async def delete_reference(req: DeleteReferenceRequest):
+@router.post("/delete", response_model=OkResponse)
+async def delete_reference(req: DeleteReferenceRequest) -> OkResponse:
     """Delete a reference by ID."""
     await require_model()
     kdf_path = await _sess.get_kdf_path()
     if not kdf_path:
-        return {"success": False, "error": "No model loaded."}
+        raise HTTPException(status_code=409, detail="No model path available.")
     store = _load_refs()
     if req.ref_id:
         store.delete(req.ref_id)
         store.save(kdf_path)
-    return {"success": True}
+    return OkResponse(success=True)
 
 
 @router.post("/shortcuts", response_model=ShortcutsResponse)
