@@ -13,7 +13,7 @@ REM              Bump on any launcher fix/improvement; enables auto-update.
 REM AUTO_UPDATE: TRUE = silently self-update when a newer launcher is on GitHub.
 REM              FALSE = never self-update; user must get new bat from administrator.
 set "BAT_MAJOR=0"
-set "BAT_VERSION=0.6.0"
+set "BAT_VERSION=0.6.1"
 set "AUTO_UPDATE=TRUE"
 
 set "APPDATA_DIR=%APPDATA%\pyKorf"
@@ -219,6 +219,8 @@ if exist ".venv" rd /s /q ".venv" >nul 2>&1
 py -3.13 -m uv venv .venv --quiet
 if %errorlevel% neq 0 (
     echo %RED%  Failed to create virtual environment.%RESET%
+    echo %YELLOW%  Hint: Python 3.13 may need to be reinstalled (run pykorf.bat again after reinstalling).%RESET%
+    echo.
     goto :launch_reinstall
 )
 
@@ -230,6 +232,8 @@ if exist "!VENV_UV!" (
 )
 if %errorlevel% neq 0 (
     echo %RED%  Failed to reinstall dependencies.%RESET%
+    echo %YELLOW%  Hint: Check your network connection, then run pykorf.bat again.%RESET%
+    echo.
     goto :launch_reinstall
 )
 
@@ -284,8 +288,11 @@ if exist "!REINSTALL_EXTRACT_DIR!" rd /s /q "!REINSTALL_EXTRACT_DIR!"
 mkdir "!REINSTALL_EXTRACT_DIR!"
 powershell -Command "Expand-Archive -Path '!REINSTALL_ZIP_PATH!' -DestinationPath '!REINSTALL_EXTRACT_DIR!' -Force" 2>nul
 if %errorlevel% neq 0 (
-    echo %RED%  Failed to extract release archive.%RESET%
     del "!REINSTALL_ZIP_PATH!" >nul 2>&1
+    rd /s /q "!REINSTALL_EXTRACT_DIR!" >nul 2>&1
+    echo %RED%  Failed to extract release archive.%RESET%
+    echo %YELLOW%  The download may be corrupt or disk space is low. Run pykorf.bat again to retry.%RESET%
+    echo.
     goto :launch_failed
 )
 
@@ -295,7 +302,9 @@ del "!REINSTALL_ZIP_PATH!" >nul 2>&1
 rd /s /q "!REINSTALL_EXTRACT_DIR!" >nul 2>&1
 
 if not exist "%APPDATA_DIR%\pyproject.toml" (
-    echo %RED%  Downloaded release is missing pyproject.toml.%RESET%
+    echo %RED%  Downloaded release is incomplete — pyproject.toml missing.%RESET%
+    echo %YELLOW%  The archive may be corrupt. Run pykorf.bat again to retry.%RESET%
+    echo.
     goto :launch_failed
 )
 
@@ -307,6 +316,8 @@ set "PYTHON_EXE=py -3.13"
 py -3.13 -m uv pip install --python ".venv\Scripts\python.exe" -e . --quiet
 if %errorlevel% neq 0 (
     echo %RED%  Failed to install dependencies.%RESET%
+    echo %YELLOW%  Check your network connection, then run pykorf.bat again.%RESET%
+    echo.
     goto :launch_failed
 )
 echo %GREEN%  OK  Installation complete.%RESET%
@@ -324,7 +335,14 @@ echo %RED%  ^|                                                         ^|%RESET%
 echo %RED%  ^|   Automatic repair and reinstall were attempted but     ^|%RESET%
 echo %RED%  ^|   did not resolve the issue.                            ^|%RESET%
 echo %RED%  ^|                                                         ^|%RESET%
-echo %RED%  ^|   Please contact: Prasanna Palanivel                    ^|%RESET%
+if defined LAUNCH_ERR (
+echo %RED%  ^|   Exit code: !LAUNCH_ERR!                                       ^|%RESET%
+echo %RED%  ^|                                                         ^|%RESET%
+)
+echo %RED%  ^|   Steps to try:                                         ^|%RESET%
+echo %RED%  ^|     1. Close all pyKorf windows and run again           ^|%RESET%
+echo %RED%  ^|     2. Run pykorf.bat as Administrator                  ^|%RESET%
+echo %RED%  ^|     3. Contact: Prasanna Palanivel                      ^|%RESET%
 echo %RED%  +---------------------------------------------------------+%RESET%
 echo.
 pause
@@ -445,11 +463,13 @@ if %errorlevel% neq 0 (
     echo %CYAN%  ^|%RESET%
     echo %CYAN%  +--%RESET%  %RED%X  Download failed%RESET%
     echo.
-echo %YELLOW%  +-------------------------------------------------------+%RESET%
-echo %YELLOW%  ^|   If pyKorf has released a new major version,         ^|%RESET%
-echo %YELLOW%  ^|   contact your administrator for the updated           ^|%RESET%
-echo %YELLOW%  ^|   pykorf.bat file.                                    ^|%RESET%
-echo %YELLOW%  +-------------------------------------------------------+%RESET%
+    echo %YELLOW%  +-------------------------------------------------------+%RESET%
+    echo %YELLOW%  ^|   Could not download pyKorf from GitHub.              ^|%RESET%
+    echo %YELLOW%  ^|                                                       ^|%RESET%
+    echo %YELLOW%  ^|   - Check your internet connection and try again.     ^|%RESET%
+    echo %YELLOW%  ^|   - If this version is no longer available, ask your  ^|%RESET%
+    echo %YELLOW%  ^|     administrator for an updated pykorf.bat file.     ^|%RESET%
+    echo %YELLOW%  +-------------------------------------------------------+%RESET%
     echo.
     pause
     exit /b 1
@@ -457,10 +477,14 @@ echo %YELLOW%  +-------------------------------------------------------+%RESET%
 
 echo %CYAN%  ^|%RESET%  %GRAY%  Extracting...%RESET%
 if not exist "%APPDATA_DIR%" mkdir "%APPDATA_DIR%"
-powershell -Command "Expand-Archive -Path '!ZIP_PATH!' -DestinationPath '%APPDATA_DIR%' -Force"
+powershell -Command "Expand-Archive -Path '!ZIP_PATH!' -DestinationPath '%APPDATA_DIR%' -Force" 2>nul
 if %errorlevel% neq 0 (
+    del "!ZIP_PATH!" >nul 2>&1
     echo %CYAN%  ^|%RESET%
     echo %CYAN%  +--%RESET%  %RED%X  Extraction failed%RESET%
+    echo.
+    echo %YELLOW%     Possible causes: low disk space or a corrupt download.%RESET%
+    echo %YELLOW%     Free up space on %APPDATA% and run pykorf.bat again.%RESET%
     echo.
     pause
     exit /b 1
@@ -489,7 +513,10 @@ if not exist ".venv\Scripts\python.exe" (
     )
     if %errorlevel% neq 0 (
         echo %CYAN%  ^|%RESET%
-        echo %CYAN%  +--%RESET%  %RED%X  Failed to create environment%RESET%
+        echo %CYAN%  +--%RESET%  %RED%X  Failed to create virtual environment%RESET%
+        echo.
+        echo %YELLOW%     Try right-clicking pykorf.bat and selecting "Run as Administrator".%RESET%
+        echo %YELLOW%     If the issue persists, reinstall Python 3.13 and try again.%RESET%
         echo.
         pause
         exit /b 1
@@ -506,6 +533,9 @@ if "!USE_UV!"=="1" (
 if %errorlevel% neq 0 (
     echo %CYAN%  ^|%RESET%
     echo %CYAN%  +--%RESET%  %RED%X  Dependency installation failed%RESET%
+    echo.
+    echo %YELLOW%     Check your network connection and run pykorf.bat again.%RESET%
+    echo %YELLOW%     If behind a proxy, configure pip proxy settings first.%RESET%
     echo.
     pause
     exit /b 1
