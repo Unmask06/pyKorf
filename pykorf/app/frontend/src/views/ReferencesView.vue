@@ -68,13 +68,17 @@ async function fetchReferences() {
 }
 
 const saveAllLoading = useLoading(async () => {
-  await api.post('/api/references/save-all', {
-    basis: basis.value,
-    remarks: remarks.value,
-    hold: hold.value,
-  })
-  dirty.value = false
-  toast.success('Basis, remarks, and hold saved.')
+  try {
+    await api.post('/api/references/save-all', {
+      basis: basis.value,
+      remarks: remarks.value,
+      hold: hold.value,
+    })
+    dirty.value = false
+    toast.success('Basis, remarks, and hold saved.')
+  } catch (err: any) {
+    toast.error(err.response?.data?.detail || err.message || 'Failed to save.')
+  }
 })
 
 const addRefLoading = useLoading(async () => {
@@ -82,27 +86,35 @@ const addRefLoading = useLoading(async () => {
     toast.error('Name and link are required.')
     return
   }
-  await api.post('/api/references/add', {
-    edit_id: editingId.value,
-    name: newRefName.value,
-    link: newRefLink.value,
-    description: newRefDesc.value,
-    category: newRefCategory.value,
-  })
-  newRefName.value = ''
-  newRefLink.value = ''
-  newRefDesc.value = ''
-  newRefCategory.value = ''
-  editingId.value = ''
-  addFormCollapsed.value = true
-  await fetchReferences()
-  toast.success('Reference saved.')
+  try {
+    await api.post('/api/references/add', {
+      edit_id: editingId.value,
+      name: newRefName.value,
+      link: newRefLink.value,
+      description: newRefDesc.value,
+      category: newRefCategory.value,
+    })
+    newRefName.value = ''
+    newRefLink.value = ''
+    newRefDesc.value = ''
+    newRefCategory.value = ''
+    editingId.value = ''
+    addFormCollapsed.value = true
+    await fetchReferences()
+    toast.success('Reference saved.')
+  } catch (err: any) {
+    toast.error(err.response?.data?.detail || err.message || 'Failed to save reference.')
+  }
 })
 
 async function deleteReference(refId: string) {
-  await api.post('/api/references/delete', { ref_id: refId })
-  await fetchReferences()
-  toast.info('Reference deleted.')
+  try {
+    await api.post('/api/references/delete', { ref_id: refId })
+    await fetchReferences()
+    toast.info('Reference deleted.')
+  } catch (err: any) {
+    toast.error(err.response?.data?.detail || err.message || 'Failed to delete reference.')
+  }
 }
 
 function editReference(ref: Reference) {

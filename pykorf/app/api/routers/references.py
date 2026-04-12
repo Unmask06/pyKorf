@@ -60,7 +60,7 @@ async def save_all(req: SaveAllReferencesRequest) -> OkResponse:
     await require_model()
     kdf_path = await _sess.get_kdf_path()
     if not kdf_path:
-        raise HTTPException(status_code=409, detail="No model path available.")
+        raise HTTPException(status_code=412, detail="No model loaded.")
     store = _load_refs()
     store.basis = req.basis
     store.remarks = req.remarks
@@ -77,7 +77,7 @@ async def add_reference(req: AddReferenceRequest) -> OkResponse:
 
     kdf_path = await _sess.get_kdf_path()
     if not kdf_path:
-        raise HTTPException(status_code=409, detail="No model path available.")
+        raise HTTPException(status_code=412, detail="No model loaded.")
     store = _load_refs()
 
     if req.name and req.link:
@@ -107,7 +107,7 @@ async def update_reference(req: UpdateReferenceRequest) -> OkResponse:
     await require_model()
     kdf_path = await _sess.get_kdf_path()
     if not kdf_path:
-        raise HTTPException(status_code=409, detail="No model path available.")
+        raise HTTPException(status_code=412, detail="No model loaded.")
     store = _load_refs()
     if req.ref_id:
         store.update(
@@ -128,7 +128,7 @@ async def delete_reference(req: DeleteReferenceRequest) -> OkResponse:
     await require_model()
     kdf_path = await _sess.get_kdf_path()
     if not kdf_path:
-        raise HTTPException(status_code=409, detail="No model path available.")
+        raise HTTPException(status_code=412, detail="No model loaded.")
     store = _load_refs()
     if req.ref_id:
         store.delete(req.ref_id)
