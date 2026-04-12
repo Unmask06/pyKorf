@@ -54,7 +54,7 @@ async function generate() {
     await genLoading.execute()
     toast.success('Report generated successfully.')
   } catch (err: any) {
-    toast.error(err.response?.data?.detail || err.message)
+    toast.error(err.response?.data?.detail || err.message || 'An unexpected error occurred.')
   }
 }
 
@@ -63,7 +63,7 @@ async function doExport() {
     await exportLoading.execute()
     toast.success('Model exported to Excel.')
   } catch (err: any) {
-    toast.error(err.response?.data?.detail || err.message)
+    toast.error(err.response?.data?.detail || err.message || 'An unexpected error occurred.')
   }
 }
 
@@ -72,7 +72,7 @@ async function doImport() {
     await importLoading.execute()
     toast.success('Parameters imported from Excel.')
   } catch (err: any) {
-    toast.error(err.response?.data?.detail || err.message)
+    toast.error(err.response?.data?.detail || err.message || 'An unexpected error occurred.')
   }
 }
 
@@ -81,7 +81,7 @@ async function doBatch() {
     await batchLoading.execute()
     toast.success('Batch report generated.')
   } catch (err: any) {
-    toast.error(err.response?.data?.detail || err.message)
+    toast.error(err.response?.data?.detail || err.message || 'An unexpected error occurred.')
   }
 }
 

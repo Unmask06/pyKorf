@@ -114,10 +114,14 @@ const rebuildLoading = useLoading(async () => {
 })
 
 onMounted(() => {
-  prefs.fetchAll().then(() => {
-    docExcelPath.value = prefs.docRegisterExcelPath || ''
-    docSpSiteUrl.value = prefs.docRegisterSpSiteUrl || ''
-  })
+  prefs.fetchAll()
+    .then(() => {
+      docExcelPath.value = prefs.docRegisterExcelPath || ''
+      docSpSiteUrl.value = prefs.docRegisterSpSiteUrl || ''
+    })
+    .catch((err: any) => {
+      toast.error(err.response?.data?.detail || err.message || 'Failed to load preferences.')
+    })
 })
 </script>
 

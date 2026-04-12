@@ -54,9 +54,6 @@ const docSearchQuery = ref('')
 const docSearchResults = ref<EddrResult[] | QueryEntryResult[]>([])
 const docSearchMode = ref<'eddr' | 'query' | 'files'>('eddr')
 
-// Flash message state
-const flashMsg = ref<{ type: string; msg: string } | null>(null)
-
 async function fetchReferences() {
   try {
     const { data } = await api.get<ReferencesStore>('/api/references/')
@@ -65,18 +62,23 @@ async function fetchReferences() {
     hold.value = data.hold
     references.value = data.references
     dirty.value = false
-  } catch { /* ignore */ }
+  } catch (err: any) {
+    toast.error(err.response?.data?.detail || err.message || 'Failed to load references.')
+  }
 }
 
 const saveAllLoading = useLoading(async () => {
-  await api.post('/api/references/save-all', {
-    basis: basis.value,
-    remarks: remarks.value,
-    hold: hold.value,
-  })
-  dirty.value = false
-  flashMsg.value = { type: 'success', msg: 'Basis, remarks, and hold saved.' }
-  toast.success('Basis, remarks, and hold saved.')
+  try {
+    await api.post('/api/references/save-all', {
+      basis: basis.value,
+      remarks: remarks.value,
+      hold: hold.value,
+    })
+    dirty.value = false
+    toast.success('Basis, remarks, and hold saved.')
+  } catch (err: any) {
+    toast.error(err.response?.data?.detail || err.message || 'Failed to save.')
+  }
 })
 
 const addRefLoading = useLoading(async () => {
@@ -84,29 +86,35 @@ const addRefLoading = useLoading(async () => {
     toast.error('Name and link are required.')
     return
   }
-  await api.post('/api/references/add', {
-    edit_id: editingId.value,
-    name: newRefName.value,
-    link: newRefLink.value,
-    description: newRefDesc.value,
-    category: newRefCategory.value,
-  })
-  newRefName.value = ''
-  newRefLink.value = ''
-  newRefDesc.value = ''
-  newRefCategory.value = ''
-  editingId.value = ''
-  addFormCollapsed.value = true
-  await fetchReferences()
-  flashMsg.value = { type: 'success', msg: 'Reference saved.' }
-  toast.success('Reference saved.')
+  try {
+    await api.post('/api/references/add', {
+      edit_id: editingId.value,
+      name: newRefName.value,
+      link: newRefLink.value,
+      description: newRefDesc.value,
+      category: newRefCategory.value,
+    })
+    newRefName.value = ''
+    newRefLink.value = ''
+    newRefDesc.value = ''
+    newRefCategory.value = ''
+    editingId.value = ''
+    addFormCollapsed.value = true
+    await fetchReferences()
+    toast.success('Reference saved.')
+  } catch (err: any) {
+    toast.error(err.response?.data?.detail || err.message || 'Failed to save reference.')
+  }
 })
 
 async function deleteReference(refId: string) {
-  await api.post('/api/references/delete', { ref_id: refId })
-  await fetchReferences()
-  flashMsg.value = { type: 'info', msg: 'Reference deleted.' }
-  toast.info('Reference deleted.')
+  try {
+    await api.post('/api/references/delete', { ref_id: refId })
+    await fetchReferences()
+    toast.info('Reference deleted.')
+  } catch (err: any) {
+    toast.error(err.response?.data?.detail || err.message || 'Failed to delete reference.')
+  }
 }
 
 function editReference(ref: Reference) {
@@ -160,10 +168,6 @@ const filteredReferences = computed(() => {
     r.link.toLowerCase().includes(q)
   )
 })
-
-function dismissFlash() {
-  flashMsg.value = null
-}
 
 onMounted(() => {
   if (!session.isLoaded) router.push('/')
@@ -238,20 +242,6 @@ onMounted(() => {
 
     <!-- ── Right: References table + Add form ──────────────── -->
     <div class="w-full lg:w-2/3 space-y-3">
-
-      <!-- Flash message -->
-      <div v-if="flashMsg" class="flex items-center gap-2 p-2 rounded"
-        :class="{
-          'bg-green-50 border border-green-200 text-green-700': flashMsg.type === 'success',
-          'bg-red-50 border border-red-200 text-red-700': flashMsg.type === 'danger',
-          'bg-yellow-50 border border-yellow-200 text-yellow-700': flashMsg.type === 'warning',
-          'bg-blue-50 border border-blue-200 text-blue-700': flashMsg.type === 'info',
-        }">
-        <CheckCircle v-if="flashMsg.type === 'success'" class="w-4 h-4" />
-        <AlertTriangle v-else class="w-4 h-4" />
-        {{ flashMsg.msg }}
-        <button @click="dismissFlash" class="ml-auto text-gray-400 hover:text-gray-600">&times;</button>
-      </div>
 
       <!-- Add reference form (collapsible) -->
       <div class="pk-card">

@@ -37,7 +37,9 @@ async function fetchSettings() {
     selectedIds.value = data.saved_selections
     dpMargin.value = parseFloat(data.saved_dp_margin) || 1.25
     shutoffMargin.value = parseFloat(data.saved_shutoff_margin) || 1.20
-  } catch { /* ignore */ }
+  } catch (err: any) {
+    toast.error(err.response?.data?.detail || err.message || 'Failed to load settings.')
+  }
 }
 
 const applyLoading = useLoading(async () => {
@@ -77,7 +79,23 @@ async function apply() {
     if (result?.errors?.length) toast.error('Some settings had errors — see below.')
     else toast.success(result?.message || 'Settings applied.')
   } catch (err: any) {
-    toast.error(err.response?.data?.detail || err.message)
+    toast.error(err.response?.data?.detail || err.message || 'Failed to apply settings.')
+  }
+}
+
+async function center() {
+  try {
+    await centerLoading.execute()
+  } catch (err: any) {
+    toast.error(err.response?.data?.detail || err.message || 'Failed to center layout.')
+  }
+}
+
+async function snap() {
+  try {
+    await snapLoading.execute()
+  } catch (err: any) {
+    toast.error(err.response?.data?.detail || err.message || 'Failed to snap orthogonal.')
   }
 }
 
@@ -129,7 +147,7 @@ onMounted(() => {
             <div class="p-4">
               <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <button @click="centerLoading.execute()"
+                  <button @click="center()"
                     class="w-full border border-blue-500 text-blue-600 rounded py-1.5 text-sm hover:bg-blue-50 flex items-center justify-center gap-2"
                     :disabled="centerLoading.isLoading.value">
                     <Move class="w-4 h-4" /> Center Layout
@@ -137,7 +155,7 @@ onMounted(() => {
                   <div class="pk-hint mt-1">Center all elements on the page</div>
                 </div>
                 <div>
-                  <button @click="snapLoading.execute()"
+                  <button @click="snap()"
                     class="w-full border border-blue-500 text-blue-600 rounded py-1.5 text-sm hover:bg-blue-50 flex items-center justify-center gap-2"
                     :disabled="snapLoading.isLoading.value">
                     <Magnet class="w-4 h-4" /> Snap Orthogonal

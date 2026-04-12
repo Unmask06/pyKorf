@@ -13,6 +13,7 @@ from pykorf.app.api.schemas import (
     DocRegisterRebuildResponse,
     EditSpOverrideRequest,
     LicenseValidationResponse,
+    OkResponse,
     PreferencesResponse,
     SetDocRegisterConfigRequest,
     SetLicenseKeyRequest,
@@ -61,28 +62,28 @@ async def get_preferences():
     )
 
 
-@router.post("/sp-overrides/add")
-async def add_sp_override(req: AddSpOverrideRequest):
+@router.post("/sp-overrides/add", response_model=OkResponse)
+async def add_sp_override(req: AddSpOverrideRequest) -> OkResponse:
     """Add a new SharePoint override."""
     from urllib.parse import urlparse
 
     if not req.local_path or not req.sp_url:
-        return {"success": False, "error": "Both local path and SharePoint URL are required."}
+        return OkResponse(success=False, error="Both local path and SharePoint URL are required.")
     if not Path(req.local_path).is_dir():
-        return {"success": False, "error": f"Local path does not exist: {req.local_path}"}
+        return OkResponse(success=False, error=f"Local path does not exist: {req.local_path}")
     parsed = urlparse(req.sp_url)
     if parsed.scheme not in ("http", "https") or not parsed.netloc:
-        return {"success": False, "error": f"Invalid SharePoint URL: {req.sp_url}"}
+        return OkResponse(success=False, error=f"Invalid SharePoint URL: {req.sp_url}")
 
     overrides = get_sp_overrides()
     overrides[req.local_path] = req.sp_url
     set_sp_overrides(overrides)
     _invalidate_all_caches()
-    return {"success": True, "message": "Override added."}
+    return OkResponse(success=True, message="Override added.")
 
 
-@router.post("/sp-overrides/edit")
-async def edit_sp_override(req: EditSpOverrideRequest):
+@router.post("/sp-overrides/edit", response_model=OkResponse)
+async def edit_sp_override(req: EditSpOverrideRequest) -> OkResponse:
     """Edit an existing SharePoint override."""
     overrides = get_sp_overrides()
     if req.original_local_path in overrides:
@@ -90,26 +91,26 @@ async def edit_sp_override(req: EditSpOverrideRequest):
     overrides[req.local_path] = req.sp_url
     set_sp_overrides(overrides)
     _invalidate_all_caches()
-    return {"success": True, "message": "Override updated."}
+    return OkResponse(success=True, message="Override updated.")
 
 
-@router.post("/sp-overrides/delete")
-async def delete_sp_override(req: DeleteSpOverrideRequest):
+@router.post("/sp-overrides/delete", response_model=OkResponse)
+async def delete_sp_override(req: DeleteSpOverrideRequest) -> OkResponse:
     """Delete a SharePoint override."""
     overrides = get_sp_overrides()
     if req.local_path in overrides:
         del overrides[req.local_path]
         set_sp_overrides(overrides)
         _invalidate_all_caches()
-        return {"success": True, "message": "Override removed."}
-    return {"success": False, "error": "Override not found."}
+        return OkResponse(success=True, message="Override removed.")
+    return OkResponse(success=False, error="Override not found.")
 
 
-@router.post("/skip-sp")
-async def set_skip_sp(req: SetSkipSpRequest):
+@router.post("/skip-sp", response_model=OkResponse)
+async def set_skip_sp(req: SetSkipSpRequest) -> OkResponse:
     """Toggle skip SharePoint override validation."""
     set_skip_sp_override(req.skip)
-    return {"success": True, "skip_sp_override": req.skip}
+    return OkResponse(success=True)
 
 
 @router.post("/license", response_model=LicenseValidationResponse)

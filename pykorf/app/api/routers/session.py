@@ -6,7 +6,7 @@ import asyncio
 import os
 from pathlib import Path
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from pykorf.app.api import session_state as _sess
 from pykorf.app.api.schemas import (
@@ -82,13 +82,16 @@ async def open_file(req: SessionOpenRequest):
 
     setup_ok, sp_ok, doc_register_ok = _check_setup()
     if not setup_ok:
-        raise ValueError("Complete the required setup in Preferences before opening a model.")
+        raise HTTPException(
+            status_code=400,
+            detail="Complete the required setup in Preferences before opening a model.",
+        )
 
     kdf_path_str = req.kdf_path.strip().strip('"')
     path = Path(kdf_path_str)
 
     if not path.is_file():
-        raise FileNotFoundError(f"File not found: {path}")
+        raise HTTPException(status_code=404, detail=f"File not found: {path}")
 
     from pykorf.core.model import Model
 
