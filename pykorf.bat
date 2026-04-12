@@ -13,7 +13,7 @@ REM              Bump on any launcher fix/improvement; enables auto-update.
 REM AUTO_UPDATE: TRUE = silently self-update when a newer launcher is on GitHub.
 REM              FALSE = never self-update; user must get new bat from administrator.
 set "BAT_MAJOR=0"
-set "BAT_VERSION=0.5.0"
+set "BAT_VERSION=0.6.0"
 set "AUTO_UPDATE=TRUE"
 
 set "APPDATA_DIR=%APPDATA%\pyKorf"
@@ -26,6 +26,73 @@ set "YELLOW="
 set "GRAY="
 set "WHITE="
 set "RESET="
+
+REM ============================================
+REM Launcher Self-Update Check
+REM ============================================
+REM Download latest pykorf.bat from GitHub releases and replace self if newer.
+REM Uses %~f0 so this works regardless of where the user saved pykorf.bat.
+
+if /i "!AUTO_UPDATE!"=="FALSE" goto :self_update_skip
+
+set "SELF_LOCAL_VER=!BAT_VERSION!"
+set "SELF_TMP=%TEMP%\pykorf_self_upd.bat"
+set "SELF_URL=https://github.com/Unmask06/pykorf/releases/latest/download/pykorf.bat"
+
+curl -L --fail --silent --max-time 30 -o "!SELF_TMP!" "!SELF_URL!" 2>nul
+if %errorlevel% neq 0 goto :self_update_skip
+if not exist "!SELF_TMP!" goto :self_update_skip
+
+REM Extract BAT_VERSION from downloaded file
+for /f "tokens=2 delims==" %%v in ('findstr /c:"set \"BAT_VERSION=" "!SELF_TMP!"') do set "SELF_REMOTE_VER=%%v"
+set "SELF_REMOTE_VER=!SELF_REMOTE_VER:~1,-1!"
+if "!SELF_REMOTE_VER!"=="" goto :self_update_skip
+
+REM Parse local version
+for /f "tokens=1,2,3 delims=." %%a in ("!SELF_LOCAL_VER!") do (
+    set "_LM=%%a"
+    set "_LN=%%b"
+    set "_LP=%%c"
+)
+
+REM Parse remote version
+for /f "tokens=1,2,3 delims=." %%a in ("!SELF_REMOTE_VER!") do (
+    set "_RM=%%a"
+    set "_RN=%%b"
+    set "_RP=%%c"
+)
+
+REM Compare: major, then minor, then patch
+set "_NEED_UPDATE=0"
+if !_RM! gtr !_LM! set "_NEED_UPDATE=1"
+if !_RM! equ !_LM! (
+    if !_RN! gtr !_LN! set "_NEED_UPDATE=1"
+    if !_RN! equ !_LN! (
+        if !_RP! gtr !_LP! set "_NEED_UPDATE=1"
+    )
+)
+
+if "!_NEED_UPDATE!"=="1" (
+    echo %CYAN%  Launcher update available: !SELF_LOCAL_VER! → !SELF_REMOTE_VER!%RESET%
+    echo %GRAY%  Updating pykorf.bat...%RESET%
+    copy /y "!SELF_TMP!" "%~f0" >nul 2>&1
+    del "!SELF_TMP!" >nul 2>&1
+    if %errorlevel% equ 0 (
+        echo %GREEN%  OK  Launcher updated. Relaunching...%RESET%
+        echo.
+        endlocal
+        call "%~f0" %*
+        exit /b
+    ) else (
+        echo %YELLOW%  WARNING: Could not replace launcher — permission denied?%RESET%
+        echo %GRAY%  Continuing with existing version.%RESET%
+        echo.
+    )
+)
+
+del "!SELF_TMP!" >nul 2>&1
+
+:self_update_skip
 
 REM ============================================
 REM Uninstall flag check
@@ -455,7 +522,8 @@ echo %GRAY%  ---------------------------------------------------------%RESET%
 echo %WHITE%    Starting...%RESET%
 echo %GRAY%  ---------------------------------------------------------%RESET%
 echo.
-echo %GREEN%  INFO: Browser will automatically open. Don't close this terminal.%RESET%
+echo %GREEN%  INFO: Your default browser will open automatically.%RESET%
+echo %GREEN%        Do not close this terminal while pyKorf is running.%RESET%
 echo.
 
 ".venv\Scripts\pykorf.exe" --no-debug

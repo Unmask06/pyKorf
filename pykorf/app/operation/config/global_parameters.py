@@ -393,8 +393,8 @@ def apply_global_settings(
 
     if save and results:
         model.save()
-        from pykorf.app.web import session as _sess
+        from pykorf.app.api.session_state import reload_sync
 
-        _sess.reload()
+        reload_sync()
 
     return results

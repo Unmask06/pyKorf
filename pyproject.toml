@@ -50,6 +50,8 @@ dependencies = [
     "appdirs>=1.4",
     "requests>=2.28",
     "flask>=3.1.3",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
     "sqlalchemy>=2.0",
     "packaging>=24.0",
 ]
@@ -273,14 +275,16 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 # Relax checks for test files: ignore missing docs, unused vars, magic values, etc.
 "tests/*" = [
-    "D101", "D102", "D103", "D104", 
-    "F841", "F821", 
+    "D101", "D102", "D103", "D104",
+    "F841", "F821",
     "S101",     # Allow use of assert
     "PLR2004",  # Allow magic values in tests
     "SLF001"    # Allow private member access in tests
 ]
 "pykorf/_version.py" = ["ALL"]
 "**/__init__.py" = ["ALL"]
+# Pydantic schemas are self-documenting via field names
+"pykorf/app/api/schemas.py" = ["D101"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

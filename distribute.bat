@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 
 REM pyKorf Distribution Script
-REM Obfuscates Python source with PyArmor and packages for distribution
+REM Builds Vue frontend, obfuscates Python source with PyArmor, and packages for distribution
 
 set DIST_DIR=dist
 set PACKAGE_NAME=pykorf
@@ -20,8 +20,34 @@ REM Clean previous builds
 if exist %DIST_DIR% rd /s /q %DIST_DIR%
 mkdir %DIST_DIR%
 
+REM Step 0: Build Vue frontend
+echo ==========================================
+echo Step 0: Building Vue frontend...
+echo ==========================================
+echo.
+cd pykorf\app\frontend
+call npm install 2>nul
+if errorlevel 1 (
+    echo ERROR: npm install failed — ensure Node.js is installed
+    cd ..\..\..
+    exit /b 1
+)
+call npm run build
+if errorlevel 1 (
+    echo ERROR: Vue frontend build failed
+    cd ..\..\..
+    exit /b 1
+)
+cd ..\..\..
+echo.
+echo Frontend build complete.
+echo.
+
 REM Step 1: Check PyArmor installation
-echo Checking PyArmor installation...
+echo ==========================================
+echo Step 1: Checking PyArmor installation...
+echo ==========================================
+echo.
 uv run python -c "import pyarmor" 2>nul
 if errorlevel 1 (
     echo Installing PyArmor...
@@ -30,11 +56,17 @@ if errorlevel 1 (
 
 REM Step 2: Obfuscate pykorf package with runtime inside package (-i)
 echo.
-echo Obfuscating pykorf package...
+echo ==========================================
+echo Step 2: Obfuscating pykorf package...
+echo ==========================================
+echo.
 uv run pyarmor gen -O %DIST_DIR% -r -i -e %TRIAL_DAYS% ^
     --exclude "library/*" ^
     --exclude "config/*" ^
     --exclude "trail_files/*" ^
+    --exclude "app/frontend/node_modules/*" ^
+    --exclude "app/frontend/dist/*" ^
+    --exclude "app/frontend/src/*" ^
     --exclude "*.kdf" ^
     --exclude "*.lib" ^
     --exclude "*.csv" ^
@@ -49,18 +81,25 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM Copy web templates (HTML - not obfuscated by PyArmor)
+REM Copy Vue frontend build output
 echo.
-echo Copying web templates...
-robocopy "pykorf\app\templates" "%DIST_DIR%\pykorf\app\templates" /E /NFL /NDL /NJH /NJS >nul 2>&1
-
-REM Copy web static files (JS, CSS, fonts - not obfuscated by PyArmor)
-echo Copying web static files...
-robocopy "pykorf\app\static" "%DIST_DIR%\pykorf\app\static" /E /NFL /NDL /NJH /NJS >nul 2>&1
+echo ==========================================
+echo Step 2b: Copying Vue frontend assets...
+echo ==========================================
+echo.
+if exist "pykorf\app\frontend\dist" (
+    robocopy "pykorf\app\frontend\dist" "%DIST_DIR%\pykorf\app\frontend\dist" /E /NFL /NDL /NJH /NJS >nul 2>&1
+    echo Copied Vue build output.
+) else (
+    echo WARNING: Vue dist not found — frontend will not be available.
+)
 
 REM Generate static _version.py for distribution with dynamic version parsing
 echo.
-echo Generating static version file for version: %VERSION%
+echo ==========================================
+echo Step 3: Generating _version.py...
+echo ==========================================
+echo.
 
 REM Parse version into components
 for /f "tokens=1,2,3 delims=." %%a in ("%VERSION%") do (
@@ -78,7 +117,6 @@ echo __version_tuple__ = version_tuple = (%MAJOR%, %MINOR%, %PATCH%)>>%DIST_DIR%
 echo __commit_id__ = commit_id = None>>%DIST_DIR%\pykorf\_version.py
 
 REM Verify _version.py was created
-echo.
 echo Verifying _version.py...
 if exist "%DIST_DIR%\pykorf\_version.py" (
     type "%DIST_DIR%\pykorf\_version.py"
@@ -87,49 +125,49 @@ if exist "%DIST_DIR%\pykorf\_version.py" (
     exit /b 1
 )
 
-REM Create __main__.py for module execution (python -m pykorf)
+REM Step 4: Copy non-Python data files
 echo.
-echo CLI entry point is now in pykorf/__main__.py — no need to generate.
-
-REM Step 3: Copy non-Python files
+echo ==========================================
+echo Step 4: Copying data files...
+echo ==========================================
 echo.
-echo Copying data files...
 
 REM Copy only New.kdf from library directory
 if exist pykorf\library\New.kdf (
-    mkdir %DIST_DIR%\pykorf\library
-    copy /y pykorf\library\New.kdf %DIST_DIR%\pykorf\library\
+    mkdir %DIST_DIR%\pykorf\library 2>nul
+    copy /y pykorf\library\New.kdf %DIST_DIR%\pykorf\library\ >nul
+    echo   Copied New.kdf
 )
 
 REM Copy py.typed for type hints
 if exist pykorf\py.typed (
-    copy /y pykorf\py.typed %DIST_DIR%\pykorf\
+    copy /y pykorf\py.typed %DIST_DIR%\pykorf\ >nul
+    echo   Copied py.typed
 )
 
-REM Copy JSON and TOML data files (excluded from PyArmor obfuscation, must be copied manually)
 REM Copy project_defaults.toml from app directory (required for smart defaults)
 if exist pykorf\app\project_defaults.toml (
-    echo Copying project_defaults.toml...
     copy /y pykorf\app\project_defaults.toml %DIST_DIR%\pykorf\app\ >nul
+    echo   Copied project_defaults.toml
 )
 
 REM Copy sizing criteria TOML files from core/reports directory
 if exist pykorf\core\reports\*.toml (
-    echo Copying sizing criteria TOML files...
     mkdir %DIST_DIR%\pykorf\core\reports 2>nul
     copy /y pykorf\core\reports\*.toml %DIST_DIR%\pykorf\core\reports\ >nul
+    echo   Copied sizing criteria TOML files
 )
 
-REM Copy JSON files from core/reports directory
+REM Copy JSON files from core/reports directory (e.g. units.json)
 if exist pykorf\core\reports\*.json (
-    echo Copying report JSON files...
     if not exist %DIST_DIR%\pykorf\core\reports (
         mkdir %DIST_DIR%\pykorf\core\reports 2>nul
     )
     copy /y pykorf\core\reports\*.json %DIST_DIR%\pykorf\core\reports\ >nul
+    echo   Copied report JSON files
 )
 
-REM Copy pyproject.toml (full file — uv pip install -e . only uses [project].dependencies)
+REM Copy pyproject.toml
 echo.
 echo Copying pyproject.toml...
 copy /y pyproject.toml %DIST_DIR%\pyproject.toml >nul
@@ -143,15 +181,18 @@ echo.
 echo Creating VERSION file...
 echo %VERSION%> %DIST_DIR%\VERSION
 
-REM Step 4: Create distribution zip
+REM Step 5: Create distribution zip
 echo.
-echo Creating distribution package...
+echo ==========================================
+echo Step 5: Creating distribution package...
+echo ==========================================
+echo.
 uv run python -c "import zipfile, os; z = zipfile.ZipFile(r'%DIST_DIR%/pykorf-v%MAJOR%.zip', 'w', zipfile.ZIP_DEFLATED); base = r'%DIST_DIR%'; [z.write(os.path.join(root, f), os.path.relpath(os.path.join(root, f), base)) for root, dirs, files in os.walk(base) for f in files if not f.endswith('.zip')]; z.close()"
 
 REM Generate SHA256 checksum for integrity verification
 echo.
 echo Generating SHA256 checksum...
-powershell -command "(Get-FileHash 'dist\pykorf-v%MAJOR%.zip' -Algorithm SHA256).Hash | Out-File 'dist\pykorf-v%MAJOR%.zip.sha256' -NoNewline -Encoding ASCII"
+uv run python -c "import hashlib, pathlib; p = pathlib.Path('dist/pykorf-v%MAJOR%.zip'); h = hashlib.sha256(p.read_bytes()).hexdigest(); pathlib.Path('dist/pykorf-v%MAJOR%.zip.sha256').write_text(h)"
 if errorlevel 1 (
     echo WARNING: Failed to generate SHA256 checksum
 )
@@ -168,13 +209,15 @@ for /d %%d in (%DIST_DIR%\*) do rd /s /q "%%d"
 del /q %DIST_DIR%\pyproject.toml 2>nul
 
 echo.
+echo ==========================================
 echo === Build Complete ===
+echo ==========================================
 echo Distribution package: %DIST_DIR%\pykorf-v%MAJOR%.zip
 echo.
 echo Contents:
-echo   - pykorf/          (obfuscated package)
-echo   - pyproject.toml   (dependencies)
-echo   - pykorf.bat       (launcher)
-echo   - VERSION          (version tracker)
+echo   - pykorf/            (obfuscated package + Vue dist assets)
+echo   - pyproject.toml     (dependencies)
+echo   - pykorf.bat         (launcher)
+echo   - VERSION            (version tracker)
 echo.
-echo Extract and run pykorf.bat to launch the TUI.
+echo Extract and run pykorf.bat to launch the web application.

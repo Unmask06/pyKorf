@@ -468,3 +468,41 @@ def set_project_info_overrides(overrides: dict[str, Any]) -> None:
     config = load_config()
     config["project_info"] = overrides
     save_config(config)
+
+
+def get_pinned_folders() -> list[str]:
+    """Get list of pinned folder paths from config.json.
+
+    Returns:
+        List of absolute folder paths. Returns empty list if none set.
+    """
+    config = load_config()
+    return config.get("pinned_folders", [])
+
+
+def add_pinned_folder(path: str) -> None:
+    """Add a folder path to the pinned folders list.
+
+    Args:
+        path: Absolute folder path to pin. Skipped if already pinned.
+    """
+    config = load_config()
+    pinned = config.get("pinned_folders", [])
+    if path not in pinned:
+        pinned.append(path)
+        config["pinned_folders"] = pinned
+        save_config(config)
+
+
+def remove_pinned_folder(path: str) -> None:
+    """Remove a folder path from the pinned folders list.
+
+    Args:
+        path: Absolute folder path to unpin. No-op if not pinned.
+    """
+    config = load_config()
+    pinned = config.get("pinned_folders", [])
+    if path in pinned:
+        pinned.remove(path)
+        config["pinned_folders"] = pinned
+        save_config(config)
