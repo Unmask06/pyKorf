@@ -17,7 +17,6 @@ const toast = useToastStore()
 const refPipe = ref('')
 const targetPipes = ref('')
 const excludeMode = ref(false)
-const result = ref<BulkCopyResponse | null>(null)
 const pipeFilter = ref('')
 
 const copyLoading = useLoading(async () => {
@@ -43,7 +42,6 @@ async function doCopy() {
     } else {
       toast.error(res?.error || 'Bulk copy failed.')
     }
-    result.value = res || null
   } catch (err: any) {
     toast.error(err.response?.data?.detail || err.message)
   }
@@ -71,23 +69,6 @@ onMounted(() => {
           <Copy class="w-4 h-4 text-blue-600" /> Bulk Copy Fluids
         </div>
         <div class="pk-card-body">
-
-          <!-- Success alert -->
-          <div v-if="result?.success" class="pk-alert-ok p-3 mb-3 flex items-start gap-2">
-            <CheckCircle class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-            <div>
-              Copied fluid properties from <strong>{{ refPipe }}</strong> to {{ result.updated_count }} pipe(s).
-              <div v-if="result.updated_pipes.length" class="mt-2 text-xs font-mono space-y-0.5">
-                <div v-for="pipe in result.updated_pipes" :key="pipe">• {{ pipe }}</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Error alert -->
-          <div v-if="result?.error" class="pk-alert-error p-3 mb-3 flex items-center gap-2">
-            <AlertTriangle class="w-5 h-5 flex-shrink-0" />
-            {{ result.error }}
-          </div>
 
           <!-- Reference pipe input -->
           <div class="mb-3">

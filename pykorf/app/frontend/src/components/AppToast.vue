@@ -32,12 +32,14 @@ const toastStore = useToastStore()
 .toast-container {
   position: fixed;
   top: 1rem;
-  right: 1rem;
+  left: 0;
+  right: 0;
   z-index: 9999;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 0.5rem;
-  max-width: 28rem;
+  padding: 0 1rem;
 }
 .toast-item {
   display: flex;
@@ -47,7 +49,9 @@ const toastStore = useToastStore()
   border-radius: 0.375rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   font-size: 0.875rem;
-  animation: slideIn 0.2s ease-out;
+  animation: fadeIn 0.2s ease-out;
+  max-width: 28rem;
+  width: 100%;
 }
 .toast-success {
   background: #f0fdf4;
@@ -82,13 +86,13 @@ const toastStore = useToastStore()
 .btn-close:hover {
   opacity: 0.8;
 }
-@keyframes slideIn {
+@keyframes fadeIn {
   from {
-    transform: translateX(100%);
+    transform: translateY(-0.5rem);
     opacity: 0;
   }
   to {
-    transform: translateX(0);
+    transform: translateY(0);
     opacity: 1;
   }
 }

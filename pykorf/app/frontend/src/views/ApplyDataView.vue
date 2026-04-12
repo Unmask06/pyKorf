@@ -6,9 +6,8 @@ import { useModelStore } from '../stores/model'
 import { useToastStore } from '../composables/useToast'
 import { useLoading } from '../composables/useLoading'
 import { api } from '../api/client'
-import { FolderOpen, Upload, Wrench, Thermometer, Lightbulb, Terminal, FileSpreadsheet, ArrowLeft } from 'lucide-vue-next'
+import { FolderOpen, Upload, Wrench, Thermometer, Lightbulb, FileSpreadsheet, ArrowLeft } from 'lucide-vue-next'
 import PathBrowser from '../components/PathBrowser.vue'
-import type { ApplyDataResponse } from '../types/api'
 
 const router = useRouter()
 const session = useSessionStore()
@@ -19,27 +18,21 @@ const pmsSource = ref('')
 const hmbSource = ref('')
 const showPmsBrowser = ref(false)
 const showHmbBrowser = ref(false)
-const pmsMessages = ref<ApplyDataResponse | null>(null)
-const hmbMessages = ref<ApplyDataResponse | null>(null)
 
 const pmsLoading = useLoading(async () => {
-  const { data } = await api.post<ApplyDataResponse>('/api/data/apply-pms', {
+  await api.post('/api/data/apply-pms', {
     pms_source: pmsSource.value,
   })
-  pmsMessages.value = data
   await session.fetchStatus()
   await model.fetchSummary()
-  return data
 })
 
 const hmbLoading = useLoading(async () => {
-  const { data } = await api.post<ApplyDataResponse>('/api/data/apply-hmb', {
+  await api.post('/api/data/apply-hmb', {
     hmb_source: hmbSource.value,
   })
-  hmbMessages.value = data
   await session.fetchStatus()
   await model.fetchSummary()
-  return data
 })
 
 async function applyPms() {
@@ -48,9 +41,8 @@ async function applyPms() {
     return
   }
   try {
-    const result = await pmsLoading.execute()
-    if (result?.success) toast.success('PMS data applied successfully.')
-    else toast.error('PMS apply failed — check errors below.')
+    await pmsLoading.execute()
+    toast.success('PMS data applied successfully.')
   } catch (err: any) {
     toast.error(err.response?.data?.detail || err.message || 'Failed to apply PMS.')
   }
@@ -62,24 +54,11 @@ async function applyHmb() {
     return
   }
   try {
-    const result = await hmbLoading.execute()
-    if (result?.success) toast.success('HMB data applied successfully.')
-    else toast.error('HMB apply failed — check errors below.')
+    await hmbLoading.execute()
+    toast.success('HMB data applied successfully.')
   } catch (err: any) {
     toast.error(err.response?.data?.detail || err.message || 'Failed to apply HMB.')
   }
-}
-
-function resultMessages(result: ApplyDataResponse | null): Array<{ level: string; msg: string }> {
-  if (!result) return []
-  const lines: Array<{ level: string; msg: string }> = []
-  if (result.errors) {
-    for (const e of result.errors) lines.push({ level: 'error', msg: e })
-  }
-  if (result.messages) {
-    for (const m of result.messages) lines.push({ level: m.type, msg: m.message })
-  }
-  return lines
 }
 
 onMounted(() => {
@@ -170,28 +149,6 @@ onMounted(() => {
 
     <!-- ── Right sidebar ────────────────────────────────────── -->
     <div class="w-full lg:w-1/3 space-y-3">
-
-      <!-- Results card -->
-      <div v-if="pmsMessages || hmbMessages" class="pk-card">
-        <div class="pk-card-header flex items-center gap-1">
-          <Terminal class="w-4 h-4" /> Results
-        </div>
-        <div class="p-3 font-mono text-xs overflow-auto" style="max-height: 320px;">
-          <template v-for="line in resultMessages(pmsMessages || hmbMessages)" :key="line.msg">
-            <div :class="{
-              'text-green-600': line.level === 'success',
-              'text-red-600': line.level === 'error',
-              'text-gray-500': line.level === 'info',
-              'text-yellow-600': line.level === 'warning',
-            }">
-              <span v-if="line.level === 'success'">✓</span>
-              <span v-else-if="line.level === 'error'">✗</span>
-              <span v-else>›</span>
-              {{ line.msg }}
-            </div>
-          </template>
-        </div>
-      </div>
 
       <!-- About PMS -->
       <div class="pk-card">

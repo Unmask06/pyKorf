@@ -6,9 +6,8 @@ import { useModelStore } from '../stores/model'
 import { useToastStore } from '../composables/useToast'
 import { useLoading } from '../composables/useLoading'
 import { api } from '../api/client'
-import { FileSpreadsheet, FolderOpen, FileText, Folder, Clipboard, ArrowUpRight, ArrowDownRight, AlertTriangle, Layers, CheckCircle, XCircle } from 'lucide-vue-next'
+import { FileSpreadsheet, FolderOpen, FileText, Folder, Clipboard, ArrowUpRight, ArrowDownRight, AlertTriangle, Layers } from 'lucide-vue-next'
 import PathBrowser from '../components/PathBrowser.vue'
-import type { ReportResponse } from '../types/api'
 
 const router = useRouter()
 const session = useSessionStore()
@@ -23,47 +22,37 @@ const showReportBrowser = ref(false)
 const showExportBrowser = ref(false)
 const showImportBrowser = ref(false)
 const showBatchBrowser = ref(false)
-const lastResult = ref<ReportResponse | null>(null)
 
 const genLoading = useLoading(async () => {
-  const { data } = await api.post<ReportResponse>('/api/report/generate', {
+  await api.post('/api/report/generate', {
     report_path: reportPath.value || null,
   })
-  lastResult.value = data
-  return data
 })
 
 const exportLoading = useLoading(async () => {
-  const { data } = await api.post<ReportResponse>('/api/report/export', {
+  await api.post('/api/report/export', {
     file_path: exportPath.value || null,
   })
-  lastResult.value = data
-  return data
 })
 
 const importLoading = useLoading(async () => {
-  const { data } = await api.post<ReportResponse>('/api/report/import', {
+  await api.post('/api/report/import', {
     file_path: importPath.value || null,
   })
-  lastResult.value = data
   await session.fetchStatus()
   await model.fetchSummary()
-  return data
 })
 
 const batchLoading = useLoading(async () => {
-  const { data } = await api.post<ReportResponse>('/api/report/batch', {
+  await api.post('/api/report/batch', {
     batch_folder: batchFolder.value || null,
   })
-  lastResult.value = data
-  return data
 })
 
 async function generate() {
   try {
-    const result = await genLoading.execute()
-    if (result?.success) toast.success('Report generated successfully.')
-    else toast.error('Report generation had errors.')
+    await genLoading.execute()
+    toast.success('Report generated successfully.')
   } catch (err: any) {
     toast.error(err.response?.data?.detail || err.message)
   }
@@ -71,9 +60,8 @@ async function generate() {
 
 async function doExport() {
   try {
-    const result = await exportLoading.execute()
-    if (result?.success) toast.success('Model exported to Excel.')
-    else toast.error('Export had errors.')
+    await exportLoading.execute()
+    toast.success('Model exported to Excel.')
   } catch (err: any) {
     toast.error(err.response?.data?.detail || err.message)
   }
@@ -81,9 +69,8 @@ async function doExport() {
 
 async function doImport() {
   try {
-    const result = await importLoading.execute()
-    if (result?.success) toast.success('Parameters imported from Excel.')
-    else toast.error('Import had errors.')
+    await importLoading.execute()
+    toast.success('Parameters imported from Excel.')
   } catch (err: any) {
     toast.error(err.response?.data?.detail || err.message)
   }
@@ -91,9 +78,8 @@ async function doImport() {
 
 async function doBatch() {
   try {
-    const result = await batchLoading.execute()
-    if (result?.success) toast.success('Batch report generated.')
-    else toast.error('Batch report had errors.')
+    await batchLoading.execute()
+    toast.success('Batch report generated.')
   } catch (err: any) {
     toast.error(err.response?.data?.detail || err.message)
   }
@@ -111,17 +97,6 @@ onMounted(() => {
 
 <template>
   <div class="space-y-4">
-
-    <!-- Result alert banner -->
-    <div v-if="lastResult" class="flex items-start gap-2 p-3 rounded"
-      :class="lastResult.errors.length ? 'bg-red-50 border border-red-200 text-red-700' : 'bg-green-50 border border-green-200 text-green-700'">
-      <XCircle v-if="lastResult.errors.length" class="w-5 h-5 flex-shrink-0 mt-0.5" />
-      <CheckCircle v-else class="w-5 h-5 flex-shrink-0 mt-0.5" />
-      <div class="font-mono text-xs space-y-0.5">
-        <div v-for="e in lastResult.errors" :key="e">{{ e }}</div>
-        <div v-for="m in lastResult.messages" :key="m.message">{{ m.message }}</div>
-      </div>
-    </div>
 
     <!-- Top row: Generate Report + Batch Report -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
