@@ -93,6 +93,9 @@ async function reloadModel() {
   padding: 0.5rem 0.75rem;
   background: #f8f9fa;
   border-bottom: 1px solid #dee2e6;
+  position: sticky;
+  top: 0;
+  z-index: 40;
 }
 .navbar-brand {
   font-weight: 700;

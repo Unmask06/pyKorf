@@ -108,7 +108,7 @@ class SummaryService:
             if not hasattr(pipe, "check_criteria"):
                 continue
 
-            if not pipe.check_criteria():
+            if pipe.check_criteria()["status"] == "FAIL":
                 self._build_criteria_failure_message(issues, name, pipe)
 
     def _build_criteria_failure_message(self, issues: list[str], name: str, pipe) -> None:

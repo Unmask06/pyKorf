@@ -8,6 +8,7 @@ import { useLoading } from '../composables/useLoading'
 import { Ruler, ArrowLeft, Wand2, XCircle, Zap, CheckCircle, AlertTriangle } from 'lucide-vue-next'
 import type {
   CriteriaValuesInfo,
+  CriteriaViolationsInfo,
   PipeCalcInfo,
   PipeCriteriaEntry,
   PipeCriteriaResponse,
@@ -26,6 +27,7 @@ const pipes = ref<Array<[number, string]>>([])
 const existing = ref<Record<string, PipeCriteriaEntry>>({})
 const codes = ref<Record<string, string[][]>>({})
 const criteriaValues = ref<Record<string, Record<string, CriteriaValuesInfo>>>({})
+const criteriaViolations = ref<Record<string, Record<string, CriteriaViolationsInfo>>>({})
 const pipeCalcs = ref<Record<string, PipeCalcInfo>>({})
 const unitsData = ref<Record<string, Record<string, UnitConversionInfo>>>({})
 const fluidLabels = ref<Record<string, string>>({})
@@ -59,6 +61,7 @@ function _applyResponse(data: PipeCriteriaResponse) {
   existing.value = data.existing
   codes.value = data.codes
   criteriaValues.value = data.pipe_criteria_values
+  criteriaViolations.value = data.pipe_criteria_violations
   pipeCalcs.value = data.pipe_calcs
   unitsData.value = data.units_data
   fluidLabels.value = data.fluid_labels
@@ -216,6 +219,12 @@ function currentCriteriaInfo(name: string): CriteriaValuesInfo | undefined {
   const entry = editedCriteria.value[name]
   if (!entry?.state || !entry.criteria) return undefined
   return criteriaValues.value[name]?.[`${entry.state}:${entry.criteria}`]
+}
+
+function getViolations(name: string): CriteriaViolationsInfo | undefined {
+  const entry = editedCriteria.value[name]
+  if (!entry?.state || !entry.criteria) return undefined
+  return criteriaViolations.value[name]?.[`${entry.state}:${entry.criteria}`]
 }
 
 function applyBulk() {
@@ -386,7 +395,7 @@ onMounted(() => {
                   </option>
                 </select>
               </td>
-              <td class="pk-text-right-mono">
+              <td class="pk-text-right-mono" :class="{ 'viol-red': getViolations(name)?.dp_exceeds }">
                 {{ convertValue('dp', pipeCalcs[name]?.dp_calc ?? null) }}
               </td>
               <td class="pk-text-right-mono-muted crit-col">
@@ -395,7 +404,7 @@ onMounted(() => {
                 </template>
                 <template v-else>—</template>
               </td>
-              <td class="pk-text-right-mono">
+              <td class="pk-text-right-mono" :class="{ 'viol-red': getViolations(name)?.vel_below_min || getViolations(name)?.vel_above_max }">
                 {{ convertValue('velocity', pipeCalcs[name]?.vel_calc ?? null) }}
               </td>
               <td class="pk-text-right-mono-muted crit-col">
@@ -410,7 +419,7 @@ onMounted(() => {
                 </template>
                 <template v-else>—</template>
               </td>
-              <td class="pk-text-right-mono">
+              <td class="pk-text-right-mono" :class="{ 'viol-red': getViolations(name)?.rho_v2_below_min || getViolations(name)?.rho_v2_above_max }">
                 {{ convertValue('rho_v2', pipeCalcs[name]?.rho_v2_calc ?? null) }}
               </td>
               <td class="pk-text-right-mono-muted crit-col">
@@ -454,5 +463,11 @@ onMounted(() => {
 .pk-text-right-mono,
 .pk-text-right-mono-muted {
   text-align: center;
+}
+
+/* Violation highlighting — red background */
+.viol-red {
+  background-color: #fee2e2 !important;
+  color: #dc2626;
 }
 </style>

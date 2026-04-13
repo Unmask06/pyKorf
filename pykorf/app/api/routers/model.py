@@ -11,6 +11,7 @@ from pykorf.app.api.deps import pipe_names, require_model
 from pykorf.app.api.schemas import (
     BulkCopyRequest,
     BulkCopyResponse,
+    CriteriaViolationsInfo,
     CriteriaValuesInfo,
     EmptyRequest,
     ModelFullResponse,
@@ -201,6 +202,7 @@ async def get_pipe_criteria() -> PipeCriteriaResponse:
     existing = _seed_from_kdf(model, pipes, existing)
     pipe_criteria_values = _precompute_criteria_values(model, pipes, codes)
     pipe_calcs = _compute_pipe_calcs(model, pipes)
+    pipe_criteria_violations = _compute_criteria_violations(pipe_calcs, pipe_criteria_values)
 
     return PipeCriteriaResponse(
         kdf_path=str(kdf_path or ""),
@@ -210,6 +212,7 @@ async def get_pipe_criteria() -> PipeCriteriaResponse:
         fluid_labels=FLUID_LABELS,
         pipe_criteria_values=pipe_criteria_values,
         pipe_calcs=pipe_calcs,
+        pipe_criteria_violations=pipe_criteria_violations,
         units_data=_load_units_data(),
     )
 
@@ -350,9 +353,7 @@ def _build_pipe_lookup(model):
     }
 
 
-def _precompute_criteria_values(
-    model, pipes, codes
-) -> dict[str, dict[str, CriteriaValuesInfo]]:
+def _precompute_criteria_values(model, pipes, codes) -> dict[str, dict[str, CriteriaValuesInfo]]:
     from pykorf.app.operation.integration.sizing_criteria import lookup_criteria
 
     result: dict[str, dict[str, CriteriaValuesInfo]] = {}
@@ -396,6 +397,64 @@ def _compute_pipe_calcs(model, pipes) -> dict[str, PipeCalcInfo]:
     return result
 
 
+def _compute_criteria_violations(
+    pipe_calcs: dict[str, PipeCalcInfo],
+    pipe_criteria_values: dict[str, dict[str, CriteriaValuesInfo]],
+) -> dict[str, dict[str, CriteriaViolationsInfo]]:
+    """Compute criteria violations for each pipe and criteria combination.
+
+    Args:
+        pipe_calcs: Precomputed calculated values for each pipe
+        pipe_criteria_values: Precomputed criteria limits for each pipe/criteria combo
+
+    Returns:
+        Dict mapping pipe name -> criteria key -> violation flags
+    """
+    result: dict[str, dict[str, CriteriaViolationsInfo]] = {}
+    for pipe_name, calcs in pipe_calcs.items():
+        pipe_violations: dict[str, CriteriaViolationsInfo] = {}
+        criteria_dict = pipe_criteria_values.get(pipe_name, {})
+        for crit_key, crit_vals in criteria_dict.items():
+            dp_calc = calcs.dp_calc
+            vel_calc = calcs.vel_calc
+            rho_v2_calc = calcs.rho_v2_calc
+
+            dp_exceeds = False
+            if dp_calc is not None and crit_vals.max_dp is not None:
+                dp_exceeds = dp_calc > crit_vals.max_dp
+
+            vel_below_min = False
+            if vel_calc is not None and crit_vals.min_vel > 0:
+                vel_below_min = vel_calc < crit_vals.min_vel
+
+            vel_above_max = False
+            if vel_calc is not None and crit_vals.max_vel is not None:
+                vel_above_max = vel_calc > crit_vals.max_vel
+
+            rho_v2_below_min = False
+            if rho_v2_calc is not None and crit_vals.rho_v2_min is not None:
+                rho_v2_below_min = rho_v2_calc < crit_vals.rho_v2_min
+
+            rho_v2_above_max = False
+            if rho_v2_calc is not None and crit_vals.rho_v2_max is not None:
+                rho_v2_above_max = rho_v2_calc > crit_vals.rho_v2_max
+
+            overall = "PASS"
+            if dp_exceeds or vel_below_min or vel_above_max or rho_v2_below_min or rho_v2_above_max:
+                overall = "FAIL"
+
+            pipe_violations[crit_key] = CriteriaViolationsInfo(
+                dp_exceeds=dp_exceeds,
+                vel_below_min=vel_below_min,
+                vel_above_max=vel_above_max,
+                rho_v2_below_min=rho_v2_below_min,
+                rho_v2_above_max=rho_v2_above_max,
+                overall=overall,
+            )
+        result[pipe_name] = pipe_violations
+    return result
+
+
 def _load_units_data() -> dict[str, dict[str, UnitConversionInfo]]:
     import json
 
@@ -427,9 +486,7 @@ def _get_pipe_size_and_pressure(pipe):
     return size_inch, pressure_barg
 
 
-def _handle_set_criteria(
-    model, pipes, existing: dict[str, dict[str, str]]
-) -> SetCriteriaResponse:
+def _handle_set_criteria(model, pipes, existing: dict[str, dict[str, str]]) -> SetCriteriaResponse:
     from pykorf.app.operation.integration.sizing_criteria import lookup_criteria
 
     applied = 0
@@ -465,7 +522,9 @@ def _handle_predict_action(
         predict_state,
     )
 
-    predicted = {k: PipeCriteriaEntry(state=v.state, criteria=v.criteria) for k, v in existing.items()}
+    predicted = {
+        k: PipeCriteriaEntry(state=v.state, criteria=v.criteria) for k, v in existing.items()
+    }
     filled_state_total = 0
     filled_criteria_total = 0
     errors: list[str] = []

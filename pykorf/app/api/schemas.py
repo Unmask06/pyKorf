@@ -271,6 +271,15 @@ class PipeCalcInfo(BaseModel):
     rho_v2_calc: float | None = None
 
 
+class CriteriaViolationsInfo(BaseModel):
+    dp_exceeds: bool = False
+    vel_below_min: bool = False
+    vel_above_max: bool = False
+    rho_v2_below_min: bool = False
+    rho_v2_above_max: bool = False
+    overall: str = "PASS"
+
+
 class UnitConversionInfo(BaseModel):
     target_unit: str
     multiplier: float = 1.0
@@ -290,6 +299,7 @@ class PipeCriteriaResponse(BaseModel):
     fluid_labels: dict[str, str] = {}
     pipe_criteria_values: dict[str, dict[str, CriteriaValuesInfo]] = {}
     pipe_calcs: dict[str, PipeCalcInfo] = {}
+    pipe_criteria_violations: dict[str, dict[str, CriteriaViolationsInfo]] = {}
     units_data: dict[str, dict[str, UnitConversionInfo]] = {}
     set_result: SetCriteriaResponse | None = None
     predict_result: PredictCriteriaResponse | None = None

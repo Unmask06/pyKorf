@@ -226,6 +226,15 @@ export interface PipeCalcInfo {
   rho_v2_calc: number | null
 }
 
+export interface CriteriaViolationsInfo {
+  dp_exceeds: boolean
+  vel_below_min: boolean
+  vel_above_max: boolean
+  rho_v2_below_min: boolean
+  rho_v2_above_max: boolean
+  overall: string
+}
+
 export interface UnitConversionInfo {
   target_unit: string
   multiplier: number
@@ -245,6 +254,7 @@ export interface PipeCriteriaResponse {
   fluid_labels: Record<string, string>
   pipe_criteria_values: Record<string, Record<string, CriteriaValuesInfo>>
   pipe_calcs: Record<string, PipeCalcInfo>
+  pipe_criteria_violations: Record<string, Record<string, CriteriaViolationsInfo>>
   units_data: Record<string, Record<string, UnitConversionInfo>>
   set_result: SetCriteriaResponse | null
   predict_result: PredictCriteriaResponse | null

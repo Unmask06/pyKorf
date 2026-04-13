@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onBeforeUnmount, watch } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import {
   Search,
   ExternalLink,
@@ -16,15 +16,21 @@ import type {
   DocRegisterSearchEddrResponse,
   DocRegisterSearchQueryRequest,
   DocRegisterSearchQueryResponse,
+  DocRegisterStatusResponse,
   EddrResult,
   QueryEntryResult,
 } from "../types/api";
+
+const props = defineProps<{
+  initialQuery?: string;
+}>();
 
 const emit = defineEmits<{
   close: [];
   select: [name: string, link: string, description: string];
 }>();
 
+const spSiteUrl = ref("");
 const docSearchQuery = ref("");
 const docSearchResults = ref<EddrResult[]>([]);
 const queryResults = ref<QueryEntryResult[]>([]);
@@ -44,7 +50,9 @@ function formatSharePointUrl(path: string): string {
   if (!path) return "#";
   if (path.startsWith("http")) return path;
   if (path.startsWith("sites/")) {
-    return `https://cc7ges.sharepoint.com/${path.replace(/\\/g, "/")}`;
+    const base = spSiteUrl.value.replace(/\/+$/, "");
+    const clean = path.replace(/\\/g, "/");
+    return base ? `${base}/${clean}` : clean;
   }
   return path;
 }
@@ -124,10 +132,9 @@ async function selectEddrItem(item: EddrResult) {
 }
 
 function selectFileResult(item: QueryEntryResult) {
-  const docNo =
-    selectedEddrItem.value?.document_no ?? queryFilter.value.trim();
+  const docNo = selectedEddrItem.value?.document_no ?? queryFilter.value.trim();
   const title = selectedEddrItem.value?.title ?? queryFilter.value.trim();
-  emit("select", docNo, item.path || "", title);
+  emit("select", docNo, itemUrl(item), title);
   emit("close");
 }
 
@@ -158,6 +165,19 @@ watch(queryFilter, (val) => {
   }
 });
 
+onMounted(async () => {
+  try {
+    const { data } = await api.get<DocRegisterStatusResponse>("/api/doc-register/status");
+    spSiteUrl.value = data.sp_site_url || "";
+  } catch { /* ignore */ }
+
+  if (props.initialQuery?.trim()) {
+    docSearchQuery.value = props.initialQuery.trim();
+    docSearchMode.value = "eddr";
+    void docSearchLoading.execute();
+  }
+});
+
 onBeforeUnmount(() => {
   clearDocSearchTimer();
   clearFilterSearchTimer();
@@ -168,7 +188,9 @@ onBeforeUnmount(() => {
   <div class="pk-modal-backdrop">
     <div class="pk-modal doc-search-modal modal-xl">
       <!-- Header -->
-      <div class="pk-modal-header flex items-center justify-between pb-3 border-b">
+      <div
+        class="pk-modal-header flex items-center justify-between pb-3 border-b"
+      >
         <div class="flex items-center gap-2">
           <h6 class="font-semibold text-lg flex items-center gap-2">
             <Search class="w-5 h-5 text-cyan-500" /> Search Document Register
@@ -187,8 +209,18 @@ onBeforeUnmount(() => {
             @click="emit('close')"
             class="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100"
           >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            <svg
+              class="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -204,7 +236,10 @@ onBeforeUnmount(() => {
           </label>
           <input
             v-model="docSearchQuery"
-            @keyup.enter="docSearchMode = 'eddr'; docSearchLoading.execute();"
+            @keyup.enter="
+              docSearchMode = 'eddr';
+              docSearchLoading.execute();
+            "
             type="text"
             class="pk-input w-full step-input"
             placeholder="Search by document title (e.g. 'Quench Column', 'Data sheet', 'P&ID')..."
@@ -225,12 +260,23 @@ onBeforeUnmount(() => {
                     :key="docResultKey(item)"
                     @click="selectEddrItem(item)"
                     class="results-row"
-                    :class="{ 'row-selected': selectedEddrItem?.document_no === item.document_no }"
+                    :class="{
+                      'row-selected':
+                        selectedEddrItem?.document_no === item.document_no,
+                    }"
                   >
-                    <td class="font-mono font-semibold text-gray-800 px-3 py-1" style="font-size:0.7rem">
+                    <td
+                      class="font-mono font-semibold text-gray-800 px-3 py-1"
+                      style="font-size: 0.7rem"
+                    >
                       {{ item.document_no }}
                     </td>
-                    <td class="px-3 py-1 text-gray-700" style="font-size:0.73rem">{{ item.title }}</td>
+                    <td
+                      class="px-3 py-1 text-gray-700"
+                      style="font-size: 0.73rem"
+                    >
+                      {{ item.title }}
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -277,24 +323,50 @@ onBeforeUnmount(() => {
                   >
                     <td class="px-3 py-1">
                       <div class="flex items-center gap-1.5 min-w-0">
-                        <Folder v-if="item.item_type === 'Folder'" class="w-3 h-3 text-blue-500 shrink-0" />
-                        <FileText v-else class="w-3 h-3 text-gray-400 shrink-0" />
-                        <span class="font-medium text-gray-800 truncate" style="font-size:0.71rem" :title="item.name">
+                        <Folder
+                          v-if="item.item_type === 'Folder'"
+                          class="w-3 h-3 text-blue-500 shrink-0"
+                        />
+                        <FileText
+                          v-else
+                          class="w-3 h-3 text-gray-400 shrink-0"
+                        />
+                        <span
+                          class="font-medium text-gray-800 truncate"
+                          style="font-size: 0.71rem"
+                          :title="item.name"
+                        >
                           {{ item.name }}
                         </span>
                       </div>
                     </td>
                     <td class="px-2 py-1">
-                      <span v-if="item.item_type === 'Folder'" class="type-badge type-folder">Folder</span>
+                      <span
+                        v-if="item.item_type === 'Folder'"
+                        class="type-badge type-folder"
+                        >Folder</span
+                      >
                       <span v-else class="type-badge type-file">File</span>
                     </td>
-                    <td class="px-2 py-1 text-gray-500 truncate max-w-0" style="font-size:0.68rem" :title="item.modified ?? undefined">
+                    <td
+                      class="px-2 py-1 text-gray-500 truncate max-w-0"
+                      style="font-size: 0.68rem"
+                      :title="item.modified ?? undefined"
+                    >
                       {{ item.modified || "—" }}
                     </td>
-                    <td class="px-2 py-1 text-gray-500 truncate max-w-0" style="font-size:0.68rem" :title="item.modified_by ?? undefined">
+                    <td
+                      class="px-2 py-1 text-gray-500 truncate max-w-0"
+                      style="font-size: 0.68rem"
+                      :title="item.modified_by ?? undefined"
+                    >
                       {{ item.modified_by || "—" }}
                     </td>
-                    <td class="px-2 py-1 text-gray-400 font-mono truncate max-w-0" style="font-size:0.66rem" :title="item.path ?? undefined">
+                    <td
+                      class="px-2 py-1 text-gray-400 font-mono truncate max-w-0"
+                      style="font-size: 0.66rem"
+                      :title="item.path ?? undefined"
+                    >
                       {{ item.path || "—" }}
                     </td>
                     <td class="px-2 py-1 text-center">
@@ -305,7 +377,9 @@ onBeforeUnmount(() => {
                         @click.stop
                         class="open-btn"
                         :class="{ 'open-btn-disabled': !item.path }"
-                        :title="item.path ? `Open: ${item.name}` : 'No path available'"
+                        :title="
+                          item.path ? `Open: ${item.name}` : 'No path available'
+                        "
                       >
                         <ExternalLink class="w-3 h-3" />
                       </a>
@@ -317,7 +391,8 @@ onBeforeUnmount(() => {
             <div v-else class="empty-state">
               <FolderOpen class="w-6 h-6 mx-auto mb-1 opacity-40" />
               <p v-if="!selectedEddrItem && !queryFilter">
-                Select a document above, or type a Document Number to search directly.
+                Select a document above, or type a Document Number to search
+                directly.
               </p>
               <p v-else-if="docSearchLoading.isLoading.value">Searching…</p>
               <p v-else>No files found.</p>
@@ -327,13 +402,16 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- Footer -->
-      <div class="px-4 py-2.5 border-t bg-gray-50 flex items-center justify-between rounded-b-lg">
+      <div
+        class="px-4 py-2.5 border-t bg-gray-50 flex items-center justify-between rounded-b-lg"
+      >
         <div class="flex items-center gap-2 text-xs text-gray-500">
           <InfoCircle class="w-3.5 h-3.5 text-blue-400 shrink-0" />
           <span>
-            Step 1: Search by Document Title → click a document.
-            Step 2: Pick a file → auto-fills fields.
-            Or use <strong>Step 2 search directly</strong> to find files by Document Number.
+            Step 1: Search by Document Title → click a document. Step 2: Pick a
+            file → auto-fills fields. Or use
+            <strong>Step 2 search directly</strong> to find files by Document
+            Number.
           </span>
         </div>
         <button
@@ -350,8 +428,10 @@ onBeforeUnmount(() => {
 <style scoped>
 /* ── Modal shell ─────────────────────────────────────────────────────────── */
 .doc-search-modal.modal-xl {
-  width: 125vw;
-  height: 94vh;
+  width: 85vw !important;
+  max-width: 92vw !important;
+  height: 80vh !important;
+  max-height: 92vh !important;
   display: flex;
   flex-direction: column;
   overflow: hidden; /* nothing escapes the modal */
@@ -422,8 +502,14 @@ onBeforeUnmount(() => {
   letter-spacing: 0.03em;
 }
 
-.step-badge-blue { background: #2563eb; color: #fff; }
-.step-badge-green { background: #16a34a; color: #fff; }
+.step-badge-blue {
+  background: #2563eb;
+  color: #fff;
+}
+.step-badge-green {
+  background: #16a34a;
+  color: #fff;
+}
 
 /* ── Up to date badge ────────────────────────────────────────────────────── */
 .badge-up-to-date {
@@ -443,13 +529,13 @@ onBeforeUnmount(() => {
   min-height: 0;
   border: 1px solid #e5e7eb;
   border-radius: 0.375rem;
-  overflow-x: hidden;  /* no horizontal scroll */
+  overflow-x: hidden; /* no horizontal scroll */
   overflow-y: auto;
 }
 
 .results-table {
   width: 100%;
-  table-layout: fixed;   /* fixed layout enforces column widths & prevents overflow */
+  table-layout: fixed; /* fixed layout enforces column widths & prevents overflow */
   border-collapse: collapse;
 }
 
@@ -484,10 +570,18 @@ onBeforeUnmount(() => {
   transition: background-color 0.1s;
 }
 
-.results-row:last-child { border-bottom: none; }
-.results-row:hover { background: #f0f9ff; }
-.row-selected { background: #dbeafe !important; }
-.row-selected:hover { background: #bfdbfe !important; }
+.results-row:last-child {
+  border-bottom: none;
+}
+.results-row:hover {
+  background: #f0f9ff;
+}
+.row-selected {
+  background: #dbeafe !important;
+}
+.row-selected:hover {
+  background: #bfdbfe !important;
+}
 
 /* ── Type badges ─────────────────────────────────────────────────────────── */
 .type-badge {
@@ -501,8 +595,14 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
-.type-file   { background: #dcfce7; color: #15803d; }
-.type-folder { background: #dbeafe; color: #1d4ed8; }
+.type-file {
+  background: #dcfce7;
+  color: #15803d;
+}
+.type-folder {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
 
 /* ── Open link button ────────────────────────────────────────────────────── */
 .open-btn {
@@ -518,7 +618,9 @@ onBeforeUnmount(() => {
   transition: background-color 0.15s;
 }
 
-.open-btn:hover { background: #cffafe; }
+.open-btn:hover {
+  background: #cffafe;
+}
 
 .open-btn-disabled {
   opacity: 0.3;
