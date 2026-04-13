@@ -28,11 +28,15 @@ uv run mypy pykorf
 uv run pykorf
 uv run pykorf --port 9000
 uv run pykorf --debug
+
+# Frontend development (from pykorf/app/frontend/)
+npm run dev      # Dev server with HMR
+npm run build    # Build dist/ for production
 ```
 
 ## Architecture Overview
 
-pyKorf is a toolkit for reading, editing, and writing KORF hydraulic model files (`.kdf`). There are two main layers: a **model API** and a **Flask web application**.
+pyKorf is a toolkit for reading, editing, and writing KORF hydraulic model files (`.kdf`). There are two main layers: a **model API** and a **FastAPI + Vue SPA web application**.
 
 ### Model Layer (`pykorf/model/`)
 
@@ -56,43 +60,65 @@ The public surface is `Model` (alias `KorfModel`), a facade that delegates to si
 
 Element types (17 total) are typed wrappers in `pykorf/elements/`. The `ELEMENT_REGISTRY` in `elements/__init__.py` maps KDF tokens (e.g. `\PIPE`) to element classes. Multi-case parameters are stored as semicolon-separated strings.
 
-### Web Layer (`pykorf/use_case/web/`)
+### Web Layer (`pykorf/app/api/` + `pykorf/app/frontend/`)
 
-Single-user, localhost-only Flask application. Entry point: `pykorf.__main__:main` → `run_server()`.
+Single-user, localhost-only FastAPI + Vue 3 SPA application. Entry point: `pykorf.__main__:main` → `run_server()` → uvicorn serving `create_app()`.
 
-#### Session State (`session.py`)
+The built Vue SPA lives in `pykorf/app/frontend/dist/`. FastAPI serves it via a catch-all `/{path:path}` route that falls back to `index.html` for client-side routing.
 
-No cookies or database — one model lives in process memory at a time. Key functions:
-- `load(model, kdf_path)` — store model after opening a file
-- `get_model()` / `get_kdf_path()` — retrieve active model
-- `reload()` — re-parse KDF from disk; call this after every `model.io.save()` so the UI reflects what was actually persisted
-- `clear()` — unload model
+#### Session State (`pykorf/app/api/session_state.py`)
 
-#### Route Blueprints (`routes/`)
+No cookies or database — one model lives in process memory at a time. Async-safe via `asyncio.Lock`. Key functions:
 
-All routes except `/` and `/preferences` require an active session model; `require_model()` + `is_redirect()` in `helpers.py` enforce this. The standard guard is:
+- `load(model, kdf_path)` / `load_sync(...)` — store model after opening a file
+- `get_model()` / `get_kdf_path()` — async accessors
+- `reload()` / `reload_sync()` — re-parse KDF from disk; call after every `model.io.save()` so UI reflects persisted state
+- `is_stale()` / `is_stale_sync()` — detect if disk file is newer than in-memory model
+- `flag_reload()` / `pop_reload_flag()` — used by `_StaleHeaderMiddleware` to set `X-Model-Stale: true` response header
+
+Use `_sync` variants inside `asyncio.to_thread()` callbacks; use async variants in FastAPI route handlers.
+
+#### FastAPI Routers (`pykorf/app/api/routers/`)
+
+Routes requiring an active model use `require_model()` from `pykorf.app.api.deps`:
 ```python
-model = require_model()
-if is_redirect(model):
-    return model
+from pykorf.app.api.deps import require_model
+# In a route:
+model = await require_model()
+```
+`require_model()` also auto-reloads if the KDF is stale on disk.
+
+| Router | URL prefix | Purpose |
+|---|---|---|
+| `session` | `/api/session` | Status, open/close KDF, shutdown |
+| `model` | `/api/model` | Summary, save, pipe list, validation, bulk-modify |
+| `data` | `/api/data` | Apply PMS or HMB Excel data to model |
+| `settings` | `/api/settings` | Apply global parameter presets |
+| `report` | `/api/report` | Generate report, batch report, export/import Excel |
+| `browse` | `/api/browse` | Directory listing for path-picker widgets; pin/unpin folders |
+| `doc_register` | `/api/doc-register` | SharePoint document register search (EDDR + query) |
+| `preferences` | `/api/preferences` | SharePoint path overrides |
+| `references` | `/api/references` | Design basis text, remarks, hold, reference CRUD |
+| `about` | `/api/about` | Version info, update check |
+
+#### Frontend (`pykorf/app/frontend/`)
+
+Vue 3 + Vite + Pinia + Tailwind CSS + TypeScript.
+
+```bash
+# From pykorf/app/frontend/
+npm run dev      # Dev server with HMR (proxies /api/* to localhost:8000)
+npm run build    # Build to dist/ for production
 ```
 
-| Blueprint | URL | Purpose |
-|---|---|---|
-| `file_picker` | `/`, `/open` | KDF file picker; loads model into session |
-| `model_core` | `/model`, `/model/save` | Main menu (summary + prereq checks); save + reload |
-| `data` | `/model/data` | Apply PMS or HMB Excel data to model |
-| `settings` | `/model/settings` | Apply global parameter presets |
-| `report` | `/model/report` | Generate report, batch report, export/import Excel |
-| `model_info` | `/model/info` | Model stats, pipe list, validation issues |
-| `bulk_copy` | `/model/bulk-copy` | Bulk copy fluids between pipes |
-| `references` | `/model/references` | Design basis and reference links manager |
-| `preferences` | `/preferences` | SharePoint path overrides |
-| `browse` | `/api/browse` | Directory listing API for path picker widgets |
+Key structure:
+- `src/views/` — Page-level Vue components (one per route)
+- `src/components/` — Shared components (`PathBrowser.vue`, `ReferenceSearchView.vue`, …)
+- `src/stores/` — Pinia stores: `session.ts` (model status, `skipSpOverride`, `kdfPath`), `model.ts` (summary), `preferences.ts`
+- `src/api/client.ts` — Axios instance; intercepts `X-Model-Stale: true` to show a reload toast and 409 to redirect to `/`
+- `src/types/api.ts` — Pydantic-mirrored TypeScript interfaces for all request/response bodies
 
-#### App Wiring (`app.py`)
-
-`create_app()` registers all 10 blueprints and adds custom Jinja2 filters: `split`, `basename`, `dirname`, `ternary`.
+`session.skipSpOverride` controls whether the SharePoint document register search button is available (disabled when `get_skip_sp_override()` returns `True` in config).
 
 ### App Layer (`pykorf/app/operation/`)
 
@@ -147,4 +173,4 @@ Test markers available: `unit`, `integration`, `slow`, `automation` (automation 
 - **Full validation before finishing**: `uv run pytest` + `uv run ruff check pykorf tests` + `uv run mypy pykorf` must all pass.
 - **Safe rollbacks**: Use `git stash` or feature branches for complex changes.
 - **Config imports**: Always import preference functions from `pykorf.app.operation.config.config`, not from sub-modules.
-- **Model save + reload**: After `model.io.save()`, always call `_sess.reload()` so the in-memory state matches disk.
+- **Model save + reload**: After `model.io.save()`, always call `session_state.reload_sync()` (inside `asyncio.to_thread`) so the in-memory state matches disk.

@@ -52,12 +52,7 @@ async function browse(path?: string) {
 }
 
 function selectDir(d: BrowseEntryDir) {
-  if (props.filter === 'folder') {
-    selectedPath.value = d.path
-    selectedSpUrl.value = null
-  } else {
-    browse(d.path)
-  }
+  browse(d.path)
 }
 
 function selectFile(f: BrowseEntryFile) {
@@ -67,6 +62,10 @@ function selectFile(f: BrowseEntryFile) {
 }
 
 function confirm() {
+  if (props.filter === 'folder') {
+    emit('select', currentPath.value)
+    return
+  }
   if (selectedPath.value) {
     if (useAsSp.value && selectedSpUrl.value) {
       emit('select', selectedSpUrl.value)
@@ -119,7 +118,9 @@ onMounted(() => {
       <!-- Header -->
       <div class="modal-header">
         <h6 class="font-semibold flex items-center gap-2 mb-0">
-          <FolderOpen class="w-4 h-4 text-yellow-500" /> Browse Files
+          <FolderOpen v-if="filter === 'folder'" class="w-4 h-4 text-yellow-500" />
+          <File v-else class="w-4 h-4 text-blue-500" />
+          {{ filter === 'folder' ? 'Browse Folders' : 'Browse Files' }}
         </h6>
         <button @click="emit('close')" class="btn-close-icon" aria-label="Close">
           &times;
@@ -181,9 +182,9 @@ onMounted(() => {
         <!-- Directory + file listing -->
         <div class="list-container">
           <div v-for="d in filteredDirs" :key="d.path"
-            @click="selectDir(d)" @dblclick="browse(d.path)"
+            @click="selectDir(d)"
             class="list-item"
-            :class="{ 'list-item-selected': selectedPath === d.path }">
+            :class="{ 'list-item-selected': filter === 'folder' && currentPath === d.path }">
             <Folder class="w-4 h-4 text-yellow-500 shrink-0" />
             <span class="flex-1 text-sm">{{ d.name }}</span>
             <span v-if="d.synced" class="pk-badge-sp">SP</span>
@@ -232,7 +233,7 @@ onMounted(() => {
           <!-- Action buttons -->
           <div class="flex gap-2 justify-end w-full">
             <button @click="emit('close')" class="pk-btn-secondary text-sm">Cancel</button>
-            <button @click="confirm" :disabled="!selectedPath"
+            <button @click="confirm" :disabled="filter !== 'folder' && !selectedPath"
               class="pk-btn-primary text-sm flex items-center gap-1 disabled:opacity-30">
               <Check class="w-3 h-3" /> Select
             </button>

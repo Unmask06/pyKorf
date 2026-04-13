@@ -103,6 +103,16 @@ function copyToClipboard(text: string) {
 
 onMounted(() => {
   if (!session.isLoaded) router.push('/')
+  const kdf = session.kdfPath
+  if (kdf) {
+    const sep = kdf.includes('\\') ? '\\' : '/'
+    const lastSep = Math.max(kdf.lastIndexOf('\\'), kdf.lastIndexOf('/'))
+    const folder = kdf.substring(0, lastSep)
+    const filename = kdf.substring(lastSep + 1)
+    const stem = filename.includes('.') ? filename.substring(0, filename.lastIndexOf('.')) : filename
+    reportPath.value = `${folder}${sep}${stem}_report.xlsx`
+    exportPath.value = `${folder}${sep}${stem}_export.xlsx`
+  }
 })
 </script>
 
