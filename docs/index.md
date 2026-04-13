@@ -46,7 +46,7 @@ hide:
 
     Command-line interface for automation and scripting.
 
-    [:octicons-arrow-right-24: CLI Reference](#)
+    [:octicons-arrow-right-24: CLI Reference](getting-started/quickstart.md)
 
 </div>
 
@@ -123,7 +123,7 @@ model.save("Pumpcases_modified.kdf")
 ## Project Information
 
 - **License**: MIT
-- **Python**: 3.10+
+- **Python**: 3.13
 - **Repository**: [github.com/pykorf/pykorf](https://github.com/pykorf/pykorf)
 - **Issues**: [GitHub Issues](https://github.com/pykorf/pykorf/issues)
 

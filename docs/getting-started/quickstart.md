@@ -124,7 +124,7 @@ model.set_params("L1", {"LEN": 200, "DIAM": 50})
 ## Validation
 
 ```python
-# Validate the model
+# Validate the entire model (core + app-level + connectivity)
 issues = model.validate()
 
 if issues:
@@ -133,23 +133,21 @@ if issues:
         print(f"  - {issue}")
 else:
     print("Model is valid!")
-
-# Check connectivity
-conn_issues = model.check_connectivity()
-if conn_issues:
-    print("Connectivity issues:", conn_issues)
 ```
+
+Validation runs three layers in sequence:
+1. **Core** — pipe sizing criteria, title symbol
+2. **App** — PMS spec compliance, line-number parsing, pipe properties
+3. **Connectivity** — dangling references, unconnected elements
 
 ## Export
 
 ```python
-from pykorf.export import export_to_json, export_to_excel
+# Export all model data to Excel
+model.io.to_excel("model_export.xlsx")
 
-# Export to JSON
-export_to_json(model, "model.json")
-
-# Export to Excel
-export_to_excel(model, "model.xlsx")
+# Import from Excel (lossless round-trip)
+model.io.from_excel("model_export.xlsx")
 ```
 
 ## Next Steps

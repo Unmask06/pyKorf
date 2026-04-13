@@ -42,18 +42,23 @@ The public surface is `Model` (alias `KorfModel`), a facade that delegates to si
 |---|---|---|
 | `ElementService` | `model._element_service` | CRUD for elements (add, update, delete, copy, move) |
 | `QueryService` | `model.query` | Filtering, parameter get/set |
-| `ConnectivityService` | `model.connectivity` | Connect/disconnect elements, validation |
-| `LayoutService` | `model.layout` | XY positioning, visualization |
-| `IOService` | `model.io` | save, to_dataframes, to_excel, from_excel |
-| `SummaryService` | `model.summary_service` | validate, repr, element accessors |
+| `ConnectivityService` | `model._connectivity_service` | Connect/disconnect elements, pipe reference validation |
+| `LayoutService` | `model._layout_service` | XY positioning, visualization |
+| `IOService` | `model._io_service` | save, to_dataframes, to_excel, from_excel |
+| `SummaryService` | `model._summary_service` | validate() (core layer), summary(), element accessors |
 
 `Model(path)` parses the `.kdf` file via `KdfParser` into an in-memory structure. Changes are not persisted until `model.io.save()` is called.
+
+**Validation architecture:** `Model.validate()` combines three layers:
+1. **Core** (`SummaryService`) — pipe sizing criteria from KDF SIZ records, title symbol check
+2. **App** (`pykorf.app.validation`) — PMS spec compliance, line-number parsing, pipe properties
+3. **Connectivity** (`ConnectivityService`) — dangling references, unconnected elements
 
 Element types (17 total) are typed wrappers in `pykorf/elements/`. The `ELEMENT_REGISTRY` in `elements/__init__.py` maps KDF tokens (e.g. `\PIPE`) to element classes. Multi-case parameters are stored as semicolon-separated strings.
 
 ### Web Layer (`pykorf/use_case/web/`)
 
-Single-user, localhost-only Flask application. Entry point: `pykorf.cli:main` → `run_server()`.
+Single-user, localhost-only Flask application. Entry point: `pykorf.__main__:main` → `run_server()`.
 
 #### Session State (`session.py`)
 
@@ -89,18 +94,13 @@ if is_redirect(model):
 
 `create_app()` registers all 10 blueprints and adds custom Jinja2 filters: `split`, `basename`, `dirname`, `ternary`.
 
-### Use Case / Preferences Layer (`pykorf/use_case/`)
+### App Layer (`pykorf/app/operation/`)
 
-- `preferences.py` — All user config (JSON via `appdirs`). Functions: `get_recent_files`, `get_last_kdf_path`, `get_pms_excel_path`, `get_sp_overrides`, `get_global_parameters_selected`, etc.
-- `config.py` — Facade that re-exports from `preferences.py`, `paths.py`, `pms.py`, `hmb.py`. **Import from `config.py` in routes, not sub-modules directly.**
-- `processor.py` — `PipedataProcessor`: main orchestrator for PMS/HMB workflows.
-- `pms.py` / `hmb.py` — Excel readers for Piping Material Spec and Heat & Material Balance data.
-- `batch_report.py` — `BatchReportGenerator`: generates a combined report across multiple `.kdf` files in a folder.
-- `global_parameters.py` — Four preset bulk-modification functions registered in `_GLOBAL_SETTINGS`:
-  1. `dummy_pipe` — Set LEN/ID/SCH/LBL on pipes starting with "d"; hide all junction labels
-  2. `dp_margin` — Apply `DP_DES_FAC` to all pipes (default 1.25)
-  3. `rename_line` — Extract line number from NOTES field and rename pipe; propagates to EQN records
-  4. `pipe_criteria` — Apply SIZ parameter (dP/dL + velocity bounds) to all pipes
+- `config/` — User configuration: `config.py` (facade), `preferences.py` (JSON via `appdirs`), `paths.py`, `global_parameters.py`. **Import from `config.py` in routes, not sub-modules directly.**
+- `data_import/` — `pms.py`, `hmb.py` (Excel readers), `line_number.py` (pipe line-number parsing).
+- `processor/` — `processor.py` (`PipedataProcessor` orchestrator), `batch_report.py` (`BatchReportGenerator`), `bulk_copy.py`.
+- `project/` — `project_info.py`, `pykorf_file.py` (`.pykorf` sidecar for pipe criteria), `references.py` (`.pykorf` sidecar for remarks/hold/references).
+- `integration/` — `sharepoint.py`, `license.py`, `sizing_criteria.py` (criteria lookup and application).
 
 ### Sizing Criteria Data (`pykorf/reports/`)
 
@@ -118,9 +118,9 @@ dp values are in **kPa/100m** (source tables are bar/100m; multiplied ×100). Al
 
 `KdfParser` tokenises raw `.kdf` text into `KdfRecord` objects. The model layer consumes this; you rarely need to touch the parser directly.
 
-### CLI (`pykorf/cli.py`)
+### CLI (`pykorf/__main__.py`)
 
-Web-only since v0.5.0 (TUI removed). `main()` runs: splash screen → trial check → update check → `run_server(port)`. Arguments: `--port` (default 8000), `--trial`, `--debug`.
+Web-only since v0.5.0 (TUI removed). `main()` runs: splash screen → trial check → update check → `run_server(port, debug)`. Arguments: `--port` (default 8000), `--trial`, `--debug`, `--no-debug` (user mode: reduced logging, no reloader).
 
 ## Test Patterns
 
@@ -146,5 +146,5 @@ Test markers available: `unit`, `integration`, `slow`, `automation` (automation 
 - **Global research before refactoring**: Use grep/glob to find all usages before renaming or moving anything.
 - **Full validation before finishing**: `uv run pytest` + `uv run ruff check pykorf tests` + `uv run mypy pykorf` must all pass.
 - **Safe rollbacks**: Use `git stash` or feature branches for complex changes.
-- **Config imports**: Always import preference functions from `pykorf.use_case.config`, not from sub-modules.
+- **Config imports**: Always import preference functions from `pykorf.app.operation.config.config`, not from sub-modules.
 - **Model save + reload**: After `model.io.save()`, always call `_sess.reload()` so the in-memory state matches disk.

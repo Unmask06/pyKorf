@@ -94,12 +94,17 @@ Public surface: `Model` (alias `KorfModel`), a facade that delegates to six serv
 |---|---|---|
 | `ElementService` | `model._element_service` | CRUD for elements (add, update, delete, copy, move) |
 | `QueryService` | `model.query` | Filtering, parameter get/set |
-| `ConnectivityService` | `model.connectivity` | Connect/disconnect elements, validation |
-| `LayoutService` | `model.layout` | XY positioning, visualization |
-| `IOService` | `model.io` | save, to_dataframes, to_excel, from_excel |
-| `SummaryService` | `model.summary_service` | validate, repr, element accessors |
+| `ConnectivityService` | `model._connectivity_service` | Connect/disconnect elements, pipe reference validation |
+| `LayoutService` | `model._layout_service` | XY positioning, visualization |
+| `IOService` | `model._io_service` | save, to_dataframes, to_excel, from_excel |
+| `SummaryService` | `model._summary_service` | validate() (core layer), summary(), element accessors |
 
 `Model(path)` parses `.kdf` via `KdfParser` into memory. Changes persist only on `model.io.save()`.
+
+**Validation architecture:** `Model.validate()` combines three layers:
+1. **Core** (`SummaryService`) — pipe sizing criteria from KDF SIZ records, title symbol check
+2. **App** (`pykorf.app.validation`) — PMS spec compliance, line-number parsing, pipe properties
+3. **Connectivity** (`ConnectivityService`) — dangling references, unconnected elements
 
 ### Element Types (`pykorf/elements/`)
 
@@ -107,7 +112,7 @@ Public surface: `Model` (alias `KorfModel`), a facade that delegates to six serv
 
 ### Web Layer (`pykorf/use_case/web/`)
 
-Single-user, localhost-only Flask application. Entry point: `pykorf.cli:main`.
+Single-user, localhost-only Flask application. Entry point: `pykorf.__main__:main` (via `uv run pykorf` or `pykorf.exe`).
 
 **Session State** (`session.py`): One model lives in process memory at a time. Key functions:
 - `load(model, kdf_path)` — store model after opening (tracks file mtime)
@@ -126,7 +131,7 @@ if is_redirect(model):
 
 ### Import Rules
 
-**Always import from `pykorf.use_case.config`** in routes, not sub-modules (`preferences.py`, `pms.py`, etc.) directly.
+**Always import from `pykorf.app.operation.config.config`** in routes, not sub-modules (`preferences.py`, `pms.py`, etc.) directly.
 
 ## Test Patterns
 

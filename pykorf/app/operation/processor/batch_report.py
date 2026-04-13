@@ -169,7 +169,7 @@ class BatchReportGenerator:
                             error=str(e),
                         )
 
-                # Extract validation issues
+                # Extract validation issues (model.validate() now includes core + app + connectivity)
                 if "Validation" in types_to_process:
                     try:
                         meta = {
@@ -177,15 +177,6 @@ class BatchReportGenerator:
                             "source_path": str(kdf_file),
                         }
                         for msg in model.validate():
-                            severity, category, elem = _classify_issue(msg)
-                            elements_by_type["Validation"].append({
-                                **meta,
-                                "Severity": severity,
-                                "Category": category,
-                                "Element": elem,
-                                "Message": msg,
-                            })
-                        for msg in model.connectivity.check_connectivity():
                             severity, category, elem = _classify_issue(msg)
                             elements_by_type["Validation"].append({
                                 **meta,

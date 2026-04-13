@@ -1,11 +1,12 @@
 # Changelog
 
+> **Note:** For the complete, up-to-date changelog, see the root [`CHANGELOG.md`](https://github.com/Unmask06/pykorf/blob/main/CHANGELOG.md).
+> This page covers pre-0.3.0 history. All releases from v0.3.0 onward are in the root file.
+
 All notable changes to pyKorf will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## [Unreleased]
 
 ## [0.2.1] - 2026-03-15
 
@@ -17,16 +18,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Line number management
 - Enterprise API features
   - Type-safe Pydantic models (`pykorf.types`)
-  - Configuration management system (`pykorf.config`)
+  - Configuration management system
   - Structured logging (`pykorf.log`)
-  - Export functionality (`pykorf.export`)
+  - Export functionality (`model.io`)
   - Enhanced exceptions with context
 - MkDocs documentation
 - Use case processors for PMS and HMB workflows
 
 ### Changed
 
-- Refactored `pykorf/use_case/config.py` into distinct, cleaner domain modules (`paths.py`, `preferences.py`, etc.) for improved maintainability.
+- Refactored configuration into distinct, cleaner domain modules (`paths.py`, `preferences.py`, etc.) for improved maintainability.
 - Enhanced TUI validation reporting to clearly break down failure causes (specifically DP/DL vs. Velocity limit breaches).
 - Refactored model architecture with service layer pattern
 - Improved connectivity and layout services

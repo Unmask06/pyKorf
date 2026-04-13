@@ -99,7 +99,6 @@ backup_files = true
 
 [validation]
 strict_mode = false
-check_connectivity_on_save = true
 
 [performance]
 cache_size = 256
@@ -212,44 +211,37 @@ Export models to various formats:
 
 ```python
 from pykorf import Model
-from pykorf.export import (
-    export_to_json,
-    export_to_yaml,
-    export_to_excel,
-    export_to_csv,
-)
-from pykorf.types import ExportOptions
 
 model = Model("Pumpcases.kdf")
 
-# JSON export
-export_to_json(
-    model,
-    "output.json",
-    options=ExportOptions(
-        include_results=True,
-        include_geometry=True,
-        indent=2,
-    )
-)
+# Excel export (lossless round-trip)
+model.io.to_excel("output.xlsx")
 
-# YAML export
-export_to_yaml(model, "output.yaml")
+# Import back (lossless)
+restored = Model()
+restored.io.from_excel("output.xlsx")
+restored.save("restored.kdf")
 
-# Excel export (multiple sheets)
-export_to_excel(
-    model,
-    "output.xlsx",
-    include_results=True,
-)
+# DataFrame conversion
+dfs = model.io.to_dataframes()
+```
 
-# CSV export (directory of files)
-export_to_csv(
-    model,
-    "./csv_export/",
-    element_type="all",
-    include_results=True,
-)
+For formatted reports with element summaries and criteria checks:
+
+```python
+from pykorf.core.reports.exporter import ResultExporter
+
+exporter = ResultExporter(model)
+exporter.export_to_excel("report.xlsx")
+```
+
+### Batch Reports
+
+```python
+from pykorf.app.operation.processor.batch_report import BatchReportGenerator
+
+reporter = BatchReportGenerator(folder_path="/path/to/kdf/files")
+reporter.generate_report(output_path="batch_report.xlsx")
 ```
 
 ---
@@ -365,10 +357,11 @@ with log_operation("process_batch", batch_size=100):
 ### 2. Validate Before Saving
 
 ```python
-if config.validation.check_connectivity_on_save:
-    issues = model.check_connectivity()
-    if issues:
-        logger.warning("Connectivity issues detected", count=len(issues))
+issues = model.validate()
+if issues:
+    logger.warning("Validation issues detected", count=len(issues))
+    for issue in issues:
+        logger.warning(issue)
 
 model.save()
 ```

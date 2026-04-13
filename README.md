@@ -36,13 +36,14 @@ uv pip install -e ".[dev]"
 ## CLI
 
 ```bash
-uv run pykorf              # Launch web UI on default port 8000
+uv run pykorf              # Launch web UI (debug mode, port 8000)
 uv run pykorf --port 9000  # Launch on custom port
-uv run pykorf --debug      # Enable debug mode
+uv run pykorf --no-debug   # User mode: reduced terminal noise, no reloader
+uv run pykorf --debug      # Explicit debug mode (same as default)
 uv run pykorf --trial      # Run in trial mode (7-day trial)
 ```
 
-The CLI launches a single-user, local-only Flask web application with auto-update checking and browser launch.
+The CLI launches a single-user, local-only Flask web application with auto-update checking and browser launch. The default `--debug` mode enables full DEBUG-level logging and the Flask reloader; use `--no-debug` for quieter user-facing terminals (WARNING-level logging, no reloader).
 
 ---
 
@@ -66,17 +67,17 @@ The `Model` class uses a **composition-based service architecture** with six ser
 |---|---|---|
 | `ElementService` | `model._element_service` | CRUD: add, update, delete, copy, move, reindex |
 | `QueryService` | `model._query_service` | Filtering by type/name (glob support), get/set params |
-| `ConnectivityService` | `model._connectivity_service` | Connect/disconnect elements, check connectivity |
+| `ConnectivityService` | `model._connectivity_service` | Connect/disconnect elements, validate pipe references |
 | `LayoutService` | `model._layout_service` | XY positioning, auto-place, orthogonal routing, grid snapping, centering |
 | `IOService` | `model._io_service` | save, to_dataframes, to_excel, from_excel, from_dataframes |
-| `SummaryService` | `model._summary_service` | validate(), summary(), element statistics |
+| `SummaryService` | `model._summary_service` | validate() (core layer), summary(), element statistics |
 
 Services are accessed via wrapper methods on `Model`:
 - `model.add_element()`, `model.update_element()`, `model.delete_element()`
 - `model.get_element()`, `model.get_elements()`, `model.set_param()`, `model.get_param()`
 - `model.connect_elements()`, `model.disconnect_elements()`
 - `model.save()`, `model.to_excel()`, `model.from_excel()`
-- `model.get_summary()`, `model.validate()`
+- `model.get_summary()`, `model.validate()` — combines core + app-level + connectivity checks
 
 ### Create a basic model from defaults
 
@@ -297,6 +298,12 @@ reporter = BatchReportGenerator(folder_path="/path/to/kdf/files")
 reporter.generate_report(output_path="batch_report.xlsx")
 ```
 
+Generates a multi-sheet Excel workbook containing:
+- **Pipes, Pumps, Feeds, Products, Compressors, Valves** — element data from every KDF file with `source_file` and `source_path` metadata
+- **Validation** — structured validation issues (Severity, Category, Element, Message) from sizing criteria, PMS spec checks, and connectivity
+- **Remarks** — model-level remarks text from `.pykorf` sidecar files
+- **Hold Items** — model-level hold items from `.pykorf` sidecar files
+
 ---
 
 ## Supported KORF Element Types
@@ -358,7 +365,7 @@ uv run mypy pykorf
 pyKorf/
 ├── pykorf/                       # Package source
 │   ├── __init__.py               # Public API exports
-│   ├── cli.py                    # CLI entry point (launches web UI)
+│   ├── __main__.py               # CLI entry point (launches web UI)
 │   ├── core/                     # Core implementation
 │   │   ├── model/                # Model services (composition pattern)
 │   │   │   ├── __init__.py       # Model class with service delegation

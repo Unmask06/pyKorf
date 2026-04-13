@@ -2,23 +2,10 @@
 
 Exporting and importing model data in various formats.
 
-## Export Formats
-
-pyKorf supports multiple export formats:
-
-- **JSON** - Machine-readable, hierarchical
-- **YAML** - Human-readable, hierarchical
-- **Excel** - Multi-sheet workbook
-- **CSV** - Tabular data files
-- **DataFrame** - In-memory pandas DataFrames (lossless round-trip)
-
 ## DataFrame Conversion (Lossless Round-Trip)
 
 pyKorf can convert any `.kdf` model to a dict of pandas DataFrames and back
-**without losing any data**.  This enables workflows like:
-
-- KDF → DataFrame → KDF (identical file)
-- KDF → DataFrame → Excel → DataFrame → KDF (identical file)
+**without losing any data**. Each element type (`GEN`, `PIPE`, `PUMP`, …) gets its own DataFrame, and a special `_HEADER` DataFrame stores the version header.
 
 ### KDF → DataFrames
 
@@ -26,23 +13,19 @@ pyKorf can convert any `.kdf` model to a dict of pandas DataFrames and back
 from pykorf import Model
 
 model = Model("Pumpcases.kdf")
-dfs = model.to_dataframes()
+dfs = model.io.to_dataframes()
 
 # Inspect the sheets
 for name, df in dfs.items():
     print(f"{name}: {len(df)} records")
 ```
 
-Each element type (``GEN``, ``PIPE``, ``PUMP``, …) gets its own DataFrame.
-A special ``_HEADER`` DataFrame stores the version header and any verbatim
-lines.  Every row preserves the original raw KDF line text, so round-trip
-fidelity is guaranteed.
-
 ### DataFrames → KDF
 
 ```python
 # Reconstruct a Model from DataFrames
-reconstructed = Model.from_dataframes(dfs)
+reconstructed = Model()
+reconstructed.io.from_dataframes(dfs)
 reconstructed.save("Pumpcases_copy.kdf")
 ```
 
@@ -50,7 +33,7 @@ reconstructed.save("Pumpcases_copy.kdf")
 
 ```python
 model = Model("Pumpcases.kdf")
-model.to_excel("Pumpcases.xlsx")
+model.io.to_excel("Pumpcases.xlsx")
 ```
 
 Each element type is written to a separate Excel sheet.
@@ -58,7 +41,8 @@ Each element type is written to a separate Excel sheet.
 ### Excel → KDF
 
 ```python
-model = Model.from_excel("Pumpcases.xlsx")
+model = Model()
+model.io.from_excel("Pumpcases.xlsx")
 model.save("Pumpcases_from_excel.kdf")
 ```
 
@@ -71,219 +55,95 @@ from pykorf import Model
 model = Model("Pumpcases.kdf")
 
 # KDF → Excel
-model.to_excel("Pumpcases.xlsx")
+model.io.to_excel("Pumpcases.xlsx")
 
 # Excel → KDF
-restored = Model.from_excel("Pumpcases.xlsx")
+restored = Model()
+restored.io.from_excel("Pumpcases.xlsx")
 restored.save("Pumpcases_restored.kdf")
 
 # The two .kdf files are byte-identical
 ```
 
-### Using Standalone Functions
+## Export Report (Human-Readable)
 
-The conversion functions are also available directly from
-`pykorf.export`:
+For a formatted Excel report with element summaries, use the `ResultExporter`:
 
 ```python
-from pykorf.export import (
-    model_to_dataframes,
-    model_from_dataframes,
-    dataframes_to_kdf,
-    dataframes_to_excel,
-    excel_to_dataframes,
-)
+from pykorf import Model
+from pykorf.core.reports.exporter import ResultExporter
 
 model = Model("Pumpcases.kdf")
-
-# Convert to DataFrames
-dfs = model_to_dataframes(model)
-
-# Write DataFrames directly to a .kdf file
-dataframes_to_kdf(dfs, "output.kdf")
-
-# Write DataFrames to Excel
-dataframes_to_excel(dfs, "output.xlsx")
-
-# Read Excel back to DataFrames
-dfs_back = excel_to_dataframes("output.xlsx")
-
-# Reconstruct Model from DataFrames
-restored = model_from_dataframes(dfs_back)
+exporter = ResultExporter(model)
+exporter.export_to_excel("Pumpcases_report.xlsx")
 ```
 
-## JSON Export
+The report includes:
+- Element summaries (Pipes, Pumps, Feeds, Products, Valves, Compressors, Heat Exchangers, Junctions, Misc Equipment)
+- Pipe sizing criteria check (PASS/FAIL per pipe)
+- Min-Max summary row for DP/DL and velocity
+- Overall criteria verdict
+
+### With Design Basis and References
+
+If you have stored design basis, remarks, hold items, or references via the **References** page in the Web UI, they are automatically included in the report:
 
 ```python
-from pykorf.export import export_to_json
-from pykorf.types import ExportOptions
+from pykorf.app.operation.project.references import ReferencesStore
 
-# Basic export
-export_to_json(model, "output.json")
-
-# With options
-options = ExportOptions(
-    include_results=True,
-    include_geometry=True,
-    include_connectivity=True,
-    indent=2
-)
-export_to_json(model, "output.json", options=options)
-```
-
-### JSON Structure
-
-```json
-{
-  "metadata": {
-    "version": "KORF_3.6",
-    "file": "model.kdf",
-    "num_cases": 3
-  },
-  "elements": {
-    "pipes": [...],
-    "pumps": [...]
-  },
-  "connectivity": [...]
-}
-```
-
-## YAML Export
-
-```python
-from pykorf.export import export_to_yaml
-
-export_to_yaml(model, "output.yaml")
-```
-
-## Excel Export
-
-```python
-from pykorf.export import export_to_excel
-
-export_to_excel(model, "output.xlsx", include_results=True)
-```
-
-### Excel Sheets
-
-- **Summary** - Model overview
-- **Pipes** - Pipe data
-- **Pumps** - Pump data
-- **Cases** - Case definitions
-
-## CSV Export
-
-```python
-from pykorf.export import export_to_csv
-
-# Export all elements
-export_to_csv(model, "./csv_export/")
-
-# Export specific type
-export_to_csv(
+ref_store = ReferencesStore.load(model._parser.path)
+exporter = ResultExporter(
     model,
-    "./csv_export/",
-    element_type="pipes",  # or "pumps", "valves"
-    include_results=True
+    basis=ref_store.basis,
+    remarks=ref_store.remarks,
+    hold=ref_store.hold,
+    references=[
+        {"name": r.name, "category": r.category, "link": r.link, "description": r.description}
+        for r in ref_store.references
+    ],
 )
+exporter.export_to_excel("Pumpcases_report.xlsx")
 ```
 
-## Export Options
+## Batch Report
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `include_results` | True | Include calculated values |
-| `include_geometry` | True | Include XY positions |
-| `include_connectivity` | True | Include connection data |
-| `indent` | 2 | JSON indentation |
-| `encoding` | "utf-8" | Output encoding |
-
-## Import
-
-### From DataFrames or Excel (Lossless)
+Generate a combined report across multiple KDF files:
 
 ```python
-# From DataFrames
-model = Model.from_dataframes(dfs)
+from pykorf.app.operation.processor.batch_report import BatchReportGenerator
 
-# From Excel workbook
-model = Model.from_excel("model.xlsx")
+reporter = BatchReportGenerator(folder_path="/path/to/kdf/files")
+reporter.generate_report(output_path="batch_report.xlsx")
 ```
 
-### From KDF
-
-```python
-# Load KDF
-model = Model("input.kdf")
-
-# Modify
-model.update_element(...)
-
-# Save
-model.save("output.kdf")
-```
-
-### From JSON (Manual)
-
-```python
-import json
-from pykorf import Model
-from pykorf.elements import Element, Pipe
-
-# Load JSON data
-with open("data.json") as f:
-    data = json.load(f)
-
-# Create model
-model = Model()
-
-# Add elements from JSON
-for pipe_data in data["elements"]["pipes"]:
-    model.add_element(Element.PIPE, pipe_data["name"], {
-        Pipe.LEN: pipe_data["length_m"],
-        Pipe.DIA: pipe_data["diameter_inch"]
-    })
-
-model.save()
-```
+See the [Batch Report](#batch-report) section above for details.
 
 ## Best Practices
 
-### 1. Export for Backup
+### 1. Export Before Editing
 
 ```python
-# Before making changes
-export_to_json(model, "backup.json")
+# Create a backup before making changes
+model.io.to_excel("model_backup.xlsx")
 
 # Make changes
 model.update_element(...)
-
-# Save
 model.save()
 ```
 
 ### 2. Export for Analysis
 
 ```python
-# Export to Excel for analysis in pandas
-export_to_excel(model, "analysis.xlsx")
+# Use Results for calculated values
+from pykorf.core.reports.results import Results
 
-# Or use Results directly
-from pykorf import Results
 results = Results(model)
 df = results.to_dataframe()
 ```
 
-### 3. Selective Export
+### 3. Lossless Round-Trip
 
-```python
-# Export only what you need
-options = ExportOptions(
-    include_results=False,  # Smaller file
-    include_geometry=False  # No positions
-)
-export_to_json(model, "minimal.json", options=options)
-```
+Always use `model.io.to_dataframes()` / `model.io.from_dataframes()` or `model.io.to_excel()` / `model.io.from_excel()` for lossless conversion. Manual reconstruction via `model.add_element()` will lose data.
 
 ## Next Steps
 
