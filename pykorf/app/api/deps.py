@@ -11,7 +11,8 @@ async def require_model():
     """Return the active model or raise HTTPException.
 
     Automatically reloads the model if the KDF file has been modified
-    externally (e.g., by KORF GUI).
+    externally (e.g., by KORF GUI). Flags the reload so middleware can
+    set the ``X-Model-Stale: true`` response header for the frontend toast.
 
     Returns:
         Active KorfModel instance.
@@ -22,6 +23,7 @@ async def require_model():
     was_stale = await _sess.is_stale()
     if was_stale:
         await _sess.reload()
+        _sess.flag_reload()
     model = await _sess.get_model()
     if model is None:
         raise HTTPException(

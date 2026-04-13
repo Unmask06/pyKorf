@@ -17,6 +17,7 @@ _model: Model | None = None
 _kdf_path: Path | None = None
 _model_mtime: float | None = None
 _lock = asyncio.Lock()
+_was_reloaded: bool = False  # Set when reload() is triggered by stale detection
 
 
 async def load(model: Model, kdf_path: Path) -> None:
@@ -65,6 +66,26 @@ async def reload() -> None:
 
         _model = Model(_kdf_path)
         _model_mtime = _kdf_path.stat().st_mtime if _kdf_path.exists() else None
+
+
+def flag_reload() -> None:
+    """Mark that an automatic reload from stale detection occurred.
+
+    Called by :func:`require_model` so middleware can set the response header.
+    """
+    global _was_reloaded
+    _was_reloaded = True
+
+
+def pop_reload_flag() -> bool:
+    """Return and clear the automatic-reload flag.
+
+    Used by middleware to decide whether to send ``X-Model-Stale: true``.
+    """
+    global _was_reloaded
+    val = _was_reloaded
+    _was_reloaded = False
+    return val
 
 
 async def clear() -> None:

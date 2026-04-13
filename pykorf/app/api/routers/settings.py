@@ -9,6 +9,7 @@ from pykorf.app.api.deps import require_model
 from pykorf.app.api.schemas import (
     ApplyGlobalSettingsRequest,
     CenterLayoutResponse,
+    EmptyRequest,
     GlobalSettingSchema,
     SettingsApplyResponse,
     SettingsGetResponse,
@@ -47,7 +48,7 @@ async def get_settings() -> SettingsGetResponse:
 
 
 @router.post("/apply", response_model=SettingsApplyResponse)
-async def apply_settings(req: ApplyGlobalSettingsRequest):
+async def apply_settings(req: ApplyGlobalSettingsRequest) -> SettingsApplyResponse:
     """Apply selected global settings to the model."""
     model = await require_model()
     from pykorf.app.operation.config.config import (
@@ -83,7 +84,7 @@ async def apply_settings(req: ApplyGlobalSettingsRequest):
 
 
 @router.post("/center-layout", response_model=CenterLayoutResponse)
-async def center_layout():
+async def center_layout(_: EmptyRequest) -> CenterLayoutResponse:
     """Center all elements on the page."""
     model = await require_model()
     from pykorf.app.operation.config.config import set_last_interaction
@@ -100,7 +101,7 @@ async def center_layout():
 
 
 @router.post("/snap-orthogonal", response_model=CenterLayoutResponse)
-async def snap_orthogonal(req: SnapOrthogonalRequest):
+async def snap_orthogonal(req: SnapOrthogonalRequest) -> CenterLayoutResponse:
     """Snap near-orthogonal connections and align to grid."""
     model = await require_model()
     from pykorf.app.operation.config.config import set_last_interaction

@@ -16,10 +16,10 @@ const toastStore = useToastStore()
         'toast-info': toast.type === 'info',
       }"
       role="alert">
-      <CheckCircle v-if="toast.type === 'success'" class="w-4 h-4 flex-shrink-0" />
-      <XCircle v-else-if="toast.type === 'error'" class="w-4 h-4 flex-shrink-0" />
-      <AlertTriangle v-else-if="toast.type === 'warning'" class="w-4 h-4 flex-shrink-0" />
-      <Info v-else class="w-4 h-4 flex-shrink-0" />
+      <CheckCircle v-if="toast.type === 'success'" class="w-4 h-4 shrink-0" />
+      <XCircle v-else-if="toast.type === 'error'" class="w-4 h-4 shrink-0" />
+      <AlertTriangle v-else-if="toast.type === 'warning'" class="w-4 h-4 shrink-0" />
+      <Info v-else class="w-4 h-4 shrink-0" />
       <span class="flex-1">{{ toast.message }}</span>
       <button @click="toastStore.remove(index)" class="btn-close" aria-label="Close">
         &times;

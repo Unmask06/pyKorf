@@ -5,9 +5,16 @@ import { useSessionStore } from '../stores/session'
 import { useModelStore } from '../stores/model'
 import { useToastStore } from '../composables/useToast'
 import { useLoading } from '../composables/useLoading'
-import { api } from '../api/client'
+import { api, getErrorMessage } from '../api/client'
 import { FileSpreadsheet, FolderOpen, FileText, Folder, Clipboard, ArrowUpRight, ArrowDownRight, AlertTriangle, Layers } from 'lucide-vue-next'
 import PathBrowser from '../components/PathBrowser.vue'
+import type {
+  BatchReportRequest,
+  ExportRequest,
+  GenerateReportRequest,
+  ImportRequest,
+  ReportResponse,
+} from '../types/api'
 
 const router = useRouter()
 const session = useSessionStore()
@@ -24,37 +31,41 @@ const showImportBrowser = ref(false)
 const showBatchBrowser = ref(false)
 
 const genLoading = useLoading(async () => {
-  await api.post('/api/report/generate', {
+  const req: GenerateReportRequest = {
     report_path: reportPath.value || null,
-  })
+  }
+  await api.post<ReportResponse>('/api/report/generate', req)
 })
 
 const exportLoading = useLoading(async () => {
-  await api.post('/api/report/export', {
+  const req: ExportRequest = {
     file_path: exportPath.value || null,
-  })
+  }
+  await api.post<ReportResponse>('/api/report/export', req)
 })
 
 const importLoading = useLoading(async () => {
-  await api.post('/api/report/import', {
+  const req: ImportRequest = {
     file_path: importPath.value || null,
-  })
+  }
+  await api.post<ReportResponse>('/api/report/import', req)
   await session.fetchStatus()
   await model.fetchSummary()
 })
 
 const batchLoading = useLoading(async () => {
-  await api.post('/api/report/batch', {
+  const req: BatchReportRequest = {
     batch_folder: batchFolder.value || null,
-  })
+  }
+  await api.post<ReportResponse>('/api/report/batch', req)
 })
 
 async function generate() {
   try {
     await genLoading.execute()
     toast.success('Report generated successfully.')
-  } catch (err: any) {
-    toast.error(err.response?.data?.detail || err.message || 'An unexpected error occurred.')
+  } catch (err: unknown) {
+    toast.error(getErrorMessage(err, 'An unexpected error occurred.'))
   }
 }
 
@@ -62,8 +73,8 @@ async function doExport() {
   try {
     await exportLoading.execute()
     toast.success('Model exported to Excel.')
-  } catch (err: any) {
-    toast.error(err.response?.data?.detail || err.message || 'An unexpected error occurred.')
+  } catch (err: unknown) {
+    toast.error(getErrorMessage(err, 'An unexpected error occurred.'))
   }
 }
 
@@ -71,8 +82,8 @@ async function doImport() {
   try {
     await importLoading.execute()
     toast.success('Parameters imported from Excel.')
-  } catch (err: any) {
-    toast.error(err.response?.data?.detail || err.message || 'An unexpected error occurred.')
+  } catch (err: unknown) {
+    toast.error(getErrorMessage(err, 'An unexpected error occurred.'))
   }
 }
 
@@ -80,8 +91,8 @@ async function doBatch() {
   try {
     await batchLoading.execute()
     toast.success('Batch report generated.')
-  } catch (err: any) {
-    toast.error(err.response?.data?.detail || err.message || 'An unexpected error occurred.')
+  } catch (err: unknown) {
+    toast.error(getErrorMessage(err, 'An unexpected error occurred.'))
   }
 }
 
@@ -216,7 +227,7 @@ onMounted(() => {
             <div class="pk-hint">Export the model first, then paste or type the path here.</div>
           </div>
           <div class="bg-yellow-50 border border-yellow-200 rounded px-3 py-2 mb-3 flex items-center gap-2 text-xs text-yellow-700">
-            <AlertTriangle class="w-4 h-4 flex-shrink-0" />
+            <AlertTriangle class="w-4 h-4 shrink-0" />
             Import overwrites the in-memory model. Save a backup first.
           </div>
           <div class="flex gap-2">

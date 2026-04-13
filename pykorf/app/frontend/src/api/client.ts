@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, { isAxiosError } from 'axios'
 import type { AxiosError } from 'axios'
 
 export const api = axios.create({
@@ -14,8 +14,8 @@ api.interceptors.response.use(
   (response) => {
     // If backend auto-reloaded due to stale KDF, signal it
     if (response.headers['x-model-stale'] === 'true') {
-      // The store will pick this up on next fetchStatus()
       console.info('[pyKorf] Model was stale — auto-reloaded from disk')
+      window.dispatchEvent(new CustomEvent('model-reloaded'))
     }
     return response
   },
@@ -23,9 +23,19 @@ api.interceptors.response.use(
     if (error.response?.status === 409) {
       // No model loaded — router guard will redirect to /
       // The detail message tells the user why
-      const detail = (error.response.data as any)?.detail || 'No model loaded'
+      const detail = getErrorMessage(error, 'No model loaded')
       console.warn('[pyKorf] 409:', detail)
     }
     return Promise.reject(error)
   },
 )
+
+export function getErrorMessage(error: unknown, fallback: string): string {
+  if (isAxiosError<{ detail?: string; error?: string; message?: string }>(error)) {
+    return error.response?.data?.detail || error.response?.data?.error || error.response?.data?.message || error.message || fallback
+  }
+  if (error instanceof Error) {
+    return error.message || fallback
+  }
+  return fallback
+}

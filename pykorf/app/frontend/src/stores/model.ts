@@ -3,11 +3,14 @@ import { ref } from 'vue'
 import { api } from '../api/client'
 import type {
   ModelFullResponse,
+  ModelPipesResponse,
   ModelSummary,
   Prereqs,
   ProjectInfo,
   BulkCopyRequest,
   BulkCopyResponse,
+  EmptyRequest,
+  PredictCriteriaRequest,
   SaveProjectInfoRequest,
   SaveResponse,
   SetPipeCriteriaRequest,
@@ -57,7 +60,7 @@ export const useModelStore = defineStore('model', () => {
 
   async function fetchPipes() {
     try {
-      const { data } = await api.get<{ pipes: string[] }>('/api/model/pipes')
+      const { data } = await api.get<ModelPipesResponse>('/api/model/pipes')
       pipes.value = data.pipes
     } catch {
       pipes.value = []
@@ -65,7 +68,8 @@ export const useModelStore = defineStore('model', () => {
   }
 
   async function save(): Promise<SaveResponse> {
-    const { data } = await api.post<SaveResponse>('/api/model/save')
+    const req: EmptyRequest = {}
+    const { data } = await api.post<SaveResponse>('/api/model/save', req)
     await _postReloadSession()
     await fetchSummary()
     return data
@@ -93,7 +97,8 @@ export const useModelStore = defineStore('model', () => {
   }
 
   async function predictCriteria(): Promise<PredictCriteriaResponse> {
-    const { data } = await api.post<PredictCriteriaResponse>('/api/model/pipe-criteria/predict')
+    const req: PredictCriteriaRequest = {}
+    const { data } = await api.post<PredictCriteriaResponse>('/api/model/pipe-criteria/predict', req)
     return data
   }
 

@@ -2,13 +2,14 @@
 import { ref, onMounted } from 'vue'
 import { api } from '../api/client'
 import { Info, CheckCircle, Home } from 'lucide-vue-next'
+import type { AboutResponse } from '../types/api'
 
 const version = ref('')
 const releaseDate = ref('')
 
 onMounted(async () => {
   try {
-    const { data } = await api.get('/api/about/')
+    const { data } = await api.get<AboutResponse>('/api/about/')
     version.value = data.version
     releaseDate.value = data.release_date
   } catch { /* ignore */ }
@@ -46,23 +47,23 @@ onMounted(async () => {
           <h6 class="text-xs font-semibold text-gray-400 uppercase mb-3 mt-3">Key Features</h6>
           <ul class="list-none space-y-1 mb-4">
             <li class="flex items-start gap-2">
-              <CheckCircle class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+              <CheckCircle class="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
               Read and write <code class="bg-gray-100 rounded px-1">.kdf</code> model files without opening KORF
             </li>
             <li class="flex items-start gap-2">
-              <CheckCircle class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+              <CheckCircle class="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
               Assign pipe sizing criteria (dP, velocity) from a built-in lookup table
             </li>
             <li class="flex items-start gap-2">
-              <CheckCircle class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+              <CheckCircle class="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
               Bulk-import fluid data from PMS and HMB spreadsheets
             </li>
             <li class="flex items-start gap-2">
-              <CheckCircle class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+              <CheckCircle class="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
               Export a pipe summary report to Excel
             </li>
             <li class="flex items-start gap-2">
-              <CheckCircle class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+              <CheckCircle class="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
               Apply project level parameters to entire model in one click
             </li>
           </ul>

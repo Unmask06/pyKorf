@@ -9,7 +9,9 @@ from pykorf.app.api.deps import require_model
 from pykorf.app.api.schemas import (
     AddReferenceRequest,
     DeleteReferenceRequest,
+    EmptyRequest,
     OkResponse,
+    ReferenceSchema,
     ReferencesStoreSchema,
     SaveAllReferencesRequest,
     ShortcutsResponse,
@@ -31,7 +33,7 @@ def _load_refs():
 
 
 @router.get("/", response_model=ReferencesStoreSchema)
-async def get_references():
+async def get_references() -> ReferencesStoreSchema:
     """Get references store for the active model."""
     await require_model()
 
@@ -42,13 +44,13 @@ async def get_references():
         remarks=store.remarks,
         hold=store.hold,
         references=[
-            {
-                "id": r.id,
-                "name": r.name,
-                "link": r.link,
-                "description": r.description,
-                "category": r.category,
-            }
+            ReferenceSchema(
+                id=r.id,
+                name=r.name,
+                link=r.link,
+                description=r.description,
+                category=r.category,
+            )
             for r in store.references
         ],
     )
@@ -137,10 +139,12 @@ async def delete_reference(req: DeleteReferenceRequest) -> OkResponse:
 
 
 @router.post("/shortcuts", response_model=ShortcutsResponse)
-async def create_shortcuts():
+async def create_shortcuts(_: EmptyRequest) -> ShortcutsResponse:
     """Create .url shortcut files in the reference/ folder."""
     await require_model()
     kdf_path = await _sess.get_kdf_path()
+    if not kdf_path:
+        return ShortcutsResponse(error="No model loaded.")
     store = _load_refs()
 
     try:

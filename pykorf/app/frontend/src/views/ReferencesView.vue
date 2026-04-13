@@ -4,10 +4,25 @@ import { useRouter } from 'vue-router'
 import { useSessionStore } from '../stores/session'
 import { useToastStore } from '../composables/useToast'
 import { useLoading } from '../composables/useLoading'
-import { api } from '../api/client'
-import { Plus, Trash2, ExternalLink, Save, Search, PenSquare, Inbox, BookText, MessageSquare, AlertTriangle, ChevronDown, List, FolderOpen, RotateCw } from 'lucide-vue-next'
+import { api, getErrorMessage } from '../api/client'
+import { Plus, Trash2, ExternalLink, Save, Search, PenSquare, Inbox, BookText, MessageSquare, AlertTriangle, ChevronDown, List, FolderOpen, RotateCw, Lightbulb, Info as InfoCircle } from 'lucide-vue-next'
 import PathBrowser from '../components/PathBrowser.vue'
-import type { ReferencesStore, Reference, EddrResult, QueryEntryResult } from '../types/api'
+import type {
+  AddReferenceRequest,
+  DeleteReferenceRequest,
+  DocRegisterSearchEddrRequest,
+  DocRegisterSearchEddrResponse,
+  DocRegisterSearchFilesRequest,
+  DocRegisterSearchFilesResponse,
+  DocRegisterSearchQueryRequest,
+  DocRegisterSearchQueryResponse,
+  EddrResult,
+  OkResponse,
+  QueryEntryResult,
+  Reference,
+  ReferencesStore,
+  SaveAllReferencesRequest,
+} from '../types/api'
 
 const router = useRouter()
 const session = useSessionStore()
@@ -51,8 +66,25 @@ function categoryBadgeCls(cat: string): string {
 // Doc register search
 const showDocSearch = ref(false)
 const docSearchQuery = ref('')
-const docSearchResults = ref<EddrResult[] | QueryEntryResult[]>([])
+type DocSearchItem = EddrResult | QueryEntryResult
+const docSearchResults = ref<DocSearchItem[]>([])
 const docSearchMode = ref<'eddr' | 'query' | 'files'>('eddr')
+
+function isEddrResult(item: DocSearchItem): item is EddrResult {
+  return 'document_no' in item
+}
+
+function docResultKey(item: DocSearchItem): string {
+  return isEddrResult(item) ? item.document_no : `${item.name}:${item.path || ''}`
+}
+
+function docResultTitle(item: DocSearchItem): string {
+  return isEddrResult(item) ? item.document_no : item.name
+}
+
+function docResultSubtitle(item: DocSearchItem): string {
+  return isEddrResult(item) ? item.title : item.path || ''
+}
 
 async function fetchReferences() {
   try {
@@ -62,22 +94,23 @@ async function fetchReferences() {
     hold.value = data.hold
     references.value = data.references
     dirty.value = false
-  } catch (err: any) {
-    toast.error(err.response?.data?.detail || err.message || 'Failed to load references.')
+  } catch (err: unknown) {
+    toast.error(getErrorMessage(err, 'Failed to load references.'))
   }
 }
 
 const saveAllLoading = useLoading(async () => {
   try {
-    await api.post('/api/references/save-all', {
+    const req: SaveAllReferencesRequest = {
       basis: basis.value,
       remarks: remarks.value,
       hold: hold.value,
-    })
+    }
+    await api.post<OkResponse>('/api/references/save-all', req)
     dirty.value = false
     toast.success('Basis, remarks, and hold saved.')
-  } catch (err: any) {
-    toast.error(err.response?.data?.detail || err.message || 'Failed to save.')
+  } catch (err: unknown) {
+    toast.error(getErrorMessage(err, 'Failed to save.'))
   }
 })
 
@@ -87,13 +120,14 @@ const addRefLoading = useLoading(async () => {
     return
   }
   try {
-    await api.post('/api/references/add', {
+    const req: AddReferenceRequest = {
       edit_id: editingId.value,
       name: newRefName.value,
       link: newRefLink.value,
       description: newRefDesc.value,
       category: newRefCategory.value,
-    })
+    }
+    await api.post<OkResponse>('/api/references/add', req)
     newRefName.value = ''
     newRefLink.value = ''
     newRefDesc.value = ''
@@ -102,18 +136,19 @@ const addRefLoading = useLoading(async () => {
     addFormCollapsed.value = true
     await fetchReferences()
     toast.success('Reference saved.')
-  } catch (err: any) {
-    toast.error(err.response?.data?.detail || err.message || 'Failed to save reference.')
+  } catch (err: unknown) {
+    toast.error(getErrorMessage(err, 'Failed to save reference.'))
   }
 })
 
 async function deleteReference(refId: string) {
   try {
-    await api.post('/api/references/delete', { ref_id: refId })
+    const req: DeleteReferenceRequest = { ref_id: refId }
+    await api.post<OkResponse>('/api/references/delete', req)
     await fetchReferences()
     toast.info('Reference deleted.')
-  } catch (err: any) {
-    toast.error(err.response?.data?.detail || err.message || 'Failed to delete reference.')
+  } catch (err: unknown) {
+    toast.error(getErrorMessage(err, 'Failed to delete reference.'))
   }
 }
 
@@ -136,20 +171,25 @@ function cancelEdit() {
 
 const docSearchLoading = useLoading(async () => {
   if (!docSearchQuery.value.trim()) return
-  let endpoint = ''
-  if (docSearchMode.value === 'eddr') endpoint = `/api/doc-register/search-eddr?q=${encodeURIComponent(docSearchQuery.value)}`
-  else if (docSearchMode.value === 'query') endpoint = `/api/doc-register/search-query?doc_no=${encodeURIComponent(docSearchQuery.value)}`
-  else endpoint = `/api/doc-register/search-files?q=${encodeURIComponent(docSearchQuery.value)}`
-
-  const { data } = await api.get(endpoint)
-  docSearchResults.value = data
+  if (docSearchMode.value === 'eddr') {
+    const req: DocRegisterSearchEddrRequest = { q: docSearchQuery.value }
+    const { data } = await api.get<DocRegisterSearchEddrResponse>('/api/doc-register/search-eddr', { params: req })
+    docSearchResults.value = data.results
+  } else if (docSearchMode.value === 'query') {
+    const req: DocRegisterSearchQueryRequest = { doc_no: docSearchQuery.value }
+    const { data } = await api.get<DocRegisterSearchQueryResponse>('/api/doc-register/search-query', { params: req })
+    docSearchResults.value = data.results
+  } else {
+    const req: DocRegisterSearchFilesRequest = { q: docSearchQuery.value }
+    const { data } = await api.get<DocRegisterSearchFilesResponse>('/api/doc-register/search-files', { params: req })
+    docSearchResults.value = data.results
+  }
 })
 
-function useDocResult(item: EddrResult | QueryEntryResult) {
-  const doc = item as any
-  newRefName.value = doc.document_no || doc.name || ''
-  newRefLink.value = doc.path || ''
-  newRefDesc.value = doc.title || ''
+function useDocResult(item: DocSearchItem) {
+  newRefName.value = docResultTitle(item)
+  newRefLink.value = isEddrResult(item) ? '' : item.path || ''
+  newRefDesc.value = isEddrResult(item) ? item.title : ''
   showDocSearch.value = false
   addFormCollapsed.value = false
 }
@@ -399,11 +439,11 @@ onMounted(() => {
           <input v-model="docSearchQuery" @keyup.enter="docSearchMode = 'eddr'; docSearchLoading.execute()"
             type="text" class="pk-input" placeholder="Type to search EDDR titles (e.g. 'Data sheet', 'P&ID')..." autocomplete="off" />
           <div v-if="docSearchResults.length" class="mt-2 overflow-auto" style="max-height: 280px;">
-            <div v-for="item in docSearchResults" :key="(item as any).document_no || (item as any).name"
+            <div v-for="item in docSearchResults" :key="docResultKey(item)"
               @click="useDocResult(item)"
               class="px-3 py-2 border-b cursor-pointer hover:bg-blue-50">
-              <div class="font-semibold text-sm">{{ (item as any).document_no || (item as any).name }}</div>
-              <div class="pk-desc-xs">{{ (item as any).title || '' }}</div>
+              <div class="font-semibold text-sm">{{ docResultTitle(item) }}</div>
+              <div class="pk-desc-xs">{{ docResultSubtitle(item) }}</div>
             </div>
           </div>
           <div v-else class="text-center text-gray-400 py-3 text-sm">

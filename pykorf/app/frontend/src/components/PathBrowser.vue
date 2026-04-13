@@ -2,6 +2,13 @@
 import { ref, onMounted, computed } from 'vue'
 import { api } from '../api/client'
 import { Folder, File, ArrowUp, Cloud, FolderOpen, CloudCheck, Check, ArrowLeftRight, Pin, PinOff } from 'lucide-vue-next'
+import type {
+  BrowseEntryDir,
+  BrowseEntryFile,
+  BrowseRequest,
+  BrowseResponse,
+  PinnedFolderRequest,
+} from '../types/api'
 
 const props = defineProps<{
   filter?: string
@@ -12,15 +19,12 @@ const emit = defineEmits<{
   select: [path: string]
 }>()
 
-interface DirEntry { name: string; path: string; synced: boolean }
-interface FileEntry { name: string; path: string; sharepoint_url: string | null }
-
 const currentPath = ref('')
 const parentPath = ref<string | null>(null)
 const drives = ref<string[]>([])
 const pinnedFolders = ref<string[]>([])
-const dirs = ref<DirEntry[]>([])
-const files = ref<FileEntry[]>([])
+const dirs = ref<BrowseEntryDir[]>([])
+const files = ref<BrowseEntryFile[]>([])
 const filterText = ref('')
 const selectedPath = ref<string | null>(null)
 const selectedSpUrl = ref<string | null>(null)
@@ -28,10 +32,12 @@ const currentSpUrl = ref<string | null>(null)
 const useAsSp = ref(false)
 
 async function browse(path?: string) {
-  const filter = props.filter || 'any'
-  const url = `/api/browse?filter=${encodeURIComponent(filter)}${path ? '&path=' + encodeURIComponent(path) : ''}`
+  const req: BrowseRequest = {
+    filter: props.filter || 'any',
+    ...(path ? { path } : {}),
+  }
   try {
-    const { data } = await api.get(url)
+    const { data } = await api.get<BrowseResponse>('/api/browse', { params: req })
     currentPath.value = data.current
     currentSpUrl.value = data.current_sp_url
     parentPath.value = data.parent
@@ -45,7 +51,7 @@ async function browse(path?: string) {
   } catch { /* ignore */ }
 }
 
-function selectDir(d: DirEntry) {
+function selectDir(d: BrowseEntryDir) {
   if (props.filter === 'folder') {
     selectedPath.value = d.path
     selectedSpUrl.value = null
@@ -54,7 +60,7 @@ function selectDir(d: DirEntry) {
   }
 }
 
-function selectFile(f: FileEntry) {
+function selectFile(f: BrowseEntryFile) {
   selectedPath.value = f.path
   selectedSpUrl.value = f.sharepoint_url
   useAsSp.value = false
@@ -72,12 +78,14 @@ function confirm() {
 
 async function pinCurrentFolder() {
   if (!currentPath.value) return
-  await api.post(`/api/browse/pin?folder=${encodeURIComponent(currentPath.value)}`)
+  const req: PinnedFolderRequest = { folder: currentPath.value }
+  await api.post('/api/browse/pin', req)
   await browse(currentPath.value)
 }
 
 async function unpinFolder(folderPath: string) {
-  await api.post(`/api/browse/unpin?folder=${encodeURIComponent(folderPath)}`)
+  const req: PinnedFolderRequest = { folder: folderPath }
+  await api.post('/api/browse/unpin', req)
   await browse(currentPath.value)
 }
 
@@ -151,14 +159,14 @@ onMounted(() => {
         <!-- Current path + Up + Pin button -->
         <div class="flex items-center gap-2 mb-2">
           <button @click="parentPath && browse(parentPath)" :disabled="!parentPath"
-            class="pk-btn-icon py-0.5 disabled:opacity-30 flex-shrink-0"
+            class="pk-btn-icon py-0.5 disabled:opacity-30 shrink-0"
             title="Go up one level">
             <ArrowUp class="w-3 h-3" />
           </button>
           <div class="breadcrumb flex-1">{{ currentPath }}</div>
           <button
             @click="isCurrentPinned ? unpinFolder(currentPath) : pinCurrentFolder()"
-            class="pk-btn-icon py-0.5 flex-shrink-0"
+            class="pk-btn-icon py-0.5 shrink-0"
             :class="isCurrentPinned ? 'text-yellow-600' : 'text-gray-400 hover:text-yellow-600'"
             :title="isCurrentPinned ? 'Unpin this folder' : 'Pin this folder'">
             <PinOff v-if="isCurrentPinned" class="w-3.5 h-3.5" />
@@ -176,7 +184,7 @@ onMounted(() => {
             @click="selectDir(d)" @dblclick="browse(d.path)"
             class="list-item"
             :class="{ 'list-item-selected': selectedPath === d.path }">
-            <Folder class="w-4 h-4 text-yellow-500 flex-shrink-0" />
+            <Folder class="w-4 h-4 text-yellow-500 shrink-0" />
             <span class="flex-1 text-sm">{{ d.name }}</span>
             <span v-if="d.synced" class="pk-badge-sp">SP</span>
           </div>
@@ -184,7 +192,7 @@ onMounted(() => {
             @click="selectFile(f)" @dblclick="selectFile(f); confirm()"
             class="list-item list-item-file"
             :class="{ 'list-item-selected': selectedPath === f.path }">
-            <File class="w-4 h-4 flex-shrink-0" />
+            <File class="w-4 h-4 shrink-0" />
             <span class="flex-1 text-sm">{{ f.name }}</span>
             <span v-if="f.sharepoint_url" class="pk-badge-sp">SP</span>
           </div>

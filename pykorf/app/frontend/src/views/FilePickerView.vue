@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useSessionStore } from '../stores/session'
 import { useToastStore } from '../composables/useToast'
 import { useLoading } from '../composables/useLoading'
+import { getErrorMessage } from '../api/client'
 import { FolderOpen, ArrowRight, FileText, Clock, Lightbulb, Shield, ArrowUpCircle, StopCircle } from 'lucide-vue-next'
 import PathBrowser from '../components/PathBrowser.vue'
 
@@ -30,8 +31,8 @@ async function openFile() {
       toast.success('Model loaded successfully.')
       router.push('/model')
     }
-  } catch (err: any) {
-    toast.error(err.response?.data?.detail || err.message || 'Failed to load model.')
+  } catch (err: unknown) {
+    toast.error(getErrorMessage(err, 'Failed to load model.'))
   }
 }
 
@@ -128,10 +129,10 @@ onMounted(() => {
               :class="{ 'pointer-events-none text-gray-400': !session.setupOk }"
               @click.prevent="session.setupOk && selectRecent(f)"
               :title="!session.setupOk ? 'Complete setup in Preferences first' : f">
-              <FileText class="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span class="font-mono text-sm flex-grow truncate text-gray-800">{{ f.split(/[\/\\]/).pop() }}</span>
+              <FileText class="w-4 h-4 text-gray-400 shrink-0" />
+              <span class="font-mono text-sm grow truncate text-gray-800">{{ f.split(/[\/\\]/).pop() }}</span>
               <span class="text-gray-400 text-xs truncate" style="max-width: 45%;">{{ f }}</span>
-              <ArrowRight class="w-3 h-3 text-blue-600 flex-shrink-0" />
+              <ArrowRight class="w-3 h-3 text-blue-600 shrink-0" />
             </a>
           </li>
         </ul>

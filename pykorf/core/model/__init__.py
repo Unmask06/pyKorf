@@ -84,7 +84,9 @@ class Model(_ModelBase):
     def add_element(self, etype: str, name: str, params: dict[str, Any] | None = None) -> Any:
         return self._element_service.add_element(etype, name, params)
 
-    def add_elements(self, elements: list[tuple[str, str, dict[str, Any]]]) -> None:
+    def add_elements(
+        self, elements: list[tuple[str, str, dict[str, Any]]]
+    ) -> list[Any]:
         return self._element_service.add_elements(elements)
 
     def update_element(self, name: str, params: dict[str, Any]) -> None:
@@ -159,8 +161,8 @@ class Model(_ModelBase):
     def save_as(self, path: str | Path, *, overwrite: bool = False) -> None:
         return self._io_service.save_as(path, overwrite=overwrite)
 
-    def to_excel(self, path: str | Path) -> str:
-        return self._io_service.to_excel(path)
+    def to_excel(self, path: str | Path) -> None:
+        self._io_service.to_excel(path)
 
     def to_dataframes(self) -> dict[str, Any]:
         return self._io_service.to_dataframes()

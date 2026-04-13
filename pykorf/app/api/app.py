@@ -5,14 +5,29 @@ from __future__ import annotations
 import threading
 import webbrowser
 from pathlib import Path
+from typing import Any, cast
 
-from fastapi import FastAPI, Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
 
+from pykorf.app.api.schemas import EmptyRequest, ShutdownResponse
 from pykorf.app.update_check import prefetch as _prefetch
 
 _FRONTEND_DIST = Path(__file__).parent.parent / "frontend" / "dist"
+
+
+class _StaleHeaderMiddleware(BaseHTTPMiddleware):
+    """Set ``X-Model-Stale: true`` when the model was auto-reloaded from disk."""
+
+    async def dispatch(self, request: Request, call_next):
+        from pykorf.app.api import session_state as _sess
+
+        response = await call_next(request)
+        if _sess.pop_reload_flag():
+            response.headers["X-Model-Stale"] = "true"
+        return response
 
 
 def create_app() -> FastAPI:
@@ -22,6 +37,9 @@ def create_app() -> FastAPI:
         Configured FastAPI app with all routers registered.
     """
     app = FastAPI(title="pyKorf", version="0.18.0")
+
+    # --- Middleware: stale header ---
+    app.add_middleware(_StaleHeaderMiddleware)
 
     # --- Register routers ---
     from pykorf.app.api.routers import (
@@ -63,16 +81,20 @@ def create_app() -> FastAPI:
     from pykorf.app.exceptions import UseCaseError
     from pykorf.core.exceptions import KorfError
 
-    app.add_exception_handler(UseCaseError, use_case_error_handler)
-    app.add_exception_handler(KorfError, korf_error_handler)
+    app.add_exception_handler(UseCaseError, cast(Any, use_case_error_handler))
+    app.add_exception_handler(KorfError, cast(Any, korf_error_handler))
     app.add_exception_handler(Exception, generic_error_handler)
 
     # --- Shutdown endpoint ---
-    @app.post("/api/session/shutdown", include_in_schema=False)
-    async def shutdown_server(request: Request) -> JSONResponse:
+    @app.post(
+        "/api/session/shutdown",
+        response_model=ShutdownResponse,
+        include_in_schema=False,
+    )
+    async def shutdown_server(request: Request, _: EmptyRequest) -> ShutdownResponse:
         """Stop the uvicorn server (localhost only)."""
         if request.client and request.client.host not in ("127.0.0.1", "::1"):
-            return JSONResponse({"error": "Forbidden"}, status_code=403)
+            raise HTTPException(status_code=403, detail="Forbidden")
 
         import os
         import signal
@@ -82,7 +104,7 @@ def create_app() -> FastAPI:
         get_logger(__name__).info("shutdown_requested")
         # Graceful shutdown: signal uvicorn to stop
         os.kill(os.getpid(), signal.SIGINT)
-        return JSONResponse({"status": "shutting_down"})
+        return ShutdownResponse(status="shutting_down")
 
     # --- Prefetch update check ---
     _prefetch()

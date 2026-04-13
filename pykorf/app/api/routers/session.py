@@ -10,6 +10,7 @@ from fastapi import APIRouter, HTTPException
 
 from pykorf.app.api import session_state as _sess
 from pykorf.app.api.schemas import (
+    EmptyRequest,
     SessionCloseResponse,
     SessionOpenRequest,
     SessionReloadResponse,
@@ -42,7 +43,7 @@ def _check_setup() -> tuple[bool, bool, bool]:
 
 
 @router.get("/status", response_model=SessionStatusResponse)
-async def session_status():
+async def session_status() -> SessionStatusResponse:
     """Return current session status, recent files, and setup check."""
     from pykorf.app.operation.config.config import get_recent_files, get_skip_sp_override
     from pykorf.app.update_check import is_update_available
@@ -76,7 +77,7 @@ async def session_status():
 
 
 @router.post("/open", response_model=SessionStatusResponse)
-async def open_file(req: SessionOpenRequest):
+async def open_file(req: SessionOpenRequest) -> SessionStatusResponse:
     """Load a KDF file into the global model state."""
     from pykorf.app.operation.config.config import record_opened_file
 
@@ -104,7 +105,7 @@ async def open_file(req: SessionOpenRequest):
 
 
 @router.post("/reload", response_model=SessionReloadResponse)
-async def reload_model():
+async def reload_model(_: EmptyRequest) -> SessionReloadResponse:
     """Re-parse the KDF from disk."""
     await _sess.reload()
     logger.info("model_reloaded")
@@ -112,7 +113,7 @@ async def reload_model():
 
 
 @router.post("/close", response_model=SessionCloseResponse)
-async def close_model():
+async def close_model(_: EmptyRequest) -> SessionCloseResponse:
     """Unload the current model."""
     await _sess.clear()
     return SessionCloseResponse(message="Model unloaded")

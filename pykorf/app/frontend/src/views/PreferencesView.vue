@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { usePreferencesStore } from '../stores/preferences'
 import { useToastStore } from '../composables/useToast'
 import { useLoading } from '../composables/useLoading'
+import { getErrorMessage } from '../api/client'
 import { Plus, Trash2, Loader, FolderOpen, Database, Key, CloudCheck, CloudOff, PenSquare, Info, Lock, Save, RotateCw, Clock, ExternalLink, AlertTriangle, FileSpreadsheet } from 'lucide-vue-next'
 import PathBrowser from '../components/PathBrowser.vue'
 import type { DocRegisterRebuildResponse } from '../types/api'
@@ -47,7 +48,7 @@ async function addOverride() {
     toast.error('Both local path and SharePoint URL are required.')
     return
   }
-  const result = await prefs.addOverride(newLocalPath.value, newSpUrl.value) as any
+  const result = await prefs.addOverride(newLocalPath.value, newSpUrl.value)
   if (result.success) {
     newLocalPath.value = ''
     newSpUrl.value = ''
@@ -78,7 +79,7 @@ async function saveOverride() {
 }
 
 async function deleteOverride(localPath: string) {
-  const result = await prefs.deleteOverride(localPath) as any
+  const result = await prefs.deleteOverride(localPath)
   if (result.success) toast.info('Override removed.')
   else toast.error(result.error || 'Failed to remove.')
 }
@@ -119,8 +120,8 @@ onMounted(() => {
       docExcelPath.value = prefs.docRegisterExcelPath || ''
       docSpSiteUrl.value = prefs.docRegisterSpSiteUrl || ''
     })
-    .catch((err: any) => {
-      toast.error(err.response?.data?.detail || err.message || 'Failed to load preferences.')
+    .catch((err: unknown) => {
+      toast.error(getErrorMessage(err, 'Failed to load preferences.'))
     })
 })
 </script>
@@ -293,7 +294,7 @@ onMounted(() => {
       <div class="pk-card-body">
         <div v-if="!prefs.spOverridesConfigured && !prefs.skipSpOverride"
           class="pk-alert-warn p-2 mb-3 flex items-center gap-2">
-          <AlertTriangle class="w-4 h-4 flex-shrink-0" />
+          <AlertTriangle class="w-4 h-4 shrink-0" />
           <strong>SharePoint Path Overrides Required:</strong>
           You must configure at least one SharePoint path override above before saving Document Register config.
           This enables automatic conversion of SharePoint URLs to local paths.

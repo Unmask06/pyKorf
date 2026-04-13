@@ -8,9 +8,9 @@ import { useLoading } from '../composables/useLoading'
 import {
   Sliders, ClipboardCopy, FileSpreadsheet, Ruler, BookMarked,
   CheckCircle, XCircle, AlertCircle, FolderOpen, Lightbulb,
-  BarChart3, Grid3X3, PenSquare, X, Upload,
+  BarChart3, Grid3X3, PenSquare, X,
 } from 'lucide-vue-next'
-import type { ProjectInfo } from '../types/api'
+import type { ModelSummary, ProjectInfo } from '../types/api'
 
 const router = useRouter()
 const session = useSessionStore()
@@ -40,7 +40,7 @@ const saveProjectLoading = useLoading(async () => {
 })
 
 // Summary items with icons and labels
-const summaryItems = [
+const summaryItems: Array<{ key: keyof ModelSummary; label: string; icon: string }> = [
   { key: 'num_pipes', label: 'Pipes', icon: 'pipe' },
   { key: 'num_junctions', label: 'Junctions', icon: 'node' },
   { key: 'num_pumps', label: 'Pumps', icon: 'gear' },
@@ -49,8 +49,8 @@ const summaryItems = [
   { key: 'num_products', label: 'Products', icon: 'up' },
 ]
 
-function getSummaryValue(key: string): number {
-  return (model.summary as any)?.[key] ?? 0
+function getSummaryValue(key: keyof ModelSummary): number {
+  return model.summary?.[key] ?? 0
 }
 
 // Category badge helper for validation issues
@@ -265,18 +265,12 @@ onMounted(async () => {
 
       <!-- Operations grid -->
       <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-        <router-link to="/model/settings" class="no-underline">
+        <router-link to="/model/bulk-modification" class="no-underline">
           <div class="pk-card border-2 border-gray-200 hover:border-blue-400 p-3 h-full setting-card">
             <div class="card-body">
-              <h5 class="font-semibold flex items-center gap-2"><Sliders class="w-4 h-4 text-yellow-500" /> Global Parameters</h5>
-              <p class="text-xs text-gray-500 mt-1">Apply bulk modifications to KORF model based Project Criteria.</p>
+              <h5 class="font-semibold flex items-center gap-2"><Sliders class="w-4 h-4 text-yellow-500" /> Bulk Modification</h5>
+              <p class="text-xs text-gray-500 mt-1">Apply bulk modifications based Project Criteria, apply PMS / HMB data and other layout operations.</p>
             </div>
-          </div>
-        </router-link>
-        <router-link to="/model/data" class="no-underline">
-          <div class="pk-card border-2 border-gray-200 hover:border-blue-400 p-3 h-full setting-card">
-            <h5 class="font-semibold flex items-center gap-2"><Upload class="w-4 h-4 text-cyan-500" /> Apply Data</h5>
-            <p class="text-xs text-gray-500 mt-1">Apply PMS (pipe specs) and HMB (stream data) from Excel files.</p>
           </div>
         </router-link>
         <router-link to="/model/bulk-copy" class="no-underline">
@@ -315,30 +309,30 @@ onMounted(async () => {
           </div>
           <ul class="divide-y">
             <li class="flex items-start gap-3 py-3 px-3">
-              <CheckCircle v-if="model.prereqs.notes_ok" class="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-              <XCircle v-else class="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+              <CheckCircle v-if="model.prereqs.notes_ok" class="w-5 h-5 text-green-500 mt-0.5 shrink-0" />
+              <XCircle v-else class="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
               <div class="min-w-0">
                 <div class="font-semibold text-sm">Line number in Notes</div>
                 <div class="text-xs text-gray-500">Every pipe must have a valid line number in its <strong>NOTES</strong> field in KORF.</div>
               </div>
             </li>
             <li class="flex items-start gap-3 py-3 px-3">
-              <CheckCircle v-if="model.prereqs.pms_ok" class="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-              <XCircle v-else class="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+              <CheckCircle v-if="model.prereqs.pms_ok" class="w-5 h-5 text-green-500 mt-0.5 shrink-0" />
+              <XCircle v-else class="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
               <div class="min-w-0">
                 <div class="font-semibold text-sm">
                   PMS Excel file configured
-                  <router-link to="/model/data" class="text-blue-600 text-xs ml-1">(Data tab)</router-link>
+                  <router-link to="/model/bulk-modification" class="text-blue-600 text-xs ml-1">(Bulk Modification)</router-link>
                 </div>
                 <div v-if="model.prereqs.pms_path" class="font-mono text-xs text-gray-400 truncate" :title="model.prereqs.pms_path">
                   {{ model.prereqs.pms_path.split(/[\/\\]/).pop() }}
                 </div>
-                <div v-else class="text-xs text-gray-500">No PMS file set — go to <router-link to="/model/data" class="text-blue-600">Data</router-link> tab.</div>
+                <div v-else class="text-xs text-gray-500">No PMS file set — go to <router-link to="/model/bulk-modification" class="text-blue-600">Bulk Modification</router-link> tab.</div>
               </div>
             </li>
             <li class="flex items-start gap-3 py-3 px-3">
-              <CheckCircle v-if="model.prereqs.validation_ok" class="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-              <XCircle v-else class="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+              <CheckCircle v-if="model.prereqs.validation_ok" class="w-5 h-5 text-green-500 mt-0.5 shrink-0" />
+              <XCircle v-else class="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
               <div>
                 <div class="font-semibold text-sm">No validation errors</div>
                 <div class="text-xs text-gray-500">
@@ -347,8 +341,8 @@ onMounted(async () => {
               </div>
             </li>
             <li class="flex items-start gap-3 py-3 px-3">
-              <CheckCircle v-if="model.prereqs.sharepoint_ok" class="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-              <AlertCircle v-else class="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" />
+              <CheckCircle v-if="model.prereqs.sharepoint_ok" class="w-5 h-5 text-green-500 mt-0.5 shrink-0" />
+              <AlertCircle v-else class="w-5 h-5 text-yellow-500 mt-0.5 shrink-0" />
               <div>
                 <div class="font-semibold text-sm">
                   Local &amp; SharePoint path configured

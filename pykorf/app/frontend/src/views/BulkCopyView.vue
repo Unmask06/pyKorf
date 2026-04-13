@@ -6,8 +6,8 @@ import { useModelStore } from '../stores/model'
 import { useToastStore } from '../composables/useToast'
 import { useLoading } from '../composables/useLoading'
 import { Copy, FileText, Files, Lightbulb, ListChecks } from 'lucide-vue-next'
-import { api } from '../api/client'
-import type { BulkCopyResponse } from '../types/api'
+import { api, getErrorMessage } from '../api/client'
+import type { BulkCopyRequest, BulkCopyResponse } from '../types/api'
 
 const router = useRouter()
 const session = useSessionStore()
@@ -20,11 +20,12 @@ const excludeMode = ref(false)
 const pipeFilter = ref('')
 
 const copyLoading = useLoading(async () => {
-  const { data } = await api.post<BulkCopyResponse>('/api/model/bulk-copy', {
+  const req: BulkCopyRequest = {
     ref_pipe: refPipe.value,
     target_pipes: targetPipes.value,
     exclude: excludeMode.value,
-  })
+  }
+  const { data } = await api.post<BulkCopyResponse>('/api/model/bulk-copy', req)
   await session.fetchStatus()
   await model.fetchSummary()
   return data
@@ -42,8 +43,8 @@ async function doCopy() {
     } else {
       toast.error(res?.error || 'Bulk copy failed.')
     }
-  } catch (err: any) {
-    toast.error(err.response?.data?.detail || err.message || 'An unexpected error occurred.')
+  } catch (err: unknown) {
+    toast.error(getErrorMessage(err, 'An unexpected error occurred.'))
   }
 }
 
@@ -144,7 +145,7 @@ onMounted(() => {
               <button v-for="p in filteredPipes" :key="p" type="button"
                 @click="refPipe = p"
                 class="w-full text-left px-3 py-1.5 flex items-center gap-2 hover:bg-gray-50 text-sm border-b last:border-b-0">
-                <FileText class="w-3 h-3 text-gray-400 flex-shrink-0" /> {{ p }}
+                <FileText class="w-3 h-3 text-gray-400 shrink-0" /> {{ p }}
               </button>
             </div>
           </div>

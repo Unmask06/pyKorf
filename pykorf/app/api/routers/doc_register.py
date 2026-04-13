@@ -4,14 +4,24 @@ from __future__ import annotations
 
 import asyncio
 from pathlib import Path
+from typing import Annotated
 
 from fastapi import APIRouter, Query
 
 from pykorf.app.api.schemas import (
+    DocRegisterConfigResponse,
     DocRegisterRebuildResponse,
+    DocRegisterSearchEddrRequest,
+    DocRegisterSearchEddrResponse,
+    DocRegisterSearchFilesRequest,
+    DocRegisterSearchFilesResponse,
+    DocRegisterSearchQueryRequest,
+    DocRegisterSearchQueryResponse,
     DocRegisterStatusResponse,
     EddrResult,
+    EmptyRequest,
     QueryEntryResult,
+    SetDocRegisterConfigRequest,
 )
 from pykorf.app.operation.config.config import (
     get_doc_register_excel_path,
@@ -37,7 +47,7 @@ router = APIRouter()
 
 
 @router.get("/status", response_model=DocRegisterStatusResponse)
-async def api_status():
+async def api_status() -> DocRegisterStatusResponse:
     """Return Document Register configuration and DB status."""
     excel_path = get_doc_register_excel_path()
     sp_site_url = get_doc_register_sp_site_url()
@@ -55,35 +65,41 @@ async def api_status():
     )
 
 
-@router.get("/search-eddr", response_model=list[EddrResult])
-async def api_search_eddr(q: str = Query("")):
+@router.get("/search-eddr", response_model=DocRegisterSearchEddrResponse)
+async def api_search_eddr(
+    req: Annotated[DocRegisterSearchEddrRequest, Query()]
+) -> DocRegisterSearchEddrResponse:
     """Search EDDR entries by title."""
-    if not q.strip():
-        return []
-    results = search_eddr_by_title(q)
-    return [EddrResult(**r) for r in results]
+    if not req.q.strip():
+        return DocRegisterSearchEddrResponse()
+    results = search_eddr_by_title(req.q)
+    return DocRegisterSearchEddrResponse(results=[EddrResult(**r) for r in results])
 
 
-@router.get("/search-query", response_model=list[QueryEntryResult])
-async def api_search_query(doc_no: str = Query("")):
+@router.get("/search-query", response_model=DocRegisterSearchQueryResponse)
+async def api_search_query(
+    req: Annotated[DocRegisterSearchQueryRequest, Query()]
+) -> DocRegisterSearchQueryResponse:
     """Search query entries by document number."""
-    if not doc_no.strip():
-        return []
-    results = search_query_by_name(doc_no)
-    return [QueryEntryResult(**r) for r in results]
+    if not req.doc_no.strip():
+        return DocRegisterSearchQueryResponse()
+    results = search_query_by_name(req.doc_no)
+    return DocRegisterSearchQueryResponse(results=[QueryEntryResult(**r) for r in results])
 
 
-@router.get("/search-files", response_model=list[QueryEntryResult])
-async def api_search_files(q: str = Query("")):
+@router.get("/search-files", response_model=DocRegisterSearchFilesResponse)
+async def api_search_files(
+    req: Annotated[DocRegisterSearchFilesRequest, Query()]
+) -> DocRegisterSearchFilesResponse:
     """Search query entries by name or path."""
-    if len(q.strip()) < 2:
-        return []
-    results = search_query_entries(q)
-    return [QueryEntryResult(**r) for r in results]
+    if len(req.q.strip()) < 2:
+        return DocRegisterSearchFilesResponse()
+    results = search_query_entries(req.q)
+    return DocRegisterSearchFilesResponse(results=[QueryEntryResult(**r) for r in results])
 
 
 @router.post("/rebuild-db", response_model=DocRegisterRebuildResponse)
-async def api_rebuild_db():
+async def api_rebuild_db(_: EmptyRequest) -> DocRegisterRebuildResponse:
     """Force rebuild the Document Register database from Excel."""
     excel_path_str = get_doc_register_excel_path()
     if not excel_path_str:
@@ -113,15 +129,15 @@ async def api_rebuild_db():
         return DocRegisterRebuildResponse(error=str(exc))
 
 
-@router.post("/config")
-async def api_config(excel_path: str | None = None, sp_site_url: str | None = None):
+@router.post("/config", response_model=DocRegisterConfigResponse)
+async def api_config(req: SetDocRegisterConfigRequest) -> DocRegisterConfigResponse:
     """Save Document Register configuration."""
-    if excel_path:
-        set_doc_register_excel_path(excel_path.strip())
-    if sp_site_url:
-        set_doc_register_sp_site_url(sp_site_url.strip())
+    if req.excel_path:
+        set_doc_register_excel_path(req.excel_path.strip())
+    if req.sp_site_url:
+        set_doc_register_sp_site_url(req.sp_site_url.strip())
 
-    return {
-        "excel_path": get_doc_register_excel_path(),
-        "sp_site_url": get_doc_register_sp_site_url(),
-    }
+    return DocRegisterConfigResponse(
+        excel_path=get_doc_register_excel_path(),
+        sp_site_url=get_doc_register_sp_site_url(),
+    )

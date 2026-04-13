@@ -7,6 +7,15 @@ from typing import Any
 from pydantic import BaseModel
 
 
+class EmptyRequest(BaseModel):
+    """Explicit empty request payload for body-less POST endpoints."""
+
+
+class StatusMessage(BaseModel):
+    type: str
+    message: str
+
+
 # --- Session ---
 
 
@@ -111,7 +120,7 @@ class SaveProjectInfoRequest(BaseModel):
 
 class SaveResponse(BaseModel):
     message: str
-    logs: list[dict[str, str]] = []
+    logs: list[StatusMessage] = []
 
 
 # --- Data ---
@@ -127,7 +136,7 @@ class ApplyHmbRequest(BaseModel):
 
 class ApplyDataResponse(BaseModel):
     success: bool
-    messages: list[dict[str, str]] = []
+    messages: list[StatusMessage] = []
     errors: list[str] = []
 
 
@@ -216,7 +225,7 @@ class BatchReportRequest(BaseModel):
 
 class ReportResponse(BaseModel):
     success: bool
-    messages: list[dict[str, str]] = []
+    messages: list[StatusMessage] = []
     errors: list[str] = []
 
 
@@ -262,17 +271,28 @@ class PipeCalcInfo(BaseModel):
     rho_v2_calc: float | None = None
 
 
+class UnitConversionInfo(BaseModel):
+    target_unit: str
+    multiplier: float = 1.0
+    offset: float = 0.0
+    factor: float | None = None
+
+
+class ModelPipesResponse(BaseModel):
+    pipes: list[str] = []
+
+
 class PipeCriteriaResponse(BaseModel):
     kdf_path: str = ""
     pipes: list[tuple[int, str]] = []
-    existing: dict[str, dict[str, str]] = {}
-    codes: dict[str, list[list[str]]] = {}
+    existing: dict[str, PipeCriteriaEntry] = {}
+    codes: dict[str, list[tuple[str, str]]] = {}
     fluid_labels: dict[str, str] = {}
-    pipe_criteria_values: dict[str, dict[str, dict]] = {}
-    pipe_calcs: dict[str, dict] = {}
-    units_data: dict[str, Any] = {}
-    set_result: dict | None = None
-    predict_result: dict | None = None
+    pipe_criteria_values: dict[str, dict[str, CriteriaValuesInfo]] = {}
+    pipe_calcs: dict[str, PipeCalcInfo] = {}
+    units_data: dict[str, dict[str, UnitConversionInfo]] = {}
+    set_result: SetCriteriaResponse | None = None
+    predict_result: PredictCriteriaResponse | None = None
 
 
 class SetCriteriaResponse(BaseModel):
@@ -399,6 +419,15 @@ class PinnedFoldersResponse(BaseModel):
     error: str | None = None
 
 
+class BrowseRequest(BaseModel):
+    path: str = ""
+    filter: str = "any"
+
+
+class PinnedFolderRequest(BaseModel):
+    folder: str
+
+
 class BrowseEntryDir(BaseModel):
     name: str
     path: str
@@ -424,6 +453,18 @@ class BrowseResponse(BaseModel):
 # --- Doc Register ---
 
 
+class DocRegisterSearchEddrRequest(BaseModel):
+    q: str = ""
+
+
+class DocRegisterSearchQueryRequest(BaseModel):
+    doc_no: str = ""
+
+
+class DocRegisterSearchFilesRequest(BaseModel):
+    q: str = ""
+
+
 class DocRegisterStatusResponse(BaseModel):
     excel_path: str | None = None
     sp_site_url: str | None = None
@@ -445,9 +486,30 @@ class QueryEntryResult(BaseModel):
     item_type: str | None = None
 
 
+class DocRegisterSearchEddrResponse(BaseModel):
+    results: list[EddrResult] = []
+
+
+class DocRegisterSearchQueryResponse(BaseModel):
+    results: list[QueryEntryResult] = []
+
+
+class DocRegisterSearchFilesResponse(BaseModel):
+    results: list[QueryEntryResult] = []
+
+
+class DocRegisterConfigResponse(BaseModel):
+    excel_path: str | None = None
+    sp_site_url: str | None = None
+
+
 # --- About ---
 
 
 class AboutResponse(BaseModel):
     version: str
     release_date: str
+
+
+class ShutdownResponse(BaseModel):
+    status: str

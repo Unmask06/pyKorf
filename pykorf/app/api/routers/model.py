@@ -11,14 +11,25 @@ from pykorf.app.api.deps import pipe_names, require_model
 from pykorf.app.api.schemas import (
     BulkCopyRequest,
     BulkCopyResponse,
+    CriteriaValuesInfo,
+    EmptyRequest,
     ModelFullResponse,
+    ModelPipesResponse,
+    ModelSummaryResponse,
+    PipeCalcInfo,
     PipeCriteriaEntry,
     PipeCriteriaResponse,
+    PredictCriteriaRequest,
     PredictCriteriaResponse,
+    PrereqsResponse,
+    ProjectInfoResponse,
     SaveProjectInfoRequest,
     SaveResponse,
+    SmartDefaultsResponse,
+    StatusMessage,
     SetCriteriaResponse,
     SetPipeCriteriaRequest,
+    UnitConversionInfo,
 )
 from pykorf.core.log import get_logger
 
@@ -48,7 +59,7 @@ def _is_korf_default(field: str, value: str) -> bool:
 
 
 @router.get("/summary", response_model=ModelFullResponse)
-async def get_summary():
+async def get_summary() -> ModelFullResponse:
     """Return model summary, prerequisites, and project info."""
     model = await require_model()
     from pykorf.app.api.routers.data import apply_pms_if_stale
@@ -60,14 +71,14 @@ async def get_summary():
 
     # Build summary
     summary = model.get_summary()
-    summary_resp = {
-        "num_pipes": summary.get("num_pipes", 0),
-        "num_junctions": summary.get("num_junctions", 0),
-        "num_pumps": summary.get("num_pumps", 0),
-        "num_valves": summary.get("num_valves", 0),
-        "num_feeds": summary.get("num_feeds", 0),
-        "num_products": summary.get("num_products", 0),
-    }
+    summary_resp = ModelSummaryResponse(
+        num_pipes=summary.get("num_pipes", 0),
+        num_junctions=summary.get("num_junctions", 0),
+        num_pumps=summary.get("num_pumps", 0),
+        num_valves=summary.get("num_valves", 0),
+        num_feeds=summary.get("num_feeds", 0),
+        num_products=summary.get("num_products", 0),
+    )
 
     # Build prereqs
     from pykorf.app.api.routers.model import _build_prereqs
@@ -77,7 +88,7 @@ async def get_summary():
     # Build project info
     from pykorf.app.operation.project.project_info import build_smart_defaults
 
-    smart_defaults = build_smart_defaults(kdf_path)
+    smart_defaults = SmartDefaultsResponse(**build_smart_defaults(kdf_path))
     project_info = _build_project_info(model, kdf_path, smart_defaults)
 
     return ModelFullResponse(
@@ -90,22 +101,22 @@ async def get_summary():
 
 
 @router.post("/save", response_model=SaveResponse)
-async def save_model():
+async def save_model(_: EmptyRequest) -> SaveResponse:
     """Save the in-memory model back to its source .kdf file."""
     model = await require_model()
     from pykorf.core.log import flash_logs
 
-    logs: list[dict[str, str]] = []
+    logs: list[StatusMessage] = []
     with flash_logs() as flash_list:
         model.save()
         await _sess.reload()
     for alert_type, message in flash_list:
-        logs.append({"type": alert_type, "message": message})
+        logs.append(StatusMessage(type=alert_type, message=message))
     return SaveResponse(message="Model saved to disk.", logs=logs)
 
 
 @router.post("/project-info", response_model=SaveResponse)
-async def save_project_info(req: SaveProjectInfoRequest):
+async def save_project_info(req: SaveProjectInfoRequest) -> SaveResponse:
     """Save project metadata (COM, PRJ, ENG) to the active KDF file."""
     model = await require_model()
     from pykorf.core.log import flash_logs, get_logger
@@ -115,7 +126,7 @@ async def save_project_info(req: SaveProjectInfoRequest):
     if not kdf_path:
         return SaveResponse(message="No model loaded.", logs=[])
 
-    logs: list[dict[str, str]] = []
+    logs: list[StatusMessage] = []
     with flash_logs() as flash_list:
         logger.info("save_project_info", kdf_path=str(kdf_path))
         model.general.set_company(req.company1, req.company2)
@@ -133,19 +144,19 @@ async def save_project_info(req: SaveProjectInfoRequest):
         model.save()
         await _sess.reload()
     for alert_type, message in flash_list:
-        logs.append({"type": alert_type, "message": message})
+        logs.append(StatusMessage(type=alert_type, message=message))
     return SaveResponse(message="Project info saved.", logs=logs)
 
 
-@router.get("/pipes")
-async def get_pipes():
+@router.get("/pipes", response_model=ModelPipesResponse)
+async def get_pipes() -> ModelPipesResponse:
     """Return list of pipe names for dropdowns."""
     model = await require_model()
-    return {"pipes": await pipe_names(model)}
+    return ModelPipesResponse(pipes=pipe_names(model))
 
 
 @router.post("/bulk-copy", response_model=BulkCopyResponse)
-async def bulk_copy(req: BulkCopyRequest):
+async def bulk_copy(req: BulkCopyRequest) -> BulkCopyResponse:
     """Copy fluid properties from one pipe to multiple others."""
     model = await require_model()
 
@@ -177,7 +188,7 @@ async def bulk_copy(req: BulkCopyRequest):
 
 
 @router.get("/pipe-criteria", response_model=PipeCriteriaResponse)
-async def get_pipe_criteria():
+async def get_pipe_criteria() -> PipeCriteriaResponse:
     """Get pipe criteria data for the criteria table."""
     model = await require_model()
     from pykorf.app.operation.project.pykorf_file import get_pipe_criteria
@@ -204,7 +215,7 @@ async def get_pipe_criteria():
 
 
 @router.post("/pipe-criteria", response_model=SetCriteriaResponse)
-async def set_pipe_criteria(req: SetPipeCriteriaRequest):
+async def set_pipe_criteria(req: SetPipeCriteriaRequest) -> SetCriteriaResponse:
     """Apply criteria to pipe SIZ parameters."""
     model = await require_model()
     from pykorf.app.operation.project.pykorf_file import set_pipe_criteria as save_criteria
@@ -223,11 +234,11 @@ async def set_pipe_criteria(req: SetPipeCriteriaRequest):
         model.save()
         await _sess.reload()
 
-    return SetCriteriaResponse(applied=result["applied"], skipped=result["skipped"])
+    return result
 
 
 @router.post("/pipe-criteria/predict", response_model=PredictCriteriaResponse)
-async def predict_criteria():
+async def predict_criteria(_req: PredictCriteriaRequest) -> PredictCriteriaResponse:
     """Auto-predict state and criteria for all pipes."""
     model = await require_model()
     from pykorf.app.operation.project.pykorf_file import get_pipe_criteria
@@ -238,16 +249,8 @@ async def predict_criteria():
     existing = _seed_from_kdf(model, pipes, existing)
 
     predicted, predict_result = _handle_predict_action(model, pipes, existing)
-
-    return PredictCriteriaResponse(
-        predicted={
-            k: PipeCriteriaEntry(state=v["state"], criteria=v["criteria"])
-            for k, v in predicted.items()
-        },
-        filled_state=predict_result["filled_state"],
-        filled_criteria=predict_result["filled_criteria"],
-        errors=predict_result["errors"],
-    )
+    _ = predicted
+    return predict_result
 
 
 # --- Helper functions (ported from routes/pipe_criteria.py) ---
@@ -261,7 +264,7 @@ def _get_pipes_list(model) -> list[tuple[int, str]]:
     ]
 
 
-def _build_prereqs(model, kdf_path) -> dict:
+def _build_prereqs(model, kdf_path) -> PrereqsResponse:
     from pykorf.app.operation.config.config import (
         get_pms_excel_path,
         get_sp_overrides,
@@ -270,8 +273,7 @@ def _build_prereqs(model, kdf_path) -> dict:
 
     issues = model.validate()
     notes_ok = not any(
-        "NOTES" in i or "missing line number" in i or "line number" in i.lower()
-        for i in issues
+        "NOTES" in i or "missing line number" in i or "line number" in i.lower() for i in issues
     )
     validation_ok = len(issues) == 0
     pms_raw = get_pms_excel_path()
@@ -280,17 +282,19 @@ def _build_prereqs(model, kdf_path) -> dict:
     skip_sp = get_skip_sp_override()
     sharepoint_ok = bool(get_sp_overrides()) if not skip_sp else True
 
-    return {
-        "notes_ok": notes_ok,
-        "pms_ok": pms_ok,
-        "validation_ok": validation_ok,
-        "sharepoint_ok": sharepoint_ok,
-        "issues": issues,
-        "pms_path": pms_path,
-    }
+    return PrereqsResponse(
+        notes_ok=notes_ok,
+        pms_ok=pms_ok,
+        validation_ok=validation_ok,
+        sharepoint_ok=sharepoint_ok,
+        issues=issues,
+        pms_path=pms_path,
+    )
 
 
-def _build_project_info(model, kdf_path, smart_defaults: dict) -> dict:
+def _build_project_info(
+    model, kdf_path, smart_defaults: SmartDefaultsResponse
+) -> ProjectInfoResponse:
     gen = model.general
     raw_values = {
         "company1": gen.company or "",
@@ -306,23 +310,25 @@ def _build_project_info(model, kdf_path, smart_defaults: dict) -> dict:
         "project_no": gen.project_no or "",
         "revision": gen.revision or "",
     }
-    project_info = {}
+    project_info: dict[str, str] = {}
     for field, value in raw_values.items():
         if _is_korf_default(field, value):
-            project_info[field] = smart_defaults.get(field, "")
+            project_info[field] = getattr(smart_defaults, field, "")
         else:
             project_info[field] = value
-    return project_info
+    return ProjectInfoResponse(**project_info)
 
 
-def _seed_from_kdf(model, pipes, existing):
+def _seed_from_kdf(
+    model, pipes, existing: dict[str, dict[str, str]]
+) -> dict[str, PipeCriteriaEntry]:
     from pykorf.app.operation.integration.sizing_criteria import code_to_state
 
     pipe_by_name = _build_pipe_lookup(model)
-    merged = {k: dict(v) for k, v in existing.items()}
+    merged = {k: PipeCriteriaEntry(**v) for k, v in existing.items()}
     for _, pipe_name in pipes:
-        saved = merged.get(pipe_name, {})
-        if saved.get("state") or saved.get("criteria"):
+        saved = merged.get(pipe_name, PipeCriteriaEntry())
+        if saved.state or saved.criteria:
             continue
         pipe = pipe_by_name.get(pipe_name)
         if pipe is None:
@@ -332,7 +338,7 @@ def _seed_from_kdf(model, pipes, existing):
             continue
         state = code_to_state(code)
         if state:
-            merged[pipe_name] = {"state": state, "criteria": code}
+            merged[pipe_name] = PipeCriteriaEntry(state=state, criteria=code)
     return merged
 
 
@@ -344,51 +350,53 @@ def _build_pipe_lookup(model):
     }
 
 
-def _precompute_criteria_values(model, pipes, codes):
+def _precompute_criteria_values(
+    model, pipes, codes
+) -> dict[str, dict[str, CriteriaValuesInfo]]:
     from pykorf.app.operation.integration.sizing_criteria import lookup_criteria
 
-    result: dict[str, dict[str, dict]] = {}
+    result: dict[str, dict[str, CriteriaValuesInfo]] = {}
     for _, pipe_name in pipes:
         pipe = _get_pipe_by_name(model, pipe_name)
         if pipe is None:
             result[pipe_name] = {}
             continue
         size_inch, pressure_barg = _get_pipe_size_and_pressure(pipe)
-        pipe_vals = {}
+        pipe_vals: dict[str, CriteriaValuesInfo] = {}
         for state, code_list in codes.items():
             for code, _ in code_list:
                 vals = lookup_criteria(state, code, size_inch, pressure_barg)
                 if vals is not None:
-                    pipe_vals[f"{state}:{code}"] = {
-                        "max_dp": vals.max_dp,
-                        "max_vel": vals.max_vel,
-                        "min_vel": vals.min_vel,
-                        "rho_v2_min": vals.rho_v2_min,
-                        "rho_v2_max": vals.rho_v2_max,
-                    }
+                    pipe_vals[f"{state}:{code}"] = CriteriaValuesInfo(
+                        max_dp=vals.max_dp,
+                        max_vel=vals.max_vel,
+                        min_vel=vals.min_vel,
+                        rho_v2_min=vals.rho_v2_min,
+                        rho_v2_max=vals.rho_v2_max,
+                    )
         result[pipe_name] = pipe_vals
     return result
 
 
-def _compute_pipe_calcs(model, pipes) -> dict[str, dict[str, float | None]]:
+def _compute_pipe_calcs(model, pipes) -> dict[str, PipeCalcInfo]:
     lookup = _build_pipe_lookup(model)
-    result: dict[str, dict[str, float | None]] = {}
+    result: dict[str, PipeCalcInfo] = {}
     for _, name in pipes:
         pipe = lookup.get(name)
         if pipe is None:
-            result[name] = {"dp_calc": None, "vel_calc": None, "rho_v2_calc": None}
+            result[name] = PipeCalcInfo()
             continue
         vel_list = pipe.velocity
         dp = pipe.pressure_drop_per_100m
-        result[name] = {
-            "dp_calc": dp if dp else None,
-            "vel_calc": vel_list[0] if vel_list else None,
-            "rho_v2_calc": pipe.rho_v2,
-        }
+        result[name] = PipeCalcInfo(
+            dp_calc=dp if dp else None,
+            vel_calc=vel_list[0] if vel_list else None,
+            rho_v2_calc=pipe.rho_v2,
+        )
     return result
 
 
-def _load_units_data():
+def _load_units_data() -> dict[str, dict[str, UnitConversionInfo]]:
     import json
 
     from pykorf.core.reports.unit_converter import UNITS_JSON_PATH
@@ -419,7 +427,9 @@ def _get_pipe_size_and_pressure(pipe):
     return size_inch, pressure_barg
 
 
-def _handle_set_criteria(model, pipes, existing):
+def _handle_set_criteria(
+    model, pipes, existing: dict[str, dict[str, str]]
+) -> SetCriteriaResponse:
     from pykorf.app.operation.integration.sizing_criteria import lookup_criteria
 
     applied = 0
@@ -444,26 +454,31 @@ def _handle_set_criteria(model, pipes, existing):
         pipe.max_velocity_criteria = vals.max_vel
         pipe.min_velocity_criteria = vals.min_vel
         applied += 1
-    return {"applied": applied, "skipped": skipped}
+    return SetCriteriaResponse(applied=applied, skipped=skipped)
 
 
-def _handle_predict_action(model, pipes, existing):
-    from pykorf.app.operation.integration.sizing_criteria import predict_criteria, predict_state
+def _handle_predict_action(
+    model, pipes, existing: dict[str, PipeCriteriaEntry]
+) -> tuple[dict[str, PipeCriteriaEntry], PredictCriteriaResponse]:
+    from pykorf.app.operation.integration.sizing_criteria import (
+        predict_criteria as predict_criteria_code,
+        predict_state,
+    )
 
-    predicted = {k: dict(v) for k, v in existing.items()}
+    predicted = {k: PipeCriteriaEntry(state=v.state, criteria=v.criteria) for k, v in existing.items()}
     filled_state_total = 0
     filled_criteria_total = 0
-    errors = []
+    errors: list[str] = []
     pipe_by_name = _build_pipe_lookup(model)
 
-    for idx, pipe_name in pipes:
+    for _, pipe_name in pipes:
         try:
             pipe = pipe_by_name.get(pipe_name)
             if pipe is None:
                 continue
-            current = predicted.get(pipe_name, {})
-            state = current.get("state", "")
-            criteria = current.get("criteria", "")
+            current = predicted.get(pipe_name, PipeCriteriaEntry())
+            state = current.state
+            criteria = current.criteria
             if not state:
                 try:
                     fluid = pipe.get_fluid()
@@ -477,20 +492,21 @@ def _handle_predict_action(model, pipes, existing):
                     errors.append(f"{pipe_name} state: {exc}")
             if not criteria and state:
                 try:
-                    predicted_crit = predict_criteria(state, pipe_name) or ""
+                    predicted_crit = predict_criteria_code(state, pipe_name) or ""
                     if predicted_crit:
                         criteria = predicted_crit
                         filled_criteria_total += 1
                 except Exception as exc:
                     errors.append(f"{pipe_name} criteria: {exc}")
             if state or criteria:
-                predicted[pipe_name] = {"state": state, "criteria": criteria}
+                predicted[pipe_name] = PipeCriteriaEntry(state=state, criteria=criteria)
         except Exception as exc:
             errors.append(f"{pipe_name}: {exc}")
 
-    predict_result = {
-        "filled_state": filled_state_total,
-        "filled_criteria": filled_criteria_total,
-        "errors": errors,
-    }
+    predict_result = PredictCriteriaResponse(
+        predicted=predicted,
+        filled_state=filled_state_total,
+        filled_criteria=filled_criteria_total,
+        errors=errors,
+    )
     return predicted, predict_result

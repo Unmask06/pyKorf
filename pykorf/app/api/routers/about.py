@@ -12,7 +12,7 @@ _RELEASE_DATE = "2026-03-29"
 
 
 @router.get("/", response_model=AboutResponse)
-async def about():
+async def about() -> AboutResponse:
     """Return version and release info."""
     from pykorf import __version__
 

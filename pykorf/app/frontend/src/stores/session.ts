@@ -1,7 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { api } from '../api/client'
-import type { SessionStatusResponse } from '../types/api'
+import type {
+  EmptyRequest,
+  SessionCloseResponse,
+  SessionOpenRequest,
+  SessionReloadResponse,
+  SessionStatusResponse,
+} from '../types/api'
 
 /**
  * Session store — mirrors the in-process model state held by FastAPI.
@@ -61,17 +67,20 @@ export const useSessionStore = defineStore('session', () => {
   }
 
   async function openFile(path: string) {
-    const { data } = await api.post<SessionStatusResponse>('/api/session/open', { kdf_path: path })
+    const req: SessionOpenRequest = { kdf_path: path }
+    const { data } = await api.post<SessionStatusResponse>('/api/session/open', req)
     _applyStatus(data)
   }
 
   async function reloadModel() {
-    await api.post('/api/session/reload')
+    const req: EmptyRequest = {}
+    await api.post<SessionReloadResponse>('/api/session/reload', req)
     await fetchStatus()
   }
 
   async function closeModel() {
-    await api.post('/api/session/close')
+    const req: EmptyRequest = {}
+    await api.post<SessionCloseResponse>('/api/session/close', req)
     modelLoaded.value = false
     kdfPath.value = null
     kdfMtime.value = null

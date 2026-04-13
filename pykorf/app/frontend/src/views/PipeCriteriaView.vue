@@ -6,7 +6,15 @@ import { useModelStore } from '../stores/model'
 import { useToastStore } from '../composables/useToast'
 import { useLoading } from '../composables/useLoading'
 import { Ruler, ArrowLeft, Wand2, XCircle, Zap, CheckCircle, AlertTriangle } from 'lucide-vue-next'
-import type { PipeCriteriaResponse, PipeCriteriaEntry, PredictCriteriaResponse } from '../types/api'
+import type {
+  CriteriaValuesInfo,
+  PipeCalcInfo,
+  PipeCriteriaEntry,
+  PipeCriteriaResponse,
+  PredictCriteriaResponse,
+  SetCriteriaResponse,
+  UnitConversionInfo,
+} from '../types/api'
 
 const router = useRouter()
 const session = useSessionStore()
@@ -15,11 +23,11 @@ const toast = useToastStore()
 
 // Criteria table data
 const pipes = ref<Array<[number, string]>>([])
-const existing = ref<Record<string, Record<string, string>>>({})
+const existing = ref<Record<string, PipeCriteriaEntry>>({})
 const codes = ref<Record<string, string[][]>>({})
-const criteriaValues = ref<Record<string, Record<string, Record<string, unknown>>>>({})
-const pipeCalcs = ref<Record<string, Record<string, unknown>>>({})
-const unitsData = ref<Record<string, unknown>>({})
+const criteriaValues = ref<Record<string, Record<string, CriteriaValuesInfo>>>({})
+const pipeCalcs = ref<Record<string, PipeCalcInfo>>({})
+const unitsData = ref<Record<string, Record<string, UnitConversionInfo>>>({})
 const fluidLabels = ref<Record<string, string>>({})
 
 // Edited criteria entries
@@ -34,13 +42,12 @@ const selectAllChecked = ref(false)
 const selectedRows = ref<Set<string>>(new Set())
 const bulkState = ref('')
 const bulkCriteria = ref('')
-const setResult = ref<Record<string, unknown> | null>(null)
+const setResult = ref<SetCriteriaResponse | null>(null)
 
 // Computed unit labels based on selected unit system
 const dpUnit = computed(() => {
   if (unitSystem.value === 'SI') return 'kPa/100m'
-  const u = unitsData.value as any
-  const conv = u?.['Engg_SI']?.['kPa/100m']
+  const conv = unitsData.value.Engg_SI?.['kPa/100m']
   return conv?.target_unit || 'bar/100m'
 })
 
@@ -118,7 +125,6 @@ function getAvailableCriteriaForState(state: string): Array<[string, string]> {
 
 function convertValue(field: string, siValue: number | null): string {
   if (siValue === null || siValue === undefined) return '—'
-  const u = unitsData.value as any
   // Map field name to the SI unit key used in units_data
   const unitKeyMap: Record<string, string> = {
     dp: 'kPa/100m',
@@ -132,7 +138,7 @@ function convertValue(field: string, siValue: number | null): string {
   if (unitSystem.value === 'SI') return siValue.toFixed(2)
 
   // Engg_SI or other: look up conversion
-  const systemConversions = u?.[unitSystem.value] || u?.['Engg_SI'] || {}
+  const systemConversions = unitsData.value[unitSystem.value] || unitsData.value.Engg_SI || {}
   const conv = systemConversions[unitKey]
   if (!conv) return siValue.toFixed(2)
   const factor = conv.multiplier ?? conv.factor ?? 1
@@ -147,6 +153,18 @@ const filteredPipes = computed(() => {
   return pipes.value.filter(([, name]) => name.toLowerCase().includes(q))
 })
 
+// Clean up selections when filter changes
+watch(filteredPipes, (newFiltered) => {
+  const visibleNames = new Set(newFiltered.map(([, name]) => name))
+  for (const name of selectedRows.value) {
+    if (!visibleNames.has(name)) {
+      selectedRows.value.delete(name)
+    }
+  }
+  // Update select-all checkbox state
+  selectAllChecked.value = newFiltered.length > 0 && newFiltered.every(([, name]) => selectedRows.value.has(name))
+})
+
 function toggleSelectAll() {
   if (selectAllChecked.value) {
     selectedRows.value = new Set(filteredPipes.value.map(([, name]) => name))
@@ -158,6 +176,7 @@ function toggleSelectAll() {
 function toggleRow(name: string) {
   if (selectedRows.value.has(name)) {
     selectedRows.value.delete(name)
+    selectAllChecked.value = false
   } else {
     selectedRows.value.add(name)
   }
@@ -187,12 +206,27 @@ function syncBulkStateFromSelection() {
 watch(selectedRows, () => syncBulkStateFromSelection(), { deep: true })
 watch(editedCriteria, () => syncBulkStateFromSelection(), { deep: true })
 
-function applyBulkToVisible() {
+// Computed: are any rows selected (that are also visible)?
+const hasSelection = computed(() => {
+  const visibleNames = new Set(filteredPipes.value.map(([, name]) => name))
+  return [...selectedRows.value].some((n) => visibleNames.has(n))
+})
+
+function currentCriteriaInfo(name: string): CriteriaValuesInfo | undefined {
+  const entry = editedCriteria.value[name]
+  if (!entry?.state || !entry.criteria) return undefined
+  return criteriaValues.value[name]?.[`${entry.state}:${entry.criteria}`]
+}
+
+function applyBulk() {
   if (!bulkState.value && !bulkCriteria.value) {
     toast.warning('Select a state or criteria to apply.')
     return
   }
-  for (const [, name] of filteredPipes.value) {
+  const targets = hasSelection.value
+    ? filteredPipes.value.filter(([, name]) => selectedRows.value.has(name))
+    : filteredPipes.value
+  for (const [, name] of targets) {
     if (bulkState.value) {
       updateEntry(name, 'state', bulkState.value)
     }
@@ -200,7 +234,8 @@ function applyBulkToVisible() {
       updateEntry(name, 'criteria', bulkCriteria.value)
     }
   }
-  toast.info(`Applied to ${filteredPipes.value.length} visible pipe(s).`)
+  const label = hasSelection.value ? 'selected' : 'visible'
+  toast.info(`Applied to ${targets.length} ${label} pipe(s).`)
 }
 
 function clearAll() {
@@ -222,13 +257,13 @@ onMounted(() => {
 
     <!-- Set result alert -->
     <div v-if="setResult" class="flex items-start gap-2 p-3 rounded"
-      :class="(setResult as any).skipped?.length ? 'bg-yellow-50 border border-yellow-200 text-yellow-700' : 'bg-green-50 border border-green-200 text-green-700'">
-      <CheckCircle v-if="!(setResult as any).skipped?.length" class="w-5 h-5 flex-shrink-0 mt-0.5" />
-      <AlertTriangle v-else class="w-5 h-5 flex-shrink-0 mt-0.5" />
+      :class="setResult.skipped.length ? 'bg-yellow-50 border border-yellow-200 text-yellow-700' : 'bg-green-50 border border-green-200 text-green-700'">
+      <CheckCircle v-if="!setResult.skipped.length" class="w-5 h-5 shrink-0 mt-0.5" />
+      <AlertTriangle v-else class="w-5 h-5 shrink-0 mt-0.5" />
       <div>
-        Applied Pipe Sizing criteria to <strong>{{ (setResult as any).applied }}</strong> pipe(s) in model.
-        <span v-if="(setResult as any).skipped?.length" class="block mt-1 text-xs">
-          Skipped (no criteria assigned): {{ (setResult as any).skipped.join(', ') }}
+        Applied Pipe Sizing criteria to <strong>{{ setResult.applied }}</strong> pipe(s) in model.
+        <span v-if="setResult.skipped.length" class="block mt-1 text-xs">
+          Skipped (no criteria assigned): {{ setResult.skipped.join(', ') }}
         </span>
       </div>
     </div>
@@ -236,7 +271,7 @@ onMounted(() => {
     <!-- Predict result alert -->
     <div v-if="predictResult" class="flex items-start gap-2 p-3 rounded"
       :class="predictResult.errors.length ? 'bg-yellow-50 border border-yellow-200 text-yellow-700' : 'bg-blue-50 border border-blue-200 text-blue-700'">
-      <Wand2 class="w-5 h-5 flex-shrink-0 mt-0.5" />
+      <Wand2 class="w-5 h-5 shrink-0 mt-0.5" />
       <div>
         Predicted <strong>{{ predictResult.filled_state }}</strong> state(s) and
         <strong>{{ predictResult.filled_criteria }}</strong> criteria code(s).
@@ -292,8 +327,9 @@ onMounted(() => {
               <option value="">— Criteria —</option>
               <option v-for="[code, label] in getAvailableCriteriaForState(bulkState)" :key="code" :value="code">{{ label }}</option>
             </select>
-            <button @click="applyBulkToVisible" class="pk-btn-secondary text-xs">
-              Apply to visible
+            <button @click="applyBulk" class="pk-btn-secondary text-xs"
+              :title="hasSelection ? 'Apply to selected rows' : 'Apply to all visible rows'">
+              {{ hasSelection ? `Apply to selected (${selectedRows.size})` : 'Apply to visible' }}
             </button>
           </div>
         </div>
@@ -351,37 +387,37 @@ onMounted(() => {
                 </select>
               </td>
               <td class="pk-text-right-mono">
-                {{ convertValue('dp', (pipeCalcs[name] as any)?.dp_calc as number | null) }}
+                {{ convertValue('dp', pipeCalcs[name]?.dp_calc ?? null) }}
               </td>
               <td class="pk-text-right-mono-muted crit-col">
                 <template v-if="editedCriteria[name]?.state && editedCriteria[name]?.criteria">
-                  {{ convertValue('dp', (criteriaValues[name]?.[`${editedCriteria[name].state}:${editedCriteria[name].criteria}`] as any)?.max_dp as number | null) }}
+                  {{ convertValue('dp', currentCriteriaInfo(name)?.max_dp ?? null) }}
                 </template>
                 <template v-else>—</template>
               </td>
               <td class="pk-text-right-mono">
-                {{ convertValue('velocity', (pipeCalcs[name] as any)?.vel_calc as number | null) }}
+                {{ convertValue('velocity', pipeCalcs[name]?.vel_calc ?? null) }}
               </td>
               <td class="pk-text-right-mono-muted crit-col">
                 <template v-if="editedCriteria[name]?.state && editedCriteria[name]?.criteria">
-                  {{ convertValue('velocity', (criteriaValues[name]?.[`${editedCriteria[name].state}:${editedCriteria[name].criteria}`] as any)?.min_vel as number | null) }}
+                  {{ convertValue('velocity', currentCriteriaInfo(name)?.min_vel ?? null) }}
                 </template>
                 <template v-else>—</template>
               </td>
               <td class="pk-text-right-mono-muted crit-col">
                 <template v-if="editedCriteria[name]?.state && editedCriteria[name]?.criteria">
-                  {{ convertValue('velocity', (criteriaValues[name]?.[`${editedCriteria[name].state}:${editedCriteria[name].criteria}`] as any)?.max_vel as number | null) }}
+                  {{ convertValue('velocity', currentCriteriaInfo(name)?.max_vel ?? null) }}
                 </template>
                 <template v-else>—</template>
               </td>
               <td class="pk-text-right-mono">
-                {{ convertValue('rho_v2', (pipeCalcs[name] as any)?.rho_v2_calc as number | null) }}
+                {{ convertValue('rho_v2', pipeCalcs[name]?.rho_v2_calc ?? null) }}
               </td>
               <td class="pk-text-right-mono-muted crit-col">
                 <template v-if="editedCriteria[name]?.state && editedCriteria[name]?.criteria">
-                  {{ convertValue('rho_v2', (criteriaValues[name]?.[`${editedCriteria[name].state}:${editedCriteria[name].criteria}`] as any)?.rho_v2_min as number | null) }}
+                  {{ convertValue('rho_v2', currentCriteriaInfo(name)?.rho_v2_min ?? null) }}
                   –
-                  {{ convertValue('rho_v2', (criteriaValues[name]?.[`${editedCriteria[name].state}:${editedCriteria[name].criteria}`] as any)?.rho_v2_max as number | null) }}
+                  {{ convertValue('rho_v2', currentCriteriaInfo(name)?.rho_v2_max ?? null) }}
                 </template>
                 <template v-else>—</template>
               </td>
@@ -412,5 +448,11 @@ onMounted(() => {
 .crit-col {
   background-color: #f1f3f5 !important;
   color: #6c757d;
+}
+
+/* Center-align calculation columns */
+.pk-text-right-mono,
+.pk-text-right-mono-muted {
+  text-align: center;
 }
 </style>

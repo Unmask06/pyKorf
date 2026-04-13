@@ -10,7 +10,7 @@ from fastapi import APIRouter
 
 from pykorf.app.api import session_state as _sess
 from pykorf.app.api.deps import require_model
-from pykorf.app.api.schemas import ApplyDataResponse, ApplyHmbRequest, ApplyPmsRequest
+from pykorf.app.api.schemas import ApplyDataResponse, ApplyHmbRequest, ApplyPmsRequest, StatusMessage
 from pykorf.core.log import get_logger
 
 logger = get_logger(__name__)
@@ -62,10 +62,10 @@ def apply_pms_if_stale(model) -> bool:
 
 
 @router.post("/apply-pms", response_model=ApplyDataResponse)
-async def apply_pms(req: ApplyPmsRequest):
+async def apply_pms(req: ApplyPmsRequest) -> ApplyDataResponse:
     """Apply PMS data from Excel or JSON file."""
     model = await require_model()
-    messages = []
+    messages: list[StatusMessage] = []
     errors = []
 
     pms_source_str = req.pms_source.strip()
@@ -90,7 +90,9 @@ async def apply_pms(req: ApplyPmsRequest):
         await asyncio.to_thread(_apply_pms_from_source, model, pms_source)
         await _sess.reload()
         set_pms_excel_path(pms_source)
-        messages.append({"type": "success", "message": "PMS data applied and saved successfully."})
+        messages.append(
+            StatusMessage(type="success", message="PMS data applied and saved successfully.")
+        )
     except Exception as exc:
         logger.error("pms_apply_error", error=str(exc))
         errors.append(f"Error applying PMS: {exc}")
@@ -99,10 +101,10 @@ async def apply_pms(req: ApplyPmsRequest):
 
 
 @router.post("/apply-hmb", response_model=ApplyDataResponse)
-async def apply_hmb(req: ApplyHmbRequest):
+async def apply_hmb(req: ApplyHmbRequest) -> ApplyDataResponse:
     """Apply HMB data from Excel or JSON file."""
     model = await require_model()
-    messages = []
+    messages: list[StatusMessage] = []
     errors = []
 
     hmb_source_str = req.hmb_source.strip()
@@ -126,7 +128,9 @@ async def apply_hmb(req: ApplyHmbRequest):
         await asyncio.to_thread(_do_apply)
         await _sess.reload()
         set_last_hmb_path(hmb_source)
-        messages.append({"type": "success", "message": "HMB data applied and saved successfully."})
+        messages.append(
+            StatusMessage(type="success", message="HMB data applied and saved successfully.")
+        )
     except Exception as exc:
         logger.error("hmb_apply_error", error=str(exc))
         errors.append(f"Error applying HMB: {exc}")

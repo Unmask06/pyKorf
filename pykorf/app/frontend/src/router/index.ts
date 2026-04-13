@@ -14,14 +14,9 @@ const router = createRouter({
       component: () => import('../views/MainMenuView.vue'),
     },
     {
-      path: '/model/data',
-      name: 'apply-data',
-      component: () => import('../views/ApplyDataView.vue'),
-    },
-    {
-      path: '/model/settings',
-      name: 'global-parameters',
-      component: () => import('../views/GlobalParametersView.vue'),
+      path: '/model/bulk-modification',
+      name: 'bulk-modification',
+      component: () => import('../views/BulkModificationView.vue'),
     },
     {
       path: '/model/bulk-copy',
@@ -62,7 +57,7 @@ const router = createRouter({
  * The /preferences and /about pages are accessible without a model.
  */
 const MODEL_REQUIRED_ROUTES = new Set([
-  'main-menu', 'apply-data', 'global-parameters', 'bulk-copy',
+  'main-menu', 'bulk-modification', 'bulk-copy',
   'report', 'pipe-criteria', 'references',
 ])
 

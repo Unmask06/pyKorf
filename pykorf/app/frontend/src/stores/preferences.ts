@@ -6,11 +6,13 @@ import type {
   AddSpOverrideRequest,
   EditSpOverrideRequest,
   DeleteSpOverrideRequest,
+  EmptyRequest,
   SetSkipSpRequest,
   SetLicenseKeyRequest,
   SetDocRegisterConfigRequest,
   LicenseValidationResponse,
   DocRegisterRebuildResponse,
+  OkResponse,
 } from '../types/api'
 
 export const usePreferencesStore = defineStore('preferences', () => {
@@ -45,28 +47,28 @@ export const usePreferencesStore = defineStore('preferences', () => {
 
   async function addOverride(localPath: string, spUrl: string) {
     const req: AddSpOverrideRequest = { local_path: localPath, sp_url: spUrl }
-    const { data } = await api.post<{ success: boolean }>('/api/preferences/sp-overrides/add', req)
+    const { data } = await api.post<OkResponse>('/api/preferences/sp-overrides/add', req)
     if (data.success) await fetchAll()
     return data
   }
 
   async function editOverride(originalPath: string, localPath: string, spUrl: string) {
     const req: EditSpOverrideRequest = { original_local_path: originalPath, local_path: localPath, sp_url: spUrl }
-    const { data } = await api.post<{ success: boolean }>('/api/preferences/sp-overrides/edit', req)
+    const { data } = await api.post<OkResponse>('/api/preferences/sp-overrides/edit', req)
     if (data.success) await fetchAll()
     return data
   }
 
   async function deleteOverride(localPath: string) {
     const req: DeleteSpOverrideRequest = { local_path: localPath }
-    const { data } = await api.post<{ success: boolean }>('/api/preferences/sp-overrides/delete', req)
+    const { data } = await api.post<OkResponse>('/api/preferences/sp-overrides/delete', req)
     if (data.success) await fetchAll()
     return data
   }
 
   async function setSkipSp(skip: boolean) {
     const req: SetSkipSpRequest = { skip }
-    await api.post('/api/preferences/skip-sp', req)
+    await api.post<OkResponse>('/api/preferences/skip-sp', req)
     skipSpOverride.value = skip
   }
 
@@ -82,7 +84,8 @@ export const usePreferencesStore = defineStore('preferences', () => {
   }
 
   async function rebuildDocRegisterDb(): Promise<DocRegisterRebuildResponse> {
-    const { data } = await api.post<DocRegisterRebuildResponse>('/api/doc-register/rebuild-db')
+    const req: EmptyRequest = {}
+    const { data } = await api.post<DocRegisterRebuildResponse>('/api/doc-register/rebuild-db', req)
     return data
   }
 

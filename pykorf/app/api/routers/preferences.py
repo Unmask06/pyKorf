@@ -47,7 +47,7 @@ def _invalidate_all_caches() -> None:
 
 
 @router.get("/", response_model=PreferencesResponse)
-async def get_preferences():
+async def get_preferences() -> PreferencesResponse:
     """Return all preference settings."""
     overrides = get_sp_overrides()
     return PreferencesResponse(
@@ -114,7 +114,7 @@ async def set_skip_sp(req: SetSkipSpRequest) -> OkResponse:
 
 
 @router.post("/license", response_model=LicenseValidationResponse)
-async def set_license(req: SetLicenseKeyRequest):
+async def set_license(req: SetLicenseKeyRequest) -> LicenseValidationResponse:
     """Validate and save a license key."""
     if not req.license_key:
         return LicenseValidationResponse(valid=False, error="Please enter a license key.")
@@ -126,7 +126,7 @@ async def set_license(req: SetLicenseKeyRequest):
 
 
 @router.post("/doc-register", response_model=DocRegisterRebuildResponse)
-async def set_doc_register_config(req: SetDocRegisterConfigRequest):
+async def set_doc_register_config(req: SetDocRegisterConfigRequest) -> DocRegisterRebuildResponse:
     """Save Document Register configuration and rebuild DB if Excel path changed."""
     from pykorf.app.doc_register.excel_to_db import build_db_from_excel
     from pykorf.app.operation.integration.sharepoint import get_local_path_from_sp_url

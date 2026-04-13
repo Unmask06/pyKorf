@@ -5,16 +5,20 @@ from __future__ import annotations
 import os
 import string
 from pathlib import Path
+from typing import Annotated
 
 from fastapi import APIRouter, Query
 
-from pykorf.app.api.schemas import BrowseEntryDir, BrowseEntryFile, BrowseResponse, PinnedFoldersResponse
-from pykorf.app.operation.integration.sharepoint import get_sharepoint_url, is_sharepoint_synced
-from pykorf.app.operation.config.preferences import (
-    get_pinned_folders,
-    add_pinned_folder,
-    remove_pinned_folder,
+from pykorf.app.api.schemas import (
+    BrowseEntryDir,
+    BrowseEntryFile,
+    BrowseRequest,
+    BrowseResponse,
+    PinnedFolderRequest,
+    PinnedFoldersResponse,
 )
+from pykorf.app.operation.config.config import add_pinned_folder, get_pinned_folders, remove_pinned_folder
+from pykorf.app.operation.integration.sharepoint import get_sharepoint_url, is_sharepoint_synced
 from pykorf.core.log import get_logger
 
 logger = get_logger(__name__)
@@ -35,7 +39,7 @@ def _get_available_drives() -> list[Path]:
     global _cached_drives
     if _cached_drives is not None:
         return _cached_drives
-    
+
     _cached_drives = [Path.home()]
     if os.name == "nt":
         for d in string.ascii_uppercase:
@@ -70,15 +74,12 @@ def _is_safe_path(path: Path) -> bool:
 
 
 @router.get("", response_model=BrowseResponse)
-async def api_browse(
-    path: str = Query("", alias="path"),
-    filter: str = Query("any", alias="filter"),
-):
+async def api_browse(req: Annotated[BrowseRequest, Query()]) -> BrowseResponse:
     """Return directory listing for the path browser widget."""
-    ext_filter = _EXT_MAP.get(filter.lower(), set())
+    ext_filter = _EXT_MAP.get(req.filter.lower(), set())
 
-    if path:
-        target = Path(path.strip())
+    if req.path:
+        target = Path(req.path.strip())
         if not target.is_dir():
             target = target.parent if target.parent.is_dir() else Path.home()
     else:
@@ -139,17 +140,17 @@ async def api_browse(
 
 
 @router.post("/pin", response_model=PinnedFoldersResponse)
-async def pin_folder(folder: str = Query(..., alias="folder")) -> PinnedFoldersResponse:
+async def pin_folder(req: PinnedFolderRequest) -> PinnedFoldersResponse:
     """Pin a folder for quick access in the path browser."""
-    p = Path(folder)
+    p = Path(req.folder)
     if not p.is_dir():
-        return PinnedFoldersResponse(success=False, error=f"Not a valid directory: {folder}")
+        return PinnedFoldersResponse(success=False, error=f"Not a valid directory: {req.folder}")
     add_pinned_folder(str(p.resolve()))
     return PinnedFoldersResponse(pinned_folders=get_pinned_folders())
 
 
 @router.post("/unpin", response_model=PinnedFoldersResponse)
-async def unpin_folder(folder: str = Query(..., alias="folder")) -> PinnedFoldersResponse:
+async def unpin_folder(req: PinnedFolderRequest) -> PinnedFoldersResponse:
     """Unpin a folder from quick access."""
-    remove_pinned_folder(folder)
+    remove_pinned_folder(req.folder)
     return PinnedFoldersResponse(pinned_folders=get_pinned_folders())

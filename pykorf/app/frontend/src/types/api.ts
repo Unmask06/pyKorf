@@ -13,6 +13,13 @@
 
 // ─── Session ──────────────────────────────────────────────────────────────────
 
+export interface EmptyRequest {}
+
+export interface StatusMessage {
+  type: string
+  message: string
+}
+
 export interface SessionStatusResponse {
   model_loaded: boolean
   kdf_path: string | null
@@ -36,6 +43,10 @@ export interface SessionReloadResponse {
 
 export interface SessionCloseResponse {
   message: string
+}
+
+export interface ShutdownResponse {
+  status: string
 }
 
 // ─── Model ────────────────────────────────────────────────────────────────────
@@ -87,7 +98,7 @@ export interface SaveProjectInfoRequest extends ProjectInfo {}
 
 export interface SaveResponse {
   message: string
-  logs: Array<{ type: string; message: string }>
+  logs: StatusMessage[]
 }
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -102,7 +113,7 @@ export interface ApplyHmbRequest {
 
 export interface ApplyDataResponse {
   success: boolean
-  messages: Array<{ type: string; message: string }>
+  messages: StatusMessage[]
   errors: string[]
 }
 
@@ -177,7 +188,7 @@ export interface BatchReportRequest {
 
 export interface ReportResponse {
   success: boolean
-  messages: Array<{ type: string; message: string }>
+  messages: StatusMessage[]
   errors: string[]
 }
 
@@ -191,6 +202,8 @@ export interface PipeCriteriaEntry {
 export interface SetPipeCriteriaRequest {
   criteria: Record<string, PipeCriteriaEntry>
 }
+
+export interface PredictCriteriaRequest extends EmptyRequest {}
 
 export interface PredictCriteriaResponse {
   predicted: Record<string, PipeCriteriaEntry>
@@ -213,17 +226,28 @@ export interface PipeCalcInfo {
   rho_v2_calc: number | null
 }
 
+export interface UnitConversionInfo {
+  target_unit: string
+  multiplier: number
+  offset: number
+  factor: number | null
+}
+
+export interface ModelPipesResponse {
+  pipes: string[]
+}
+
 export interface PipeCriteriaResponse {
   kdf_path: string
   pipes: Array<[number, string]>
-  existing: Record<string, Record<string, string>>
+  existing: Record<string, PipeCriteriaEntry>
   codes: Record<string, string[][]>
   fluid_labels: Record<string, string>
-  pipe_criteria_values: Record<string, Record<string, Record<string, unknown>>>
-  pipe_calcs: Record<string, Record<string, unknown>>
-  units_data: Record<string, unknown>
-  set_result: Record<string, unknown> | null
-  predict_result: Record<string, unknown> | null
+  pipe_criteria_values: Record<string, Record<string, CriteriaValuesInfo>>
+  pipe_calcs: Record<string, PipeCalcInfo>
+  units_data: Record<string, Record<string, UnitConversionInfo>>
+  set_result: SetCriteriaResponse | null
+  predict_result: PredictCriteriaResponse | null
 }
 
 export interface SetCriteriaResponse {
@@ -277,6 +301,12 @@ export interface DeleteReferenceRequest {
 export interface ShortcutsResponse {
   count: number
   path: string
+  error: string | null
+}
+
+export interface OkResponse {
+  success: boolean
+  message: string
   error: string | null
 }
 
@@ -358,7 +388,28 @@ export interface BrowseResponse {
   files: BrowseEntryFile[]
 }
 
+export interface BrowseRequest {
+  path?: string
+  filter?: string
+}
+
+export interface PinnedFolderRequest {
+  folder: string
+}
+
 // ─── Doc Register ────────────────────────────────────────────────────────────
+
+export interface DocRegisterSearchEddrRequest {
+  q?: string
+}
+
+export interface DocRegisterSearchQueryRequest {
+  doc_no?: string
+}
+
+export interface DocRegisterSearchFilesRequest {
+  q?: string
+}
 
 export interface DocRegisterStatusResponse {
   excel_path: string | null
@@ -379,6 +430,23 @@ export interface QueryEntryResult {
   modified_by: string | null
   path: string | null
   item_type: string | null
+}
+
+export interface DocRegisterSearchEddrResponse {
+  results: EddrResult[]
+}
+
+export interface DocRegisterSearchQueryResponse {
+  results: QueryEntryResult[]
+}
+
+export interface DocRegisterSearchFilesResponse {
+  results: QueryEntryResult[]
+}
+
+export interface DocRegisterConfigResponse {
+  excel_path: string | null
+  sp_site_url: string | null
 }
 
 // ─── About ───────────────────────────────────────────────────────────────────

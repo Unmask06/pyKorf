@@ -8,7 +8,7 @@ export interface Toast {
 const state = reactive<{ toasts: Toast[] }>({ toasts: [] })
 
 export function useToastStore() {
-  function add(type: Toast['type'], message: string, duration = 3000) {
+  function add(type: Toast['type'], message: string, duration = 1000) {
     const toast: Toast = { type, message }
     state.toasts.push(toast)
     if (duration > 0) {
@@ -24,7 +24,7 @@ export function useToastStore() {
   }
 
   function success(msg: string) { add('success', msg) }
-  function error(msg: string) { add('error', msg, 5000) }
+  function error(msg: string) { add('error', msg, 3000) }
   function warning(msg: string) { add('warning', msg) }
   function info(msg: string) { add('info', msg) }
 

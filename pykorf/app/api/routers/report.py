@@ -15,6 +15,7 @@ from pykorf.app.api.schemas import (
     GenerateReportRequest,
     ImportRequest,
     ReportResponse,
+    StatusMessage,
 )
 from pykorf.core.log import get_logger
 
@@ -23,7 +24,7 @@ router = APIRouter()
 
 
 @router.post("/generate", response_model=ReportResponse)
-async def generate_report(req: GenerateReportRequest):
+async def generate_report(req: GenerateReportRequest) -> ReportResponse:
     """Generate a single-model Excel report."""
     model = await require_model()
     kdf_path = await _sess.get_kdf_path()
@@ -35,7 +36,7 @@ async def generate_report(req: GenerateReportRequest):
 
     report_file = Path(req.report_path) if req.report_path else Path(kdf_folder) / default_name
 
-    messages = []
+    messages: list[StatusMessage] = []
     errors = []
 
     if not report_file.parent.exists():
@@ -71,7 +72,7 @@ async def generate_report(req: GenerateReportRequest):
 
             await asyncio.to_thread(_do_export)
             set_last_report_path(str(report_file))
-            messages.append({"type": "success", "message": f"Report saved to: {report_file}"})
+            messages.append(StatusMessage(type="success", message=f"Report saved to: {report_file}"))
         except Exception as exc:
             errors.append(f"Error generating report: {exc}")
 
@@ -79,7 +80,7 @@ async def generate_report(req: GenerateReportRequest):
 
 
 @router.post("/export", response_model=ReportResponse)
-async def export_excel(req: ExportRequest):
+async def export_excel(req: ExportRequest) -> ReportResponse:
     """Export model to Excel file."""
     model = await require_model()
     kdf_path = await _sess.get_kdf_path()
@@ -88,12 +89,12 @@ async def export_excel(req: ExportRequest):
     default_name = f"{kdf_stem}_export.xlsx"
 
     file_path = Path(req.file_path) if req.file_path else Path(kdf_folder) / default_name
-    messages = []
+    messages: list[StatusMessage] = []
     errors = []
 
     try:
         await asyncio.to_thread(model._io_service.to_excel, file_path)
-        messages.append({"type": "success", "message": f"Exported to: {file_path}"})
+        messages.append(StatusMessage(type="success", message=f"Exported to: {file_path}"))
     except Exception as exc:
         errors.append(f"Error during export: {exc}")
 
@@ -101,7 +102,7 @@ async def export_excel(req: ExportRequest):
 
 
 @router.post("/import", response_model=ReportResponse)
-async def import_excel(req: ImportRequest):
+async def import_excel(req: ImportRequest) -> ReportResponse:
     """Import model parameters from Excel file."""
     model = await require_model()
     kdf_path = await _sess.get_kdf_path()
@@ -110,7 +111,7 @@ async def import_excel(req: ImportRequest):
     default_name = f"{kdf_stem}_export.xlsx"
 
     file_path = Path(req.file_path) if req.file_path else Path(kdf_folder) / default_name
-    messages = []
+    messages: list[StatusMessage] = []
     errors = []
 
     if not file_path.is_file():
@@ -118,7 +119,7 @@ async def import_excel(req: ImportRequest):
     else:
         try:
             await asyncio.to_thread(model._io_service.from_excel, file_path)
-            messages.append({"type": "success", "message": f"Imported from: {file_path}"})
+            messages.append(StatusMessage(type="success", message=f"Imported from: {file_path}"))
         except Exception as exc:
             errors.append(f"Error during import: {exc}")
 
@@ -126,7 +127,7 @@ async def import_excel(req: ImportRequest):
 
 
 @router.post("/batch", response_model=ReportResponse)
-async def batch_report(req: BatchReportRequest):
+async def batch_report(req: BatchReportRequest) -> ReportResponse:
     """Generate batch report across multiple KDF files in a folder."""
     await require_model()
     kdf_path = await _sess.get_kdf_path()
@@ -138,7 +139,7 @@ async def batch_report(req: BatchReportRequest):
     )
 
     batch_folder = Path(req.batch_folder) if req.batch_folder else Path(kdf_folder)
-    messages = []
+    messages: list[StatusMessage] = []
     errors = []
 
     if not batch_folder.exists():
@@ -157,9 +158,11 @@ async def batch_report(req: BatchReportRequest):
             generator, output_path = await asyncio.to_thread(_do_batch)
             set_last_batch_folder_path(str(batch_folder))
             set_last_report_path(output_path)
-            messages.append({"type": "success", "message": f"Batch report saved to: {output_path}"})
+            messages.append(
+                StatusMessage(type="success", message=f"Batch report saved to: {output_path}")
+            )
             for err in generator.errors:
-                messages.append({"type": "warning", "message": err})
+                messages.append(StatusMessage(type="warning", message=err))
         except Exception as exc:
             errors.append(f"Error generating batch report: {exc}")
 
