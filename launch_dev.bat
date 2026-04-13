@@ -44,13 +44,13 @@ if not exist "%FRONTEND_DIR%\node_modules\" (
 )
 
 echo [1/2] Starting FastAPI backend on port 8000...
-start "pyKorf Backend" /D "%BACKEND_DIR%" cmd /k "uv run pykorf --debug --port 8000"
+start "pyKorf Backend" /D "%BACKEND_DIR%" cmd /c uv run pykorf --debug --port 8000
 
 REM Give backend a moment to start
 timeout /t 3 /nobreak >nul
 
 echo [2/2] Starting Vite dev server on port 5173...
-start "pyKorf Frontend" /D "%FRONTEND_DIR%" cmd /k "npm run dev"
+start "pyKorf Frontend" /D "%FRONTEND_DIR%" cmd /c npm run dev
 
 echo.
 echo  Backend  -> http://localhost:8000
