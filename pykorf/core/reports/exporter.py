@@ -123,7 +123,7 @@ class ResultExporter:
         return dfs
 
     def _get_validation_dataframe(self) -> pd.DataFrame:
-        """Run model validation and connectivity checks, return a structured DataFrame.
+        """Run all model validation checks, return a structured DataFrame.
 
         Returns:
             DataFrame with columns: Severity, Category, Element, Message.
@@ -131,7 +131,7 @@ class ResultExporter:
         """
         issues: list[dict[str, str]] = []
 
-        # Run model-level validation (pipe line numbers, sizing criteria, etc.)
+        # model.validate() now includes core + app-level + connectivity
         try:
             for msg in self.model.validate():
                 severity, category, elem = _classify_issue(msg)
@@ -143,19 +143,6 @@ class ResultExporter:
                 })
         except Exception as exc:
             _logger.warning("validation failed: %s", exc)
-
-        # Run connectivity validation (dangling refs, invalid indices)
-        try:
-            for msg in self.model.connectivity.check_connectivity():
-                severity, category, elem = _classify_issue(msg)
-                issues.append({
-                    "Severity": severity,
-                    "Category": category,
-                    "Element": elem,
-                    "Message": msg,
-                })
-        except Exception as exc:
-            _logger.warning("connectivity check failed: %s", exc)
 
         if not issues:
             return pd.DataFrame(columns=["Severity", "Category", "Element", "Message"])

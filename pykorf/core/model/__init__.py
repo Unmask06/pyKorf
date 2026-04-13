@@ -176,7 +176,29 @@ class Model(_ModelBase):
         return self._summary_service.summary()
 
     def validate(self) -> list[str]:
-        return self._summary_service.validate()
+        """Run all validation checks (core + app-level + connectivity).
+
+        Combines three layers:
+        1. Core KDF-format checks (pipe sizing criteria, title symbol)
+        2. App-level checks (PMS spec, line-number parsing, pipe properties)
+        3. Connectivity checks (dangling references, unconnected elements)
+
+        Returns:
+            List of human-readable issue descriptions.
+        """
+        issues: list[str] = []
+        # Core: pipe sizing criteria + title symbol
+        issues.extend(self._summary_service.validate())
+        # App: PMS, line numbers, pipe properties vs spec
+        try:
+            from pykorf.app.validation import validate as _app_validate
+
+            issues.extend(_app_validate(self))
+        except ImportError:
+            pass  # App-level validation skipped (pure core usage)
+        # Connectivity: dangling pipe references, unconnected elements
+        issues.extend(self._connectivity_service.check_connectivity())
+        return issues
 
     def __repr__(self) -> str:
         return self._summary_service.__repr__()
