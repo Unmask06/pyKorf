@@ -175,7 +175,7 @@ onMounted(() => {
   <div class="flex gap-4 flex-wrap lg:flex-nowrap">
 
     <!-- ── Left: Design Basis / Remarks / Hold ─────────────── -->
-    <div class="w-full lg:w-1/3 space-y-3">
+    <div class="w-full lg:w-1/4 space-y-3">
       <form @submit.prevent="saveAllLoading.execute()" class="space-y-3">
 
         <!-- Design Basis -->
@@ -237,7 +237,7 @@ onMounted(() => {
     </div>
 
     <!-- ── Right: References table + Add form ──────────────── -->
-    <div class="w-full lg:w-2/3 space-y-3">
+    <div class="w-full lg:w-3/4 space-y-3">
 
       <!-- Flash message -->
       <div v-if="flashMsg" class="flex items-center gap-2 p-2 rounded"
@@ -327,10 +327,10 @@ onMounted(() => {
             <table class="pk-table">
               <thead class="bg-gray-800 text-white">
                 <tr>
-                  <th class="px-3 py-2 text-left text-sm font-semibold" style="width: 28%;">Name</th>
-                  <th class="px-3 py-2 text-left text-sm font-semibold" style="width: 12%;">Category</th>
-                  <th class="px-3 py-2 text-left text-sm font-semibold">Link</th>
-                  <th class="px-3 py-2 text-left text-sm font-semibold" style="width: 22%;">Description</th>
+                  <th class="px-3 py-2 text-left text-sm font-semibold" style="width: 25%;">Name</th>
+                  <th class="px-3 py-2 text-left text-sm font-semibold" style="width: 10%;">Category</th>
+                  <th class="px-3 py-2 text-left text-sm font-semibold" style="width: 20%;">Link</th>
+                  <th class="px-3 py-2 text-left text-sm font-semibold" style="width: 25%;">Description</th>
                   <th class="px-3 py-2 text-left text-sm font-semibold" style="width: 6rem;"></th>
                 </tr>
               </thead>
@@ -456,5 +456,12 @@ onMounted(() => {
 /* Collapsible chevron animation */
 .rotate-180 {
   transform: rotate(180deg);
+}
+/* Increased table row padding and height */
+.pk-table td, .pk-table th {
+  padding: 0.75rem 1rem;
+}
+.pk-table tbody tr {
+  height: 3.5rem;
 }
 </style>
