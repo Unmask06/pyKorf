@@ -11,6 +11,7 @@ from pykorf.app.api.schemas import (
     CenterLayoutResponse,
     GlobalSettingSchema,
     SettingsApplyResponse,
+    SettingsGetResponse,
     SnapOrthogonalRequest,
 )
 from pykorf.core.log import get_logger
@@ -19,8 +20,8 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
-@router.get("/")
-async def get_settings():
+@router.get("/", response_model=SettingsGetResponse)
+async def get_settings() -> SettingsGetResponse:
     """Return list of available global settings with saved selections."""
     from pykorf.app.operation.config.config import (
         get_global_parameters_selected,
@@ -34,15 +35,15 @@ async def get_settings():
     saved_dp_margin = interaction_data.get("dp_margin") or "1.25"
     saved_shutoff_margin = interaction_data.get("shutoff_margin") or "1.20"
 
-    return {
-        "settings": [
+    return SettingsGetResponse(
+        settings=[
             GlobalSettingSchema(id=s.id, name=s.name, description=s.description)
             for s in settings
         ],
-        "saved_selections": saved_selections,
-        "saved_dp_margin": saved_dp_margin,
-        "saved_shutoff_margin": saved_shutoff_margin,
-    }
+        saved_selections=saved_selections,
+        saved_dp_margin=saved_dp_margin,
+        saved_shutoff_margin=saved_shutoff_margin,
+    )
 
 
 @router.post("/apply", response_model=SettingsApplyResponse)

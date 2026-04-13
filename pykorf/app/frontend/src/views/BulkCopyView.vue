@@ -43,7 +43,7 @@ async function doCopy() {
       toast.error(res?.error || 'Bulk copy failed.')
     }
   } catch (err: any) {
-    toast.error(err.response?.data?.detail || err.message)
+    toast.error(err.response?.data?.detail || err.message || 'An unexpected error occurred.')
   }
 }
 

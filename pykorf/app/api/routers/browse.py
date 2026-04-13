@@ -3,18 +3,21 @@
 from __future__ import annotations
 
 import os
+import string
 from pathlib import Path
 
 from fastapi import APIRouter, Query
 
-from pykorf.app.api.schemas import BrowseResponse, BrowseEntryDir, BrowseEntryFile
+from pykorf.app.api.schemas import BrowseEntryDir, BrowseEntryFile, BrowseResponse, PinnedFoldersResponse
 from pykorf.app.operation.integration.sharepoint import get_sharepoint_url, is_sharepoint_synced
 from pykorf.app.operation.config.preferences import (
     get_pinned_folders,
     add_pinned_folder,
     remove_pinned_folder,
 )
+from pykorf.core.log import get_logger
 
+logger = get_logger(__name__)
 router = APIRouter()
 
 _EXT_MAP: dict[str, set[str]] = {
@@ -24,19 +27,39 @@ _EXT_MAP: dict[str, set[str]] = {
     "any": set(),
 }
 
+_cached_drives: list[Path] | None = None
+
+
+def _get_available_drives() -> list[Path]:
+    """Get list of available drives, cached to avoid slow repeated checks."""
+    global _cached_drives
+    if _cached_drives is not None:
+        return _cached_drives
+    
+    _cached_drives = [Path.home()]
+    if os.name == "nt":
+        for d in string.ascii_uppercase:
+            try:
+                drive = Path(f"{d}:\\")
+                if drive.exists():
+                    _cached_drives.append(drive)
+            except (OSError, PermissionError):
+                continue
+    return _cached_drives
+
+
+def invalidate_drive_cache() -> None:
+    """Invalidate the cached drive list. Call when drives may have changed."""
+    global _cached_drives
+    _cached_drives = None
+
 
 def _is_safe_path(path: Path) -> bool:
     try:
         resolved = path.resolve()
     except (OSError, ValueError):
         return False
-    home = Path.home().resolve()
-    if os.name == "nt":
-        allowed_roots = [home] + [
-            Path(f"{d}:\\") for d in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" if Path(f"{d}:\\").exists()
-        ]
-    else:
-        allowed_roots = [home, Path("/")]
+    allowed_roots = _get_available_drives()
     for root in allowed_roots:
         try:
             resolved.relative_to(root.resolve())
@@ -100,11 +123,7 @@ async def api_browse(
 
     parent = str(target.parent) if target != target.parent else None
 
-    drives = []
-    if os.name == "nt":
-        import string
-
-        drives = [f"{d}:\\" for d in string.ascii_uppercase if Path(f"{d}:\\").exists()]
+    drives = [str(d) for d in _get_available_drives() if os.name == "nt" and d.anchor.endswith(":\\")]
 
     pinned = get_pinned_folders()
 
@@ -119,18 +138,18 @@ async def api_browse(
     )
 
 
-@router.post("/pin")
-async def pin_folder(folder: str = Query(..., alias="folder")):
+@router.post("/pin", response_model=PinnedFoldersResponse)
+async def pin_folder(folder: str = Query(..., alias="folder")) -> PinnedFoldersResponse:
     """Pin a folder for quick access in the path browser."""
     p = Path(folder)
     if not p.is_dir():
-        return {"success": False, "error": f"Not a valid directory: {folder}"}
+        return PinnedFoldersResponse(success=False, error=f"Not a valid directory: {folder}")
     add_pinned_folder(str(p.resolve()))
-    return {"success": True, "pinned_folders": get_pinned_folders()}
+    return PinnedFoldersResponse(pinned_folders=get_pinned_folders())
 
 
-@router.post("/unpin")
-async def unpin_folder(folder: str = Query(..., alias="folder")):
+@router.post("/unpin", response_model=PinnedFoldersResponse)
+async def unpin_folder(folder: str = Query(..., alias="folder")) -> PinnedFoldersResponse:
     """Unpin a folder from quick access."""
     remove_pinned_folder(folder)
-    return {"success": True, "pinned_folders": get_pinned_folders()}
+    return PinnedFoldersResponse(pinned_folders=get_pinned_folders())
