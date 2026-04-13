@@ -21,6 +21,35 @@ CWC_KDF = SAMPLES_DIR / "Cooling Water Circuit.kdf"
 
 
 # ------------------------------------------------------------------
+# KdfRecord
+# ------------------------------------------------------------------
+
+
+class TestKdfRecord:
+    def test_getitem_returns_value_at_index(self):
+        m = Model(PUMP_KDF)
+        pipe = m.pipes[1]
+        rec = pipe.get_param("LEN")
+        assert rec is not None
+        assert rec[0] == rec.values[0]
+
+    def test_getitem_second_index(self):
+        m = Model(PUMP_KDF)
+        feed = m.feeds[1]
+        rec = feed.get_param(Feed.NAME)
+        assert rec is not None
+        assert rec[1] == rec.values[1]
+
+    def test_getitem_out_of_range_raises(self):
+        m = Model(PUMP_KDF)
+        pipe = m.pipes[1]
+        rec = pipe.get_param("LEN")
+        assert rec is not None
+        with pytest.raises(IndexError):
+            _ = rec[999]
+
+
+# ------------------------------------------------------------------
 # Model constructor
 # ------------------------------------------------------------------
 
