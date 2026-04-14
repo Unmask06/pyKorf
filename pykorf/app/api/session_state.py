@@ -21,7 +21,7 @@ _was_reloaded: bool = False  # Set when reload() is triggered by stale detection
 
 
 async def load(model: Model, kdf_path: Path) -> None:
-    """Store *model* as the active model.
+    """Store model as the active model.
 
     Args:
         model: Loaded KorfModel instance.

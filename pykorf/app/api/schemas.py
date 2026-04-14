@@ -65,7 +65,9 @@ class PrereqsResponse(BaseModel):
     pms_path: str = ""
 
 
-class ProjectInfoResponse(BaseModel):
+class ProjectInfoBase(BaseModel):
+    """Shared project info fields for request/response contexts."""
+
     company1: str = ""
     company2: str = ""
     project_name1: str = ""
@@ -80,19 +82,12 @@ class ProjectInfoResponse(BaseModel):
     revision: str = ""
 
 
-class SmartDefaultsResponse(BaseModel):
-    company1: str = ""
-    company2: str = ""
-    project_name1: str = ""
-    project_name2: str = ""
-    item_name1: str = ""
-    item_name2: str = ""
-    prepared_by: str = ""
-    checked_by: str = ""
-    approved_by: str = ""
-    date: str = ""
-    project_no: str = ""
-    revision: str = ""
+class ProjectInfoResponse(ProjectInfoBase):
+    """Project info fetched from KDF."""
+
+
+class SmartDefaultsResponse(ProjectInfoBase):
+    """User's saved preferences for project info."""
 
 
 class ModelFullResponse(BaseModel):
@@ -103,19 +98,8 @@ class ModelFullResponse(BaseModel):
     smart_defaults: SmartDefaultsResponse
 
 
-class SaveProjectInfoRequest(BaseModel):
-    company1: str = ""
-    company2: str = ""
-    project_name1: str = ""
-    project_name2: str = ""
-    item_name1: str = ""
-    item_name2: str = ""
-    prepared_by: str = ""
-    checked_by: str = ""
-    approved_by: str = ""
-    date: str = ""
-    project_no: str = ""
-    revision: str = ""
+class SaveProjectInfoRequest(ProjectInfoBase):
+    """Request to save project info to KDF."""
 
 
 class SaveResponse(BaseModel):
