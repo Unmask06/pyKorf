@@ -31,6 +31,7 @@ const emit = defineEmits<{
 }>();
 
 const spSiteUrl = ref("");
+const isStale = ref(false);
 const docSearchQuery = ref("");
 const docSearchResults = ref<EddrResult[]>([]);
 const queryResults = ref<QueryEntryResult[]>([]);
@@ -106,6 +107,15 @@ const docSearchLoading = useLoading(async () => {
   }
 });
 
+const refreshDbLoading = useLoading(async () => {
+  await api.post("/api/doc-register/rebuild-db", {});
+  isStale.value = false;
+  // Re-search with existing query
+  if (docSearchQuery.value.trim()) {
+    await docSearchLoading.execute();
+  }
+});
+
 let docSearchTimer: ReturnType<typeof setTimeout> | null = null;
 let filterSearchTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -169,6 +179,7 @@ onMounted(async () => {
   try {
     const { data } = await api.get<DocRegisterStatusResponse>("/api/doc-register/status");
     spSiteUrl.value = data.sp_site_url || "";
+    isStale.value = data.is_stale ?? false;
   } catch { /* ignore */ }
 
   if (props.initialQuery?.trim()) {
@@ -195,15 +206,22 @@ onBeforeUnmount(() => {
           <h6 class="font-semibold text-lg flex items-center gap-2">
             <Search class="w-5 h-5 text-cyan-500" /> Search Document Register
           </h6>
-          <span class="badge-up-to-date">Up to date</span>
+          <span
+            class="badge-status"
+            :class="{ 'badge-up-to-date': !isStale, 'badge-stale': isStale }"
+          >
+            {{ isStale ? 'Stale — Refresh DB' : 'Up to date' }}
+          </span>
         </div>
         <div class="flex items-center gap-1">
           <button
-            @click="docSearchLoading.execute()"
+            @click="refreshDbLoading.execute()"
             class="pk-btn-ghost text-sm flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100"
             title="Refresh database"
+            :disabled="refreshDbLoading.isLoading.value"
           >
-            <RotateCw class="w-3.5 h-3.5" /> Refresh DB
+            <span v-if="refreshDbLoading.isLoading.value" class="pk-spinner" />
+            <RotateCw v-else class="w-3.5 h-3.5" /> Refresh DB
           </button>
           <button
             @click="emit('close')"
@@ -511,15 +529,23 @@ onBeforeUnmount(() => {
   color: #fff;
 }
 
-/* ── Up to date badge ────────────────────────────────────────────────────── */
-.badge-up-to-date {
+/* ── Status badge ────────────────────────────────────────────────────── */
+.badge-status {
   display: inline-flex;
   align-items: center;
   padding: 0.12rem 0.55rem;
   border-radius: 9999px;
   font-size: 0.68rem;
   font-weight: 600;
+}
+
+.badge-up-to-date {
   background: #22c55e;
+  color: #fff;
+}
+
+.badge-stale {
+  background: #f59e0b;
   color: #fff;
 }
 

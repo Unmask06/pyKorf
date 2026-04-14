@@ -429,23 +429,33 @@ class Pump(BaseElement):
             head_val, head_unit = self.get_value_and_unit(Pump.HQACT, val_index=0, unit_index=1)
             dp_val, dp_unit = self.get_value_and_unit(Pump.DP, val_index=1, unit_index=-1)
 
-            npsha_val, npsh_unit = self.get_value_and_unit(Pump.NPSH_AVAILABLE, val_index=1, unit_index=-1)
+            npsha_val, npsh_unit = self.get_value_and_unit(
+                Pump.NPSH_AVAILABLE, val_index=1, unit_index=-1
+            )
             npshr_val, _ = self.get_value_and_unit(Pump.NPSH_R, val_index=1, unit_index=-1)
 
             pow_val, pow_unit = self.get_value_and_unit(Pump.POW, val_index=0, unit_index=-1)
 
-            shutoff_dp, pres_unit = self.get_value_and_unit(Pump.SHUTOFF_PRESS, val_index=0, unit_index=-1)
+            shutoff_dp, pres_unit = self.get_value_and_unit(
+                Pump.SHUTOFF_PRESS, val_index=0, unit_index=-1
+            )
             max_suc_pressure, _ = self.get_value_and_unit(Pump.SHUTOFF_PRESS, val_index=1)
             max_dis_pressure, _ = self.get_value_and_unit(Pump.SHUTOFF_PRESS, val_index=2)
 
-            margin_val, _ = self.get_value_and_unit(Pump.SHUTOFF_DP_MARGIN, val_index=1, unit_index=-1)
+            margin_val, _ = self.get_value_and_unit(
+                Pump.SHUTOFF_DP_MARGIN, val_index=1, unit_index=-1
+            )
 
             ves_max_press, press_unit = self.get_value_and_unit(
                 Pump.SHUTOFF_VESS, val_index=0, unit_index=1
             )
-            ves_max_lvl, lvl_unit = self.get_value_and_unit(Pump.SHUTOFF_VESS, val_index=2, unit_index=3)
+            ves_max_lvl, lvl_unit = self.get_value_and_unit(
+                Pump.SHUTOFF_VESS, val_index=2, unit_index=3
+            )
 
-            vap_pres_val, vap_pres_unit = self.get_value_and_unit(Pump.NPSHA_FACTOR, val_index=3, unit_index=4)
+            vap_pres_val, vap_pres_unit = self.get_value_and_unit(
+                Pump.NPSHA_FACTOR, val_index=3, unit_index=4
+            )
 
             return {
                 "Pump Name": self.name,
@@ -462,10 +472,14 @@ class Pump(BaseElement):
                 self.format_export_header("NPSH Required", npsh_unit): npshr_val,
                 self.format_export_header("Shut-Off DP", pres_unit): shutoff_dp,
                 self.format_export_header("Suction Max Pressure", pres_unit): max_suc_pressure,
-                self.format_export_header("Discharge Shut-Off Pressure", pres_unit): max_dis_pressure,
+                self.format_export_header(
+                    "Discharge Shut-Off Pressure", pres_unit
+                ): max_dis_pressure,
                 self.format_export_header("Suction Density", density_unit): density_in,
                 self.format_export_header("Suction Viscosity", visc_unit): viscosity,
-                self.format_export_header("Vapour Pressure", vap_pres_unit): vap_pres_val,
+                self.format_export_header(
+                    "Vapour Pressure", vap_pres_unit.replace("g", "")
+                ): vap_pres_val,
             }
 
         return {
