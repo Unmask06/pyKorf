@@ -1,9 +1,9 @@
-"""Tests for the pykorf.use_case.web package.
+"""Tests for the pykorf.app.operation and pykorf.app.api packages.
 
 Covers:
 - ReferencesStore persistence round-trip
-- Flask route smoke tests (200 with model, 302 without)
 - sharepoint.get_sharepoint_url with mocked registry data
+- Session stale detection with pykorf.app.api.session_state
 
 Run with:  pytest tests/test_web.py -v
 """
@@ -13,8 +13,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from unittest.mock import patch
-
-import pytest
 
 SAMPLES_DIR = Path(__file__).parent.parent / "pykorf" / "library"
 PUMP_KDF = SAMPLES_DIR / "Pumpcases.kdf"
@@ -112,88 +110,6 @@ class TestReferencesStore:
         assert "references" in data
 
 
-# ── Flask route smoke tests ────────────────────────────────────────────────────
-
-
-@pytest.fixture()
-def app_client():
-    """Flask test client with a model pre-loaded."""
-    from pykorf import Model
-    from pykorf.app.web import session as sess
-    from pykorf.app import create_app
-
-    model = Model(PUMP_KDF)
-    sess.load(model, PUMP_KDF)
-
-    flask_app = create_app()
-    flask_app.config["TESTING"] = True
-    with flask_app.test_client() as client:
-        yield client
-
-    sess.clear()
-
-
-@pytest.fixture()
-def app_client_no_model():
-    """Flask test client with no model loaded."""
-    from pykorf.app.web import session as sess
-    from pykorf.app import create_app
-
-    sess.clear()
-    flask_app = create_app()
-    flask_app.config["TESTING"] = True
-    with flask_app.test_client() as client:
-        yield client
-
-
-class TestRouteSmoke:
-    def test_model_menu_200(self, app_client) -> None:
-        resp = app_client.get("/model")
-        assert resp.status_code == 200
-
-    def test_model_info_200(self, app_client) -> None:
-        resp = app_client.get("/model/info")
-        assert resp.status_code == 200
-
-    def test_model_settings_200(self, app_client) -> None:
-        resp = app_client.get("/model/settings")
-        assert resp.status_code == 200
-
-    def test_model_data_200(self, app_client) -> None:
-        resp = app_client.get("/model/data")
-        assert resp.status_code == 200
-
-    def test_model_report_200(self, app_client) -> None:
-        resp = app_client.get("/model/report")
-        assert resp.status_code == 200
-
-    def test_model_references_200(self, app_client) -> None:
-        resp = app_client.get("/model/references")
-        assert resp.status_code == 200
-
-    def test_file_picker_200(self, app_client) -> None:
-        resp = app_client.get("/")
-        assert resp.status_code == 200
-
-    def test_no_model_redirects_to_picker(self, app_client_no_model) -> None:
-        resp = app_client_no_model.get("/model")
-        assert resp.status_code == 302
-        assert "/" in resp.headers["Location"]
-
-    def test_api_browse_returns_json(self, app_client) -> None:
-        resp = app_client.get("/api/browse")
-        assert resp.status_code == 200
-        data = resp.get_json()
-        assert "dirs" in data
-        assert "files" in data
-        assert "current" in data
-
-    def test_model_summary_includes_junctions(self, app_client) -> None:
-        resp = app_client.get("/model")
-        assert resp.status_code == 200
-        assert b"Junctions" in resp.data
-
-
 # ── sharepoint.get_sharepoint_url ──────────────────────────────────────────────
 
 
@@ -201,7 +117,7 @@ class TestSharepointUrl:
     def test_returns_none_when_no_sync_roots(self) -> None:
         from pykorf.app.operation.integration.sharepoint import get_sharepoint_url
 
-        with patch("pykorf.app.sharepoint._read_sync_roots", return_value=[]):
+        with patch("pykorf.app.operation.integration.sharepoint._read_sync_roots", return_value=[]):
             result = get_sharepoint_url(r"C:\Users\alice\Documents\model.kdf")
         assert result is None
 
@@ -214,7 +130,9 @@ class TestSharepointUrl:
                 "https://company.sharepoint.com/sites/ProjectA/Documents",
             ),
         ]
-        with patch("pykorf.app.sharepoint._read_sync_roots", return_value=roots):
+        with patch(
+            "pykorf.app.operation.integration.sharepoint._read_sync_roots", return_value=roots
+        ):
             url = get_sharepoint_url(r"C:\Users\alice\Company\ProjectA\Documents\model.kdf")
         assert url == "https://company.sharepoint.com/sites/ProjectA/Documents/model.kdf"
 
@@ -224,7 +142,9 @@ class TestSharepointUrl:
         roots = [
             (r"C:\Users\alice\SP", "https://company.sharepoint.com/sites/SP"),
         ]
-        with patch("pykorf.app.sharepoint._read_sync_roots", return_value=roots):
+        with patch(
+            "pykorf.app.operation.integration.sharepoint._read_sync_roots", return_value=roots
+        ):
             url = get_sharepoint_url(r"C:\Users\alice\SP\P&ID 001.pdf")
         assert url is not None
         assert "%26" in url  # & encoded
@@ -236,105 +156,84 @@ class TestSharepointUrl:
         roots = [
             (r"C:\Users\alice\OneDrive", "https://company.sharepoint.com/personal/alice"),
         ]
-        with patch("pykorf.app.sharepoint._read_sync_roots", return_value=roots):
+        with patch(
+            "pykorf.app.operation.integration.sharepoint._read_sync_roots", return_value=roots
+        ):
             result = get_sharepoint_url(r"D:\OtherDrive\model.kdf")
         assert result is None
 
 
-# ── Session stale detection ────────────────────────────────────────────────────
+# ── Session stale detection (FastAPI session_state) ────────────────────────────
 
 
 class TestSessionStaleDetection:
     def test_is_stale_false_on_fresh_load(self, tmp_path: Path) -> None:
+        from pykorf.app.api.session_state import load_sync, is_stale_sync, clear_sync
         from pykorf import Model
-        from pykorf.app.web import session as sess
 
         kdf = tmp_path / "model.kdf"
         kdf.write_bytes(b"test content")
         model = Model(kdf)
-        sess.load(model, kdf)
+        load_sync(model, kdf)
 
-        assert sess.is_stale() is False
+        assert is_stale_sync() is False
 
-        sess.clear()
+        clear_sync()
 
     def test_is_stale_true_after_file_modified(self, tmp_path: Path) -> None:
+        from pykorf.app.api.session_state import load_sync, is_stale_sync, clear_sync
         from pykorf import Model
-        from pykorf.app.web import session as sess
 
         kdf = tmp_path / "model.kdf"
         kdf.write_bytes(b"test content")
         model = Model(kdf)
-        sess.load(model, kdf)
+        load_sync(model, kdf)
 
         import time
 
-        time.sleep(0.1)
+        time.sleep(0.01)
         kdf.write_bytes(b"modified content")
 
-        assert sess.is_stale() is True
+        assert is_stale_sync() is True
 
-        sess.clear()
+        clear_sync()
 
     def test_is_stale_false_after_reload(self, tmp_path: Path) -> None:
+        from pykorf.app.api.session_state import load_sync, is_stale_sync, reload_sync, clear_sync
         from pykorf import Model
-        from pykorf.app.web import session as sess
 
         kdf = tmp_path / "model.kdf"
         kdf.write_bytes(b"test content")
         model = Model(kdf)
-        sess.load(model, kdf)
+        load_sync(model, kdf)
 
         import time
 
-        time.sleep(0.1)
+        time.sleep(0.01)
         kdf.write_bytes(b"modified content")
 
-        sess.reload()
-        assert sess.is_stale() is False
+        reload_sync()
+        assert is_stale_sync() is False
 
-        sess.clear()
+        clear_sync()
 
     def test_is_stale_false_when_no_model(self) -> None:
-        from pykorf.app.web import session as sess
+        from pykorf.app.api.session_state import clear_sync, is_stale_sync
 
-        sess.clear()
-        assert sess.is_stale() is False
+        clear_sync()
+        assert is_stale_sync() is False
 
     def test_is_stale_false_when_file_deleted(self, tmp_path: Path) -> None:
+        from pykorf.app.api.session_state import load_sync, is_stale_sync, clear_sync
         from pykorf import Model
-        from pykorf.app.web import session as sess
 
         kdf = tmp_path / "model.kdf"
         kdf.write_bytes(b"test content")
         model = Model(kdf)
-        sess.load(model, kdf)
+        load_sync(model, kdf)
 
         kdf.unlink()
-        assert sess.is_stale() is False
 
-        sess.clear()
+        assert is_stale_sync() is False
 
-    def test_require_model_reload_on_stale(self, tmp_path: Path) -> None:
-        from pykorf import Model
-        from pykorf.app.web import session as sess
-        from pykorf.app.web.helpers import require_model
-        from pykorf.app import create_app
-
-        kdf = tmp_path / "model.kdf"
-        kdf.write_bytes(b"test content")
-        model = Model(kdf)
-        sess.load(model, kdf)
-
-        import time
-
-        time.sleep(0.1)
-        kdf.write_bytes(b"modified content")
-
-        flask_app = create_app()
-        with flask_app.test_request_context():
-            result = require_model()
-            assert result is not None
-            assert sess.is_stale() is False
-
-        sess.clear()
+        clear_sync()

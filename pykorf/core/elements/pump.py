@@ -2,7 +2,12 @@ r"""Pump element (``\\PUMP``)."""
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from pykorf.core.elements.base import BaseElement
+
+if TYPE_CHECKING:
+    from pykorf.core.model import Model
 
 
 class Pump(BaseElement):
@@ -49,15 +54,15 @@ class Pump(BaseElement):
     CURH = "CURH"  # [h1, h2, ..., h10, unit]
     CUREFF = "CUREFF"  # [eff1, eff2, ..., eff10, unit]
     CURNPSH = "CURNPSH"  # [npsh1, npsh2, ..., npsh10, unit]
-    NPSHA13 = "NPSHA13"  # [npsha_str, npsha_num, unit]
-    NPSHR13 = "NPSHR13"  # [npshr_str, npshr_num, unit]
-    NPSHAF = "NPSHAF"  # [npshaf1, npshaf2, npshaf3, npshaf4, unit, npshaf6, unit]
+    NPSH_AVAILABLE = "NPSHA13"  # [npsha_spec, npsha_calc, unit]
+    NPSH_R = "NPSHR13"  # [npshr_str, npshr_num, unit]
+    NPSHA_FACTOR = "NPSHAF"  # [npshaf1, npshaf2, npshaf3, vapor_pressure, vapour_pressure_unit, npsha_contigency, npsha_con_unit]
     NPSHRE = "NPSHRE"  # [npshre1, npshre2, unit, npshre4]
-    NPSHVV = "NPSHVV"  # [npshvv_bool]
+    NPSHVV = "NPSHVV"  # [npshvv]
     NPSHVT = "NPSHVT"  # ["npshvt_type"]
-    PZPRES = "PZPRES"  # [pz_dp, pz_suc, pz_dis, unit]
-    PZRAT = "PZRAT"  # ["dp Method", dPshutoff/dpCalc, dp margin]
-    PZVES = "PZVES"  # [vessel_pres, unit, vessel_level, unit]
+    SHUTOFF_PRESS = "PZPRES"  # [pz_dp, pz_suc, pz_dis, unit]
+    SHUTOFF_DP_MARGIN = "PZRAT"  # ["dp Method", dPshutoff/dpCalc, dp margin]
+    SHUTOFF_VESS = "PZVES"  # [vessel_pres, unit, vessel_level, unit]
 
     ALL = (
         BaseElement.NUM,
@@ -86,15 +91,15 @@ class Pump(BaseElement):
         CURH,
         CUREFF,
         CURNPSH,
-        NPSHA13,
-        NPSHR13,
-        NPSHAF,
+        NPSH_AVAILABLE,
+        NPSH_R,
+        NPSHA_FACTOR,
         NPSHRE,
         NPSHVV,
         NPSHVT,
-        PZPRES,
-        PZRAT,
-        PZVES,
+        SHUTOFF_PRESS,
+        SHUTOFF_DP_MARGIN,
+        SHUTOFF_VESS,
         "NOTES",
     )
 
@@ -107,6 +112,7 @@ class Pump(BaseElement):
 
     @property
     def inlet_pipe(self) -> int:
+        """Index of the inlet pipe (first connection)."""
         try:
             return int(self._scalar(self.CON, 0))
         except (TypeError, ValueError):
@@ -114,6 +120,7 @@ class Pump(BaseElement):
 
     @property
     def outlet_pipe(self) -> int:
+        """Index of the outlet pipe (second connection)."""
         try:
             return int(self._scalar(self.CON, 1))
         except (TypeError, ValueError):
@@ -314,7 +321,7 @@ class Pump(BaseElement):
     def npsha_calc_m(self) -> float:
         """Calculated NPSH available [m]."""
         try:
-            return float(self._scalar(Pump.NPSHA13, 1))
+            return float(self._scalar(Pump.NPSH_AVAILABLE, 1))
         except (TypeError, ValueError):
             return 0.0
 
@@ -322,7 +329,7 @@ class Pump(BaseElement):
     def npshr_calc_m(self) -> float:
         """Calculated NPSH required [m]."""
         try:
-            return float(self._scalar(Pump.NPSHR13, 1))
+            return float(self._scalar(Pump.NPSH_R, 1))
         except (TypeError, ValueError):
             return 0.0
 
@@ -339,7 +346,7 @@ class Pump(BaseElement):
     def shutoff_dp_kPa(self) -> float:
         """Differential pressure at shut-off [kPa]."""
         try:
-            return float(self._scalar(Pump.PZPRES, 0))
+            return float(self._scalar(Pump.SHUTOFF_PRESS, 0))
         except (TypeError, ValueError):
             return 0.0
 
@@ -347,7 +354,7 @@ class Pump(BaseElement):
     def suction_max_pressure_kPag(self) -> float:
         """Maximum suction pressure [kPag]."""
         try:
-            return float(self._scalar(Pump.PZPRES, 1))
+            return float(self._scalar(Pump.SHUTOFF_PRESS, 1))
         except (TypeError, ValueError):
             return 0.0
 
@@ -355,7 +362,7 @@ class Pump(BaseElement):
     def discharge_shutoff_pressure_kPag(self) -> float:
         """Discharge pressure at shut-off [kPag]."""
         try:
-            return float(self._scalar(Pump.PZPRES, 2))
+            return float(self._scalar(Pump.SHUTOFF_PRESS, 2))
         except (TypeError, ValueError):
             return 0.0
 
@@ -367,7 +374,7 @@ class Pump(BaseElement):
     def shutoff_margin(self) -> float:
         """Shut-off margin (multiplier)."""
         try:
-            return float(self._scalar(Pump.PZRAT, 1))
+            return float(self._scalar(Pump.SHUTOFF_DP_MARGIN, 1))
         except (TypeError, ValueError):
             return 1.25
 
@@ -379,7 +386,7 @@ class Pump(BaseElement):
     def suction_vessel_max_pressure_kPag(self) -> float:
         """Suction vessel maximum pressure [kPag]."""
         try:
-            return float(self._scalar(Pump.PZVES, 0))
+            return float(self._scalar(Pump.SHUTOFF_VESS, 0))
         except (TypeError, ValueError):
             return 0.0
 
@@ -387,7 +394,7 @@ class Pump(BaseElement):
     def suction_vessel_max_level_m(self) -> float:
         """Suction vessel maximum level [m]."""
         try:
-            return float(self._scalar(Pump.PZVES, 2))
+            return float(self._scalar(Pump.SHUTOFF_VESS, 2))
         except (TypeError, ValueError):
             return 0.0
 
@@ -395,47 +402,70 @@ class Pump(BaseElement):
     # Convenience
     # ------------------------------------------------------------------
 
-    def summary(self, export: bool = False) -> dict:
+    def summary(self, export: bool = False, model: Model | None = None) -> dict:
+        from pykorf.core.elements.pipe import Pipe
+
+        inlet_idx = self.inlet_pipe
+        density_in = None
+        viscosity = None
+        density_unit = "kg/m³"
+        visc_unit = "cP"
+
+        if model and inlet_idx > 0 and inlet_idx in model.pipes:
+            inlet_pipe = model.pipes[inlet_idx]
+            try:
+                density_in = float(inlet_pipe._scalar(Pipe.TPROP, 0))
+                viscosity = float(inlet_pipe._scalar(Pipe.TPROP, 5))
+                density_unit = str(inlet_pipe._scalar(Pipe.TPROP, 4))
+                visc_unit = str(inlet_pipe._scalar(Pipe.TPROP, 6))
+            except (TypeError, ValueError, IndexError):
+                pass
+
         if export:
-            suc_val, suc_unit = self.get_value_and_unit(Pump.PIN, val_index=1, unit_index=-1)
-            dis_val, dis_unit = self.get_value_and_unit(Pump.POUT, val_index=1, unit_index=-1)
+            suc_press, suc_unit = self.get_value_and_unit(Pump.PIN, val_index=1, unit_index=-1)
+            dis_press, dis_unit = self.get_value_and_unit(Pump.POUT, val_index=1, unit_index=-1)
 
             flow_val, flow_unit = self.get_value_and_unit(Pump.HQACT, val_index=2, unit_index=-1)
             head_val, head_unit = self.get_value_and_unit(Pump.HQACT, val_index=0, unit_index=1)
             dp_val, dp_unit = self.get_value_and_unit(Pump.DP, val_index=1, unit_index=-1)
 
-            npsha_val, npsh_unit = self.get_value_and_unit(Pump.NPSHA13, val_index=1, unit_index=-1)
-            npshr_val, _ = self.get_value_and_unit(Pump.NPSHR13, val_index=1, unit_index=-1)
+            npsha_val, npsh_unit = self.get_value_and_unit(Pump.NPSH_AVAILABLE, val_index=1, unit_index=-1)
+            npshr_val, _ = self.get_value_and_unit(Pump.NPSH_R, val_index=1, unit_index=-1)
 
             pow_val, pow_unit = self.get_value_and_unit(Pump.POW, val_index=0, unit_index=-1)
 
-            pz_dp_val, pz_unit = self.get_value_and_unit(Pump.PZPRES, val_index=0, unit_index=-1)
-            pz_suc_val, _ = self.get_value_and_unit(Pump.PZPRES, val_index=1, unit_index=-1)
-            pz_dis_val, _ = self.get_value_and_unit(Pump.PZPRES, val_index=2, unit_index=-1)
+            shutoff_dp, pres_unit = self.get_value_and_unit(Pump.SHUTOFF_PRESS, val_index=0, unit_index=-1)
+            max_suc_pressure, _ = self.get_value_and_unit(Pump.SHUTOFF_PRESS, val_index=1)
+            max_dis_pressure, _ = self.get_value_and_unit(Pump.SHUTOFF_PRESS, val_index=2)
 
-            margin_val, _ = self.get_value_and_unit(Pump.PZRAT, val_index=1, unit_index=-1)
+            margin_val, _ = self.get_value_and_unit(Pump.SHUTOFF_DP_MARGIN, val_index=1, unit_index=-1)
 
-            ves_pres_val, ves_p_unit = self.get_value_and_unit(
-                Pump.PZVES, val_index=0, unit_index=1
+            ves_max_press, press_unit = self.get_value_and_unit(
+                Pump.SHUTOFF_VESS, val_index=0, unit_index=1
             )
-            ves_lvl_val, ves_l_unit = self.get_value_and_unit(Pump.PZVES, val_index=2, unit_index=3)
+            ves_max_lvl, lvl_unit = self.get_value_and_unit(Pump.SHUTOFF_VESS, val_index=2, unit_index=3)
+
+            vap_pres_val, vap_pres_unit = self.get_value_and_unit(Pump.NPSHA_FACTOR, val_index=3, unit_index=4)
 
             return {
                 "Pump Name": self.name,
-                self.format_export_header("Suction Pressure", suc_unit): suc_val,
-                self.format_export_header("Discharge Pressure", dis_unit): dis_val,
+                self.format_export_header("Suction Pressure", suc_unit): suc_press,
+                self.format_export_header("Discharge Pressure", dis_unit): dis_press,
                 self.format_export_header("Shut-Off Margin", ""): margin_val,
-                self.format_export_header("Suc Vessel Max Pressure", ves_p_unit): ves_pres_val,
-                self.format_export_header("Suc Vessel Max Level", ves_l_unit): ves_lvl_val,
+                self.format_export_header("Suc Vessel Max Pressure", press_unit): ves_max_press,
+                self.format_export_header("Suc Vessel Max Level", lvl_unit): ves_max_lvl,
                 self.format_export_header("Volumetric Flow", flow_unit): flow_val,
                 self.format_export_header("Head", head_unit): head_val,
                 self.format_export_header("Differential Pressure", dp_unit): dp_val,
                 self.format_export_header("Hydraulic Power", pow_unit): pow_val,
                 self.format_export_header("NPSH Available", npsh_unit): npsha_val,
                 self.format_export_header("NPSH Required", npsh_unit): npshr_val,
-                self.format_export_header("Shut-Off DP", pz_unit): pz_dp_val,
-                self.format_export_header("Suction Max Pressure", pz_unit): pz_suc_val,
-                self.format_export_header("Discharge Shut-Off Pressure", pz_unit): pz_dis_val,
+                self.format_export_header("Shut-Off DP", pres_unit): shutoff_dp,
+                self.format_export_header("Suction Max Pressure", pres_unit): max_suc_pressure,
+                self.format_export_header("Discharge Shut-Off Pressure", pres_unit): max_dis_pressure,
+                self.format_export_header("Suction Density", density_unit): density_in,
+                self.format_export_header("Suction Viscosity", visc_unit): viscosity,
+                self.format_export_header("Vapour Pressure", vap_pres_unit): vap_pres_val,
             }
 
         return {

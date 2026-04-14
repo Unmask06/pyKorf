@@ -30,6 +30,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from pykorf.core.exceptions import ParseError
 from pykorf.core.utils import format_line, parse_line
@@ -90,6 +91,24 @@ class KdfRecord:
         self.values = values
         self.raw_line = ""
         return self
+
+    def __getitem__(self, index: int) -> Any:
+        """Index into the parameter value list: ``record[0]``, ``record[1]``, etc.
+
+        Equivalent to ``record.values[index]``.
+
+        Args:
+            index: Position in the value list.
+
+        Returns:
+            The value at the given index.
+
+        Example:
+            >>> rec = pipe.get_param("TFLOW")
+            >>> rec[0]   # same as rec.values[0]
+            '50;55;20'
+        """
+        return self.values[index]
 
 
 # Matches the opening backslash element type token: \PIPE, \PUMP etc.

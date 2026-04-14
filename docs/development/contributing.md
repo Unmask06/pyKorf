@@ -11,20 +11,14 @@ git clone https://github.com/YOUR_USERNAME/pykorf.git
 cd pykorf
 ```
 
-2. **Create a virtual environment:**
+2. **Create a virtual environment (uv recommended):**
 
 ```bash
-python -m venv .venv
+uv venv .venv --python 3.13
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 ```
 
 3. **Install in development mode:**
-
-```bash
-pip install -e ".[dev]"
-```
-
-Or with uv:
 
 ```bash
 uv pip install -e ".[dev]"
@@ -43,15 +37,15 @@ git checkout -b feature/my-feature
 3. **Run tests:**
 
 ```bash
-pytest
+uv run pytest
 ```
 
 4. **Run linting:**
 
 ```bash
-ruff check pykorf tests
-ruff format pykorf tests
-mypy pykorf
+uv run ruff check pykorf tests
+uv run ruff format pykorf tests
+uv run mypy pykorf
 ```
 
 5. **Commit and push:**

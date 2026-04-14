@@ -10,6 +10,10 @@ wheels/
 # ── Virtual environments ───────────────────────────────────
 .venv/
 
+# ── Frontend (built by distribute.bat; not checked in) ─────
+pykorf/app/frontend/dist/
+pykorf/app/frontend/node_modules/
+
 # ── Tool caches ───────────────────────────────────────────
 .mypy_cache/
 .pytest_cache/
@@ -28,6 +32,7 @@ network_data.json
 trail.html
 trail_vis.json
 lib/
+nul
 
 # ── Binary / large non-source files ──────────────────────
 *.xlsx

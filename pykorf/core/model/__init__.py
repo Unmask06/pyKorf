@@ -84,7 +84,9 @@ class Model(_ModelBase):
     def add_element(self, etype: str, name: str, params: dict[str, Any] | None = None) -> Any:
         return self._element_service.add_element(etype, name, params)
 
-    def add_elements(self, elements: list[tuple[str, str, dict[str, Any]]]) -> None:
+    def add_elements(
+        self, elements: list[tuple[str, str, dict[str, Any]]]
+    ) -> list[Any]:
         return self._element_service.add_elements(elements)
 
     def update_element(self, name: str, params: dict[str, Any]) -> None:
@@ -159,8 +161,8 @@ class Model(_ModelBase):
     def save_as(self, path: str | Path, *, overwrite: bool = False) -> None:
         return self._io_service.save_as(path, overwrite=overwrite)
 
-    def to_excel(self, path: str | Path) -> str:
-        return self._io_service.to_excel(path)
+    def to_excel(self, path: str | Path) -> None:
+        self._io_service.to_excel(path)
 
     def to_dataframes(self) -> dict[str, Any]:
         return self._io_service.to_dataframes()
@@ -176,7 +178,29 @@ class Model(_ModelBase):
         return self._summary_service.summary()
 
     def validate(self) -> list[str]:
-        return self._summary_service.validate()
+        """Run all validation checks (core + app-level + connectivity).
+
+        Combines three layers:
+        1. Core KDF-format checks (pipe sizing criteria, title symbol)
+        2. App-level checks (PMS spec, line-number parsing, pipe properties)
+        3. Connectivity checks (dangling references, unconnected elements)
+
+        Returns:
+            List of human-readable issue descriptions.
+        """
+        issues: list[str] = []
+        # Core: pipe sizing criteria + title symbol
+        issues.extend(self._summary_service.validate())
+        # App: PMS, line numbers, pipe properties vs spec
+        try:
+            from pykorf.app.validation import validate as _app_validate
+
+            issues.extend(_app_validate(self))
+        except ImportError:
+            pass  # App-level validation skipped (pure core usage)
+        # Connectivity: dangling pipe references, unconnected elements
+        issues.extend(self._connectivity_service.check_connectivity())
+        return issues
 
     def __repr__(self) -> str:
         return self._summary_service.__repr__()

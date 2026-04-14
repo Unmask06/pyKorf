@@ -75,7 +75,7 @@ uv run pykorf --debug
 - Use specific exception types from `pykorf.exceptions`
 - Prefer `try/except` over `contextlib.suppress` for clarity
 - Log errors with `structlog` before raising where appropriate
-- In Flask routes, collect errors in lists and display to user
+- In FastAPI routes, raise `UseCaseError` or `KorfError`; the registered exception handlers in `app.py` convert these to JSON responses
 
 ### Docstrings
 - Google style docstrings
@@ -94,39 +94,55 @@ Public surface: `Model` (alias `KorfModel`), a facade that delegates to six serv
 |---|---|---|
 | `ElementService` | `model._element_service` | CRUD for elements (add, update, delete, copy, move) |
 | `QueryService` | `model.query` | Filtering, parameter get/set |
-| `ConnectivityService` | `model.connectivity` | Connect/disconnect elements, validation |
-| `LayoutService` | `model.layout` | XY positioning, visualization |
-| `IOService` | `model.io` | save, to_dataframes, to_excel, from_excel |
-| `SummaryService` | `model.summary_service` | validate, repr, element accessors |
+| `ConnectivityService` | `model._connectivity_service` | Connect/disconnect elements, pipe reference validation |
+| `LayoutService` | `model._layout_service` | XY positioning, visualization |
+| `IOService` | `model._io_service` | save, to_dataframes, to_excel, from_excel |
+| `SummaryService` | `model._summary_service` | validate() (core layer), summary(), element accessors |
 
 `Model(path)` parses `.kdf` via `KdfParser` into memory. Changes persist only on `model.io.save()`.
+
+**Validation architecture:** `Model.validate()` combines three layers:
+1. **Core** (`SummaryService`) — pipe sizing criteria from KDF SIZ records, title symbol check
+2. **App** (`pykorf.app.validation`) — PMS spec compliance, line-number parsing, pipe properties
+3. **Connectivity** (`ConnectivityService`) — dangling references, unconnected elements
 
 ### Element Types (`pykorf/elements/`)
 
 17 typed element types. `ELEMENT_REGISTRY` maps KDF tokens (e.g. `\PIPE`) to classes. Multi-case parameters stored as semicolon-separated strings.
 
-### Web Layer (`pykorf/use_case/web/`)
+### Web Layer (`pykorf/app/api/` + `pykorf/app/frontend/`)
 
-Single-user, localhost-only Flask application. Entry point: `pykorf.cli:main`.
+Single-user, localhost-only FastAPI + Vue 3 SPA application. Entry point: `pykorf.__main__:main` → `run_server()` → uvicorn serving `create_app()`. The built Vue SPA lives in `pykorf/app/frontend/dist/`; FastAPI serves it via a catch-all `/{path:path}` route.
 
-**Session State** (`session.py`): One model lives in process memory at a time. Key functions:
-- `load(model, kdf_path)` — store model after opening (tracks file mtime)
-- `get_model()` / `get_kdf_path()` — retrieve active model
-- `reload()` — re-parse KDF from disk (call after every `model.io.save()`)
-- `is_stale()` — check if KDF file changed externally (e.g., by KORF GUI)
+**Session State** (`pykorf/app/api/session_state.py`): One model lives in process memory at a time. Async-safe via `asyncio.Lock`. Key functions:
+- `load(model, kdf_path)` / `load_sync(...)` — store model after opening
+- `get_model()` / `get_kdf_path()` — async accessors
+- `reload()` / `reload_sync()` — re-parse KDF from disk; call after every `model.io.save()`
+- `is_stale()` / `is_stale_sync()` — detect if KDF changed externally (e.g., by KORF GUI)
+- `flag_reload()` / `pop_reload_flag()` — stale-header flag for `_StaleHeaderMiddleware`
 
-**External Change Detection**: `require_model()` automatically checks if the KDF file has been modified since last load/save. If stale (e.g., user edited in KORF GUI), it reloads from disk and shows an info flash message. This ensures KORF's data always takes priority — unsaved pyKorf changes are discarded when external changes detected.
+Use `_sync` variants inside `asyncio.to_thread()` callbacks; use async variants in route handlers.
 
-**Route Guards**: All routes except `/` and `/preferences` require active session:
+**External Change Detection**: `require_model()` in `pykorf.app.api.deps` auto-reloads when the KDF is stale and sets the `X-Model-Stale: true` response header via middleware. The frontend axios client intercepts this header and shows a reload toast. KORF GUI changes always take priority.
+
+**Route Guards**: Routes requiring an active model use:
 ```python
-model = require_model()
-if is_redirect(model):
-    return model
+from pykorf.app.api.deps import require_model
+model = await require_model()
 ```
+401/409 from any route causes the axios client to redirect to `/`.
+
+**Routers** (`pykorf/app/api/routers/`): `session`, `model`, `data`, `settings`, `report`, `browse`, `doc_register`, `preferences`, `references`, `about` — all mounted under `/api/*`.
+
+**Frontend** (`pykorf/app/frontend/`): Vue 3 + Vite + Pinia + Tailwind CSS + TypeScript.
+- `src/stores/session.ts` — model status, `skipSpOverride` (doc register search guard), `kdfPath`
+- `src/types/api.ts` — Pydantic-mirrored TypeScript interfaces
+- `npm run dev` (from `pykorf/app/frontend/`) — HMR dev server, proxies `/api/*` to localhost:8000
+- `npm run build` — produces `dist/` consumed by FastAPI
 
 ### Import Rules
 
-**Always import from `pykorf.use_case.config`** in routes, not sub-modules (`preferences.py`, `pms.py`, etc.) directly.
+**Always import from `pykorf.app.operation.config.config`** in routes, not sub-modules (`preferences.py`, `pms.py`, etc.) directly.
 
 ## Test Patterns
 
@@ -144,7 +160,7 @@ Test markers: `unit`, `integration`, `slow`, `automation` (requires KORF GUI ins
 - **NEVER** delete files to resolve errors. Fix or rewrite tests; don't delete them.
 - All model operations are **in-memory**. Persistent only on `model.save()`.
 - Use `uv` for all package management and running commands.
-- After `model.io.save()`, always call `_sess.reload()` so in-memory state matches disk.
+- After `model.io.save()`, always call `session_state.reload_sync()` (inside `asyncio.to_thread`) so in-memory state matches disk.
 - **KORF data priority**: If KDF file is modified externally (e.g., by KORF GUI), pyKorf automatically reloads from disk on next navigation. Unsaved pyKorf changes are discarded — users should save before switching applications.
 
 ## Guardrails

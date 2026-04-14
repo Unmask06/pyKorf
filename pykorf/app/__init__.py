@@ -1,7 +1,7 @@
 """pyKorf Web UI and project-specific workflows.
 
 This module provides:
-1. Flask web application for local KDF model editing
+1. FastAPI web application for local KDF model editing
 2. High-level utilities for batch processing KDF files using PMS, HMB, and Global Settings
 
 Web UI
@@ -42,8 +42,6 @@ import sys
 import threading
 import webbrowser
 from pathlib import Path
-
-from flask import Flask
 
 from pykorf.app.operation.processor.batch_report import BatchReportGenerator
 from pykorf.app.operation.processor.bulk_copy import copy_fluids
@@ -87,117 +85,6 @@ from pykorf.app.operation.processor.processor import (
 )
 from pykorf.app.operation.config.settings import SettingsReader, UseCaseSettings
 
-# Flask app imports
-from pykorf.app.routes.browse import bp as browse_bp
-from pykorf.app.routes.bulk_copy import bp as bulk_copy_bp
-from pykorf.app.routes.preferences import bp as preferences_bp
-from pykorf.app.routes.data import bp as data_bp
-from pykorf.app.routes.file_picker import bp as file_picker_bp
-from pykorf.app.routes.model_core import bp as model_core_bp
-from pykorf.app.routes.pipe_criteria import bp as pipe_criteria_bp
-from pykorf.app.routes.references import bp as references_bp
-from pykorf.app.routes.report import bp as report_bp
-from pykorf.app.routes.doc_register import bp as doc_register_bp
-from pykorf.app.routes.about import bp as about_bp
-from pykorf.app.routes.global_parameters import bp as settings_bp
-
-_TEMPLATES_DIR = Path(__file__).parent / "templates"
-_STATIC_DIR = Path(__file__).parent / "static"
-
-
-def create_app() -> Flask:
-    """Create and configure the Flask application.
-
-    Returns:
-        Configured Flask app with all Blueprints registered.
-    """
-    import os
-
-    app = Flask(
-        __name__,
-        template_folder=str(_TEMPLATES_DIR),
-        static_folder=str(_STATIC_DIR),
-    )
-    app.secret_key = os.urandom(24)
-
-    app.register_blueprint(file_picker_bp)
-    app.register_blueprint(model_core_bp)
-    app.register_blueprint(settings_bp)
-    app.register_blueprint(data_bp)
-    app.register_blueprint(report_bp)
-    app.register_blueprint(pipe_criteria_bp)
-    app.register_blueprint(references_bp)
-    app.register_blueprint(browse_bp)
-    app.register_blueprint(preferences_bp)
-    app.register_blueprint(bulk_copy_bp)
-    app.register_blueprint(doc_register_bp)
-    app.register_blueprint(about_bp)
-
-    if os.environ.get("WERKZEUG_RUN_MAIN") != "true":
-        from pykorf.app.update_check import prefetch as _prefetch
-
-        _prefetch()
-
-    @app.route("/shutdown", methods=["POST"])
-    def shutdown():
-        """Stop the Flask server (localhost only)."""
-        import os
-        import threading as _threading
-
-        from flask import abort, request as _req
-
-        if _req.remote_addr != "127.0.0.1":
-            abort(403)
-        _threading.Timer(0.3, os._exit, args=[0]).start()
-        return ("", 204)
-
-    from pathlib import Path as _Path
-
-    from urllib.parse import quote as _quote
-
-    app.jinja_env.filters["split"] = lambda s, sep: s.split(sep)
-    app.jinja_env.filters["quote"] = lambda s: _quote(str(s), safe="")
-    app.jinja_env.filters["basename"] = lambda s: _Path(s).name if s else ""
-    app.jinja_env.filters["dirname"] = lambda s: str(_Path(s).parent) if s else ""
-    app.jinja_env.filters["ternary"] = lambda c, t, f: t if c else f
-
-    @app.after_request
-    def add_no_cache(response):
-        """Prevent browser caching of HTML pages and ensure UTF-8 for JS/CSS."""
-        if "text/html" in response.content_type:
-            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-            response.headers["Pragma"] = "no-cache"
-        if "javascript" in response.content_type and "charset" not in response.content_type:
-            response.content_type = "text/javascript; charset=utf-8"
-        return response
-
-    @app.context_processor
-    def inject_kdf_mtime():
-        """Inject kdf_mtime_str, update_available, and pykorf_version into every template context."""
-        import os
-        from datetime import datetime
-        from importlib.metadata import PackageNotFoundError, version
-        from pykorf.app.update_check import is_update_available
-        from pykorf.app.web import session as _sess
-
-        kdf_path = _sess.get_kdf_path()
-        kdf_mtime_str = ""
-        if kdf_path:
-            try:
-                mtime = os.path.getmtime(kdf_path)
-                kdf_mtime_str = datetime.fromtimestamp(mtime).strftime("%d %b %H:%M")
-            except OSError:
-                pass
-
-        try:
-            pkg_version = version("pykorf")
-        except PackageNotFoundError:
-            pkg_version = "dev"
-
-        return {"kdf_mtime_str": kdf_mtime_str, "update_available": is_update_available(), "pykorf_version": pkg_version}
-
-    return app
-
 
 def _setup_console_logging(debug: bool = True) -> None:
     """Add a stderr StreamHandler to the pykorf logger if none exists yet.
@@ -225,27 +112,17 @@ def _setup_console_logging(debug: bool = True) -> None:
 
 
 def run_server(port: int = 8000, debug: bool = True) -> None:
-    """Start the Flask development server and open the browser.
+    """Start the web server and open the browser.
+
+    Launches the FastAPI + Vue application via uvicorn.
 
     Args:
         port: TCP port to listen on (default 8000).
-        debug: When True (developer mode), log at DEBUG level and enable
-            Flask's reloader. When False (user mode), log at WARNING level
-            and disable the reloader for a quieter terminal.
+        debug: When True (developer mode), enable auto-reload and DEBUG level.
     """
-    import os
+    from pykorf.app.api.app import run_server as _run_fastapi
 
-    _setup_console_logging(debug=debug)
-    app = create_app()
-    url = f"http://localhost:{port}"
-    print(f"\n  pyKorf Web UI -> {url}\n  Press Ctrl+C to stop.\n")
-
-    # Only open the browser from the parent process; the reloader child sets
-    # WERKZEUG_RUN_MAIN=true, so this guard prevents a double-open on reload.
-    if os.environ.get("WERKZEUG_RUN_MAIN") != "true":
-        threading.Timer(0.8, webbrowser.open, args=[url]).start()
-
-    app.run(host="127.0.0.1", port=port, debug=debug, use_reloader=debug)
+    _run_fastapi(port=port, debug=debug)
 
 
 __all__ = [
@@ -282,6 +159,5 @@ __all__ = [
     "lookup_stream",
     "parse_stream_from_notes",
     # Web app functions
-    "create_app",
     "run_server",
 ]

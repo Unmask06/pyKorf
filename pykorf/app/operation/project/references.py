@@ -29,6 +29,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
+from pykorf.app.operation.config.config import get_doc_register_sp_site_url
 from pykorf.core.log import get_logger
 
 
@@ -203,8 +204,15 @@ class ReferencesStore:
         link = link.strip()
         if link.startswith(("http://", "https://", "file://", "ftp://")):
             return link
-        # Local path — convert to file:// URL
+        # SharePoint-relative path (e.g. "sites/project/...") — build full URL
+        if link.startswith("sites/"):
+            base = (get_doc_register_sp_site_url() or "").rstrip("/")
+            clean = link.replace("\\", "/")
+            return f"{base}/{clean}" if base else clean
+        # Local path — must be absolute to convert to file:// URL
         p = Path(link)
+        if not p.is_absolute():
+            return link  # return as-is; can't form a valid URI
         return p.as_uri()
 
     def create_shortcuts(self, kdf_path: Path) -> tuple[int, Path]:

@@ -590,26 +590,58 @@ class Pipe(BaseElement):
             return round(crit.rho_v2_max)
         return None
 
-    def check_criteria(self) -> str:
+    def check_criteria(self) -> dict[str, str | bool]:
         """Check if calculated results meet sizing criteria.
 
-        Returns 'PASS' if DP/DL and Velocity are within criteria, otherwise 'FAIL'.
-        """
-        dp_crit = self.sizing_dp_criteria
-        vel_crit = self.sizing_velocity_criteria
+        Returns a structured dict with per-field violation flags and overall status:
+            - 'status': 'PASS' or 'FAIL'
+            - 'dp_exceeds': True if dp_calc > max_dp_criteria
+            - 'vel_below_min': True if vel_calc < min_velocity_criteria
+            - 'vel_above_max': True if vel_calc > max_velocity_criteria
+            - 'rho_v2_below_min': True if rho_v2 < min_rho_v2_criteria
+            - 'rho_v2_above_max': True if rho_v2 > max_rho_v2_criteria
+
+        Note: ρV² criteria are looked up from sizing tables, not stored in SIZ.
+        """  # noqa: RUF002
+        result: dict[str, str | bool] = {
+            "status": "PASS",
+            "dp_exceeds": False,
+            "vel_below_min": False,
+            "vel_above_max": False,
+            "rho_v2_below_min": False,
+            "rho_v2_above_max": False,
+        }
+
         dp_calc = self.pressure_drop_per_100m
         vel_calc = self.velocity[0] if self.velocity else 0.0
+        rho_v2_calc = self.rho_v2
 
-        # Logic for PASS/FAIL
-        dp_pass = True
-        if isinstance(dp_crit, (int, float)):
-            dp_pass = dp_calc <= dp_crit
+        max_dp = self.max_dp_criteria
+        if max_dp is not None and dp_calc > max_dp:
+            result["dp_exceeds"] = True
+            result["status"] = "FAIL"
 
-        vel_pass = True
-        if isinstance(vel_crit, (int, float)):
-            vel_pass = vel_calc <= vel_crit
+        min_vel = self.min_velocity_criteria
+        if min_vel is not None and vel_calc < min_vel:
+            result["vel_below_min"] = True
+            result["status"] = "FAIL"
 
-        return "PASS" if dp_pass and vel_pass else "FAIL"
+        max_vel = self.max_velocity_criteria
+        if max_vel is not None and vel_calc > max_vel:
+            result["vel_above_max"] = True
+            result["status"] = "FAIL"
+
+        rho_v2_min = self.min_rho_v2_criteria
+        if rho_v2_min is not None and rho_v2_calc is not None and rho_v2_calc < rho_v2_min:
+            result["rho_v2_below_min"] = True
+            result["status"] = "FAIL"
+
+        rho_v2_max = self.max_rho_v2_criteria
+        if rho_v2_max is not None and rho_v2_calc is not None and rho_v2_calc > rho_v2_max:
+            result["rho_v2_above_max"] = True
+            result["status"] = "FAIL"
+
+        return result
 
     # ------------------------------------------------------------------
     # Fluid properties
@@ -799,7 +831,7 @@ class Pipe(BaseElement):
                 self.format_export_header("DP / DL", dp_calc_unit): dp_calc_val,
                 self.format_export_header("Velocity", vel_calc_unit): vel_calc_val,
                 "ρV² calc [Pa]": round(self.rho_v2) if self.rho_v2 is not None else None,  # noqa: RUF001
-                "Criteria Check": self.check_criteria(),
+                "Criteria Check": self.check_criteria()["status"],
             }
         return {
             "name": self.name,

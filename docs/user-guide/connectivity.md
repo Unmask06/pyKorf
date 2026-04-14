@@ -93,10 +93,11 @@ print(connected)  # ['Suction', 'Discharge']
 ### Check Connectivity
 
 ```python
-# Validate all connections
-issues = model.check_connectivity()
-if issues:
-    for issue in issues:
+# Validate all connections (part of model.validate())
+issues = model.validate()
+conn_issues = [i for i in issues if "references pipe index" in i or "references non-existent" in i]
+if conn_issues:
+    for issue in conn_issues:
         print(issue)
 else:
     print("All connections valid")
@@ -232,9 +233,10 @@ model.connect_elements("V1", "Prod", pipe_name="V1_Discharge")
 ```python
 # After modifying connectivity
 model.connect_elements(...)
-issues = model.check_connectivity()
-if issues:
-    raise ValueError(f"Connectivity issues: {issues}")
+issues = model.validate()
+conn_issues = [i for i in issues if "references" in i]
+if conn_issues:
+    raise ValueError(f"Connectivity issues: {conn_issues}")
 ```
 
 ### 4. Check for Orphans

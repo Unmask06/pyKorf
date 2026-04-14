@@ -153,6 +153,31 @@ class IOService:
         dfs = self._model_to_dataframes()
         self._dataframes_to_excel(dfs, path)
 
+    def from_excel(self, path: str | Path) -> None:
+        """Import model parameters from an Excel workbook.
+
+        Reads the Excel file and updates the model's elements with the
+        parameters from the workbook.
+
+        Parameters
+        ----------
+        path:
+            Source ``.xlsx`` file path.
+
+        Raises:
+            FileNotFoundError: If the Excel file does not exist.
+            ValueError: If the Excel file cannot be parsed.
+
+        Example:
+            >>> model._io_service.from_excel("Pumpcases.xlsx")
+        """
+        source_path = Path(path)
+        if not source_path.is_file():
+            raise FileNotFoundError(f"Excel file not found: {source_path}")
+
+        dfs = self._excel_to_dataframes(source_path)
+        self._update_model_from_dataframes(dfs)
+
     def export_to_json(
         self,
         path: str | Path,
@@ -986,6 +1011,125 @@ class IOService:
                 # Excel sheet names max 31 chars
                 safe_name = sheet_name[:31]
                 df.to_excel(writer, sheet_name=safe_name, index=False)
+
+    def _update_model_from_dataframes(self, dfs: dict[str, pd.DataFrame]) -> None:
+        """Update the model's records from DataFrames.
+
+        This is the inverse of :meth:`_model_to_dataframes`. Unlike
+        :meth:`model_from_dataframes` which creates a new Model instance,
+        this method updates the existing model's parser records.
+
+        Args:
+            dfs: Dict of DataFrames as returned by :meth:`_model_to_dataframes`.
+
+        Raises:
+            ExportError: If reconstruction fails.
+        """
+        from pykorf.core.parser import _ETYPE_RE, KdfRecord
+        from pykorf.core.utils import parse_line
+
+        indexed: list[tuple[int, KdfRecord]] = []
+
+        for sheet_name, df in dfs.items():
+            if _LINE_NO_COL not in df.columns:
+                raise ExportError(
+                    f"Sheet {sheet_name!r} is missing required column {_LINE_NO_COL!r}.",
+                )
+
+            is_header = _ETYPE_COL not in df.columns
+
+            for _, row in df.iterrows():
+                line_no = int(row[_LINE_NO_COL])
+
+                if is_header:
+                    raw_val = row.get(_RAW_LINE_COL, "")
+                    raw = str(raw_val) if pd.notna(raw_val) else ""
+                    indexed.append((line_no, KdfRecord(None, None, None, [], raw_line=raw)))
+                    continue
+
+                # Element sheet — use raw_line for perfect round-trip fidelity
+                raw_val = row.get(_RAW_LINE_COL) if _RAW_LINE_COL in df.columns else None
+                if raw_val is not None and pd.notna(raw_val):
+                    # Rebuild from raw_line to preserve original quoting
+                    raw_line = str(raw_val)
+                    tokens = parse_line(raw_line)
+                    if tokens:
+                        m = _ETYPE_RE.match(tokens[0])
+                        if m and len(tokens) >= 3:
+                            etype = m.group(1).upper()
+                            try:
+                                idx = int(tokens[1])
+                            except (ValueError, IndexError):
+                                indexed.append(
+                                    (line_no, KdfRecord(None, None, None, [], raw_line=raw_line))
+                                )
+                                continue
+                            param = tokens[2].strip('"').upper()
+                            vals = tokens[3:]
+                            indexed.append(
+                                (
+                                    line_no,
+                                    KdfRecord(etype, idx, param, vals, raw_line=raw_line),
+                                )
+                            )
+                        else:
+                            indexed.append(
+                                (line_no, KdfRecord(None, None, None, [], raw_line=raw_line))
+                            )
+                    else:
+                        indexed.append(
+                            (line_no, KdfRecord(None, None, None, [], raw_line=raw_line))
+                        )
+                elif _VALUES_COL in df.columns:
+                    # Fallback: rebuild from values column
+                    values_val = row.get(_VALUES_COL)
+                    if values_val is not None and pd.notna(values_val):
+                        etype = str(row[_ETYPE_COL])
+                        idx = int(row[_INDEX_COL])
+                        param = str(row[_PARAM_COL])
+                        values_str = str(values_val)
+                        values = self._parse_values_string(values_str)
+                        kdf_line = self._build_kdf_line(etype, idx, param, values)
+                        tokens = parse_line(kdf_line)
+                        if tokens:
+                            m = _ETYPE_RE.match(tokens[0])
+                            if m and len(tokens) >= 3:
+                                etype = m.group(1).upper()
+                                try:
+                                    idx = int(tokens[1])
+                                except (ValueError, IndexError):
+                                    indexed.append(
+                                        (
+                                            line_no,
+                                            KdfRecord(None, None, None, [], raw_line=kdf_line),
+                                        )
+                                    )
+                                    continue
+                                param = tokens[2].strip('"').upper()
+                                vals = tokens[3:]
+                                indexed.append(
+                                    (
+                                        line_no,
+                                        KdfRecord(etype, idx, param, vals, raw_line=kdf_line),
+                                    )
+                                )
+                            else:
+                                indexed.append(
+                                    (line_no, KdfRecord(None, None, None, [], raw_line=kdf_line))
+                                )
+
+        # Sort by original line number to restore file order
+        indexed.sort(key=lambda t: t[0])
+
+        # Update the model's parser records
+        self.model._parser._records = [record for _, record in indexed]
+
+        # Restore line ending from dataframe metadata if available
+        if _HEADER_SHEET in dfs and "line_ending" in dfs[_HEADER_SHEET].attrs:
+            self.model._parser._line_ending = dfs[_HEADER_SHEET].attrs["line_ending"]
+
+        # Rebuild model collections to reflect updated records
+        self.model._build_collections()
 
 
 # Note: from_dataframes and from_excel are classmethods that CREATE Model instances.

@@ -75,10 +75,10 @@ class SettingsReader:
         """
         try:
             import pandas as pd
-        except ImportError:
+        except ImportError as err:
             raise ExcelConversionError(
                 "pandas is required for Excel conversion. Install with: pip install pandas openpyxl"
-            )
+            ) from err
 
         from pykorf.core.utils import read_excel_safe
 
@@ -92,7 +92,7 @@ class SettingsReader:
 
         settings_data: dict[str, Any] = {}
 
-        for idx, row in df.iterrows():
+        for _, row in df.iterrows():
             key = str(row.iloc[0]).strip() if pd.notna(row.iloc[0]) else ""
             if not key:
                 continue

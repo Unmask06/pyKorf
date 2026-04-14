@@ -233,9 +233,9 @@ def apply_rename_line_settings(model: Model) -> list[str]:
         second_element = name_rec.values[1] if len(name_rec.values) > 1 else "Pipe"
 
         new_name = extracted
-        if len(new_name) > 12:
+        if len(new_name) > 20:
             logger.warning(
-                "Pipe %s: extracted name %s exceeds 12 char limit, skipping",
+                "Pipe %s: extracted name %s exceeds 20 char limit, skipping",
                 pipe_name,
                 extracted,
             )
@@ -245,9 +245,9 @@ def apply_rename_line_settings(model: Model) -> list[str]:
             suffix_num = 1
             while True:
                 new_name = f"{extracted}_{suffix_num}"
-                if len(new_name) > 12:
+                if len(new_name) > 20:
                     logger.warning(
-                        "Pipe %s: generated name %s exceeds 12 char limit, skipping",
+                        "Pipe %s: generated name %s exceeds 20 char limit, skipping",
                         pipe_name,
                         new_name,
                     )
@@ -393,8 +393,8 @@ def apply_global_settings(
 
     if save and results:
         model.save()
-        from pykorf.app.web import session as _sess
+        from pykorf.app.api.session_state import reload_sync
 
-        _sess.reload()
+        reload_sync()
 
     return results

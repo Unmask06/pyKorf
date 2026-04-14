@@ -4,7 +4,8 @@ This guide covers all installation options for pyKorf.
 
 ## Requirements
 
-- **Python**: 3.10 or higher
+- **Python**: 3.13 exactly (enforced in `pyproject.toml`)
+- **Package manager**: `uv` (recommended) or `pip`
 - **Operating System**: Windows, macOS, or Linux
 - **Optional**: Windows with KORF installed (for GUI automation)
 
@@ -105,10 +106,10 @@ git clone https://github.com/pykorf/pykorf.git
 cd pykorf
 ```
 
-2. Create a virtual environment:
+2. Create a virtual environment (using uv):
 
 ```bash
-python -m venv .venv
+uv venv .venv --python 3.13
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
 
@@ -116,12 +117,6 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 ```bash
 uv pip install -e ".[dev]"
-```
-
-Or with pip:
-
-```bash
-pip install -e ".[dev]"
 ```
 
 ## Verify Installation
