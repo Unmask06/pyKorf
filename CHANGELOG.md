@@ -5,6 +5,28 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.0] - 2026-04-14
+
+### What's New
+
+- Pump parameters now include density and viscosity fields for more detailed fluid property modeling.
+- Each reference can now be categorized and filtered separately from the search results.
+- Pipe sizing criteria violations are now highlighted in the UI so you can see exactly which pipes exceed limits.
+- The file browser now lets you filter by folder or file type when browsing paths.
+
+### Improved
+
+- pyKorf now uses a modern Vue 3 SPA with FastAPI instead of the older Flask-based web layer, giving a faster and more responsive interface.
+- API responses are now consistently typed with Pydantic schemas, improving reliability and error messaging.
+- Table spacing across the interface has been tightened for a cleaner look.
+
+### Fixed
+
+- pyKorf launcher now handles auto-update errors gracefully with clear messages instead of cryptic failures.
+- Global settings changes now trigger a proper model reload so saved values take effect immediately.
+- Duplicate flash messages no longer appear on the References page.
+- Session state properly triggers a reload after applying global settings.
+
 ## [0.18.0] - 2026-04-11
 
 ### What's New
