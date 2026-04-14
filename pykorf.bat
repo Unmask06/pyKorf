@@ -13,7 +13,7 @@ REM              Bump on any launcher fix/improvement; enables auto-update.
 REM AUTO_UPDATE: TRUE = silently self-update when a newer launcher is on GitHub.
 REM              FALSE = never self-update; user must get new bat from administrator.
 set "BAT_MAJOR=0"
-set "BAT_VERSION=0.6.1"
+set "BAT_VERSION=0.6.2"
 set "AUTO_UPDATE=TRUE"
 
 set "APPDATA_DIR=%APPDATA%\pyKorf"
@@ -44,8 +44,8 @@ if %errorlevel% neq 0 goto :self_update_skip
 if not exist "!SELF_TMP!" goto :self_update_skip
 
 REM Extract BAT_VERSION from downloaded file
-for /f "tokens=2 delims==" %%v in ('findstr /c:"set \"BAT_VERSION=" "!SELF_TMP!"') do set "SELF_REMOTE_VER=%%v"
-set "SELF_REMOTE_VER=!SELF_REMOTE_VER:~1,-1!"
+for /f "tokens=2 delims==" %%v in ('findstr "BAT_VERSION=" "!SELF_TMP!"') do set "SELF_REMOTE_VER=%%v"
+set "SELF_REMOTE_VER=!SELF_REMOTE_VER:"=!"
 if "!SELF_REMOTE_VER!"=="" goto :self_update_skip
 
 REM Parse local version
