@@ -1,5 +1,6 @@
 import logging
 import re
+from collections.abc import Mapping
 from typing import Any
 
 import openpyxl
@@ -17,9 +18,17 @@ _logger = logging.getLogger(__name__)
 # ── Validation string parsing ──────────────────────────────────────────
 
 _SEVERITY_RULES: list[tuple[re.Pattern, str, str]] = [
-    (re.compile(r"fails sizing|exceeds criteria|mismatch|not found in PMS", re.I), "Error", "Sizing"),
+    (
+        re.compile(r"fails sizing|exceeds criteria|mismatch", re.I),
+        "Error",
+        "Sizing",
+    ),
     (re.compile(r"references pipe index .+ which does not exist", re.I), "Error", "Connectivity"),
-    (re.compile(r"missing line number|missing NAME|missing CON|missing", re.I), "Warning", "Missing Data"),
+    (
+        re.compile(r"missing line number|missing NAME|missing CON|missing|not found in PMS", re.I),
+        "Warning",
+        "Missing Data",
+    ),
     (re.compile(r"Add Title", re.I), "Info", "Model Setup"),
     (re.compile(r"pipe.*criteria", re.I), "Error", "Sizing"),
     (re.compile(r"CONN|connectiv|nozzle|CON value", re.I), "Error", "Connectivity"),
@@ -135,12 +144,14 @@ class ResultExporter:
         try:
             for msg in self.model.validate():
                 severity, category, elem = _classify_issue(msg)
-                issues.append({
-                    "Severity": severity,
-                    "Category": category,
-                    "Element": elem,
-                    "Message": msg,
-                })
+                issues.append(
+                    {
+                        "Severity": severity,
+                        "Category": category,
+                        "Element": elem,
+                        "Message": msg,
+                    }
+                )
         except Exception as exc:
             _logger.warning("validation failed: %s", exc)
 
@@ -169,10 +180,12 @@ class ResultExporter:
         if template_path and Path(template_path).exists():
             workbook = load_workbook(template_path)
             worksheet = workbook.active
+            assert worksheet is not None, "Template workbook should have an active sheet"
             worksheet.title = sheet_name
         else:
             workbook = openpyxl.Workbook()
             worksheet = workbook.active
+            assert worksheet is not None, "New workbook should have an active sheet"
             worksheet.title = sheet_name
 
             # Set page setup for A3 Landscape
@@ -425,6 +438,7 @@ class ResultExporter:
     def _write_references_sheet(self, workbook: Any) -> None:
         """Creates the 'References & Design Basis' sheet as the first sheet (A4 Landscape 80%)."""
         ref_ws = workbook.create_sheet("References & Design Basis", 0)
+        assert ref_ws is not None, "Failed to create References & Design Basis sheet"
         ref_ws.page_setup.paperSize = ref_ws.PAPERSIZE_A4
         ref_ws.page_setup.orientation = ref_ws.ORIENTATION_LANDSCAPE
         ref_ws.page_setup.scale = 75
@@ -530,6 +544,7 @@ class ResultExporter:
             return
 
         val_ws = workbook.create_sheet("Validation", 0)
+        assert val_ws is not None, "Failed to create Validation sheet"
         val_ws.page_setup.paperSize = val_ws.PAPERSIZE_A4
         val_ws.page_setup.orientation = val_ws.ORIENTATION_LANDSCAPE
         val_ws.page_setup.scale = 90
@@ -550,13 +565,23 @@ class ResultExporter:
         warning_count = (df["Severity"] == "Warning").sum()
         info_count = (df["Severity"] == "Info").sum()
         summary = f"{len(df)} issue(s) found — {error_count} error(s), {warning_count} warning(s), {info_count} info"
-        val_ws.cell(row=row, column=1, value=summary).font = Font(italic=True, size=10, color="555555")
+        val_ws.cell(row=row, column=1, value=summary).font = Font(
+            italic=True, size=10, color="555555"
+        )
         row += 2
 
         # Table headers
         headers = list(df.columns)
-        severity_colors = {"Error": "9C0006", "Warning": "9C5700", "Info": "003366"}
-        severity_fills = {"Error": "FFC7CE", "Warning": "FFEB9C", "Info": "D9E2F3"}
+        severity_colors: Mapping[str, str] = {
+            "Error": "9C0006",
+            "Warning": "9C5700",
+            "Info": "003366",
+        }
+        severity_fills: Mapping[str, str] = {
+            "Error": "FFC7CE",
+            "Warning": "FFEB9C",
+            "Info": "D9E2F3",
+        }
         for c_idx, header in enumerate(headers, start=1):
             cell = val_ws.cell(row=row, column=c_idx, value=header)
             cell.font = self._styles["header"]
@@ -568,13 +593,15 @@ class ResultExporter:
 
         # Table rows
         for _, r in df.iterrows():
-            severity = r.get("Severity", "")
+            severity = str(r.get("Severity", "")) if r.get("Severity", "") is not None else ""
             color = severity_colors.get(severity, "555555")
             fill = severity_fills.get(severity, "F2F2F2")
 
-            val_ws.cell(row=row, column=1, value=r.get("Severity", "")).font = Font(
-                bold=True, size=10, color=color
-            )
+            val_ws.cell(
+                row=row,
+                column=1,
+                value=str(r.get("Severity", "")) if r.get("Severity", "") is not None else "",
+            ).font = Font(bold=True, size=10, color=color)
             val_ws.cell(row=row, column=1).fill = PatternFill(
                 start_color=fill, end_color=fill, fill_type="solid"
             )
@@ -608,7 +635,7 @@ class ResultExporter:
         def _fmt(col: str) -> str | None:
             try:
                 numeric = pd.to_numeric(df[col], errors="coerce")
-                lo,hi = numeric.min() , numeric.max()
+                lo, hi = numeric.min(), numeric.max()
                 if pd.isna(lo) or pd.isna(hi):
                     return None
                 return f"{lo:.4g} - {hi:.4g}"
@@ -666,7 +693,11 @@ class ResultExporter:
         ]
 
     def _extract_pumps(self) -> list[dict]:
-        return [pump.summary(export=True) for idx, pump in self.model.pumps.items() if idx != 0]
+        return [
+            pump.summary(export=True, model=self.model)
+            for idx, pump in self.model.pumps.items()
+            if idx != 0
+        ]
 
     def _extract_compressors(self) -> list[dict]:
         return [

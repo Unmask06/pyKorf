@@ -59,10 +59,12 @@ class TestElementSummary:
 
     def test_pump_summary(self):
         model = self._model()
-        pump = model.pump(1)
-        s = pump.summary(export=True)
+        pump = model.pumps[1]
+        s = pump.summary(export=True, model=model)
         assert "Hydraulic Power [kW]" in s
         assert s["Hydraulic Power [kW]"] > 0
+        assert "Suction Density [kg/m3]" in s
+        assert "Suction Viscosity [cP]" in s
 
     def test_all_pumps(self):
         model = self._model()

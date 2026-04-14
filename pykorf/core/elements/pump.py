@@ -2,7 +2,12 @@ r"""Pump element (``\\PUMP``)."""
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from pykorf.core.elements.base import BaseElement
+
+if TYPE_CHECKING:
+    from pykorf.core.model import Model
 
 
 class Pump(BaseElement):
@@ -53,7 +58,7 @@ class Pump(BaseElement):
     NPSHR13 = "NPSHR13"  # [npshr_str, npshr_num, unit]
     NPSHAF = "NPSHAF"  # [npshaf1, npshaf2, npshaf3, npshaf4, unit, npshaf6, unit]
     NPSHRE = "NPSHRE"  # [npshre1, npshre2, unit, npshre4]
-    NPSHVV = "NPSHVV"  # [npshvv_bool]
+    NPSHVV = "NPSHVV"  # [vapour_pressure]
     NPSHVT = "NPSHVT"  # ["npshvt_type"]
     PZPRES = "PZPRES"  # [pz_dp, pz_suc, pz_dis, unit]
     PZRAT = "PZRAT"  # ["dp Method", dPshutoff/dpCalc, dp margin]
@@ -107,6 +112,7 @@ class Pump(BaseElement):
 
     @property
     def inlet_pipe(self) -> int:
+        """Index of the inlet pipe (first connection)."""
         try:
             return int(self._scalar(self.CON, 0))
         except (TypeError, ValueError):
@@ -114,6 +120,7 @@ class Pump(BaseElement):
 
     @property
     def outlet_pipe(self) -> int:
+        """Index of the outlet pipe (second connection)."""
         try:
             return int(self._scalar(self.CON, 1))
         except (TypeError, ValueError):
@@ -395,7 +402,25 @@ class Pump(BaseElement):
     # Convenience
     # ------------------------------------------------------------------
 
-    def summary(self, export: bool = False) -> dict:
+    def summary(self, export: bool = False, model: Model | None = None) -> dict:
+        from pykorf.core.elements.pipe import Pipe
+
+        inlet_idx = self.inlet_pipe
+        density_in = None
+        viscosity = None
+        density_unit = "kg/m³"
+        visc_unit = "cP"
+
+        if model and inlet_idx > 0 and inlet_idx in model.pipes:
+            inlet_pipe = model.pipes[inlet_idx]
+            try:
+                density_in = float(inlet_pipe._scalar(Pipe.TPROP, 0))
+                viscosity = float(inlet_pipe._scalar(Pipe.TPROP, 5))
+                density_unit = str(inlet_pipe._scalar(Pipe.TPROP, 4))
+                visc_unit = str(inlet_pipe._scalar(Pipe.TPROP, 6))
+            except (TypeError, ValueError, IndexError):
+                pass
+
         if export:
             suc_val, suc_unit = self.get_value_and_unit(Pump.PIN, val_index=1, unit_index=-1)
             dis_val, dis_unit = self.get_value_and_unit(Pump.POUT, val_index=1, unit_index=-1)
@@ -420,6 +445,9 @@ class Pump(BaseElement):
             )
             ves_lvl_val, ves_l_unit = self.get_value_and_unit(Pump.PZVES, val_index=2, unit_index=3)
 
+            vap_pres_val, _ = self.get_value_and_unit(Pump.NPSHVV, val_index=0)
+            vap_pres_unit = self._scalar(Pump.NPSHAF, 4)
+
             return {
                 "Pump Name": self.name,
                 self.format_export_header("Suction Pressure", suc_unit): suc_val,
@@ -436,6 +464,9 @@ class Pump(BaseElement):
                 self.format_export_header("Shut-Off DP", pz_unit): pz_dp_val,
                 self.format_export_header("Suction Max Pressure", pz_unit): pz_suc_val,
                 self.format_export_header("Discharge Shut-Off Pressure", pz_unit): pz_dis_val,
+                self.format_export_header("Suction Density", density_unit): density_in,
+                self.format_export_header("Suction Viscosity", visc_unit): viscosity,
+                self.format_export_header("Vapour Pressure", vap_pres_unit): vap_pres_val,
             }
 
         return {

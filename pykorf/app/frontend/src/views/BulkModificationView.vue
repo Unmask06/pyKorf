@@ -254,11 +254,12 @@ onMounted(() => {
                   <div class="pk-hint mt-1">Center all elements on the page</div>
                 </div>
                 <div>
-                  <button @click="snap()"
-                    class="w-full border border-blue-500 text-blue-600 rounded py-1.5 text-sm hover:bg-blue-50 flex items-center justify-center gap-2"
-                    :disabled="snapLoading.isLoading.value">
-                    <Magnet class="w-4 h-4" /> Snap Orthogonal
-                  </button>
+                    <button @click="snap()"
+                      class="w-full border border-blue-500 text-blue-600 rounded py-1.5 text-sm hover:bg-blue-50 flex items-center justify-center gap-2"
+                      :disabled="true" style="pointer-events: none; opacity: 0.5; cursor: not-allowed;">
+                      <Magnet class="w-4 h-4" /> Snap Orthogonal
+                    </button>
+
                   <div class="pk-hint mt-1">Snap near-orthogonal connections and align to grid.</div>
                 </div>
               </div>
