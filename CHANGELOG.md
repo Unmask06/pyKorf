@@ -5,6 +5,26 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.2] - 2026-04-15
+
+### What's New
+
+- SharePoint URLs are now automatically converted to local file paths using your OneDrive sync configuration, even without manually adding path overrides.
+- Applying PMS or HMB data now accepts SharePoint URLs directly — no need to convert them to local paths first.
+- The Batch Report view now remembers and pre-fills the last folder you used.
+- Batch reports now support generating individual Excel reports for each KDF file alongside the combined report.
+- Clicking a pipe name in the Bulk Copy panel now appends it to the target field when that field is focused.
+
+### Improved
+
+- The Document Register "Save Config" button now shows a clear error message if the Excel file path cannot be resolved or is not found, rather than silently doing nothing.
+- Default PMS source, Document Register path, and batch folder are now reliably pre-filled when opening their respective pages, even when SharePoint overrides are configured.
+- Saving Document Register configuration now updates the displayed path to reflect the resolved local path.
+
+### Fixed
+
+- The "Generate individual report for each KDF" checkbox in Batch Report was previously ignored — it now works correctly.
+
 ## [0.19.1] - 2026-04-14
 
 ### Fixed

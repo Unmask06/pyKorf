@@ -53,6 +53,7 @@ def create_app() -> FastAPI:
         report,
         session,
         settings,
+        sharepoint,
     )
 
     app.include_router(session.router, prefix="/api/session", tags=["session"])
@@ -61,15 +62,10 @@ def create_app() -> FastAPI:
     app.include_router(settings.router, prefix="/api/settings", tags=["settings"])
     app.include_router(report.router, prefix="/api/report", tags=["report"])
     app.include_router(browse.router, prefix="/api/browse", tags=["browse"])
-    app.include_router(
-        doc_register.router, prefix="/api/doc-register", tags=["doc-register"]
-    )
-    app.include_router(
-        preferences.router, prefix="/api/preferences", tags=["preferences"]
-    )
-    app.include_router(
-        references.router, prefix="/api/references", tags=["references"]
-    )
+    app.include_router(doc_register.router, prefix="/api/doc-register", tags=["doc-register"])
+    app.include_router(preferences.router, prefix="/api/preferences", tags=["preferences"])
+    app.include_router(references.router, prefix="/api/references", tags=["references"])
+    app.include_router(sharepoint.router, prefix="/api/sharepoint", tags=["sharepoint"])
     app.include_router(about.router, prefix="/api/about", tags=["about"])
 
     # --- Register exception handlers ---

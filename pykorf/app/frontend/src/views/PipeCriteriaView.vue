@@ -354,8 +354,8 @@ onMounted(() => {
                   class="rounded" title="Select all visible" />
               </th>
               <th style="width: 60px;" class="pk-table-head-cell">#</th>
-              <th style="width: 130px;" class="pk-table-head-cell">Pipe</th>
-              <th style="width: 160px;" class="pk-table-head-cell">State</th>
+              <th style="width: 180px;" class="pk-table-head-cell">Pipe</th>
+              <th style="width: 130px;" class="pk-table-head-cell">State</th>
               <th style="min-width: 180px;" class="pk-table-head-cell">Criteria</th>
               <th style="width: 90px;" class="pk-table-head-cell text-center">dP calc<br /><small class="font-normal text-gray-400">{{ dpUnit }}</small></th>
               <th style="width: 100px;" class="pk-table-head-cell text-center crit-col">dP max<br /><small class="font-normal text-gray-400">{{ dpUnit }}</small></th>
@@ -375,7 +375,7 @@ onMounted(() => {
                   @change="toggleRow(name)" class="rounded" />
               </td>
               <td class="px-3 py-1.5 text-gray-400 font-mono text-xs">{{ idx }}</td>
-              <td class="px-3 py-1.5 font-mono font-semibold text-sm">{{ name }}</td>
+              <td class="px-3 py-1.5 font-mono text-sm">{{ name }}</td>
               <td class="px-3 py-1.5">
                 <select :value="editedCriteria[name]?.state || ''"
                   @change="updateEntry(name, 'state', ($event.target as HTMLSelectElement).value)"

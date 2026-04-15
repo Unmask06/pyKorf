@@ -18,6 +18,20 @@ const refPipe = ref('')
 const targetPipes = ref('')
 const excludeMode = ref(false)
 const pipeFilter = ref('')
+const activeField = ref<'ref' | 'target' | null>(null)
+
+function onPipeClick(p: string) {
+  if (activeField.value === 'target') {
+    const current = targetPipes.value.trim()
+    const items = current ? current.split(',').map(s => s.trim()).filter(Boolean) : []
+    if (!items.includes(p)) {
+      items.push(p)
+      targetPipes.value = items.join(', ')
+    }
+  } else {
+    refPipe.value = p
+  }
+}
 
 const copyLoading = useLoading(async () => {
   const req: BulkCopyRequest = {
@@ -79,7 +93,8 @@ onMounted(() => {
                 <FileText class="w-4 h-4 text-gray-500" />
               </span>
               <input v-model="refPipe" type="text" list="pipe-datalist"
-                class="pk-input-mono rounded-none" placeholder="e.g. L1" autocomplete="off" />
+                class="pk-input-mono rounded-none" placeholder="Type pipe name..." autocomplete="off"
+                @focus="activeField = 'ref'" @blur="activeField = null" />
               <datalist id="pipe-datalist">
                 <option v-for="p in model.pipes" :key="p" :value="p" />
               </datalist>
@@ -95,8 +110,9 @@ onMounted(() => {
                 <Files class="w-4 h-4 text-gray-500" />
               </span>
               <input v-model="targetPipes" type="text"
-                class="pk-input-mono rounded-none" placeholder="e.g. L2, L3, L4 (leave empty for ALL pipes)"
-                autocomplete="off" />
+                class="pk-input-mono rounded-none" placeholder="Select the pipes from list"
+                autocomplete="off"
+                @focus="activeField = 'target'" @blur="activeField = null" />
               <button type="button" @click="targetPipes = ''"
                 class="flex items-center justify-center px-2 py-1.5 text-sm border border-l-0 border-gray-300 rounded-r-md bg-gray-100 hover:bg-gray-200"
                 title="Clear targets">
@@ -143,7 +159,7 @@ onMounted(() => {
           <div style="max-height: 400px; overflow-y: auto;">
             <div class="divide-y">
               <button v-for="p in filteredPipes" :key="p" type="button"
-                @click="refPipe = p"
+                @mousedown.prevent="onPipeClick(p)"
                 class="w-full text-left px-3 py-1.5 flex items-center gap-2 hover:bg-gray-50 text-sm border-b last:border-b-0">
                 <FileText class="w-3 h-3 text-gray-400 shrink-0" /> {{ p }}
               </button>

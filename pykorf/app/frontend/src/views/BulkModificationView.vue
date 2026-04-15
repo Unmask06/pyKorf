@@ -16,6 +16,8 @@ import type {
   CenterLayoutResponse,
   EmptyRequest,
   GlobalSetting,
+  OkResponse,
+  PreferencesResponse,
   SettingsApplyResponse,
   SettingsGetResponse,
   SnapOrthogonalRequest,
@@ -217,11 +219,39 @@ function resultLines(result: SettingsApplyResponse | ApplyDataResponse | null): 
   return lines
 }
 
-onMounted(() => {
+// Resolve SharePoint URL to local path
+async function resolvePmsSpUrl() {
+  const url = pmsSource.value.trim()
+  if (!url.startsWith('https://')) return
+
+  try {
+    const { data } = await api.post<OkResponse>('/api/sharepoint/resolve-url', { sp_url: url })
+    if (data.success && data.message) {
+      pmsSource.value = data.message
+      toast.success('Converted to local path.')
+    } else {
+      toast.error(data.error || 'Could not resolve SharePoint URL.')
+    }
+  } catch (err: unknown) {
+    toast.error(getErrorMessage(err, 'Failed to resolve SharePoint URL.'))
+  }
+}
+
+onMounted(async () => {
   if (!session.isLoaded) router.push('/')
   fetchSettings()
   if (model.prereqs?.pms_path) {
     pmsSource.value = model.prereqs.pms_path
+  } else {
+    try {
+      const { data } = await api.get<PreferencesResponse>('/api/preferences/')
+      // default_pms_url already resolves: saved path → factory default on the backend
+      if (data.default_pms_url) {
+        pmsSource.value = data.default_pms_url
+      }
+    } catch {
+      // ignore — prefill is best-effort
+    }
   }
 })
 </script>
@@ -281,7 +311,8 @@ onMounted(() => {
                       <FileSpreadsheet class="w-4 h-4 text-gray-500" />
                     </span>
                     <textarea v-model="pmsSource" class="pk-input-mono resize-none rounded-none"
-                      rows="2" placeholder="C:/config/pms_data.xlsx" />
+                      rows="2" placeholder="C:/config/pms_data.xlsx"
+                      @click="resolvePmsSpUrl" />
                     <button type="button" @click="showPmsBrowser = true"
                       class="flex items-center justify-center px-3 py-1.5 text-sm border border-l-0 border-gray-300 rounded-r-md bg-gray-100 hover:bg-gray-200"
                       title="Browse for PMS Excel file">

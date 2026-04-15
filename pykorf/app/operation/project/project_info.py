@@ -14,15 +14,19 @@ from importlib.resources import files
 from pathlib import Path
 from typing import Any
 
+# Load factory defaults once at module level (self-contained for backward compatibility)
+_FACTORY_DEFAULTS = tomllib.loads(
+    files("pykorf.app").joinpath("project_defaults.toml").read_bytes().decode("utf-8")
+)
+
 
 def load_factory_defaults() -> dict[str, Any]:
     """Load factory defaults from the bundled project_defaults.toml.
 
     Returns:
-        Nested dict with keys: company, project, engineering.
+        Nested dict with keys: company, project, engineering, sharepoint.
     """
-    toml_bytes = files("pykorf.app").joinpath("project_defaults.toml").read_bytes()
-    return tomllib.loads(toml_bytes.decode("utf-8"))
+    return _FACTORY_DEFAULTS
 
 
 def build_smart_defaults(kdf_path: str | Path | None = None) -> dict[str, str]:
@@ -40,12 +44,11 @@ def build_smart_defaults(kdf_path: str | Path | None = None) -> dict[str, str]:
     """
     from pykorf.app.operation.config.preferences import get_project_info_overrides
 
-    factory = load_factory_defaults()
     overrides = get_project_info_overrides()
 
-    co = factory.get("company", {})
-    pr = factory.get("project", {})
-    en = factory.get("engineering", {})
+    co = _FACTORY_DEFAULTS.get("company", {})
+    pr = _FACTORY_DEFAULTS.get("project", {})
+    en = _FACTORY_DEFAULTS.get("engineering", {})
 
     company1: str = overrides.get("company1", co.get("company1", ""))
     company2: str = overrides.get("company2", co.get("company2", ""))

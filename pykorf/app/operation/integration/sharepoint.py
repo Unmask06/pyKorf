@@ -177,9 +177,9 @@ def clear_cache() -> None:
 def get_local_path_from_sp_url(sp_url: str) -> str | None:
     r"""Convert a SharePoint URL to its local OneDrive-synced path.
 
-    Reads the user-configured SharePoint overrides and returns the
-    corresponding local path for SharePoint URLs that match a configured
-    override mapping. Returns ``None`` if no match is found.
+    Checks user-configured SharePoint overrides first, then falls back to
+    OneDrive registry sync roots for automatic conversion. Returns ``None``
+    if no match is found.
 
     This is the reverse operation of :func:`get_sharepoint_url`.
 
@@ -187,7 +187,8 @@ def get_local_path_from_sp_url(sp_url: str) -> str | None:
         sp_url: SharePoint URL string (e.g. ``https://tenant.sharepoint.com/sites/...``).
 
     Returns:
-        Local path string if a matching override is found, ``None`` otherwise.
+        Local path string if a matching override or registry root is found,
+        ``None`` otherwise.
 
     Example::
 
@@ -209,12 +210,8 @@ def get_local_path_from_sp_url(sp_url: str) -> str | None:
     # Normalize SP URL: decode, replace forward slashes with backslashes
     sp_url_normalized = unquote(sp_url).replace("/", "\\").rstrip("\\")
 
-    # Check against user-configured overrides (most specific first)
+    # 1. Check against user-configured overrides (most specific first)
     overrides = get_sp_overrides()
-    if not overrides:
-        logger.debug("no_sp_overrides_configured")
-        return None
-
     for local_root, sp_root in sorted(overrides.items(), key=lambda t: -len(t[1])):
         sp_root_normalized = unquote(sp_root).replace("/", "\\").rstrip("\\")
         if sp_url_normalized.lower().startswith(sp_root_normalized.lower()):
@@ -249,5 +246,40 @@ def get_local_path_from_sp_url(sp_url: str) -> str | None:
             )
             return local_path
 
-    logger.debug("sp_url_no_matching_override", sp_url=sp_url)
+    # 2. Fall back to OneDrive registry sync roots
+    sync_roots = _read_sync_roots()
+    for local_mount_point, url_namespace in sync_roots:
+        url_ns_normalized = unquote(url_namespace).replace("/", "\\").rstrip("\\")
+        if sp_url_normalized.lower().startswith(url_ns_normalized.lower()):
+            relative = sp_url_normalized[len(url_ns_normalized) :].lstrip("\\/")
+
+            # Security: Prevent path traversal attacks
+            safe_path = Path(local_mount_point.rstrip("\\/")).joinpath(relative)
+            try:
+                safe_path_resolved = safe_path.resolve()
+                local_root_resolved = Path(local_mount_point.rstrip("\\/")).resolve()
+                if not str(safe_path_resolved).startswith(str(local_root_resolved)):
+                    logger.warning(
+                        "path_traversal_attempt_blocked_registry",
+                        sp_url=sp_url,
+                        attempted_path=str(safe_path),
+                    )
+                    return None
+            except (OSError, ValueError) as e:
+                logger.warning(
+                    "path_normalization_failed_registry",
+                    sp_url=sp_url,
+                    error=str(e),
+                )
+                return None
+
+            local_path = str(safe_path)
+            logger.info(
+                "sp_url_converted_to_local_registry",
+                sp_url=sp_url,
+                local_path=local_path,
+            )
+            return local_path
+
+    logger.debug("sp_url_no_matching_override_or_registry", sp_url=sp_url)
     return None

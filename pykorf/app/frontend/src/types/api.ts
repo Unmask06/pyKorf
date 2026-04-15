@@ -184,6 +184,7 @@ export interface ImportRequest {
 
 export interface BatchReportRequest {
   batch_folder?: string | null
+  single_report?: boolean
 }
 
 export interface ReportResponse {
@@ -331,6 +332,9 @@ export interface PreferencesResponse {
   doc_register_db_last_imported: string | null
   sp_overrides_configured: boolean
   default_doc_register_url: string
+  default_pms_url: string
+  default_sp_site_url: string
+  last_batch_folder_path: string | null
 }
 
 export interface AddSpOverrideRequest {
@@ -372,6 +376,10 @@ export interface DocRegisterRebuildResponse {
   message: string
   stats: Record<string, unknown>
   error: string | null
+}
+
+export interface ResolveSpUrlRequest {
+  sp_url: string
 }
 
 // ─── Browse ──────────────────────────────────────────────────────────────────

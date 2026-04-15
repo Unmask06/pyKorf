@@ -19,10 +19,16 @@ from pykorf.app.api.schemas import (
     SetLicenseKeyRequest,
     SetSkipSpRequest,
 )
+from pykorf.app.operation.config.defaults import (
+    get_doc_register_url,
+    get_default_sp_site_url,
+    get_pms_excel_url,
+)
 from pykorf.app.operation.config.preferences import (
     get_doc_register_db_last_imported,
     get_doc_register_excel_path,
     get_doc_register_sp_site_url,
+    get_last_batch_folder_path,
     get_license_key,
     get_sp_overrides,
     get_skip_sp_override,
@@ -58,7 +64,10 @@ async def get_preferences() -> PreferencesResponse:
         doc_register_sp_site_url=get_doc_register_sp_site_url(),
         doc_register_db_last_imported=get_doc_register_db_last_imported(),
         sp_overrides_configured=len(overrides) > 0,
-        default_doc_register_url="",
+        default_doc_register_url=get_doc_register_url(),
+        default_pms_url=get_pms_excel_url(),
+        default_sp_site_url=get_default_sp_site_url(),
+        last_batch_folder_path=get_last_batch_folder_path(),
     )
 
 

@@ -56,11 +56,6 @@ class BatchReportGenerator:
         self._errors: list[str] = []
 
     @property
-    def file_count(self) -> int:
-        """Return number of KDF files discovered."""
-        return len(self.kdf_files)
-
-    @property
     def errors(self) -> list[str]:
         """Return list of errors encountered during processing."""
         return self._errors.copy()
@@ -89,6 +84,7 @@ class BatchReportGenerator:
         element_types: list[str] | None = None,
         include_line_numbers: bool = True,
         progress_callback: Callable[[int, int, str], None] | None = None,
+        single_report: bool = False,
     ) -> str:
         """Generate multi-sheet Excel report.
 
@@ -98,6 +94,8 @@ class BatchReportGenerator:
             include_line_numbers: Parse and add line_number column for pipes.
             progress_callback: Optional ``(current, total, filename)`` callback
                 called before each file is processed.
+            single_report: If True, also generate an individual Excel report
+                next to each KDF file.
 
         Returns:
             Path to generated Excel file.
@@ -130,7 +128,7 @@ class BatchReportGenerator:
             if progress_callback:
                 progress_callback(i, len(self.kdf_files), kdf_file.name)
             try:
-                model = Model.load(str(kdf_file))
+                model = Model.load(kdf_file)
                 exporter = ResultExporter(model)
 
                 for sheet_name in types_to_process:
@@ -155,13 +153,9 @@ class BatchReportGenerator:
                             "source_path": str(kdf_file),
                         }
                         if "Remarks" in types_to_process:
-                            elements_by_type["Remarks"].append(
-                                {**meta, "Remarks": refs.remarks}
-                            )
+                            elements_by_type["Remarks"].append({**meta, "Remarks": refs.remarks})
                         if "Hold Items" in types_to_process:
-                            elements_by_type["Hold Items"].append(
-                                {**meta, "Hold Items": refs.hold}
-                            )
+                            elements_by_type["Hold Items"].append({**meta, "Hold Items": refs.hold})
                     except Exception as e:
                         logger.warning(
                             "batch_pykorf_load_failed",
@@ -178,16 +172,56 @@ class BatchReportGenerator:
                         }
                         for msg in model.validate():
                             severity, category, elem = _classify_issue(msg)
-                            elements_by_type["Validation"].append({
-                                **meta,
-                                "Severity": severity,
-                                "Category": category,
-                                "Element": elem,
-                                "Message": msg,
-                            })
+                            elements_by_type["Validation"].append(
+                                {
+                                    **meta,
+                                    "Severity": severity,
+                                    "Category": category,
+                                    "Element": elem,
+                                    "Message": msg,
+                                }
+                            )
                     except Exception as e:
                         logger.warning(
                             "batch_validation_failed",
+                            file=str(kdf_file),
+                            error=str(e),
+                        )
+
+                if single_report:
+                    try:
+                        ref_store = ReferencesStore.load(kdf_file)
+                        basis = ref_store.basis if ref_store else ""
+                        remarks = ref_store.remarks if ref_store else ""
+                        hold = ref_store.hold if ref_store else ""
+                        references = (
+                            [
+                                {
+                                    "name": r.name,
+                                    "category": r.category,
+                                    "link": r.link,
+                                    "description": r.description,
+                                }
+                                for r in ref_store.references
+                            ]
+                            if ref_store
+                            else []
+                        )
+                        single_exporter = ResultExporter(
+                            model, basis=basis, remarks=remarks, hold=hold, references=references
+                        )
+                        single_path = kdf_file.parent / f"{kdf_file.stem}_report.xlsx"
+                        single_exporter.export_to_excel(str(single_path))
+                        logger.info(
+                            "batch_single_report_saved",
+                            path=str(single_path),
+                            file=kdf_file.name,
+                        )
+                    except Exception as e:
+                        error_msg = f"Error generating single report for {kdf_file.name}: {e}"
+                        self._errors.append(error_msg)
+                        logger.error(
+                            "batch_single_report_error",
                             file=str(kdf_file),
                             error=str(e),
                         )
