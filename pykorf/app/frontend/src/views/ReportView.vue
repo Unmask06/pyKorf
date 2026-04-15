@@ -13,6 +13,7 @@ import type {
   ExportRequest,
   GenerateReportRequest,
   ImportRequest,
+  PreferencesResponse,
   ReportResponse,
 } from '../types/api'
 
@@ -25,6 +26,7 @@ const reportPath = ref('')
 const exportPath = ref('')
 const importPath = ref('')
 const batchFolder = ref('')
+const singleReport = ref(false)
 const showReportBrowser = ref(false)
 const showExportBrowser = ref(false)
 const showImportBrowser = ref(false)
@@ -56,6 +58,7 @@ const importLoading = useLoading(async () => {
 const batchLoading = useLoading(async () => {
   const req: BatchReportRequest = {
     batch_folder: batchFolder.value || null,
+    single_report: singleReport.value,
   }
   await api.post<ReportResponse>('/api/report/batch', req)
 })
@@ -101,7 +104,7 @@ function copyToClipboard(text: string) {
   toast.info('Path copied to clipboard.')
 }
 
-onMounted(() => {
+onMounted(async () => {
   if (!session.isLoaded) router.push('/')
   const kdf = session.kdfPath
   if (kdf) {
@@ -112,6 +115,14 @@ onMounted(() => {
     const stem = filename.includes('.') ? filename.substring(0, filename.lastIndexOf('.')) : filename
     reportPath.value = `${folder}${sep}${stem}_report.xlsx`
     exportPath.value = `${folder}${sep}${stem}_export.xlsx`
+  }
+  try {
+    const { data } = await api.get<PreferencesResponse>('/api/preferences/')
+    if (data.last_batch_folder_path) {
+      batchFolder.value = data.last_batch_folder_path
+    }
+  } catch {
+    // ignore — prefill is best-effort
   }
 })
 </script>
@@ -173,6 +184,11 @@ onMounted(() => {
             <div class="pk-hint">
               All <code class="bg-gray-100 rounded px-1">.kdf</code> files in this folder will be processed into a combined report.
             </div>
+          </div>
+          <div class="mb-3 flex items-center gap-2 text-sm text-gray-700">
+            <input id="singleReport" type="checkbox" v-model="singleReport"
+              class="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500" />
+            <label for="singleReport">Generate individual report for each KDF</label>
           </div>
           <button @click="doBatch" class="w-full bg-gray-500 text-white rounded py-1.5 text-sm hover:bg-gray-600 flex items-center justify-center gap-1 disabled:opacity-50"
             :disabled="batchLoading.isLoading.value">

@@ -72,7 +72,9 @@ async def generate_report(req: GenerateReportRequest) -> ReportResponse:
 
             await asyncio.to_thread(_do_export)
             set_last_report_path(str(report_file))
-            messages.append(StatusMessage(type="success", message=f"Report saved to: {report_file}"))
+            messages.append(
+                StatusMessage(type="success", message=f"Report saved to: {report_file}")
+            )
         except Exception as exc:
             errors.append(f"Error generating report: {exc}")
 
@@ -152,7 +154,7 @@ async def batch_report(req: BatchReportRequest) -> ReportResponse:
 
             def _do_batch():
                 generator = BatchReportGenerator(batch_folder)
-                output_path = generator.generate_report()
+                output_path = generator.generate_report(single_report=req.single_report)
                 return generator, output_path
 
             generator, output_path = await asyncio.to_thread(_do_batch)

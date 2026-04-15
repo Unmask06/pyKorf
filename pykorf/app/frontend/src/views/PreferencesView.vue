@@ -1,15 +1,48 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { usePreferencesStore } from '../stores/preferences'
+import { api, getErrorMessage } from '../api/client'
 import { useToastStore } from '../composables/useToast'
 import { useLoading } from '../composables/useLoading'
-import { getErrorMessage } from '../api/client'
-import { Plus, Trash2, Loader, FolderOpen, Database, Key, CloudCheck, CloudOff, PenSquare, Info, Lock, Save, RotateCw, Clock, ExternalLink, AlertTriangle, FileSpreadsheet } from 'lucide-vue-next'
+import { Plus, Trash2, Loader, FolderOpen, Database, Key, CloudCheck, CloudOff, PenSquare, Info, Lock, Save, RotateCw, Clock, ExternalLink, AlertTriangle, FileSpreadsheet, Lightbulb } from 'lucide-vue-next'
 import PathBrowser from '../components/PathBrowser.vue'
-import type { DocRegisterRebuildResponse } from '../types/api'
+import type {
+  PreferencesResponse,
+  AddSpOverrideRequest,
+  EditSpOverrideRequest,
+  DeleteSpOverrideRequest,
+  SetSkipSpRequest,
+  SetDocRegisterConfigRequest,
+  OkResponse,
+  DocRegisterRebuildResponse,
+} from '../types/api'
 
-const prefs = usePreferencesStore()
 const toast = useToastStore()
+
+// Preferences state
+const spOverrides = ref<Record<string, string>>({})
+const skipSpOverride = ref(false)
+const docRegisterExcelPath = ref<string | null>(null)
+const docRegisterSpSiteUrl = ref<string | null>(null)
+const docRegisterDbLastImported = ref<string | null>(null)
+const spOverridesConfigured = ref(false)
+const defaultDocRegisterUrl = ref('')
+const defaultSpSiteUrl = ref('')
+
+function applyPreferences(data: PreferencesResponse) {
+  spOverrides.value = data.sp_overrides
+  skipSpOverride.value = data.skip_sp_override
+  docRegisterExcelPath.value = data.doc_register_excel_path
+  docRegisterSpSiteUrl.value = data.doc_register_sp_site_url
+  docRegisterDbLastImported.value = data.doc_register_db_last_imported
+  spOverridesConfigured.value = data.sp_overrides_configured
+  defaultDocRegisterUrl.value = data.default_doc_register_url
+  defaultSpSiteUrl.value = data.default_sp_site_url
+}
+
+async function fetchAll() {
+  const { data } = await api.get<PreferencesResponse>('/api/preferences/')
+  applyPreferences(data)
+}
 
 // SP Override form
 const newLocalPath = ref('')
@@ -48,15 +81,17 @@ async function addOverride() {
     toast.error('Both local path and SharePoint URL are required.')
     return
   }
-  const result = await prefs.addOverride(newLocalPath.value, newSpUrl.value)
-  if (result.success) {
+  const req: AddSpOverrideRequest = { local_path: newLocalPath.value, sp_url: newSpUrl.value }
+  const { data } = await api.post<OkResponse>('/api/preferences/sp-overrides/add', req)
+  if (data.success) {
+    await fetchAll()
     newLocalPath.value = ''
     newSpUrl.value = ''
     spConfirmCheck.value = false
     editOriginalPath.value = null
     toast.success('Override added.')
   } else {
-    toast.error(result.error || 'Failed to add override.')
+    toast.error(data.error || 'Failed to add override.')
   }
 }
 
@@ -68,8 +103,14 @@ function editOverride(localPath: string, spUrl: string) {
 
 async function saveOverride() {
   if (!editOriginalPath.value) return
-  const result = await prefs.editOverride(editOriginalPath.value, newLocalPath.value, newSpUrl.value)
-  if (result.success) {
+  const req: EditSpOverrideRequest = {
+    original_local_path: editOriginalPath.value,
+    local_path: newLocalPath.value,
+    sp_url: newSpUrl.value,
+  }
+  const { data } = await api.post<OkResponse>('/api/preferences/sp-overrides/edit', req)
+  if (data.success) {
+    await fetchAll()
     editOriginalPath.value = null
     newLocalPath.value = ''
     newSpUrl.value = ''
@@ -79,9 +120,14 @@ async function saveOverride() {
 }
 
 async function deleteOverride(localPath: string) {
-  const result = await prefs.deleteOverride(localPath)
-  if (result.success) toast.info('Override removed.')
-  else toast.error(result.error || 'Failed to remove.')
+  const req: DeleteSpOverrideRequest = { local_path: localPath }
+  const { data } = await api.post<OkResponse>('/api/preferences/sp-overrides/delete', req)
+  if (data.success) {
+    await fetchAll()
+    toast.info('Override removed.')
+  } else {
+    toast.error(data.error || 'Failed to remove.')
+  }
 }
 
 function cancelEdit() {
@@ -92,33 +138,64 @@ function cancelEdit() {
 }
 
 async function toggleSkipSp() {
-  await prefs.setSkipSp(!prefs.skipSpOverride)
-  toast.info(prefs.skipSpOverride ? 'SP override check skipped.' : 'SP override check enabled.')
+  const newValue = !skipSpOverride.value
+  const req: SetSkipSpRequest = { skip: newValue }
+  await api.post<OkResponse>('/api/preferences/skip-sp', req)
+  skipSpOverride.value = newValue
+  toast.info(newValue ? 'SP override check skipped.' : 'SP override check enabled.')
 }
 
 // Doc Register config
 const docConfigLoading = useLoading(async () => {
-  await prefs.setDocRegisterConfig({
+  const req: SetDocRegisterConfigRequest = {
     excel_path: docExcelPath.value || null,
     sp_site_url: docSpSiteUrl.value || null,
-  })
-  toast.info('Document Register config saved.')
-  rebuildResult.value = null
+  }
+  const { data } = await api.post<DocRegisterRebuildResponse>('/api/preferences/doc-register', req)
+  rebuildResult.value = data
+  if (data.success) {
+    await fetchAll()
+    docExcelPath.value = defaultDocRegisterUrl.value
+    docSpSiteUrl.value = defaultSpSiteUrl.value
+    toast.info(data.message || 'Document Register config saved.')
+  } else {
+    toast.error(data.error || data.message || 'Failed to save Document Register config.')
+  }
 })
 
 // Rebuild DB
 const rebuildLoading = useLoading(async () => {
-  const result = await prefs.rebuildDocRegisterDb()
-  rebuildResult.value = result
-  if (result.success) toast.success(result.message)
-  else toast.error(result.error || result.message)
+  const { data } = await api.post<DocRegisterRebuildResponse>('/api/doc-register/rebuild-db', {})
+  rebuildResult.value = data
+  if (data.success) toast.success(data.message)
+  else toast.error(data.error || data.message)
 })
 
+// Resolve SharePoint URL to local path
+async function resolveSpUrl() {
+  const url = docExcelPath.value.trim()
+  if (!url.startsWith('https://')) return
+
+  try {
+    const { data } = await api.post<OkResponse>('/api/sharepoint/resolve-url', { sp_url: url })
+    if (data.success && data.message) {
+      docExcelPath.value = data.message
+      toast.success('Converted to local path.')
+    } else {
+      toast.error(data.error || 'Could not resolve SharePoint URL.')
+    }
+  } catch (err: unknown) {
+    toast.error(getErrorMessage(err, 'Failed to resolve SharePoint URL.'))
+  }
+}
+
 onMounted(() => {
-  prefs.fetchAll()
+  fetchAll()
     .then(() => {
-      docExcelPath.value = prefs.docRegisterExcelPath || ''
-      docSpSiteUrl.value = prefs.docRegisterSpSiteUrl || ''
+      // default_doc_register_url and default_sp_site_url already resolve
+      // saved value → factory default on the backend, so use them directly.
+      docExcelPath.value = defaultDocRegisterUrl.value
+      docSpSiteUrl.value = defaultSpSiteUrl.value
     })
     .catch((err: unknown) => {
       toast.error(getErrorMessage(err, 'Failed to load preferences.'))
@@ -139,7 +216,7 @@ onMounted(() => {
 
           <!-- Skip SP switch -->
           <div class="mb-3 flex items-center gap-3">
-            <input type="checkbox" :checked="prefs.skipSpOverride" @change="toggleSkipSp"
+            <input type="checkbox" :checked="skipSpOverride" @change="toggleSkipSp"
               class="form-check-input" id="skip-sp-check" />
             <label for="skip-sp-check" class="text-sm cursor-pointer">
               Skip SharePoint Override Validation
@@ -214,7 +291,7 @@ onMounted(() => {
           </form>
 
           <!-- Existing overrides table -->
-          <template v-if="Object.keys(prefs.spOverrides).length">
+          <template v-if="Object.keys(spOverrides).length">
             <div class="overflow-x-auto">
               <table class="pk-table">
                 <thead class="bg-gray-800 text-white">
@@ -225,7 +302,7 @@ onMounted(() => {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(spUrl, localPath) in prefs.spOverrides" :key="localPath"
+                  <tr v-for="(spUrl, localPath) in spOverrides" :key="localPath"
                     class="hover:bg-gray-50">
                     <td class="font-mono text-xs break-all">{{ localPath }}</td>
                     <td class="font-mono text-xs break-all">
@@ -287,12 +364,12 @@ onMounted(() => {
       <div class="pk-card-header flex items-center gap-2">
         <Database class="w-4 h-4 text-cyan-500" /> Document Register
         <span class="ml-auto text-xs px-2 py-0.5 rounded"
-          :class="prefs.docRegisterExcelPath ? 'bg-gray-200 text-gray-600' : 'bg-red-100 text-red-600'">
-          {{ prefs.docRegisterExcelPath ? 'Configured' : 'Not configured' }}
+          :class="docRegisterExcelPath ? 'bg-gray-200 text-gray-600' : 'bg-red-100 text-red-600'">
+          {{ docRegisterExcelPath ? 'Configured' : 'Not configured' }}
         </span>
       </div>
       <div class="pk-card-body">
-        <div v-if="!prefs.spOverridesConfigured && !prefs.skipSpOverride"
+        <div v-if="!spOverridesConfigured && !skipSpOverride"
           class="pk-alert-warn p-2 mb-3 flex items-center gap-2">
           <AlertTriangle class="w-4 h-4 shrink-0" />
           <strong>SharePoint Path Overrides Required:</strong>
@@ -308,7 +385,8 @@ onMounted(() => {
                 <FileSpreadsheet class="w-3.5 h-3.5 text-gray-500" />
               </span>
               <input v-model="docExcelPath" type="text" class="pk-input-mono text-sm rounded-none"
-                placeholder="C:\path\to\Document Register.xlsx" autocomplete="off" />
+                placeholder="C:\path\to\Document Register.xlsx" autocomplete="off"
+                @click="resolveSpUrl" />
               <button type="button" @click="showDocExcelBrowser = true"
                 class="flex items-center justify-center px-2 py-1 text-xs border border-l-0 border-gray-300 rounded-r-md bg-gray-100 hover:bg-gray-50"
                 title="Browse for Excel file">
@@ -331,7 +409,7 @@ onMounted(() => {
           </div>
           <div style="min-width: 100px; flex: 0.2;">
             <label class="text-xs font-semibold mb-1 block">&nbsp;</label>
-            <button v-if="prefs.spOverridesConfigured || prefs.skipSpOverride"
+            <button v-if="spOverridesConfigured || skipSpOverride"
               type="submit" class="pk-btn-primary w-full text-xs" :disabled="docConfigLoading.isLoading.value">
               <Loader v-if="docConfigLoading.isLoading.value" class="w-3 h-3 animate-spin" />
               <Save v-else class="w-3 h-3" /> Save Config
@@ -343,15 +421,15 @@ onMounted(() => {
           </div>
         </form>
 
-        <div v-if="prefs.docRegisterExcelPath" class="mt-3 flex items-center gap-2">
+        <div v-if="docRegisterExcelPath" class="mt-3 flex items-center gap-2">
           <button @click="rebuildLoading.execute()"
             class="border border-cyan-300 text-cyan-600 rounded px-3 py-1 text-xs hover:bg-cyan-50 flex items-center gap-1"
             :disabled="rebuildLoading.isLoading.value">
             <Loader v-if="rebuildLoading.isLoading.value" class="w-3 h-3 animate-spin" />
             <RotateCw v-else class="w-3 h-3" /> Rebuild Database
           </button>
-          <span v-if="prefs.docRegisterDbLastImported" class="text-xs text-gray-500">
-            <Clock class="w-3 h-3 inline" /> Last built: {{ prefs.docRegisterDbLastImported }}
+          <span v-if="docRegisterDbLastImported" class="text-xs text-gray-500">
+            <Clock class="w-3 h-3 inline" /> Last built: {{ docRegisterDbLastImported }}
           </span>
         </div>
         <div v-else class="mt-2 text-xs text-gray-500">

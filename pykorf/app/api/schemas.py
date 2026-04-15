@@ -205,6 +205,7 @@ class ImportRequest(BaseModel):
 
 class BatchReportRequest(BaseModel):
     batch_folder: str | None = None
+    single_report: bool = False
 
 
 class ReportResponse(BaseModel):
@@ -361,6 +362,9 @@ class PreferencesResponse(BaseModel):
     doc_register_db_last_imported: str | None = None
     sp_overrides_configured: bool = False
     default_doc_register_url: str = ""
+    default_pms_url: str = ""
+    default_sp_site_url: str = ""
+    last_batch_folder_path: str | None = None
 
 
 class AddSpOverrideRequest(BaseModel):
@@ -402,6 +406,10 @@ class DocRegisterRebuildResponse(BaseModel):
     message: str = ""
     stats: dict[str, Any] = {}
     error: str | None = None
+
+
+class ResolveSpUrlRequest(BaseModel):
+    sp_url: str
 
 
 # --- Browse ---

@@ -73,13 +73,19 @@ async def apply_pms(req: ApplyPmsRequest) -> ApplyDataResponse:
         errors.append("PMS source file path is required.")
         return ApplyDataResponse(success=False, errors=errors)
 
-    from pykorf.app.operation.config.config import get_pms_excel_path, set_pms_excel_path
+    from pykorf.app.operation.config.config import set_pms_excel_path
+    from pykorf.app.operation.integration.sharepoint import get_local_path_from_sp_url
 
-    # If empty, try saved path
-    if not pms_source_str:
-        pms_excel = get_pms_excel_path()
-        if pms_excel:
-            pms_source_str = pms_excel
+    # Convert SharePoint URL to local path if needed
+    if pms_source_str.startswith("https://"):
+        converted = get_local_path_from_sp_url(pms_source_str)
+        if converted is None:
+            errors.append(
+                "SharePoint URL could not be converted to local path. "
+                "No matching override found."
+            )
+            return ApplyDataResponse(success=False, errors=errors)
+        pms_source_str = converted
 
     pms_source = Path(pms_source_str)
     if not pms_source.is_file():
@@ -111,6 +117,19 @@ async def apply_hmb(req: ApplyHmbRequest) -> ApplyDataResponse:
     if not hmb_source_str:
         errors.append("HMB source file path is required.")
         return ApplyDataResponse(success=False, errors=errors)
+
+    from pykorf.app.operation.integration.sharepoint import get_local_path_from_sp_url
+
+    # Convert SharePoint URL to local path if needed
+    if hmb_source_str.startswith("https://"):
+        converted = get_local_path_from_sp_url(hmb_source_str)
+        if converted is None:
+            errors.append(
+                "SharePoint URL could not be converted to local path. "
+                "No matching override found."
+            )
+            return ApplyDataResponse(success=False, errors=errors)
+        hmb_source_str = converted
 
     hmb_source = Path(hmb_source_str)
     if not hmb_source.is_file():
