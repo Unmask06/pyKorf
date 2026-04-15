@@ -56,9 +56,9 @@ class Pump(BaseElement):
     CURNPSH = "CURNPSH"  # [npsh1, npsh2, ..., npsh10, unit]
     NPSH_AVAILABLE = "NPSHA13"  # [npsha_spec, npsha_calc, unit]
     NPSH_R = "NPSHR13"  # [npshr_str, npshr_num, unit]
-    NPSHA_FACTOR = "NPSHAF"  # [npshaf1, npshaf2, npshaf3, vapor_pressure, vapour_pressure_unit, npsha_contigency, npsha_con_unit]
+    NPSHA_FACTOR = "NPSHAF"  # [npshaf1, npshaf2, npshaf3, npshaf4, npshf_unit, npsha_contigency, npsha_con_unit]
     NPSHRE = "NPSHRE"  # [npshre1, npshre2, unit, npshre4]
-    NPSHVV = "NPSHVV"  # [npshvv]
+    PUMP_VAP_PRESS = "NPSHVV"  # [vap_press_pump]
     NPSHVT = "NPSHVT"  # ["npshvt_type"]
     SHUTOFF_PRESS = "PZPRES"  # [pz_dp, pz_suc, pz_dis, unit]
     SHUTOFF_DP_MARGIN = "PZRAT"  # ["dp Method", dPshutoff/dpCalc, dp margin]
@@ -95,7 +95,7 @@ class Pump(BaseElement):
         NPSH_R,
         NPSHA_FACTOR,
         NPSHRE,
-        NPSHVV,
+        PUMP_VAP_PRESS,
         NPSHVT,
         SHUTOFF_PRESS,
         SHUTOFF_DP_MARGIN,
@@ -422,7 +422,7 @@ class Pump(BaseElement):
                 pass
 
         if export:
-            suc_press, suc_unit = self.get_value_and_unit(Pump.PIN, val_index=1, unit_index=-1)
+            suc_press, press_unit = self.get_value_and_unit(Pump.PIN, val_index=1, unit_index=-1)
             dis_press, dis_unit = self.get_value_and_unit(Pump.POUT, val_index=1, unit_index=-1)
 
             flow_val, flow_unit = self.get_value_and_unit(Pump.HQACT, val_index=2, unit_index=-1)
@@ -453,13 +453,11 @@ class Pump(BaseElement):
                 Pump.SHUTOFF_VESS, val_index=2, unit_index=3
             )
 
-            vap_pres_val, vap_pres_unit = self.get_value_and_unit(
-                Pump.NPSHA_FACTOR, val_index=3, unit_index=4
-            )
+            vap_pres_val, _ = self.get_value_and_unit(Pump.PUMP_VAP_PRESS, val_index=0)
 
             return {
                 "Pump Name": self.name,
-                self.format_export_header("Suction Pressure", suc_unit): suc_press,
+                self.format_export_header("Suction Pressure", press_unit): suc_press,
                 self.format_export_header("Discharge Pressure", dis_unit): dis_press,
                 self.format_export_header("Shut-Off Margin", ""): margin_val,
                 self.format_export_header("Suc Vessel Max Pressure", press_unit): ves_max_press,
@@ -478,7 +476,7 @@ class Pump(BaseElement):
                 self.format_export_header("Suction Density", density_unit): density_in,
                 self.format_export_header("Suction Viscosity", visc_unit): viscosity,
                 self.format_export_header(
-                    "Vapour Pressure", vap_pres_unit.replace("g", "")
+                    "Vapour Pressure", press_unit.replace("g", "")
                 ): vap_pres_val,
             }
 

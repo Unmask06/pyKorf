@@ -706,8 +706,9 @@ class LayoutService:
         x_min, y_min, x_max, y_max = self.boundary_coordinates
         page_cx = (x_min + x_max) / 2
         page_cy = (y_min + y_max) / 2
-        dx = page_cx - bbox_cx
-        dy = page_cy - bbox_cy
+        # Round dx and dy to nearest grid size (100 units) to keep elements grid-aligned
+        dx = round((page_cx - bbox_cx) / GRID_SIZE) * GRID_SIZE
+        dy = round((page_cy - bbox_cy) / GRID_SIZE) * GRID_SIZE
 
         for elem in elems_to_move:
             self._translate_xy(elem, dx, dy)

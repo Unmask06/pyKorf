@@ -1,20 +1,31 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useSessionStore } from '../stores/session'
-import { useRouter } from 'vue-router'
-import { RotateCw, Home, Info, Settings, FileSpreadsheet, BookMarked, Grid3X3, ArrowUpCircle, FileText, Clock } from 'lucide-vue-next'
+import {
+  ArrowUpCircle,
+  BookMarked,
+  Clock,
+  FileSpreadsheet,
+  FileText,
+  Grid3X3,
+  Home,
+  Info,
+  RotateCw,
+  Settings,
+} from "lucide-vue-next";
+import { computed } from "vue";
+import { useRouter } from "vue-router";
+import { useSessionStore } from "../stores/session";
 
-const session = useSessionStore()
-const router = useRouter()
+const session = useSessionStore();
+const router = useRouter();
 
-const isLoaded = computed(() => session.isLoaded)
+const isLoaded = computed(() => session.isLoaded);
 
 async function goHome() {
-  router.push('/')
+  router.push("/");
 }
 
 async function reloadModel() {
-  await session.reloadModel()
+  await session.reloadModel();
 }
 </script>
 
@@ -25,42 +36,61 @@ async function reloadModel() {
       <Grid3X3 class="w-4 h-4" />
       pyKorf
     </a>
-    <span class="text-gray-400 ml-1" style="font-size: 0.72rem;"></span>
+    <span
+      v-if="session.version"
+      class="text-gray-400 ml-1"
+      style="font-size: 0.72rem"
+      >{{ session.version }}</span
+    >
 
     <!-- KDF badge -->
-    <span v-if="isLoaded && session.kdfPath"
+    <span
+      v-if="isLoaded && session.kdfPath"
       class="kdf-badge ml-3"
-      :title="session.kdfPath">
-      <FileText class="w-3.5 h-3.5 opacity-70" style="font-size: 0.9rem;" />
+      :title="session.kdfPath"
+    >
+      <FileText class="w-3.5 h-3.5 opacity-70" style="font-size: 0.9rem" />
       {{ session.filename }}
     </span>
 
     <!-- Mtime -->
-    <span v-if="session.kdfMtime" class="text-gray-400 ml-2" style="font-size: 0.72rem;"
-      title="KDF file last modified on disk">
-      <Clock class="w-3 h-3 inline" style="font-size: 0.7rem;" />
+    <span
+      v-if="session.kdfMtime"
+      class="text-gray-400 ml-2"
+      style="font-size: 0.72rem"
+      title="KDF file last modified on disk"
+    >
+      <Clock class="w-3 h-3 inline" style="font-size: 0.7rem" />
       {{ session.kdfMtime }}
     </span>
 
     <!-- Reload button -->
-    <button v-if="isLoaded" @click="reloadModel"
-      class="btn-reload ml-1" title="Reload model from disk">
+    <button
+      v-if="isLoaded"
+      @click="reloadModel"
+      class="btn-reload ml-1"
+      title="Reload model from disk"
+    >
       <RotateCw class="w-3.5 h-3.5" />
     </button>
 
     <!-- Update badge -->
-    <span v-if="session.updateAvailable"
+    <span
+      v-if="session.updateAvailable"
       class="pk-badge-update ml-2 flex items-center gap-1"
-      title="Close terminal and restart the application to apply the update.">
+      title="Close terminal and restart the application to apply the update."
+    >
       <ArrowUpCircle class="w-3 h-3" /> Update Available
     </span>
 
     <!-- Nav links -->
     <div class="ml-auto flex items-center gap-1">
       <template v-if="session.updateAvailable">
-        <button class="btn-update-ready"
+        <button
+          class="btn-update-ready"
           title="Stop the pyKorf server now. Close this tab and restart from the terminal."
-          @click="router.push('/')">
+          @click="router.push('/')"
+        >
           <ArrowUpCircle class="w-3.5 h-3.5" /> Update Ready
         </button>
       </template>

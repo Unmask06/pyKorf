@@ -10,6 +10,11 @@
       "multiplier": 0.01,
       "offset": 0.0
     },
+    "kPa": {
+      "target_unit": "bar",
+      "multiplier": 0.01,
+      "offset": 0.0
+    },
     "t/h": {
       "target_unit": "kg/h",
       "multiplier": 1000,

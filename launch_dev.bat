@@ -46,8 +46,19 @@ if not exist "%FRONTEND_DIR%\node_modules\" (
 echo [1/2] Starting FastAPI backend on port 8000...
 start "pyKorf Backend" /D "%BACKEND_DIR%" cmd /c uv run pykorf --debug --port 8000
 
-REM Give backend a moment to start
-timeout /t 3 /nobreak >nul
+REM Wait for backend to be ready (check if port 8000 is listening)
+echo [WAIT] Waiting for backend to start...
+for /l %%i in (1,1,30) do (
+    netstat -ano | findstr ":8000.*LISTENING" >nul 2>&1
+    if not errorlevel 1 (
+        echo [OK] Backend is ready!
+        goto :backend_ready
+    )
+    timeout /t 1 /nobreak >nul
+    echo   ... waiting (%%i/30)
+)
+echo [WARN] Backend may not have started correctly. Check the backend window.
+:backend_ready
 
 echo [2/2] Starting Vite dev server on port 5173...
 start "pyKorf Frontend" /D "%FRONTEND_DIR%" cmd /c npm run dev
@@ -55,6 +66,10 @@ start "pyKorf Frontend" /D "%FRONTEND_DIR%" cmd /c npm run dev
 echo.
 echo  Backend  -> http://localhost:8000
 echo  Frontend -> http://localhost:5173
+echo.
+echo  Opening browser to frontend dev server...
+timeout /t 2 /nobreak >nul
+start "" "http://localhost:5173"
 echo.
 echo  Close both terminal windows to stop the servers.
 echo.

@@ -34,6 +34,7 @@ export const useSessionStore = defineStore('session', () => {
   const skipSpOverride = ref(false)
   const username = ref('')
   const updateAvailable = ref(false)
+  const version = ref('')
   /** Set when backend auto-reloaded due to external KDF change */
   const modelWasStale = ref(false)
 
@@ -55,6 +56,7 @@ export const useSessionStore = defineStore('session', () => {
     skipSpOverride.value = data.skip_sp_override
     username.value = data.username
     updateAvailable.value = data.update_available
+    version.value = data.version
   }
 
   async function fetchStatus() {
@@ -97,6 +99,7 @@ export const useSessionStore = defineStore('session', () => {
     skipSpOverride,
     username,
     updateAvailable,
+    version,
     modelWasStale,
     isLoaded,
     filename,
