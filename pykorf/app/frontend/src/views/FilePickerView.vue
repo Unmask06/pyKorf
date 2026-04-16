@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ArrowRight, Clock, FileText, FolderOpen, Lightbulb, Shield } from 'lucide-vue-next'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useSessionStore } from '../stores/session'
-import { useToastStore } from '../composables/useToast'
-import { useLoading } from '../composables/useLoading'
 import { getErrorMessage } from '../api/client'
-import { FolderOpen, ArrowRight, FileText, Clock, Lightbulb, Shield, ArrowUpCircle, StopCircle } from 'lucide-vue-next'
 import PathBrowser from '../components/PathBrowser.vue'
+import { useLoading } from '../composables/useLoading'
+import { useToastStore } from '../composables/useToast'
+import { useSessionStore } from '../stores/session'
 
 const router = useRouter()
 const session = useSessionStore()
@@ -60,16 +60,7 @@ onMounted(() => {
           <FolderOpen class="w-6 h-6" /> pyKorf
         </h1>
         <p class="pk-desc">Copilot for Hydraulic Network Modeling using KORF</p>
-        <div v-if="session.updateAvailable" class="mt-2 flex items-center justify-center gap-2">
-          <span class="pk-badge-update flex items-center gap-1">
-            <ArrowUpCircle class="w-3.5 h-3.5" /> New Update Available
-          </span>
-          <button class="pk-btn-sm border border-red-200 text-red-600 hover:bg-red-50 flex items-center gap-1"
-            title="Stop the pyKorf server now. Close this tab and restart from the terminal."
-            @click="toast.warning('To update: close terminal and restart the application.')">
-            <StopCircle class="w-3.5 h-3.5" /> Stop Server
-          </button>
-        </div>
+
       </div>
 
       <!-- Setup required alert -->
