@@ -5,6 +5,13 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.0] - 2026-04-16
+
+### What's New
+
+- The application version number now appears in the navbar next to the pyKorf logo for easy reference.
+- Clicking the "Update Available" badge now automatically shuts down the server, so you can quickly restart to apply updates.
+
 ## [0.19.2] - 2026-04-15
 
 ### What's New
