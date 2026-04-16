@@ -33,5 +33,5 @@ service      = "Gas/Liquid Two-Phase Flow — Mixed Phase"
 notes        = "Section 14.5.1 — preliminary sizing; all three criteria apply"
 vel    = [0.0,   23.0]         # [min, max] m/s
 dp     = [0.0,     0.0]         # not specified
-rho_v2 = [0.0,  10000]         # ρM × VM² [min, max] Pa
+rho_v2 = 10000         # ρM × VM² max [Pa]; no minimum
 rho_v3 = [100000, 150000]       # ρM × VM³ [min, max] kg/s³
