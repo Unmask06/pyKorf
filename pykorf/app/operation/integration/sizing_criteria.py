@@ -159,12 +159,13 @@ def _entry_to_criteria(entry: dict) -> CriteriaValues:
     if raw is None:
         rho_v2_min, rho_v2_max = None, None
     elif isinstance(raw, list):
-        # Two-phase: [min, max]
-        rho_v2_min, rho_v2_max = float(raw[0]), float(raw[1])
+        # [min, max] format; 0 = not specified
+        rho_v2_min = float(raw[0]) if raw[0] > 0 else None
+        rho_v2_max = float(raw[1]) if raw[1] > 0 else None
     else:
-        # Gas: single upper-limit value; 0 = not specified
+        # Single value = max only (backward compatible)
         v = float(raw)
-        rho_v2_min, rho_v2_max = (0.0, v) if v > 0.0 else (None, None)
+        rho_v2_min, rho_v2_max = None, (v if v > 0.0 else None)
 
     return CriteriaValues(
         max_dp=dp_max,

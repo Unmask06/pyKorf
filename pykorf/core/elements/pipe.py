@@ -617,27 +617,37 @@ class Pipe(BaseElement):
         rho_v2_calc = self.rho_v2
 
         max_dp = self.max_dp_criteria
-        if max_dp is not None and dp_calc > max_dp:
+        if max_dp is not None and dp_calc > max_dp and max_dp > 0:
             result["dp_exceeds"] = True
             result["status"] = "FAIL"
 
         min_vel = self.min_velocity_criteria
-        if min_vel is not None and vel_calc < min_vel:
+        if min_vel is not None and vel_calc < min_vel and min_vel > 0:
             result["vel_below_min"] = True
             result["status"] = "FAIL"
 
         max_vel = self.max_velocity_criteria
-        if max_vel is not None and vel_calc > max_vel:
+        if max_vel is not None and vel_calc > max_vel and max_vel > 0:
             result["vel_above_max"] = True
             result["status"] = "FAIL"
 
         rho_v2_min = self.min_rho_v2_criteria
-        if rho_v2_min is not None and rho_v2_calc is not None and rho_v2_calc < rho_v2_min:
+        if (
+            rho_v2_min is not None
+            and rho_v2_min > 0
+            and rho_v2_calc is not None
+            and rho_v2_calc < rho_v2_min
+        ):
             result["rho_v2_below_min"] = True
             result["status"] = "FAIL"
 
         rho_v2_max = self.max_rho_v2_criteria
-        if rho_v2_max is not None and rho_v2_calc is not None and rho_v2_calc > rho_v2_max:
+        if (
+            rho_v2_max is not None
+            and rho_v2_max > 0
+            and rho_v2_calc is not None
+            and rho_v2_calc > rho_v2_max
+        ):
             result["rho_v2_above_max"] = True
             result["status"] = "FAIL"
 
