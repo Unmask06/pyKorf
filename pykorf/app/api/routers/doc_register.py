@@ -23,12 +23,6 @@ from pykorf.app.api.schemas import (
     QueryEntryResult,
     SetDocRegisterConfigRequest,
 )
-from pykorf.app.operation.config.config import (
-    get_doc_register_excel_path,
-    get_doc_register_sp_site_url,
-    set_doc_register_excel_path,
-    set_doc_register_sp_site_url,
-)
 from pykorf.app.doc_register.db_ops import (
     get_db_stats,
     search_eddr_by_title,
@@ -39,6 +33,12 @@ from pykorf.app.doc_register.excel_to_db import (
     build_db_from_excel,
     get_db_path,
     is_excel_stale,
+)
+from pykorf.app.operation.config.config import (
+    get_doc_register_excel_path,
+    get_doc_register_sp_site_url,
+    set_doc_register_excel_path,
+    set_doc_register_sp_site_url,
 )
 from pykorf.core.log import get_logger
 
@@ -67,7 +67,7 @@ async def api_status() -> DocRegisterStatusResponse:
 
 @router.get("/search-eddr", response_model=DocRegisterSearchEddrResponse)
 async def api_search_eddr(
-    req: Annotated[DocRegisterSearchEddrRequest, Query()]
+    req: Annotated[DocRegisterSearchEddrRequest, Query()],
 ) -> DocRegisterSearchEddrResponse:
     """Search EDDR entries by title."""
     if not req.q.strip():
@@ -78,7 +78,7 @@ async def api_search_eddr(
 
 @router.get("/search-query", response_model=DocRegisterSearchQueryResponse)
 async def api_search_query(
-    req: Annotated[DocRegisterSearchQueryRequest, Query()]
+    req: Annotated[DocRegisterSearchQueryRequest, Query()],
 ) -> DocRegisterSearchQueryResponse:
     """Search query entries by document number."""
     if not req.doc_no.strip():
@@ -89,7 +89,7 @@ async def api_search_query(
 
 @router.get("/search-files", response_model=DocRegisterSearchFilesResponse)
 async def api_search_files(
-    req: Annotated[DocRegisterSearchFilesRequest, Query()]
+    req: Annotated[DocRegisterSearchFilesRequest, Query()],
 ) -> DocRegisterSearchFilesResponse:
     """Search query entries by name or path."""
     if len(req.q.strip()) < 2:

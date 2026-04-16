@@ -475,14 +475,14 @@ def _get_pipe_by_name(model, pipe_name):
 
 def _get_pipe_size_and_pressure(pipe):
     try:
-        size_inch = float(pipe.diameter_inch or 9999)
+        size_inch = float(pipe.diameter_inch) if pipe.diameter_inch else None
     except (ValueError, TypeError):
-        size_inch = 9999.0
+        size_inch = None
     pressures = pipe.pressure or []
     try:
-        pressure_barg = pressures[0] / 100.0 if pressures else 9999.0
+        pressure_barg = pressures[0] / 100.0 if pressures else None
     except (IndexError, TypeError):
-        pressure_barg = 9999.0
+        pressure_barg = None
     return size_inch, pressure_barg
 
 

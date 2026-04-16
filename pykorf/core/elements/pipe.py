@@ -424,15 +424,15 @@ class Pipe(BaseElement):
     def max_dp_criteria(self) -> float | None:
         """Maximum pressure drop criteria [kPa/100m].
 
-        SIZ parameter at index 1. Returns None if not set or if the value
-        is the 9999 sentinel (meaning no upper limit was specified).
+        SIZ parameter at index 1. Returns None if not set, 0, or empty
+        (meaning no upper limit was specified).
         """
         val = self._scalar(Pipe.SIZ, 1)
         if val is None or val == "":
             return None
         try:
             v = float(val)
-            return None if v >= 9999 else v
+            return None if v == 0.0 else v
         except (TypeError, ValueError):
             return None
 
@@ -466,15 +466,15 @@ class Pipe(BaseElement):
     def max_velocity_criteria(self) -> float | None:
         """Maximum velocity criteria [m/s].
 
-        SIZ parameter at index 3. Returns None if not set or if the value
-        is the 9999 sentinel (meaning no upper limit was specified).
+        SIZ parameter at index 3. Returns None if not set, 0, or empty
+        (meaning no upper limit was specified).
         """
         val = self._scalar(Pipe.SIZ, 3)
         if val is None or val == "":
             return None
         try:
             v = float(val)
-            return None if v >= 9999 else v
+            return None if v == 0.0 else v
         except (TypeError, ValueError):
             return None
 
@@ -499,13 +499,15 @@ class Pipe(BaseElement):
     def min_velocity_criteria(self) -> float | None:
         """Minimum velocity criteria [m/s].
 
-        SIZ parameter at index 4. Returns None if not set.
+        SIZ parameter at index 4. Returns None if not set or 0
+        (meaning no minimum velocity specified).
         """
         val = self._scalar(Pipe.SIZ, 4)
         if val is None or val == "":
             return None
         try:
-            return float(val)
+            v = float(val)
+            return None if v == 0.0 else v
         except (TypeError, ValueError):
             return None
 
@@ -543,15 +545,15 @@ class Pipe(BaseElement):
             return None
 
         try:
-            size_inch = float(self.diameter_inch or 9999)
+            size_inch = float(self.diameter_inch) if self.diameter_inch else None
         except (ValueError, TypeError):
-            size_inch = 9999.0
+            size_inch = None
 
         pressures = self.pressure or []
         try:
-            pressure_barg = pressures[0] / 100.0 if pressures else 9999.0
+            pressure_barg = pressures[0] / 100.0 if pressures else None
         except (IndexError, TypeError):
-            pressure_barg = 9999.0
+            pressure_barg = None
 
         crit = lookup_criteria(state, code, size_inch, pressure_barg)
         if crit is not None and crit.rho_v2_min is not None:
@@ -575,15 +577,15 @@ class Pipe(BaseElement):
             return None
 
         try:
-            size_inch = float(self.diameter_inch or 9999)
+            size_inch = float(self.diameter_inch) if self.diameter_inch else None
         except (ValueError, TypeError):
-            size_inch = 9999.0
+            size_inch = None
 
         pressures = self.pressure or []
         try:
-            pressure_barg = pressures[0] / 100.0 if pressures else 9999.0
+            pressure_barg = pressures[0] / 100.0 if pressures else None
         except (IndexError, TypeError):
-            pressure_barg = 9999.0
+            pressure_barg = None
 
         crit = lookup_criteria(state, code, size_inch, pressure_barg)
         if crit is not None and crit.rho_v2_max is not None:
@@ -787,15 +789,17 @@ class Pipe(BaseElement):
             )
 
             dp_crit_val, dp_crit_unit = self.get_value_and_unit(Pipe.SIZ, val_index=1, unit_index=2)
-            if isinstance(dp_crit_val, float) and dp_crit_val >= 9999:
+            if isinstance(dp_crit_val, float) and dp_crit_val == 0.0:
                 dp_crit_val = None
             vel_min_crit_val, vel_min_crit_unit = self.get_value_and_unit(
                 Pipe.SIZ, val_index=4, unit_index=-1
             )
+            if isinstance(vel_min_crit_val, float) and vel_min_crit_val == 0.0:
+                vel_min_crit_val = None
             vel_max_crit_val, vel_max_crit_unit = self.get_value_and_unit(
                 Pipe.SIZ, val_index=3, unit_index=-1
             )
-            if isinstance(vel_max_crit_val, float) and vel_max_crit_val >= 9999:
+            if isinstance(vel_max_crit_val, float) and vel_max_crit_val == 0.0:
                 vel_max_crit_val = None
 
             # ρV² criteria — looked up from sizing tables (not stored in SIZ)  # noqa: RUF003
@@ -806,14 +810,14 @@ class Pipe(BaseElement):
                 state = code_to_state(code)
                 if state:
                     try:
-                        size_inch = float(self.diameter_inch or 9999)
+                        size_inch = float(self.diameter_inch) if self.diameter_inch else None
                     except (ValueError, TypeError):
-                        size_inch = 9999.0
+                        size_inch = None
                     pressures = self.pressure or []
                     try:
-                        pressure_barg = pressures[0] / 100.0 if pressures else 9999.0
+                        pressure_barg = pressures[0] / 100.0 if pressures else None
                     except (IndexError, TypeError):
-                        pressure_barg = 9999.0
+                        pressure_barg = None
                     crit = lookup_criteria(state, code, size_inch, pressure_barg)
                     if crit is not None:
                         rho_v2_min_crit = round(crit.rho_v2_min) if crit.rho_v2_min else None
