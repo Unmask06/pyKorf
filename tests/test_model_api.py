@@ -113,7 +113,7 @@ class TestNameAccess:
 
     def test_get_pump_by_name(self):
         m = Model(PUMP_KDF)
-        pump = m["P1"]
+        pump = m.get_element("P1", etype="PUMP")
         assert pump.etype == "PUMP"
 
     def test_get_param_and_update_values(self):
@@ -183,15 +183,17 @@ class TestUpdateElement:
         assert pipe.get_param("TFLOW").values[0] == "80;90;60"
 
     def test_update_elements_batch(self):
-        m = Model(PUMP_KDF)
+        m = Model(CWC_KDF)
+        pump_name = m.pumps[1].name
+        pipe_name = m.pipes[1].name
         m.update_elements(
             {
-                "L1": {"LEN": 200},
-                "P1": {"EFFP": "0.75"},
+                pipe_name: {"LEN": 200},
+                pump_name: {"EFFP": "0.75"},
             }
         )
-        assert m["L1"].get_param("LEN").values[0] == "200"
-        assert m["P1"].get_param("EFFP").values[0] == "0.75"
+        assert m[pipe_name].get_param("LEN").values[0] == "200"
+        assert m[pump_name].get_param("EFFP").values[0] == "0.75"
 
     def test_update_nonexistent_raises(self):
         m = Model(PUMP_KDF)

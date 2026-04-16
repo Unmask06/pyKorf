@@ -4,9 +4,7 @@ Covers:
 - Config functions (preferences)
 - Excel-to-DB conversion (excel_to_db)
 - SQLAlchemy operations (db_ops)
-- API routes (routes/doc_register)
-
-Run with: pytest tests/test_doc_register.py -v
+- FastAPI routes (routers/doc_register)
 """
 
 from __future__ import annotations
@@ -36,7 +34,6 @@ from pykorf.app.operation.config.preferences import (
 
 @pytest.fixture
 def sample_eddr_df():
-    """Create a sample EDDR DataFrame."""
     return pd.DataFrame(
         {
             "Document No": ["DOC-001", "DOC-002", "DOC-003"],
@@ -51,7 +48,6 @@ def sample_eddr_df():
 
 @pytest.fixture
 def sample_query_df():
-    """Create a sample query DataFrame."""
     return pd.DataFrame(
         {
             "Name": ["DOC-001 Rev A.pdf", "DOC-001 Rev B.pdf", "DOC-002 Folder", "OTHER.docx"],
@@ -70,12 +66,10 @@ def sample_query_df():
 
 @pytest.fixture
 def sample_excel_path(sample_eddr_df, sample_query_df):
-    """Create a temporary Excel file with EDDR and query sheets."""
     with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as f:
         path = Path(f.name)
 
     with pd.ExcelWriter(path, engine="openpyxl") as writer:
-        # EDDR sheet: 2 header rows (title + column names), then data
         eddr_with_header = pd.DataFrame(
             [
                 ["Project Title Row", None, None],
@@ -84,8 +78,6 @@ def sample_excel_path(sample_eddr_df, sample_query_df):
             + [[i + 1, row["Document No"], row["Title"]] for i, row in sample_eddr_df.iterrows()]
         )
         eddr_with_header.to_excel(writer, sheet_name="EDDR", index=False, header=False)
-
-        # query sheet: single header row
         sample_query_df.to_excel(writer, sheet_name="query", index=False)
 
     yield path
@@ -95,17 +87,15 @@ def sample_excel_path(sample_eddr_df, sample_query_df):
 
 @pytest.fixture
 def mock_config(tmp_path):
-    """Mock config.json in a temporary directory."""
     config_file = tmp_path / "config.json"
     config_file.write_text("{}", encoding="utf-8")
 
-    with patch("pykorf.app.preferences.get_config_path", return_value=config_file):
+    with patch("pykorf.app.operation.config.preferences.get_config_path", return_value=config_file):
         yield config_file
 
 
 @pytest.fixture
 def mock_data_dir(tmp_path):
-    """Mock the data directory for DB storage."""
     from pykorf.app.doc_register.db_ops import reset_engine
 
     reset_engine()
@@ -113,16 +103,14 @@ def mock_data_dir(tmp_path):
     data_dir = tmp_path / "data"
     data_dir.mkdir()
 
-    with patch("pykorf.app.paths.get_config_dir", return_value=tmp_path):
-        with patch("pykorf.app.paths.ensure_data_dir", return_value=data_dir):
-            yield data_dir
+    with patch("pykorf.app.doc_register.excel_to_db.ensure_data_dir", return_value=data_dir):
+        yield data_dir
 
     reset_engine()
 
 
 @pytest.fixture
 def populated_db(mock_data_dir, sample_eddr_df, sample_query_df):
-    """Create a pre-populated SQLite DB for testing queries."""
     from pykorf.app.doc_register.db_ops import (
         Base,
         EDDR,
@@ -163,8 +151,6 @@ def populated_db(mock_data_dir, sample_eddr_df, sample_query_df):
 
 
 class TestDocRegisterConfig:
-    """Tests for preference config functions."""
-
     def test_set_and_get_excel_path(self, mock_config):
         set_doc_register_excel_path(r"C:\path\to\Register.xlsx")
         assert get_doc_register_excel_path() == r"C:\path\to\Register.xlsx"
@@ -196,8 +182,6 @@ class TestDocRegisterConfig:
 
 
 class TestExcelToDB:
-    """Tests for Excel-to-SQLite conversion."""
-
     def test_get_db_path(self, mock_data_dir):
         from pykorf.app.doc_register.excel_to_db import get_db_path
 
@@ -233,12 +217,9 @@ class TestExcelToDB:
         from pykorf.app.doc_register.excel_to_db import build_db_from_excel, is_excel_stale
 
         set_doc_register_excel_path(str(sample_excel_path))
-        # Ensure Excel mtime is in the past
         old_time = time.time() - 10
         os.utime(sample_excel_path, (old_time, old_time))
-        # Build the DB (sets timestamp to now)
         build_db_from_excel(sample_excel_path, "https://tenant.sharepoint.com")
-        # Now the DB should NOT be stale (just built, Excel is older)
         assert is_excel_stale() is False
 
     def test_build_db_from_excel(self, mock_config, mock_data_dir, sample_excel_path):
@@ -264,7 +245,6 @@ class TestExcelToDB:
 
         ts = get_doc_register_db_last_imported()
         assert ts is not None
-        # Should be a valid ISO timestamp
         datetime.fromisoformat(ts)
 
 
@@ -272,8 +252,6 @@ class TestExcelToDB:
 
 
 class TestDBOps:
-    """Tests for SQLAlchemy database operations."""
-
     def test_search_eddr_by_title_match(self, populated_db):
         from pykorf.app.doc_register.db_ops import search_eddr_by_title
 
@@ -303,8 +281,6 @@ class TestDBOps:
     def test_search_eddr_unordered_words(self, populated_db):
         from pykorf.app.doc_register.db_ops import search_eddr_by_title
 
-        # Words reversed — "Diagram Instrument Process" should still match
-        # "Process and Instrument Diagram"
         results = search_eddr_by_title("Diagram Instrument Process")
         assert len(results) == 1
         assert results[0]["document_no"] == "DOC-001"
@@ -312,7 +288,6 @@ class TestDBOps:
     def test_search_eddr_by_document_no(self, populated_db):
         from pykorf.app.doc_register.db_ops import search_eddr_by_title
 
-        # Search by document number directly
         results = search_eddr_by_title("DOC-002")
         assert len(results) == 1
         assert results[0]["document_no"] == "DOC-002"
@@ -320,8 +295,6 @@ class TestDBOps:
     def test_search_eddr_mixed_doc_no_and_title(self, populated_db):
         from pykorf.app.doc_register.db_ops import search_eddr_by_title
 
-        # "DOC-001" matches document_no, "Instrument" matches title — both words
-        # must appear across either field
         results = search_eddr_by_title("DOC-001 Instrument")
         assert len(results) == 1
         assert results[0]["document_no"] == "DOC-001"
@@ -329,7 +302,6 @@ class TestDBOps:
     def test_search_eddr_unordered_partial_words_no_match(self, populated_db):
         from pykorf.app.doc_register.db_ops import search_eddr_by_title
 
-        # All words must appear — this extra word should yield no results
         results = search_eddr_by_title("Single Line Nonexistent")
         assert len(results) == 0
 
@@ -359,22 +331,14 @@ class TestDBOps:
         assert len(results) == 1
 
     def test_search_query_entries_scoring(self, populated_db):
-        """Test that search_query_entries ranks results by match quality."""
         from pykorf.app.doc_register.db_ops import search_query_entries
 
-        # Search for "DOC" - should match DOC-001, DOC-002
         results = search_query_entries("DOC")
         assert len(results) > 0
-
-        # Results should be sorted by score (best matches first)
-        # Names starting with "DOC" should rank higher
         names = [r["name"] for r in results]
-
-        # Verify we get results containing "DOC"
         assert any("DOC" in name for name in names)
 
     def test_search_query_entries_exact_match_ranks_first(self, populated_db):
-        """Test that exact matches rank highest."""
         from pykorf.app.doc_register.db_ops import (
             search_query_entries,
             reset_engine,
@@ -382,34 +346,14 @@ class TestDBOps:
             QueryEntry,
         )
 
-        # Add test data with known names
         reset_engine()
         session = get_session()
         try:
-            # Clear existing and add controlled test data
             session.query(QueryEntry).delete()
             test_entries = [
-                {
-                    "name": "PID-001",
-                    "modified": "2024-01-01",
-                    "modified_by": "user",
-                    "path": "docs",
-                    "item_type": "File",
-                },
-                {
-                    "name": "Main-PID-001",
-                    "modified": "2024-01-01",
-                    "modified_by": "user",
-                    "path": "docs",
-                    "item_type": "File",
-                },
-                {
-                    "name": "COPY_OF_PID",
-                    "modified": "2024-01-01",
-                    "modified_by": "user",
-                    "path": "docs",
-                    "item_type": "File",
-                },
+                {"name": "PID-001", "modified": "2024-01-01", "modified_by": "user", "path": "docs", "item_type": "File"},
+                {"name": "Main-PID-001", "modified": "2024-01-01", "modified_by": "user", "path": "docs", "item_type": "File"},
+                {"name": "COPY_OF_PID", "modified": "2024-01-01", "modified_by": "user", "path": "docs", "item_type": "File"},
             ]
             for entry in test_entries:
                 session.add(QueryEntry(**entry))
@@ -417,14 +361,8 @@ class TestDBOps:
 
             results = search_query_entries("PID")
             assert len(results) == 3
-
-            # "PID-001" (starts with) should rank first
             assert results[0]["name"] == "PID-001"
-
-            # "Main-PID-001" (word boundary) should rank second
             assert results[1]["name"] == "Main-PID-001"
-
-            # "COPY_OF_PID" (end match) should rank last
             assert results[2]["name"] == "COPY_OF_PID"
         finally:
             session.close()
@@ -467,30 +405,27 @@ class TestDBOps:
         assert stats["query_count"] == 0
 
 
-# ── API Routes Tests ────────────────────────────────────────────────────────
+# ── API Routes Tests (FastAPI) ──────────────────────────────────────────────
 
 
 class TestDocRegisterAPI:
-    """Tests for the Flask API routes."""
+    """Tests for the FastAPI doc-register routes."""
 
     @pytest.fixture
     def client(self, mock_config, mock_data_dir):
-        """Create a Flask test client."""
+        from fastapi.testclient import TestClient
         from pykorf.app.doc_register.db_ops import reset_engine
+        from pykorf.app.api.app import create_app
 
         reset_engine()
-
-        from pykorf.app import create_app
-
         app = create_app()
-        app.config["TESTING"] = True
-        with app.test_client() as client:
-            yield client
+        with TestClient(app, raise_server_exceptions=True) as c:
+            yield c
 
     def test_status_no_config(self, client):
         resp = client.get("/api/doc-register/status")
         assert resp.status_code == 200
-        data = resp.get_json()
+        data = resp.json()
         assert data["excel_path"] is None
         assert data["db_exists"] is False
         assert data["is_stale"] is False
@@ -498,31 +433,29 @@ class TestDocRegisterAPI:
     def test_search_eddr_empty(self, client):
         resp = client.get("/api/doc-register/search-eddr?q=")
         assert resp.status_code == 200
-        assert resp.get_json() == []
+        assert resp.json()["results"] == []
 
     def test_search_query_empty(self, client):
         resp = client.get("/api/doc-register/search-query?doc_no=")
         assert resp.status_code == 200
-        assert resp.get_json() == []
+        assert resp.json()["results"] == []
 
     def test_rebuild_db_no_config(self, client):
-        resp = client.post("/api/doc-register/rebuild-db")
-        assert resp.status_code == 400
-        data = resp.get_json()
-        assert "error" in data
+        resp = client.post("/api/doc-register/rebuild-db", json={})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data.get("error") is not None
+        assert data["success"] is False
 
     def test_config_save(self, client):
         resp = client.post(
             "/api/doc-register/config",
-            data=json.dumps(
-                {
-                    "excel_path": r"C:\test\Register.xlsx",
-                    "sp_site_url": "https://test.sharepoint.com",
-                }
-            ),
-            content_type="application/json",
+            json={
+                "excel_path": r"C:\test\Register.xlsx",
+                "sp_site_url": "https://test.sharepoint.com",
+            },
         )
         assert resp.status_code == 200
-        data = resp.get_json()
+        data = resp.json()
         assert data["excel_path"] == r"C:\test\Register.xlsx"
         assert data["sp_site_url"] == "https://test.sharepoint.com"

@@ -1,72 +1,67 @@
-"""Tests for the validation module.
-
-Run with:  PYTHONPATH=. python -m pytest tests/test_validation.py -v
-"""
+"""Tests for the validation module."""
 
 from pathlib import Path
+
+import pytest
 
 from pykorf.core.model import Model
 
 SAMPLES_DIR = Path(__file__).parent.parent / "pykorf" / "library"
 PUMP_KDF = SAMPLES_DIR / "Pumpcases.kdf"
 CWC_KDF = SAMPLES_DIR / "Cooling Water Circuit.kdf"
-NEW_KDF = SAMPLES_DIR / "New.kdf"
 
 
 class TestValidate:
     def test_validate_returns_list(self):
-        m = Model(PUMP_KDF)
-        issues = m.validate()
+        issues = Model(PUMP_KDF).validate()
         assert isinstance(issues, list)
 
-    def test_validate_pumpcases(self):
+    def test_dpl_violation_caught(self):
+        """A pipe with DPL far above its sizing criteria must appear in issues."""
+        m = Model(PUMP_KDF)
+        m.update_element("L1", {"DPL": "9999"})
+        issues = m.validate()
+        pipe_issues = [i for i in issues if "L1" in i and "fails sizing" in i]
+        assert len(pipe_issues) >= 1
+
+    def test_no_false_positive_on_valid_model(self):
+        """Pumpcases.kdf has DPL values well within criteria — no DPL/VEL violations."""
         m = Model(PUMP_KDF)
         issues = m.validate()
-        # Pumpcases.kdf may have some legacy issues (empty TFLOW, template params)
-        # Just ensure it returns a list and we can log them
-        assert isinstance(issues, list)
-        if issues:
-            print(f"\nPumpcases issues found: {len(issues)}")
-
-    def test_validate_cwc(self):
-        m = Model(CWC_KDF)
-        issues = m.validate()
-        assert isinstance(issues, list)
-        if issues:
-            print(f"\nCWC issues found: {len(issues)}")
-
-    def test_validate_new(self):
-        m = Model(NEW_KDF)
-        issues = m.validate()
-        # New.kdf should be mostly valid, but might have some template issues
-        assert isinstance(issues, list)
-
-    def test_validate_pipe_criteria_dpl(self):
-        """Test that DPL validation catches pipes exceeding criteria."""
-        m = Model(PUMP_KDF)
-        issues = m.validate()
-
-        # Check that DPL validation is being performed
-        dpl_issues = [i for i in issues if "DPL" in i and "exceeds criteria" in i]
-
-        # Pumpcases.kdf has DPL values around 0.642, well below 22.6 criteria
-        # So there should be no DPL violations
-        assert len(dpl_issues) == 0
-
-    def test_validate_pipe_criteria_vel(self):
-        """Test that VEL validation checks velocity bounds."""
-        m = Model(PUMP_KDF)
-        issues = m.validate()
-
-        # Check that VEL validation is being performed
-        vel_issues = [
-            i
-            for i in issues
-            if any(v in i for v in ["V_avg", "V_in", "V_out"])
-            and any(k in i for k in ["exceeds max", "below min"])
+        violations = [
+            i for i in issues
+            if "fails sizing criteria:" in i
         ]
+        assert len(violations) == 0
 
-        # Pumpcases.kdf has velocities around 0.298 m/s, within 0.3-100 bounds
-        # May have slight violations due to rounding
-        # Just ensure the validation runs without errors
-        assert isinstance(vel_issues, list)
+    def test_multiple_pipe_violations_all_reported(self):
+        """Setting all pipes to extreme DPL must generate one issue per pipe."""
+        m = Model(PUMP_KDF)
+        for pipe in m.get_elements_by_type("PIPE"):
+            m.update_element(pipe.name, {"DPL": "9999"})
+        issues = m.validate()
+        violating_pipes = {i.split("'")[1] for i in issues if "fails sizing criteria:" in i}
+        all_pipe_names = {p.name for p in m.get_elements_by_type("PIPE")}
+        assert violating_pipes == all_pipe_names
+
+    def test_connectivity_issue_detected(self):
+        """Deleting a pipe that a pump references must appear as connectivity issue."""
+        m = Model(PUMP_KDF)
+        pump = m.pumps[1]
+        con_rec = pump.get_param("CON")
+        if not (con_rec and con_rec.values):
+            pytest.skip("Pump has no CON record")
+        try:
+            pipe_idx = int(con_rec.values[0])
+        except (ValueError, TypeError):
+            pytest.skip("CON value is not an integer index")
+        if pipe_idx <= 0 or pipe_idx not in m.pipes:
+            pytest.skip("No connected pipe to delete")
+        m._parser.delete_records("PIPE", pipe_idx)
+        m._build_collections()
+        issues = m.validate()
+        assert any("does not exist" in i or "dangling" in i.lower() for i in issues)
+
+    def test_cwc_validates_without_crash(self):
+        issues = Model(CWC_KDF).validate()
+        assert isinstance(issues, list)
