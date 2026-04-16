@@ -31,6 +31,7 @@ export interface SessionStatusResponse {
   skip_sp_override: boolean
   username: string
   update_available: boolean
+  version: string
 }
 
 export interface SessionOpenRequest {

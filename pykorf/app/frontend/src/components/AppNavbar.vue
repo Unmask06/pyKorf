@@ -1,20 +1,43 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useSessionStore } from '../stores/session'
-import { useRouter } from 'vue-router'
-import { RotateCw, Home, Info, Settings, FileSpreadsheet, BookMarked, Grid3X3, ArrowUpCircle, FileText, Clock } from 'lucide-vue-next'
+import {
+  ArrowUpCircle,
+  BookMarked,
+  Clock,
+  FileSpreadsheet,
+  FileText,
+  Grid3X3,
+  Home,
+  Info,
+  RotateCw,
+  Settings,
+} from "lucide-vue-next";
+import { computed } from "vue";
+import { useRouter } from "vue-router";
+import { useSessionStore } from "../stores/session";
+import { useToastStore } from "../composables/useToast";
+import { api } from "../api/client";
 
-const session = useSessionStore()
-const router = useRouter()
+const session = useSessionStore();
+const router = useRouter();
+const toast = useToastStore();
 
-const isLoaded = computed(() => session.isLoaded)
+const isLoaded = computed(() => session.isLoaded);
 
 async function goHome() {
-  router.push('/')
+  router.push("/");
 }
 
 async function reloadModel() {
-  await session.reloadModel()
+  await session.reloadModel();
+}
+
+async function handleUpdateClick() {
+  toast.warning("Server shutting down — restart to apply updates");
+  try {
+    await api.post("/api/session/shutdown");
+  } catch (error) {
+    toast.error("Failed to shutdown server. Please close manually.");
+  }
 }
 </script>
 
@@ -25,45 +48,56 @@ async function reloadModel() {
       <Grid3X3 class="w-4 h-4" />
       pyKorf
     </a>
-    <span class="text-gray-400 ml-1" style="font-size: 0.72rem;"></span>
+    <span
+      v-if="session.version"
+      class="text-gray-400 ml-1"
+      style="font-size: 0.72rem"
+      >{{ session.version }}</span
+    >
 
     <!-- KDF badge -->
-    <span v-if="isLoaded && session.kdfPath"
+    <span
+      v-if="isLoaded && session.kdfPath"
       class="kdf-badge ml-3"
-      :title="session.kdfPath">
-      <FileText class="w-3.5 h-3.5 opacity-70" style="font-size: 0.9rem;" />
+      :title="session.kdfPath"
+    >
+      <FileText class="w-3.5 h-3.5 opacity-70" style="font-size: 0.9rem" />
       {{ session.filename }}
     </span>
 
     <!-- Mtime -->
-    <span v-if="session.kdfMtime" class="text-gray-400 ml-2" style="font-size: 0.72rem;"
-      title="KDF file last modified on disk">
-      <Clock class="w-3 h-3 inline" style="font-size: 0.7rem;" />
+    <span
+      v-if="session.kdfMtime"
+      class="text-gray-400 ml-2"
+      style="font-size: 0.72rem"
+      title="KDF file last modified on disk"
+    >
+      <Clock class="w-3 h-3 inline" style="font-size: 0.7rem" />
       {{ session.kdfMtime }}
     </span>
 
     <!-- Reload button -->
-    <button v-if="isLoaded" @click="reloadModel"
-      class="btn-reload ml-1" title="Reload model from disk">
+    <button
+      v-if="isLoaded"
+      @click="reloadModel"
+      class="btn-reload ml-1"
+      title="Reload model from disk"
+    >
       <RotateCw class="w-3.5 h-3.5" />
     </button>
 
     <!-- Update badge -->
-    <span v-if="session.updateAvailable"
-      class="pk-badge-update ml-2 flex items-center gap-1"
-      title="Close terminal and restart the application to apply the update.">
+    <button
+      v-if="session.updateAvailable"
+      class="pk-badge-update ml-2 flex items-center gap-1 cursor-pointer hover:bg-green-50"
+      title="Click for update instructions"
+      @click="handleUpdateClick"
+    >
       <ArrowUpCircle class="w-3 h-3" /> Update Available
-    </span>
+    </button>
 
     <!-- Nav links -->
     <div class="ml-auto flex items-center gap-1">
-      <template v-if="session.updateAvailable">
-        <button class="btn-update-ready"
-          title="Stop the pyKorf server now. Close this tab and restart from the terminal."
-          @click="router.push('/')">
-          <ArrowUpCircle class="w-3.5 h-3.5" /> Update Ready
-        </button>
-      </template>
       <router-link to="/about" class="navbar-link">
         <Info class="w-4 h-4" /> About
       </router-link>
@@ -135,21 +169,6 @@ async function reloadModel() {
 .btn-reload:hover {
   border-color: #dee2e6;
   color: #495057;
-}
-.btn-update-ready {
-  font-size: 0.78rem;
-  border: 1px solid #22c55e;
-  color: #22c55e;
-  border-radius: 0.25rem;
-  padding: 0.15rem 0.5rem;
-  background: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-.btn-update-ready:hover {
-  background: #f0fdf4;
 }
 .navbar-link {
   color: #6c757d;

@@ -33,7 +33,6 @@ import type {
  * We never serialize it — only derived data comes over the API.
  */
 export const useModelStore = defineStore('model', () => {
-  const kdfPath = ref('')
   const summary = ref<ModelSummary | null>(null)
   const prereqs = ref<Prereqs | null>(null)
   const projectInfo = ref<ProjectInfo | null>(null)
@@ -48,7 +47,6 @@ export const useModelStore = defineStore('model', () => {
   async function fetchSummary() {
     try {
       const { data } = await api.get<ModelFullResponse>('/api/model/summary')
-      kdfPath.value = data.kdf_path
       summary.value = data.summary
       prereqs.value = data.prereqs
       projectInfo.value = data.project_info
@@ -108,7 +106,6 @@ export const useModelStore = defineStore('model', () => {
   }
 
   return {
-    kdfPath,
     summary,
     prereqs,
     projectInfo,

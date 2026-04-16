@@ -34,6 +34,7 @@ class SessionStatusResponse(BaseModel):
     skip_sp_override: bool = False
     username: str = ""
     update_available: bool = False
+    version: str = ""
 
 
 class SessionReloadResponse(BaseModel):

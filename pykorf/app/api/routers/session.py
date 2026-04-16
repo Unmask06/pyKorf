@@ -30,8 +30,8 @@ def _check_setup() -> tuple[bool, bool, bool]:
     """Check whether mandatory preferences are configured."""
     from pykorf.app.operation.config.config import (
         get_doc_register_excel_path,
-        get_sp_overrides,
         get_skip_sp_override,
+        get_sp_overrides,
     )
 
     skip_sp = get_skip_sp_override()
@@ -45,6 +45,7 @@ def _check_setup() -> tuple[bool, bool, bool]:
 @router.get("/status", response_model=SessionStatusResponse)
 async def session_status() -> SessionStatusResponse:
     """Return current session status, recent files, and setup check."""
+    from pykorf import __version__
     from pykorf.app.operation.config.config import get_recent_files, get_skip_sp_override
     from pykorf.app.update_check import is_update_available
 
@@ -73,6 +74,7 @@ async def session_status() -> SessionStatusResponse:
         skip_sp_override=get_skip_sp_override(),
         username=_get_username(),
         update_available=is_update_available(),
+        version=__version__,
     )
 
 
