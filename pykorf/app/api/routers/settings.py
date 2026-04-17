@@ -33,17 +33,23 @@ async def get_settings() -> SettingsGetResponse:
     settings = get_global_settings()
     saved_selections = get_global_parameters_selected() or []
     interaction_data = get_last_interaction()
-    saved_dp_margin = interaction_data.get("dp_margin") or "1.25"
-    saved_shutoff_margin = interaction_data.get("shutoff_margin") or "1.20"
+    _fields = ApplyGlobalSettingsRequest.model_fields
+    saved_dp_margin = interaction_data.get("dp_margin") or str(_fields["dp_margin"].default)
+    saved_shutoff_margin = interaction_data.get("shutoff_margin") or str(
+        _fields["shutoff_margin"].default
+    )
+    saved_pump_elevation = interaction_data.get("pump_elevation") or str(
+        _fields["min_pump_elevation"].default
+    )
 
     return SettingsGetResponse(
         settings=[
-            GlobalSettingSchema(id=s.id, name=s.name, description=s.description)
-            for s in settings
+            GlobalSettingSchema(id=s.id, name=s.name, description=s.description) for s in settings
         ],
         saved_selections=saved_selections,
         saved_dp_margin=saved_dp_margin,
         saved_shutoff_margin=saved_shutoff_margin,
+        saved_min_pump_elev=saved_pump_elevation,
     )
 
 
@@ -66,13 +72,19 @@ async def apply_settings(req: ApplyGlobalSettingsRequest) -> SettingsApplyRespon
         {
             "dp_margin": str(req.dp_margin),
             "shutoff_margin": str(req.shutoff_margin),
+            "pump_elevation": str(req.min_pump_elevation),
             "selected_settings": req.setting_ids,
         },
     )
 
     try:
         apply_results = apply_global_settings(
-            model, req.setting_ids, save=True, dp_margin=req.dp_margin
+            model,
+            req.setting_ids,
+            save=True,
+            dp_margin=req.dp_margin,
+            shutoff_margin=req.shutoff_margin,
+            min_pump_elevation=req.min_pump_elevation,
         )
         await _sess.reload()
         errors = apply_results.pop("_errors", [])

@@ -131,12 +131,14 @@ export interface SettingsGetResponse {
   saved_selections: string[]
   saved_dp_margin: string
   saved_shutoff_margin: string
+  saved_min_pump_elev: string
 }
 
 export interface ApplyGlobalSettingsRequest {
   setting_ids: string[]
   dp_margin: number
   shutoff_margin: number
+  min_pump_elevation: number
 }
 
 export interface CenterLayoutResponse {

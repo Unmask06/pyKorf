@@ -254,6 +254,10 @@ class _ModelBase:
         return self._parser.num_instances("PUMP")
 
     @property
+    def num_junctions(self) -> int:
+        return self._parser.num_instances("JUNC")
+
+    @property
     def num_cases(self) -> int:
         return self.general.num_cases
 
@@ -295,11 +299,3 @@ class _ModelBase:
         self._build_collections()
         self._loaded_mtime = self._parser.path.stat().st_mtime
         _logger.info("   Reload complete | %s", self._parser.path.name)
-
-
-
-
-
-
-# Backward compatibility alias
-

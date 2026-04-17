@@ -179,8 +179,8 @@ def _entry_to_criteria(entry: dict) -> CriteriaValues:
 def lookup_criteria(
     fluid_type: str,
     code: str,
-    pipe_size_inch: float = 9999.0,
-    pressure_barg: float = 9999.0,
+    pipe_size_inch: float | None = None,
+    pressure_barg: float | None = None,
 ) -> CriteriaValues | None:
     """Find the best matching criteria entry for a pipe.
 
@@ -192,8 +192,8 @@ def lookup_criteria(
     Args:
         fluid_type: One of "liquid", "gas", "two_phase".
         code: Criteria code string (e.g. "P-SUC-BUB").
-        pipe_size_inch: Nominal pipe diameter in inches (default 9999 = no limit).
-        pressure_barg: Operating pressure in barg (default 9999 = no limit).
+        pipe_size_inch: Nominal pipe diameter in inches (default None = match any size).
+        pressure_barg: Operating pressure in barg (default None = match any pressure).
 
     Returns:
         CriteriaValues(max_dp, max_vel, min_vel), or None if code not found.
@@ -202,15 +202,23 @@ def lookup_criteria(
     if not entries:
         return None
 
+    # Use infinity for None values to match catch-all entries
+    size_val = pipe_size_inch if pipe_size_inch is not None else float("inf")
+    press_val = pressure_barg if pressure_barg is not None else float("inf")
+
     if fluid_type == "gas":
-        entries_sorted = sorted(entries, key=lambda e: e.get("pressure", 9999))
+        # Sort by pressure (entries without pressure go last as catch-all)
+        entries_sorted = sorted(entries, key=lambda e: e.get("pressure", float("inf")))
         for entry in entries_sorted:
-            if pressure_barg <= entry.get("pressure", 9999):
+            entry_press = entry.get("pressure", float("inf"))
+            if press_val <= entry_press:
                 return _entry_to_criteria(entry)
         return _entry_to_criteria(entries_sorted[-1])
     else:
-        entries_sorted = sorted(entries, key=lambda e: e.get("line_size", 9999))
+        # Sort by line_size (entries without line_size go last as catch-all)
+        entries_sorted = sorted(entries, key=lambda e: e.get("line_size", float("inf")))
         for entry in entries_sorted:
-            if pipe_size_inch <= entry.get("line_size", 9999):
+            entry_size = entry.get("line_size", float("inf"))
+            if size_val <= entry_size:
                 return _entry_to_criteria(entry)
         return _entry_to_criteria(entries_sorted[-1])

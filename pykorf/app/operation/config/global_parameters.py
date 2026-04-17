@@ -81,63 +81,65 @@ def apply_dummy_pipe_settings(model: Model) -> list[str]:
     id_meters = 1.5
 
     # 1. Iterate through all pipes (index >= 1 are real instances)
-    for idx in range(1, model.num_pipes + 1):
-        pipe = model.pipes[idx]
-        pipe_name = pipe.name
+    if model.num_pipes > 0:
+        for idx in range(1, model.num_pipes + 1):
+            pipe = model.pipes[idx]
+            pipe_name = pipe.name
 
-        # Check if pipe name starts with lowercase "d"
-        if not pipe_name or not pipe_name.startswith("d"):
-            continue
+            # Check if pipe name starts with lowercase "d"
+            if not pipe_name or not pipe_name.startswith("d"):
+                continue
 
-        # Apply the settings - format matches apply_pms pattern
-        # LEN needs 2 values: [value, unit]
-        # ID needs 3 values: [value1, value2, unit] based on template
-        # LBL needs 3 values: [on/off, x_offset, font_size] - 0=off, -1=on
-        params: dict[str, Any] = {
-            Pipe.LEN: [0.1, "m"],
-            Pipe.SCH: "ID",
-            Pipe.ID: [str(id_meters), str(id_meters), "m"],
-            Pipe.LBL: [0, 0, 50],  # Turn off labels (0=off, 0=x_offset, 50=font_size)
-        }
+            # Apply the settings - format matches apply_pms pattern
+            # LEN needs 2 values: [value, unit]
+            # ID needs 3 values: [value1, value2, unit] based on template
+            # LBL needs 3 values: [on/off, x_offset, font_size] - 0=off, -1=on
+            params: dict[str, Any] = {
+                Pipe.LEN: [0.1, "m"],
+                Pipe.SCH: "ID",
+                Pipe.ID: [str(id_meters), str(id_meters), "m"],
+                Pipe.LBL: [0, 0, 50],  # Turn off labels (0=off, 0=x_offset, 50=font_size)
+            }
 
-        try:
-            model.set_params(pipe_name, params)
-            affected_names.append(pipe_name)
-            logger.info(
-                "Dummy pipe %s: LEN=0.1m, ID=%sm (1500mm), SCH=ID, LBL=OFF",
-                pipe_name,
-                id_meters,
-            )
-        except ParameterError as e:
-            error_msg = f"Validation error on {pipe_name}: {e}"
-            logger.error(error_msg)
-            errors.append(error_msg)
-        except Exception as e:
-            error_msg = f"Error setting params on {pipe_name}: {e}"
-            logger.error(error_msg)
-            errors.append(error_msg)
+            try:
+                model.set_params(pipe_name, params)
+                affected_names.append(pipe_name)
+                logger.info(
+                    "Dummy pipe %s: LEN=0.1m, ID=%sm (1500mm), SCH=ID, LBL=OFF",
+                    pipe_name,
+                    id_meters,
+                )
+            except ParameterError as e:
+                error_msg = f"Validation error on {pipe_name}: {e}"
+                logger.error(error_msg)
+                errors.append(error_msg)
+            except Exception as e:
+                error_msg = f"Error setting params on {pipe_name}: {e}"
+                logger.error(error_msg)
+                errors.append(error_msg)
 
     # 2. Iterate through all junctions (index >= 1)
-    for idx, junc in model.junctions.items():
-        if idx == 0:
-            continue
-        junc_name = junc.name
-        if not junc_name:
-            continue
+    if model.num_junctions > 0:
+        for idx, junc in model.junctions.items():
+            if idx == 0:
+                continue
+            junc_name = junc.name
+            if not junc_name:
+                continue
 
-        try:
-            model.set_params(junc_name, {Junction.LBL: [0, 0, 50]})
-            affected_names.append(junc_name)
-            logger.info("Junction %s: LBL=OFF", junc_name)
-        except Exception as e:
-            error_msg = f"Error setting LBL on junction {junc_name}: {e}"
-            logger.error(error_msg)
-            errors.append(error_msg)
+            try:
+                model.set_params(junc_name, {Junction.LBL: [0, 0, 50]})
+                affected_names.append(junc_name)
+                logger.info("Junction %s: LBL=OFF", junc_name)
+            except Exception as e:
+                error_msg = f"Error setting LBL on junction {junc_name}: {e}"
+                logger.error(error_msg)
+                errors.append(error_msg)
 
     return affected_names
 
 
-def apply_dp_margin_settings(model: Model, margin: float = 1.25) -> list[str]:
+def apply_dp_margin_settings(model: Model, margin: float) -> list[str]:
     """Apply margin to pressure drop design factor for all pipes.
 
     Sets DP_DES_FAC on all pipes, providing a margin on pressure drop calculations.
@@ -151,6 +153,9 @@ def apply_dp_margin_settings(model: Model, margin: float = 1.25) -> list[str]:
     """
     from pykorf.core.elements import Pipe
     from pykorf.core.exceptions import ParameterError
+
+    if model.num_pipes <= 0:
+        return []
 
     affected_pipes: list[str] = []
     errors: list[str] = []
@@ -196,10 +201,13 @@ def apply_rename_line_settings(model: Model) -> list[str]:
     Returns:
         List of pipe names that were modified.
     """
+    from pykorf.app.operation.data_import.line_number import extract_fluid_seq_from_notes
     from pykorf.core.elements import Pipe
     from pykorf.core.elements.pipe import propagate_pipe_rename
     from pykorf.core.exceptions import ParameterError
-    from pykorf.app.operation.data_import.line_number import extract_fluid_seq_from_notes
+
+    if model.num_pipes <= 0:
+        return []
 
     affected_pipes: list[str] = []
     errors: list[str] = []
@@ -289,6 +297,128 @@ def apply_rename_line_settings(model: Model) -> list[str]:
     return affected_pipes
 
 
+def apply_pump_shutoff_settings(model: Model, margin: float) -> list[str]:
+    """Set shutoff DP margin for all pumps.
+
+    Sets PZRAT on all pumps, providing a margin on the shutoff pressure calculation.
+    The shutoff margin is applied as a multiplier on the calculated DP at shutoff.
+
+    Args:
+        model: Loaded KDF model.
+        margin: Shutoff DP margin factor (default 1.20 for 20% margin).
+
+    Returns:
+        List of pump names that were modified.
+    """
+    from pykorf.core.elements import Pump
+    from pykorf.core.exceptions import ParameterError
+
+    if model.num_pumps <= 0:
+        return []
+
+    affected_pumps: list[str] = []
+    errors: list[str] = []
+
+    for idx in range(1, model.num_pumps + 1):
+        pump = model.pumps[idx]
+        pump_name = pump.name
+
+        # Preserve existing method and flag; update only the margin value
+        pzrat_rec = pump.get_param("PZRAT")
+        if pzrat_rec and pzrat_rec.values and len(pzrat_rec.values) >= 3:
+            method = pzrat_rec.values[0]
+            flag = pzrat_rec.values[2]
+        else:
+            method = "dPcalc"
+            flag = 1
+
+        params: dict[str, Any] = {
+            Pump.SHUTOFF_DP_MARGIN: [method, margin, flag],
+        }
+
+        try:
+            model.set_params(pump_name, params)
+            affected_pumps.append(pump_name)
+            logger.info(
+                "Pump %s: PZRAT margin set to %s (%s%% margin)",
+                pump_name,
+                margin,
+                int((margin - 1) * 100),
+            )
+        except ParameterError as e:
+            error_msg = f"Validation error on {pump_name}: {e}"
+            logger.error(error_msg)
+            errors.append(error_msg)
+        except Exception as e:
+            error_msg = f"Error setting params on {pump_name}: {e}"
+            logger.error(error_msg)
+            errors.append(error_msg)
+
+    return affected_pumps
+
+
+def apply_min_pump_elevation(model: Model, elevation: float) -> list[str]:
+    """Set elevation of pumps that have a current elevation below the specified minimum.
+
+    The specified elevation is treated as a minimum — pumps already at or above it
+    are left unchanged. This prevents overwriting intentionally higher elevations.
+
+    Args:
+        model: Loaded KDF model.
+        elevation: Minimum elevation value (m). Only pumps below this are updated.
+
+    Returns:
+        List of pump names that were modified.
+    """
+    from pykorf.core.elements import Pump
+    from pykorf.core.exceptions import ParameterError
+
+    if model.num_pumps <= 0:
+        return []
+
+    affected_pumps: list[str] = []
+    errors: list[str] = []
+
+    for idx in range(1, model.num_pumps + 1):
+        pump = model.pumps[idx]
+        pump_name = pump.name
+
+        # Read existing elevation; skip if already at or above the minimum
+        elev_rec = pump.get_param(Pump.ELEV)
+        if elev_rec and elev_rec.values:
+            try:
+                current_elev = float(elev_rec.values[0])
+                if current_elev > elevation:
+                    logger.debug(
+                        "Pump %s: ELEV %.1f m already exceeds minimum %.1f m, skipping",
+                        pump_name,
+                        current_elev,
+                        elevation,
+                    )
+                    continue
+            except (TypeError, ValueError):
+                pass  # unparseable — fall through and apply
+
+        params: dict[str, Any] = {
+            Pump.ELEV: [elevation, "m"],
+        }
+
+        try:
+            model.set_params(pump_name, params)
+            affected_pumps.append(pump_name)
+            logger.info("Pump %s: ELEV set to %.1f m", pump_name, elevation)
+        except ParameterError as e:
+            error_msg = f"Validation error on {pump_name}: {e}"
+            logger.error(error_msg)
+            errors.append(error_msg)
+        except Exception as e:
+            error_msg = f"Error setting params on {pump_name}: {e}"
+            logger.error(error_msg)
+            errors.append(error_msg)
+
+    return affected_pumps
+
+
 # Registry of all available global settings
 _GLOBAL_SETTINGS: dict[str, GlobalSetting] = {
     "dummy_pipe": GlobalSetting(
@@ -300,7 +430,7 @@ _GLOBAL_SETTINGS: dict[str, GlobalSetting] = {
     "dp_margin": GlobalSetting(
         id="dp_margin",
         name="Margin in dP/dL",
-        description="Set DP_DES_FAC on all pipes for pressure drop design margin",
+        description="Set design margin for frictional pressure drop on all pipes",
         apply_func=apply_dp_margin_settings,
     ),
     "rename_line": GlobalSetting(
@@ -308,6 +438,18 @@ _GLOBAL_SETTINGS: dict[str, GlobalSetting] = {
         name="Rename Line from NOTES",
         description="Extract fluid code + serial number from NOTES, update pipe name",
         apply_func=apply_rename_line_settings,
+    ),
+    "pump_shutoff": GlobalSetting(
+        id="pump_shutoff",
+        name="Pump Raise-Shutoff Margin",
+        description="Set shutoff DP margin on all pumps",
+        apply_func=apply_pump_shutoff_settings,
+    ),
+    "min_pump_elevation": GlobalSetting(
+        id="min_pump_elevation",
+        name="Pump Elevation",
+        description="Set minimum elevation for pumps; only updates pumps below specified elevation",
+        apply_func=apply_min_pump_elevation,
     ),
 }
 
@@ -338,7 +480,9 @@ def apply_global_settings(
     setting_ids: list[str],
     *,
     save: bool = True,
-    dp_margin: float = 1.25,
+    dp_margin: float,
+    shutoff_margin: float,
+    min_pump_elevation: float,
 ) -> dict[str, list[str]]:
     """Apply selected global settings to a model.
 
@@ -346,7 +490,9 @@ def apply_global_settings(
         model: Loaded KDF model.
         setting_ids: List of setting IDs to apply (e.g., ["dummy_pipe", "dp_margin"]).
         save: Whether to save the model after applying changes (default True).
-        dp_margin: Design margin factor for dp_margin setting (default 1.25).
+        dp_margin: Design margin factor for dp_margin setting.
+        shutoff_margin: Shutoff DP margin factor for pump_shutoff setting.
+        min_pump_elevation: Minimum elevation value for pump_elevation setting.
 
     Returns:
         Dictionary mapping setting IDs to lists of affected pipe names.
@@ -374,6 +520,10 @@ def apply_global_settings(
         try:
             if setting_id == "dp_margin":
                 affected = setting.apply_func(model, margin=dp_margin)
+            elif setting_id == "pump_shutoff":
+                affected = setting.apply_func(model, margin=shutoff_margin)
+            elif setting_id == "min_pump_elevation":
+                affected = setting.apply_func(model, elevation=min_pump_elevation)
             else:
                 affected = setting.apply_func(model)
             results[setting_id] = affected

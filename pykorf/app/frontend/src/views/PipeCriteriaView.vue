@@ -33,8 +33,8 @@ const unitsData = ref<Record<string, Record<string, UnitConversionInfo>>>({})
 const fluidLabels = ref<Record<string, string>>({})
 
 // Edited criteria entries
-const editedCriteria = ref<Record<string, PipeCriteriaEntry>>({})
-const dirtyPipes = ref<Set<string>>(new Set())
+const pipeCriteria = ref<Record<string, PipeCriteriaEntry>>({})
+const changedPipes = ref<Set<string>>(new Set())
 const predictResult = ref<PredictCriteriaResponse | null>(null)
 
 // UI state
@@ -72,8 +72,8 @@ function _applyResponse(data: PipeCriteriaResponse) {
   for (const [name, vals] of Object.entries(data.existing)) {
     initial[name] = { state: vals.state || '', criteria: vals.criteria || '' }
   }
-  editedCriteria.value = initial
-  dirtyPipes.value = new Set()
+  pipeCriteria.value = initial
+  changedPipes.value = new Set()
 }
 
 const criteriaLoading = useLoading(async () => {
@@ -85,26 +85,16 @@ const predictLoading = useLoading(async () => {
   const data = await model.predictCriteria()
   predictResult.value = data
   for (const [name, entry] of Object.entries(data.predicted)) {
-    if (!editedCriteria.value[name]?.state || !editedCriteria.value[name]?.criteria) {
-      editedCriteria.value[name] = { ...entry }
-      dirtyPipes.value.add(name)
+    if (!pipeCriteria.value[name]?.state || !pipeCriteria.value[name]?.criteria) {
+      pipeCriteria.value[name] = { ...entry }
+      changedPipes.value.add(name)
     }
   }
   toast.info(`Predicted: ${data.filled_state} states, ${data.filled_criteria} criteria codes filled.`)
 })
 
 const saveLoading = useLoading(async () => {
-  const dirty: Record<string, PipeCriteriaEntry> = {}
-  for (const name of dirtyPipes.value) {
-    if (editedCriteria.value[name]) {
-      dirty[name] = editedCriteria.value[name]
-    }
-  }
-  if (Object.keys(dirty).length === 0) {
-    toast.warning('No changes to save.')
-    return
-  }
-  const result = await model.setPipeCriteria(dirty)
+  const result = await model.setPipeCriteria(pipeCriteria.value)
   await session.fetchStatus()
   toast.success(`Applied criteria to ${result.applied} pipe(s).`)
   if (result.skipped.length) {
@@ -114,11 +104,11 @@ const saveLoading = useLoading(async () => {
 })
 
 function updateEntry(name: string, field: 'state' | 'criteria', value: string) {
-  if (!editedCriteria.value[name]) {
-    editedCriteria.value[name] = { state: '', criteria: '' }
+  if (!pipeCriteria.value[name]) {
+    pipeCriteria.value[name] = { state: '', criteria: '' }
   }
-  editedCriteria.value[name][field] = value
-  dirtyPipes.value.add(name)
+  pipeCriteria.value[name][field] = value
+  changedPipes.value.add(name)
 }
 
 function getAvailableCriteriaForState(state: string): Array<[string, string]> {
@@ -189,7 +179,7 @@ function toggleRow(name: string) {
 const selectedStates = computed(() => {
   const states = new Set<string>()
   for (const name of selectedRows.value) {
-    const s = editedCriteria.value[name]?.state || ''
+    const s = pipeCriteria.value[name]?.state || ''
     if (s) states.add(s)
     else states.add('')
   }
@@ -207,7 +197,7 @@ function syncBulkStateFromSelection() {
 }
 
 watch(selectedRows, () => syncBulkStateFromSelection(), { deep: true })
-watch(editedCriteria, () => syncBulkStateFromSelection(), { deep: true })
+watch(pipeCriteria, () => syncBulkStateFromSelection(), { deep: true })
 
 // Computed: are any rows selected (that are also visible)?
 const hasSelection = computed(() => {
@@ -216,13 +206,13 @@ const hasSelection = computed(() => {
 })
 
 function currentCriteriaInfo(name: string): CriteriaValuesInfo | undefined {
-  const entry = editedCriteria.value[name]
+  const entry = pipeCriteria.value[name]
   if (!entry?.state || !entry.criteria) return undefined
   return criteriaValues.value[name]?.[`${entry.state}:${entry.criteria}`]
 }
 
 function getViolations(name: string): CriteriaViolationsInfo | undefined {
-  const entry = editedCriteria.value[name]
+  const entry = pipeCriteria.value[name]
   if (!entry?.state || !entry.criteria) return undefined
   return criteriaViolations.value[name]?.[`${entry.state}:${entry.criteria}`]
 }
@@ -249,8 +239,8 @@ function applyBulk() {
 
 function clearAll() {
   for (const [, name] of pipes.value) {
-    editedCriteria.value[name] = { state: '', criteria: '' }
-    dirtyPipes.value.add(name)
+    pipeCriteria.value[name] = { state: '', criteria: '' }
+    changedPipes.value.add(name)
   }
   toast.info('All criteria cleared.')
 }
@@ -369,7 +359,7 @@ onMounted(() => {
           <tbody>
             <tr v-for="[idx, name] in filteredPipes" :key="name"
               class="border-b hover:bg-gray-50"
-              :class="{ 'bg-yellow-50': dirtyPipes.has(name) }">
+              :class="{ 'bg-yellow-50': changedPipes.has(name) }">
               <td class="text-center">
                 <input type="checkbox" :checked="selectedRows.has(name)"
                   @change="toggleRow(name)" class="rounded" />
@@ -377,7 +367,7 @@ onMounted(() => {
               <td class="px-3 py-1.5 text-gray-400 font-mono text-xs">{{ idx }}</td>
               <td class="px-3 py-1.5 font-mono text-sm">{{ name }}</td>
               <td class="px-3 py-1.5">
-                <select :value="editedCriteria[name]?.state || ''"
+                <select :value="pipeCriteria[name]?.state || ''"
                   @change="updateEntry(name, 'state', ($event.target as HTMLSelectElement).value)"
                   class="pk-select">
                   <option value="">—</option>
@@ -385,12 +375,12 @@ onMounted(() => {
                 </select>
               </td>
               <td class="px-3 py-1.5">
-                <select :value="editedCriteria[name]?.criteria || ''"
+                <select :value="pipeCriteria[name]?.criteria || ''"
                   @change="updateEntry(name, 'criteria', ($event.target as HTMLSelectElement).value)"
                   class="pk-select"
-                  :disabled="!editedCriteria[name]?.state">
+                  :disabled="!pipeCriteria[name]?.state">
                   <option value="">—</option>
-                  <option v-for="[code, label] in getAvailableCriteriaForState(editedCriteria[name]?.state || '')" :key="code" :value="code">
+                  <option v-for="[code, label] in getAvailableCriteriaForState(pipeCriteria[name]?.state || '')" :key="code" :value="code">
                     {{ label }}
                   </option>
                 </select>
@@ -399,7 +389,7 @@ onMounted(() => {
                 {{ convertValue('dp', pipeCalcs[name]?.dp_calc ?? null) }}
               </td>
               <td class="pk-text-right-mono-muted crit-col">
-                <template v-if="editedCriteria[name]?.state && editedCriteria[name]?.criteria">
+                <template v-if="pipeCriteria[name]?.state && pipeCriteria[name]?.criteria">
                   {{ convertValue('dp', currentCriteriaInfo(name)?.max_dp ?? null) }}
                 </template>
                 <template v-else>—</template>
@@ -408,13 +398,13 @@ onMounted(() => {
                 {{ convertValue('velocity', pipeCalcs[name]?.vel_calc ?? null) }}
               </td>
               <td class="pk-text-right-mono-muted crit-col">
-                <template v-if="editedCriteria[name]?.state && editedCriteria[name]?.criteria">
+                <template v-if="pipeCriteria[name]?.state && pipeCriteria[name]?.criteria">
                   {{ convertValue('velocity', currentCriteriaInfo(name)?.min_vel ?? null) }}
                 </template>
                 <template v-else>—</template>
               </td>
               <td class="pk-text-right-mono-muted crit-col">
-                <template v-if="editedCriteria[name]?.state && editedCriteria[name]?.criteria">
+                <template v-if="pipeCriteria[name]?.state && pipeCriteria[name]?.criteria">
                   {{ convertValue('velocity', currentCriteriaInfo(name)?.max_vel ?? null) }}
                 </template>
                 <template v-else>—</template>
@@ -423,7 +413,7 @@ onMounted(() => {
                 {{ convertValue('rho_v2', pipeCalcs[name]?.rho_v2_calc ?? null) }}
               </td>
               <td class="pk-text-right-mono-muted crit-col">
-                <template v-if="editedCriteria[name]?.state && editedCriteria[name]?.criteria">
+                <template v-if="pipeCriteria[name]?.state && pipeCriteria[name]?.criteria">
                   {{ convertValue('rho_v2', currentCriteriaInfo(name)?.rho_v2_min ?? null) }}
                   –
                   {{ convertValue('rho_v2', currentCriteriaInfo(name)?.rho_v2_max ?? null) }}
