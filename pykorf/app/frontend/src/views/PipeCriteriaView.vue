@@ -94,17 +94,7 @@ const predictLoading = useLoading(async () => {
 })
 
 const saveLoading = useLoading(async () => {
-  const criteriaPayload: Record<string, PipeCriteriaEntry> = {}
-  for (const name of changedPipes.value) {
-    if (pipeCriteria.value[name]) {
-      criteriaPayload[name] = pipeCriteria.value[name]
-    }
-  }
-  if (Object.keys(criteriaPayload).length === 0) {
-    toast.warning('No changes to save.')
-    return
-  }
-  const result = await model.setPipeCriteria(criteriaPayload)
+  const result = await model.setPipeCriteria(pipeCriteria.value)
   await session.fetchStatus()
   toast.success(`Applied criteria to ${result.applied} pipe(s).`)
   if (result.skipped.length) {
