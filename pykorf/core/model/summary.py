@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from pykorf.core.elements import Element, Feed, Pipe, Product, Pump
@@ -48,9 +49,11 @@ class SummaryService:
 
     Attributes:
         model: The Model instance to operate on.
+        kdf_path: Optional path to the KDF file (used for loading justifications).
     """
 
     model: Model
+    kdf_path: Path | None = None
 
     def validate(
         self,
@@ -93,10 +96,15 @@ class SummaryService:
         - Check if calculated DPL <= SIZ dP/dL criteria (skip if criteria is 0)
         - Check if velocity <= max velocity criteria (skip if criteria is 0)
         - Check if rho*V^2 is within min/max bounds (skip if bounds are 0 or None)
+        - Skip pipes that have justifications (violations are accepted with justification)
 
         Args:
             issues: List to append validation issues to.
         """
+        from pykorf.app.operation.project.pykorf_file import get_justifications
+
+        justifications = get_justifications(self.kdf_path) if self.kdf_path else {}
+
         for pipe_idx, pipe in self.model.pipes.items():
             if pipe_idx == 0:
                 continue
@@ -108,8 +116,13 @@ class SummaryService:
             if not hasattr(pipe, "check_criteria"):
                 continue
 
-            if pipe.check_criteria()["status"] == "FAIL":
+            is_justified = name in justifications
+            result = pipe.check_criteria(justified=is_justified)
+
+            if result["status"] == "FAIL":
                 self._build_criteria_failure_message(issues, name, pipe)
+            elif result["status"] == "JUSTIFIED":
+                _logger.debug("Pipe '%s': criteria violation justified - skipped from issues", name)
 
     def _build_criteria_failure_message(self, issues: list[str], name: str, pipe) -> None:
         """Build detailed failure message for a pipe that failed sizing criteria.

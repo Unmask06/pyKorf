@@ -524,6 +524,36 @@ export type ImportRequest = {
 };
 
 /**
+ * JustificationRequest
+ */
+export type JustificationRequest = {
+    /**
+     * Pipe Name
+     */
+    pipe_name: string;
+    /**
+     * Justification
+     */
+    justification: string;
+};
+
+/**
+ * JustificationSaveResponse
+ */
+export type JustificationSaveResponse = {
+    /**
+     * Justifications
+     */
+    justifications?: {
+        [key: string]: string;
+    };
+    /**
+     * Saved
+     */
+    saved?: boolean;
+};
+
+/**
  * LicenseValidationResponse
  */
 export type LicenseValidationResponse = {
@@ -743,6 +773,13 @@ export type PipeCriteriaResponse = {
     };
     set_result?: SetCriteriaResponse | null;
     predict_result?: PredictCriteriaResponse | null;
+    /**
+     * Justifications
+     */
+    justifications?: {
+        [key: string]: string;
+    };
+    violation_summary?: ViolationSummary;
 };
 
 /**
@@ -1470,6 +1507,36 @@ export type ValidationError = {
     };
 };
 
+/**
+ * ViolationSummary
+ */
+export type ViolationSummary = {
+    /**
+     * Total Pipes With Violations
+     */
+    total_pipes_with_violations?: number;
+    /**
+     * Total Violations
+     */
+    total_violations?: number;
+    /**
+     * Justified Pipes
+     */
+    justified_pipes?: number;
+    /**
+     * Justified Violations
+     */
+    justified_violations?: number;
+    /**
+     * Pipes Needing Justification
+     */
+    pipes_needing_justification?: number;
+    /**
+     * Violations Needing Justification
+     */
+    violations_needing_justification?: number;
+};
+
 export type GetSessionStatusData = {
     body?: never;
     path?: never;
@@ -1733,6 +1800,31 @@ export type PredictPipeCriteriaResponses = {
 };
 
 export type PredictPipeCriteriaResponse = PredictPipeCriteriaResponses[keyof PredictPipeCriteriaResponses];
+
+export type SavePipeJustificationData = {
+    body: JustificationRequest;
+    path?: never;
+    query?: never;
+    url: '/api/model/pipe-criteria/justification';
+};
+
+export type SavePipeJustificationErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SavePipeJustificationError = SavePipeJustificationErrors[keyof SavePipeJustificationErrors];
+
+export type SavePipeJustificationResponses = {
+    /**
+     * Successful Response
+     */
+    200: JustificationSaveResponse;
+};
+
+export type SavePipeJustificationResponse = SavePipeJustificationResponses[keyof SavePipeJustificationResponses];
 
 export type ApplyPmsData = {
     body: ApplyPmsRequest;

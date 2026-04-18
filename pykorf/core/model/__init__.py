@@ -78,15 +78,13 @@ class Model(_ModelBase):
         self._connectivity_service = ConnectivityService(self)
         self._layout_service = LayoutService(self)
         self._io_service = IOService(self)
-        self._summary_service = SummaryService(self)
+        self._summary_service = SummaryService(self, self._parser.path if self._parser else None)
 
     # Element operations (delegate to _element_service)
     def add_element(self, etype: str, name: str, params: dict[str, Any] | None = None) -> Any:
         return self._element_service.add_element(etype, name, params)
 
-    def add_elements(
-        self, elements: list[tuple[str, str, dict[str, Any]]]
-    ) -> list[Any]:
+    def add_elements(self, elements: list[tuple[str, str, dict[str, Any]]]) -> list[Any]:
         return self._element_service.add_elements(elements)
 
     def update_element(self, name: str, params: dict[str, Any]) -> None:

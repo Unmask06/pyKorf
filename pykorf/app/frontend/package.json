@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate-types": "openapi-ts --input ../../../openapi.json --output ./src/api/generated --client @hey-api/client-axios"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.2",

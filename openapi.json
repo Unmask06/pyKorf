@@ -427,6 +427,48 @@
         }
       }
     },
+    "/api/model/pipe-criteria/justification": {
+      "post": {
+        "tags": [
+          "model"
+        ],
+        "summary": "Save Justification",
+        "description": "Save or clear a justification for a pipe criteria violation.",
+        "operationId": "savePipeJustification",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JustificationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JustificationSaveResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/data/apply-pms": {
       "post": {
         "tags": [
@@ -2543,6 +2585,43 @@
         "type": "object",
         "title": "ImportRequest"
       },
+      "JustificationRequest": {
+        "properties": {
+          "pipe_name": {
+            "type": "string",
+            "title": "Pipe Name"
+          },
+          "justification": {
+            "type": "string",
+            "title": "Justification"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pipe_name",
+          "justification"
+        ],
+        "title": "JustificationRequest"
+      },
+      "JustificationSaveResponse": {
+        "properties": {
+          "justifications": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Justifications",
+            "default": {}
+          },
+          "saved": {
+            "type": "boolean",
+            "title": "Saved",
+            "default": true
+          }
+        },
+        "type": "object",
+        "title": "JustificationSaveResponse"
+      },
       "LicenseValidationResponse": {
         "properties": {
           "valid": {
@@ -2901,6 +2980,25 @@
                 "type": "null"
               }
             ]
+          },
+          "justifications": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Justifications",
+            "default": {}
+          },
+          "violation_summary": {
+            "$ref": "#/components/schemas/ViolationSummary",
+            "default": {
+              "total_pipes_with_violations": 0,
+              "total_violations": 0,
+              "justified_pipes": 0,
+              "justified_violations": 0,
+              "pipes_needing_justification": 0,
+              "violations_needing_justification": 0
+            }
           }
         },
         "type": "object",
@@ -3925,6 +4023,42 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "ViolationSummary": {
+        "properties": {
+          "total_pipes_with_violations": {
+            "type": "integer",
+            "title": "Total Pipes With Violations",
+            "default": 0
+          },
+          "total_violations": {
+            "type": "integer",
+            "title": "Total Violations",
+            "default": 0
+          },
+          "justified_pipes": {
+            "type": "integer",
+            "title": "Justified Pipes",
+            "default": 0
+          },
+          "justified_violations": {
+            "type": "integer",
+            "title": "Justified Violations",
+            "default": 0
+          },
+          "pipes_needing_justification": {
+            "type": "integer",
+            "title": "Pipes Needing Justification",
+            "default": 0
+          },
+          "violations_needing_justification": {
+            "type": "integer",
+            "title": "Violations Needing Justification",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "ViolationSummary"
       }
     }
   }

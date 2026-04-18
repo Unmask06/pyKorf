@@ -592,11 +592,14 @@ class Pipe(BaseElement):
             return round(crit.rho_v2_max)
         return None
 
-    def check_criteria(self) -> dict[str, str | bool]:
+    def check_criteria(self, justified: bool = False) -> dict[str, str | bool]:
         """Check if calculated results meet sizing criteria.
 
+        Args:
+            justified: If True and criteria would fail, return status as "JUSTIFIED" instead of "FAIL".
+
         Returns a structured dict with per-field violation flags and overall status:
-            - 'status': 'PASS' or 'FAIL'
+            - 'status': 'PASS', 'FAIL', or 'JUSTIFIED'
             - 'dp_exceeds': True if dp_calc > max_dp_criteria
             - 'vel_below_min': True if vel_calc < min_velocity_criteria
             - 'vel_above_max': True if vel_calc > max_velocity_criteria
@@ -652,6 +655,9 @@ class Pipe(BaseElement):
         ):
             result["rho_v2_above_max"] = True
             result["status"] = "FAIL"
+
+        if justified and result["status"] == "FAIL":
+            result["status"] = "JUSTIFIED"
 
         return result
 
@@ -778,8 +784,14 @@ class Pipe(BaseElement):
     # Convenience
     # ------------------------------------------------------------------
 
-    def summary(self, export: bool = False) -> dict:
-        """Return a dict of key pipe properties (useful for display or export)."""
+    def summary(self, export: bool = False, justifications: dict[str, str] | None = None) -> dict:
+        """Return a dict of key pipe properties (useful for display or export).
+
+        Args:
+            export: If True, return detailed export-ready dict with criteria info.
+            justifications: Optional dict mapping pipe names to justification texts.
+                           If pipe name is present, criteria check status will be "JUSTIFIED".
+        """
         if export:
             # Local import to avoid circular dependency with use_case module
             from pykorf.app.operation.data_import.line_number import LineNumber
@@ -836,6 +848,7 @@ class Pipe(BaseElement):
             )
 
             parsed_line = LineNumber.parse(self.notes)
+            justified = justifications is not None and self.name in justifications
             return {
                 "Pipe Name": self.name,
                 "Criteria Code": self.criteria_code,
@@ -849,7 +862,7 @@ class Pipe(BaseElement):
                 self.format_export_header("DP/Length", dp_calc_unit): dp_calc_val,
                 self.format_export_header("Velocity", vel_calc_unit): vel_calc_val,
                 "ρV² calc [Pa]": round(self.rho_v2) if self.rho_v2 is not None else None,  # noqa: RUF001
-                "Criteria Check": self.check_criteria()["status"],
+                "Criteria Check": self.check_criteria(justified=justified)["status"],
             }
         return {
             "name": self.name,

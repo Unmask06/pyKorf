@@ -65,8 +65,16 @@ async def generate_report(req: GenerateReportRequest) -> ReportResponse:
             )
 
             def _do_export():
+                from pykorf.app.operation.project.pykorf_file import get_justifications
+
+                justifications = get_justifications(kdf_path) if kdf_path else {}
                 exporter = ResultExporter(
-                    model, basis=basis, remarks=remarks, hold=hold, references=references
+                    model,
+                    basis=basis,
+                    remarks=remarks,
+                    hold=hold,
+                    references=references,
+                    justifications=justifications,
                 )
                 exporter.export_to_excel(str(report_file))
 

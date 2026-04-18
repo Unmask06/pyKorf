@@ -81,12 +81,14 @@ class ResultExporter:
         remarks: str = "",
         hold: str = "",
         references: list[dict] | None = None,
+        justifications: dict[str, str] | None = None,
     ):
         self.model = model
         self._basis = basis
         self._remarks = remarks
         self._hold = hold
         self._references = references or []
+        self._justifications = justifications or {}
 
         self._converter = UnitConverter()
 
@@ -155,6 +157,18 @@ class ResultExporter:
         except Exception as exc:
             _logger.warning("validation failed: %s", exc)
 
+        # Add justified violations with "Justified" severity
+        if self._justifications:
+            for pipe_name, justification in self._justifications.items():
+                issues.append(
+                    {
+                        "Severity": "Justified",
+                        "Category": "Criteria",
+                        "Element": pipe_name,
+                        "Message": f"Pipe '{pipe_name}': criteria violation justified - {justification}",
+                    }
+                )
+
         if not issues:
             return pd.DataFrame(columns=["Severity", "Category", "Element", "Message"])
         return pd.DataFrame(issues)
@@ -188,7 +202,7 @@ class ResultExporter:
             assert worksheet is not None, "New workbook should have an active sheet"
             worksheet.title = sheet_name
 
-            # Set page setup for A3 Landscape, fit to 1 page wide × 1 page tall
+            # Set page setup for A3 Landscape, fit to 1 page wide x 1 page tall
             worksheet.page_setup.paperSize = worksheet.PAPERSIZE_A3
             worksheet.page_setup.orientation = worksheet.ORIENTATION_LANDSCAPE
             worksheet.page_setup.fitToPage = True
@@ -601,7 +615,17 @@ class ResultExporter:
         error_count = (df["Severity"] == "Error").sum()
         warning_count = (df["Severity"] == "Warning").sum()
         info_count = (df["Severity"] == "Info").sum()
-        summary = f"{len(df)} issue(s) found — {error_count} error(s), {warning_count} warning(s), {info_count} info"
+        justified_count = (df["Severity"] == "Justified").sum()
+        summary_parts = [f"{len(df)} issue(s)"]
+        if error_count:
+            summary_parts.append(f"{error_count} error(s)")
+        if warning_count:
+            summary_parts.append(f"{warning_count} warning(s)")
+        if info_count:
+            summary_parts.append(f"{info_count} info")
+        if justified_count:
+            summary_parts.append(f"{justified_count} justified")
+        summary = " — ".join(summary_parts)
         val_ws.cell(row=row, column=1, value=summary).font = Font(
             italic=True, size=10, color="555555"
         )
@@ -613,11 +637,13 @@ class ResultExporter:
             "Error": "9C0006",
             "Warning": "9C5700",
             "Info": "003366",
+            "Justified": "003366",
         }
         severity_fills: Mapping[str, str] = {
             "Error": "FFC7CE",
             "Warning": "FFEB9C",
             "Info": "D9E2F3",
+            "Justified": "D9E2F3",
         }
         for c_idx, header in enumerate(headers, start=1):
             cell = val_ws.cell(row=row, column=c_idx, value=header)
@@ -734,8 +760,21 @@ class ResultExporter:
 
         # -- Row 2: Overall Criteria Check (OR logic - any FAIL -> FAIL) --------
         if criteria_col:
-            overall = "FAIL" if (df[criteria_col] == "FAIL").any() else "PASS"
-            is_fail = overall == "FAIL"
+            has_fail = (df[criteria_col] == "FAIL").any()
+            has_justified = (df[criteria_col] == "JUSTIFIED").any()
+
+            if has_fail:
+                overall = "FAIL"
+                color = "9C0006"
+                fill = "FFC7CE"
+            elif has_justified:
+                overall = "PASS with Justification"
+                color = "003366"
+                fill = "D9E2F3"
+            else:
+                overall = "PASS"
+                color = "276221"
+                fill = "C6EFCE"
 
             label_cell = ws.cell(row=row + 1, column=start_col, value="Overall Criteria")
             label_cell.font = Font(bold=True, size=10)
@@ -745,11 +784,11 @@ class ResultExporter:
             result_cell.font = Font(
                 bold=True,
                 size=10,
-                color="9C0006" if is_fail else "276221",
+                color=color,
             )
             result_cell.fill = PatternFill(
-                start_color="FFC7CE" if is_fail else "C6EFCE",
-                end_color="FFC7CE" if is_fail else "C6EFCE",
+                start_color=fill,
+                end_color=fill,
                 fill_type="solid",
             )
             result_cell.alignment = Alignment(horizontal="center")
@@ -773,7 +812,7 @@ class ResultExporter:
 
     def _extract_pipes(self) -> list[dict]:
         return [
-            pipe.summary(export=True)
+            pipe.summary(export=True, justifications=self._justifications)
             for idx, pipe in self.model.pipes.items()
             if idx != 0 and not pipe.name.startswith("d")
         ]
