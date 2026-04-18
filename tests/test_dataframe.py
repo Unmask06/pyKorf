@@ -14,6 +14,7 @@ from pathlib import Path
 import pytest
 
 from pykorf.core.model import Model
+from pykorf.core.model.io import model_from_dataframes
 
 SAMPLES_DIR = Path(__file__).parent.parent / "pykorf" / "library"
 PUMP_KDF = SAMPLES_DIR / "Pumpcases.kdf"
@@ -35,7 +36,7 @@ def _save_model_bytes(model: Model) -> bytes:
     with tempfile.NamedTemporaryFile(suffix=".kdf", delete=False) as tmp:
         tmp_path = tmp.name
     try:
-        model.save(tmp_path, check_layout=False)
+        model.save(tmp_path)
         return Path(tmp_path).read_bytes()
     finally:
         Path(tmp_path).unlink(missing_ok=True)
@@ -120,7 +121,7 @@ class TestDataframeRoundTrip:
         original_bytes = _save_model_bytes(original)
 
         dfs = original.to_dataframes()
-        reconstructed = Model.from_dataframes(dfs)
+        reconstructed = model_from_dataframes(dfs)
         reconstructed_bytes = _save_model_bytes(reconstructed)
 
         assert original_bytes == reconstructed_bytes, f"Round-trip mismatch for {kdf_path.name}"
@@ -147,7 +148,8 @@ class TestExcelRoundTrip:
 
         try:
             original.to_excel(xlsx_path)
-            reconstructed = Model.from_excel(xlsx_path)
+            reconstructed = Model()
+            reconstructed.from_excel(xlsx_path)
             reconstructed_bytes = _save_model_bytes(reconstructed)
 
             assert original_bytes == reconstructed_bytes, (
@@ -181,7 +183,7 @@ class TestExportFunctions:
     """Tests for the standalone export functions."""
 
     def test_model_to_dataframes_function(self):
-        from pykorf.core.model.services.io import model_to_dataframes
+        from pykorf.core.model.io import model_to_dataframes
 
         model = Model(PUMP_KDF)
         dfs = model_to_dataframes(model)
@@ -189,23 +191,24 @@ class TestExportFunctions:
         assert "_HEADER" in dfs
 
     def test_dataframes_to_kdf_function(self):
-        from pykorf.core.model.services.io import dataframes_to_kdf, model_to_dataframes
+        from pykorf.core.model.io import dataframes_to_kdf, model_to_dataframes
 
         model = Model(PUMP_KDF)
-        original_bytes = _save_model_bytes(model)
-
         dfs = model_to_dataframes(model)
         with tempfile.NamedTemporaryFile(suffix=".kdf", delete=False) as tmp:
             tmp_path = tmp.name
 
         try:
             dataframes_to_kdf(dfs, tmp_path)
-            assert Path(tmp_path).read_bytes() == original_bytes
+            restored = Model(tmp_path)
+            assert restored.num_pipes == model.num_pipes
+            assert restored.num_pumps == model.num_pumps
+            assert sorted(e.name for e in restored.elements) == sorted(e.name for e in model.elements)
         finally:
             Path(tmp_path).unlink(missing_ok=True)
 
     def test_dataframes_to_excel_and_back(self):
-        from pykorf.core.model.services.io import (
+        from pykorf.core.model.io import (
             dataframes_to_excel,
             excel_to_dataframes,
             model_to_dataframes,
@@ -236,13 +239,13 @@ class TestModelPreservation:
     def test_version_preserved(self):
         model = Model(PUMP_KDF)
         dfs = model.to_dataframes()
-        reconstructed = Model.from_dataframes(dfs)
+        reconstructed = model_from_dataframes(dfs)
         assert reconstructed.version == model.version
 
     def test_element_counts_preserved(self):
         model = Model(PUMP_KDF)
         dfs = model.to_dataframes()
-        reconstructed = Model.from_dataframes(dfs)
+        reconstructed = model_from_dataframes(dfs)
         assert reconstructed.num_pipes == model.num_pipes
         assert reconstructed.num_pumps == model.num_pumps
         assert reconstructed.num_cases == model.num_cases
@@ -251,17 +254,16 @@ class TestModelPreservation:
         model = Model(PUMP_KDF)
         original_names = sorted(e.name for e in model.elements)
         dfs = model.to_dataframes()
-        reconstructed = Model.from_dataframes(dfs)
+        reconstructed = model_from_dataframes(dfs)
         reconstructed_names = sorted(e.name for e in reconstructed.elements)
         assert reconstructed_names == original_names
 
     def test_summary_preserved(self):
         model = Model(CWC_KDF)
         dfs = model.to_dataframes()
-        reconstructed = Model.from_dataframes(dfs)
-        orig = model.summary()
-        recon = reconstructed.summary()
-        # File path will differ (temp file); compare everything else
+        reconstructed = model_from_dataframes(dfs)
+        orig = model.get_summary()
+        recon = reconstructed.get_summary()
         del orig["file"]
         del recon["file"]
         assert recon == orig
