@@ -97,32 +97,25 @@ class TestConnectDisconnect:
 class TestCheckConnectivity:
     def test_check_valid_model(self):
         m = Model(PUMP_KDF)
-        issues = m.check_connectivity()
-        # Pumpcases is a pre-existing model — may or may not have issues
-        # depending on pipe indices. Just ensure it returns a list.
+        issues = m._connectivity_service.check_connectivity()
         assert isinstance(issues, list)
 
     def test_check_after_delete_finds_issue(self):
         m = Model(PUMP_KDF)
-        # Delete a pipe that's referenced by an equipment CON
-        # First check which pipes are connected
         pump = m.pumps[1]
         con_rec = pump.get_param("CON")
         if con_rec and con_rec.values:
             try:
                 pipe_idx = int(con_rec.values[0])
                 if pipe_idx > 0 and pipe_idx in m.pipes:
-                    # Manually delete records instead of using m.delete_element
-                    # to avoid updating references to 0
                     m._parser.delete_records("PIPE", pipe_idx)
                     m._build_collections()
-                    issues = m.check_connectivity()
-                    # Should find at least one issue (pump referencing deleted pipe)
+                    issues = m._connectivity_service.check_connectivity()
                     assert any("does not exist" in i for i in issues)
             except (ValueError, TypeError):
                 pass
 
     def test_check_cwc_model(self):
         m = Model(CWC_KDF)
-        issues = m.check_connectivity()
+        issues = m._connectivity_service.check_connectivity()
         assert isinstance(issues, list)

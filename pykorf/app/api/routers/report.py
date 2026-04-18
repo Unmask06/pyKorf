@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
-@router.post("/generate", response_model=ReportResponse)
+@router.post("/generate", response_model=ReportResponse, operation_id="generateReport")
 async def generate_report(req: GenerateReportRequest) -> ReportResponse:
     """Generate a single-model Excel report."""
     model = await require_model()
@@ -65,8 +65,16 @@ async def generate_report(req: GenerateReportRequest) -> ReportResponse:
             )
 
             def _do_export():
+                from pykorf.app.operation.project.pykorf_file import get_justifications
+
+                justifications = get_justifications(kdf_path) if kdf_path else {}
                 exporter = ResultExporter(
-                    model, basis=basis, remarks=remarks, hold=hold, references=references
+                    model,
+                    basis=basis,
+                    remarks=remarks,
+                    hold=hold,
+                    references=references,
+                    justifications=justifications,
                 )
                 exporter.export_to_excel(str(report_file))
 
@@ -81,7 +89,7 @@ async def generate_report(req: GenerateReportRequest) -> ReportResponse:
     return ReportResponse(success=len(errors) == 0, messages=messages, errors=errors)
 
 
-@router.post("/export", response_model=ReportResponse)
+@router.post("/export", response_model=ReportResponse, operation_id="exportReport")
 async def export_excel(req: ExportRequest) -> ReportResponse:
     """Export model to Excel file."""
     model = await require_model()
@@ -103,7 +111,7 @@ async def export_excel(req: ExportRequest) -> ReportResponse:
     return ReportResponse(success=len(errors) == 0, messages=messages, errors=errors)
 
 
-@router.post("/import", response_model=ReportResponse)
+@router.post("/import", response_model=ReportResponse, operation_id="importReport")
 async def import_excel(req: ImportRequest) -> ReportResponse:
     """Import model parameters from Excel file."""
     model = await require_model()
@@ -128,7 +136,7 @@ async def import_excel(req: ImportRequest) -> ReportResponse:
     return ReportResponse(success=len(errors) == 0, messages=messages, errors=errors)
 
 
-@router.post("/batch", response_model=ReportResponse)
+@router.post("/batch", response_model=ReportResponse, operation_id="batchReport")
 async def batch_report(req: BatchReportRequest) -> ReportResponse:
     """Generate batch report across multiple KDF files in a folder."""
     await require_model()

@@ -1,14 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { api } from '../api/client'
+import { browseFiles, pinFolder, unpinFolder as apiUnpinFolder } from '../api/client'
 import { Folder, File, ArrowUp, Cloud, FolderOpen, CloudCheck, Check, ArrowLeftRight, Pin, PinOff } from 'lucide-vue-next'
 import type {
   BrowseEntryDir,
   BrowseEntryFile,
-  BrowseRequest,
-  BrowseResponse,
   PinnedFolderRequest,
-} from '../types/api'
+} from '../api/generated/types.gen'
 
 const props = defineProps<{
   filter?: string
@@ -32,19 +30,22 @@ const currentSpUrl = ref<string | null>(null)
 const useAsSp = ref(false)
 
 async function browse(path?: string) {
-  const req: BrowseRequest = {
+  const params: Record<string, string> = {
     filter: props.filter || 'any',
-    ...(path ? { path } : {}),
+  }
+  if (path) {
+    params.path = path
   }
   try {
-    const { data } = await api.get<BrowseResponse>('/api/browse', { params: req })
+    const response = await browseFiles({ query: params })
+    const data = response.data!
     currentPath.value = data.current
-    currentSpUrl.value = data.current_sp_url
-    parentPath.value = data.parent
-    drives.value = data.drives
-    pinnedFolders.value = data.pinned_folders || []
-    dirs.value = data.dirs
-    files.value = data.files
+    currentSpUrl.value = data.current_sp_url ?? null
+    parentPath.value = data.parent ?? null
+    drives.value = (data.drives ?? []) as string[]
+    pinnedFolders.value = (data.pinned_folders ?? []) as string[]
+    dirs.value = data.dirs ?? []
+    files.value = data.files ?? []
     selectedPath.value = null
     selectedSpUrl.value = null
     useAsSp.value = false
@@ -57,7 +58,7 @@ function selectDir(d: BrowseEntryDir) {
 
 function selectFile(f: BrowseEntryFile) {
   selectedPath.value = f.path
-  selectedSpUrl.value = f.sharepoint_url
+  selectedSpUrl.value = f.sharepoint_url ?? null
   useAsSp.value = false
 }
 
@@ -78,13 +79,13 @@ function confirm() {
 async function pinCurrentFolder() {
   if (!currentPath.value) return
   const req: PinnedFolderRequest = { folder: currentPath.value }
-  await api.post('/api/browse/pin', req)
+  await pinFolder({ body: req })
   await browse(currentPath.value)
 }
 
 async function unpinFolder(folderPath: string) {
   const req: PinnedFolderRequest = { folder: folderPath }
-  await api.post('/api/browse/unpin', req)
+  await apiUnpinFolder({ body: req })
   await browse(currentPath.value)
 }
 

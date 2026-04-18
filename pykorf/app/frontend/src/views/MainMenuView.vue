@@ -10,7 +10,7 @@ import {
   CheckCircle, XCircle, AlertCircle, FolderOpen, Lightbulb,
   BarChart3, Grid3X3, PenSquare, X,
 } from 'lucide-vue-next'
-import type { ModelSummary, ProjectInfo } from '../types/api'
+import type { ModelSummaryResponse, ProjectInfoResponse } from '../api/generated/types.gen'
 
 const router = useRouter()
 const session = useSessionStore()
@@ -18,7 +18,7 @@ const model = useModelStore()
 const toast = useToastStore()
 
 const showProjectModal = ref(false)
-const editInfo = ref<ProjectInfo>({
+const editInfo = ref<ProjectInfoResponse>({
   company1: '', company2: '',
   project_name1: '', project_name2: '',
   item_name1: '', item_name2: '',
@@ -40,7 +40,7 @@ const saveProjectLoading = useLoading(async () => {
 })
 
 // Summary items with icons and labels
-const summaryItems: Array<{ key: keyof ModelSummary; label: string; icon: string }> = [
+const summaryItems: Array<{ key: keyof ModelSummaryResponse; label: string; icon: string }> = [
   { key: 'num_pipes', label: 'Pipes', icon: 'pipe' },
   { key: 'num_junctions', label: 'Junctions', icon: 'node' },
   { key: 'num_pumps', label: 'Pumps', icon: 'gear' },
@@ -49,7 +49,7 @@ const summaryItems: Array<{ key: keyof ModelSummary; label: string; icon: string
   { key: 'num_products', label: 'Products', icon: 'up' },
 ]
 
-function getSummaryValue(key: keyof ModelSummary): number {
+function getSummaryValue(key: keyof ModelSummaryResponse): number {
   return model.summary?.[key] ?? 0
 }
 
@@ -336,7 +336,7 @@ onMounted(async () => {
               <div>
                 <div class="font-semibold text-sm">No validation errors</div>
                 <div class="text-xs text-gray-500">
-                  {{ model.prereqs.validation_ok ? 'All checks passed.' : `${model.prereqs.issues.length} issue(s) found — see validation panel.` }}
+                  {{ model.prereqs.validation_ok ? `${model.prereqs.issues?.length ?? 0} issue(s) found — see validation panel.` : 'No issues' }}
                 </div>
               </div>
             </li>
@@ -363,7 +363,7 @@ onMounted(async () => {
             <XCircle v-else class="w-4 h-4 text-red-500" />
             Validation Results
             <span v-if="model.prereqs.validation_ok" class="ml-auto bg-green-500 text-white text-xs px-2 py-0.5 rounded">PASSED</span>
-            <span v-else class="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded">{{ model.prereqs.issues.length }} issue(s)</span>
+            <span v-else class="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded">{{ model.prereqs.issues?.length ?? 0 }} issue(s)</span>
           </div>
           <div class="flex-1">
             <div v-if="model.prereqs.validation_ok" class="text-center text-green-500 py-4 flex flex-col items-center justify-center h-full">

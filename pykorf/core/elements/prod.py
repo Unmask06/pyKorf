@@ -107,9 +107,8 @@ class Product(BaseElement):
             pres_val, pres_unit = self.get_value_and_unit(Product.PIN, val_index=1, unit_index=-1)
             display_name = f"{self.name} , {self.description}" if self.description else self.name
             return {
-                "Product Name": display_name,
-                "Type": self.type,
-                self.format_export_header("Inlet Pressure", pres_unit): pres_val,
+                "Sink": display_name,
+                self.format_export_header("Pressure", pres_unit): pres_val,
             }
 
         return {

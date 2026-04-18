@@ -283,6 +283,15 @@ class ModelPipesResponse(BaseModel):
     pipes: list[str] = []
 
 
+class ViolationSummary(BaseModel):
+    total_pipes_with_violations: int = 0
+    total_violations: int = 0
+    justified_pipes: int = 0
+    justified_violations: int = 0
+    pipes_needing_justification: int = 0
+    violations_needing_justification: int = 0
+
+
 class PipeCriteriaResponse(BaseModel):
     kdf_path: str = ""
     pipes: list[tuple[int, str]] = []
@@ -295,11 +304,23 @@ class PipeCriteriaResponse(BaseModel):
     units_data: dict[str, dict[str, UnitConversionInfo]] = {}
     set_result: SetCriteriaResponse | None = None
     predict_result: PredictCriteriaResponse | None = None
+    justifications: dict[str, str] = {}
+    violation_summary: ViolationSummary = ViolationSummary()
 
 
 class SetCriteriaResponse(BaseModel):
     applied: int = 0
     skipped: list[str] = []
+
+
+class JustificationRequest(BaseModel):
+    pipe_name: str
+    justification: str
+
+
+class JustificationSaveResponse(BaseModel):
+    justifications: dict[str, str] = {}
+    saved: bool = True
 
 
 # --- References ---

@@ -5,17 +5,20 @@ import { useSessionStore } from '../stores/session'
 import { useModelStore } from '../stores/model'
 import { useToastStore } from '../composables/useToast'
 import { useLoading } from '../composables/useLoading'
-import { Ruler, ArrowLeft, Wand2, XCircle, Zap, CheckCircle, AlertTriangle } from 'lucide-vue-next'
+import { Ruler, ArrowLeft, Wand2, XCircle, Zap, CheckCircle, AlertTriangle, MessageSquare, AlertCircle } from 'lucide-vue-next'
 import type {
   CriteriaValuesInfo,
   CriteriaViolationsInfo,
+  JustificationRequest,
   PipeCalcInfo,
   PipeCriteriaEntry,
   PipeCriteriaResponse,
   PredictCriteriaResponse,
   SetCriteriaResponse,
   UnitConversionInfo,
-} from '../types/api'
+  ViolationSummary,
+} from '../api/generated/types.gen'
+import { savePipeJustification } from '../api/generated/sdk.gen'
 
 const router = useRouter()
 const session = useSessionStore()
@@ -31,10 +34,12 @@ const criteriaViolations = ref<Record<string, Record<string, CriteriaViolationsI
 const pipeCalcs = ref<Record<string, PipeCalcInfo>>({})
 const unitsData = ref<Record<string, Record<string, UnitConversionInfo>>>({})
 const fluidLabels = ref<Record<string, string>>({})
+const justifications = ref<Record<string, string>>({})
+const violationSummary = ref<ViolationSummary | null>(null)
 
 // Edited criteria entries
 const pipeCriteria = ref<Record<string, PipeCriteriaEntry>>({})
-const changedPipes = ref<Set<string>>(new Set())
+const dirtyPipes = ref<Set<string>>(new Set())
 const predictResult = ref<PredictCriteriaResponse | null>(null)
 
 // UI state
@@ -45,6 +50,18 @@ const selectedRows = ref<Set<string>>(new Set())
 const bulkState = ref('')
 const bulkCriteria = ref('')
 const setResult = ref<SetCriteriaResponse | null>(null)
+
+// Justification modal state
+const justificationModal = ref({
+  open: false,
+  pipeName: '',
+  criteria: '',
+  criteriaLabel: '',
+  justification: '',
+  violations: null as CriteriaViolationsInfo | null,
+  calcInfo: null as PipeCalcInfo | null,
+  criteriaValues: null as CriteriaValuesInfo | null,
+})
 
 // Computed unit labels based on selected unit system
 const dpUnit = computed(() => {
@@ -57,23 +74,25 @@ const velocityUnit = computed(() => 'm/s')
 const rhoV2Unit = computed(() => 'Pa')
 
 function _applyResponse(data: PipeCriteriaResponse) {
-  pipes.value = data.pipes
-  existing.value = data.existing
-  codes.value = data.codes
-  criteriaValues.value = data.pipe_criteria_values
-  criteriaViolations.value = data.pipe_criteria_violations
-  pipeCalcs.value = data.pipe_calcs
-  unitsData.value = data.units_data
-  fluidLabels.value = data.fluid_labels
-  setResult.value = data.set_result
-  predictResult.value = data.predict_result as PredictCriteriaResponse | null
+  pipes.value = data.pipes ?? []
+  existing.value = data.existing ?? {}
+  codes.value = data.codes ?? {}
+  criteriaValues.value = data.pipe_criteria_values ?? {}
+  criteriaViolations.value = data.pipe_criteria_violations ?? {}
+  pipeCalcs.value = data.pipe_calcs ?? {}
+  unitsData.value = data.units_data ?? {}
+  fluidLabels.value = data.fluid_labels ?? {}
+  setResult.value = data.set_result ?? null
+  predictResult.value = data.predict_result ?? null
+  justifications.value = data.justifications ?? {}
+  violationSummary.value = data.violation_summary ?? null
 
   const initial: Record<string, PipeCriteriaEntry> = {}
-  for (const [name, vals] of Object.entries(data.existing)) {
+  for (const [name, vals] of Object.entries(data.existing ?? {})) {
     initial[name] = { state: vals.state || '', criteria: vals.criteria || '' }
   }
   pipeCriteria.value = initial
-  changedPipes.value = new Set()
+  dirtyPipes.value = new Set()
 }
 
 const criteriaLoading = useLoading(async () => {
@@ -84,20 +103,20 @@ const criteriaLoading = useLoading(async () => {
 const predictLoading = useLoading(async () => {
   const data = await model.predictCriteria()
   predictResult.value = data
-  for (const [name, entry] of Object.entries(data.predicted)) {
+  for (const [name, entry] of Object.entries(data.predicted ?? {})) {
     if (!pipeCriteria.value[name]?.state || !pipeCriteria.value[name]?.criteria) {
-      pipeCriteria.value[name] = { ...entry }
-      changedPipes.value.add(name)
+      pipeCriteria.value[name] = { state: entry.state || '', criteria: entry.criteria || '' }
+      dirtyPipes.value.add(name)
     }
   }
-  toast.info(`Predicted: ${data.filled_state} states, ${data.filled_criteria} criteria codes filled.`)
+  toast.info(`Predicted: ${data.filled_state ?? 0} states, ${data.filled_criteria ?? 0} criteria codes filled.`)
 })
 
 const saveLoading = useLoading(async () => {
   const result = await model.setPipeCriteria(pipeCriteria.value)
   await session.fetchStatus()
-  toast.success(`Applied criteria to ${result.applied} pipe(s).`)
-  if (result.skipped.length) {
+  toast.success(`Applied criteria to ${result.applied ?? 0} pipe(s).`)
+  if (result.skipped?.length) {
     toast.warning(`Skipped: ${result.skipped.join(', ')}`)
   }
   await criteriaLoading.execute()
@@ -108,7 +127,7 @@ function updateEntry(name: string, field: 'state' | 'criteria', value: string) {
     pipeCriteria.value[name] = { state: '', criteria: '' }
   }
   pipeCriteria.value[name][field] = value
-  changedPipes.value.add(name)
+  dirtyPipes.value.add(name)
 }
 
 function getAvailableCriteriaForState(state: string): Array<[string, string]> {
@@ -211,11 +230,62 @@ function currentCriteriaInfo(name: string): CriteriaValuesInfo | undefined {
   return criteriaValues.value[name]?.[`${entry.state}:${entry.criteria}`]
 }
 
-function getViolations(name: string): CriteriaViolationsInfo | undefined {
+function criteriaKeyFor(name: string): string {
   const entry = pipeCriteria.value[name]
-  if (!entry?.state || !entry.criteria) return undefined
-  return criteriaViolations.value[name]?.[`${entry.state}:${entry.criteria}`]
+  return entry ? `${entry.state}:${entry.criteria}` : ''
 }
+
+function getViolations(name: string): CriteriaViolationsInfo | undefined {
+  const key = criteriaKeyFor(name)
+  return key ? criteriaViolations.value[name]?.[key] : undefined
+}
+
+function openJustificationModal(name: string, criteriaKey: string) {
+  const entry = pipeCriteria.value[name]
+  if (!entry?.state || !entry.criteria) return
+  
+  const violations = criteriaViolations.value[name]?.[criteriaKey]
+  if (!violations || violations.overall === 'PASS') return
+  
+  const critVals = criteriaValues.value[name]?.[criteriaKey]
+  const calcInfo = pipeCalcs.value[name]
+  
+  const criteriaLabel = codes.value[entry.state]?.find(c => c[0] === entry.criteria)?.[1] || entry.criteria
+  
+  justificationModal.value = {
+    open: true,
+    pipeName: name,
+    criteria: criteriaKey,
+    criteriaLabel,
+    justification: justifications.value[name] || '',
+    violations,
+    calcInfo,
+    criteriaValues: critVals,
+  }
+}
+
+function closeJustificationModal() {
+  justificationModal.value.open = false
+}
+
+const saveJustificationLoading = useLoading(async () => {
+  const { pipeName, criteria, justification } = justificationModal.value
+  try {
+    const response = await savePipeJustification({
+      body: {
+        pipe_name: pipeName,
+        criteria: criteria,
+        justification: justification,
+      } as JustificationRequest,
+    })
+    justifications.value = response.data?.justifications || {}
+    toast.success('Justification saved')
+    closeJustificationModal()
+    await criteriaLoading.execute()
+  } catch (error: any) {
+    toast.error(error?.response?.data?.detail || 'Failed to save justification')
+  }
+})
 
 function applyBulk() {
   if (!bulkState.value && !bulkCriteria.value) {
@@ -240,7 +310,7 @@ function applyBulk() {
 function clearAll() {
   for (const [, name] of pipes.value) {
     pipeCriteria.value[name] = { state: '', criteria: '' }
-    changedPipes.value.add(name)
+    dirtyPipes.value.add(name)
   }
   toast.info('All criteria cleared.')
 }
@@ -256,27 +326,27 @@ onMounted(() => {
 
     <!-- Set result alert -->
     <div v-if="setResult" class="flex items-start gap-2 p-3 rounded"
-      :class="setResult.skipped.length ? 'bg-yellow-50 border border-yellow-200 text-yellow-700' : 'bg-green-50 border border-green-200 text-green-700'">
-      <CheckCircle v-if="!setResult.skipped.length" class="w-5 h-5 shrink-0 mt-0.5" />
+      :class="(setResult.skipped ?? []).length ? 'bg-yellow-50 border border-yellow-200 text-yellow-700' : 'bg-green-50 border border-green-200 text-green-700'">
+      <CheckCircle v-if="!(setResult.skipped ?? []).length" class="w-5 h-5 shrink-0 mt-0.5" />
       <AlertTriangle v-else class="w-5 h-5 shrink-0 mt-0.5" />
       <div>
         Applied Pipe Sizing criteria to <strong>{{ setResult.applied }}</strong> pipe(s) in model.
-        <span v-if="setResult.skipped.length" class="block mt-1 text-xs">
-          Skipped (no criteria assigned): {{ setResult.skipped.join(', ') }}
+        <span v-if="(setResult.skipped ?? []).length" class="block mt-1 text-xs">
+          Skipped (no criteria assigned): {{ (setResult.skipped ?? []).join(', ') }}
         </span>
       </div>
     </div>
 
     <!-- Predict result alert -->
     <div v-if="predictResult" class="flex items-start gap-2 p-3 rounded"
-      :class="predictResult.errors.length ? 'bg-yellow-50 border border-yellow-200 text-yellow-700' : 'bg-blue-50 border border-blue-200 text-blue-700'">
+      :class="(predictResult.errors ?? []).length ? 'bg-yellow-50 border border-yellow-200 text-yellow-700' : 'bg-blue-50 border border-blue-200 text-blue-700'">
       <Wand2 class="w-5 h-5 shrink-0 mt-0.5" />
       <div>
         Predicted <strong>{{ predictResult.filled_state }}</strong> state(s) and
         <strong>{{ predictResult.filled_criteria }}</strong> criteria code(s).
         Review below, then click <strong>Set Criteria to Model</strong> to apply.
-        <ul v-if="predictResult.errors.length" class="mt-2 pl-4 text-xs list-disc">
-          <li v-for="e in predictResult.errors" :key="e">{{ e }}</li>
+        <ul v-if="(predictResult.errors ?? []).length" class="mt-2 pl-4 text-xs list-disc">
+          <li v-for="e in (predictResult.errors ?? [])" :key="e">{{ e }}</li>
         </ul>
       </div>
     </div>
@@ -287,6 +357,14 @@ onMounted(() => {
         <span class="flex items-center gap-1">
           <Ruler class="w-4 h-4 text-blue-600" /> Pipe Sizing Criteria
           <span class="pk-badge-blue ml-2">{{ pipes.length }} pipes</span>
+          <span
+            v-if="violationSummary?.violations_needing_justification && violationSummary.violations_needing_justification > 0"
+            class="ml-2 px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-700 border border-yellow-300 flex items-center gap-1"
+            title="Violations needing justification"
+          >
+            <AlertCircle class="w-3 h-3" />
+            {{ violationSummary.violations_needing_justification }} violations need justification
+          </span>
         </span>
         <router-link to="/model" class="pk-btn-secondary text-xs">
           <ArrowLeft class="w-3 h-3" /> Back
@@ -359,7 +437,7 @@ onMounted(() => {
           <tbody>
             <tr v-for="[idx, name] in filteredPipes" :key="name"
               class="border-b hover:bg-gray-50"
-              :class="{ 'bg-yellow-50': changedPipes.has(name) }">
+              :class="{ 'bg-yellow-50': dirtyPipes.has(name) }">
               <td class="text-center">
                 <input type="checkbox" :checked="selectedRows.has(name)"
                   @change="toggleRow(name)" class="rounded" />
@@ -385,8 +463,14 @@ onMounted(() => {
                   </option>
                 </select>
               </td>
-              <td class="pk-text-right-mono" :class="{ 'viol-red': getViolations(name)?.dp_exceeds }">
-                {{ convertValue('dp', pipeCalcs[name]?.dp_calc ?? null) }}
+              <td class="pk-text-right-mono" 
+                  :class="{ 'viol-red': getViolations(name)?.dp_exceeds && !justifications[name], 'viol-justified': getViolations(name)?.dp_exceeds && justifications[name] }"
+                  @click="getViolations(name)?.dp_exceeds && openJustificationModal(name, criteriaKeyFor(name))"
+                  :style="(getViolations(name)?.dp_exceeds) ? 'cursor: pointer;' : ''">
+                <div class="flex items-center justify-end gap-1">
+                  <MessageSquare v-if="justifications[name] && getViolations(name)?.dp_exceeds" class="w-3 h-3 text-blue-500 shrink-0" />
+                  {{ convertValue('dp', pipeCalcs[name]?.dp_calc ?? null) }}
+                </div>
               </td>
               <td class="pk-text-right-mono-muted crit-col">
                 <template v-if="pipeCriteria[name]?.state && pipeCriteria[name]?.criteria">
@@ -394,8 +478,14 @@ onMounted(() => {
                 </template>
                 <template v-else>—</template>
               </td>
-              <td class="pk-text-right-mono" :class="{ 'viol-red': getViolations(name)?.vel_below_min || getViolations(name)?.vel_above_max }">
-                {{ convertValue('velocity', pipeCalcs[name]?.vel_calc ?? null) }}
+              <td class="pk-text-right-mono" 
+                  :class="{ 'viol-red': (getViolations(name)?.vel_below_min || getViolations(name)?.vel_above_max) && !justifications[name], 'viol-justified': (getViolations(name)?.vel_below_min || getViolations(name)?.vel_above_max) && justifications[name] }"
+                  @click="(getViolations(name)?.vel_below_min || getViolations(name)?.vel_above_max) && openJustificationModal(name, criteriaKeyFor(name))"
+                  :style="(getViolations(name)?.vel_below_min || getViolations(name)?.vel_above_max) ? 'cursor: pointer;' : ''">
+                <div class="flex items-center justify-end gap-1">
+                  <MessageSquare v-if="justifications[name] && (getViolations(name)?.vel_below_min || getViolations(name)?.vel_above_max)" class="w-3 h-3 text-blue-500 shrink-0" />
+                  {{ convertValue('velocity', pipeCalcs[name]?.vel_calc ?? null) }}
+                </div>
               </td>
               <td class="pk-text-right-mono-muted crit-col">
                 <template v-if="pipeCriteria[name]?.state && pipeCriteria[name]?.criteria">
@@ -409,8 +499,14 @@ onMounted(() => {
                 </template>
                 <template v-else>—</template>
               </td>
-              <td class="pk-text-right-mono" :class="{ 'viol-red': getViolations(name)?.rho_v2_below_min || getViolations(name)?.rho_v2_above_max }">
-                {{ convertValue('rho_v2', pipeCalcs[name]?.rho_v2_calc ?? null) }}
+              <td class="pk-text-right-mono" 
+                  :class="{ 'viol-red': (getViolations(name)?.rho_v2_below_min || getViolations(name)?.rho_v2_above_max) && !justifications[name], 'viol-justified': (getViolations(name)?.rho_v2_below_min || getViolations(name)?.rho_v2_above_max) && justifications[name] }"
+                  @click="(getViolations(name)?.rho_v2_below_min || getViolations(name)?.rho_v2_above_max) && openJustificationModal(name, criteriaKeyFor(name))"
+                  :style="(getViolations(name)?.rho_v2_below_min || getViolations(name)?.rho_v2_above_max) ? 'cursor: pointer;' : ''">
+                <div class="flex items-center justify-end gap-1">
+                  <MessageSquare v-if="justifications[name] && (getViolations(name)?.rho_v2_below_min || getViolations(name)?.rho_v2_above_max)" class="w-3 h-3 text-blue-500 shrink-0" />
+                  {{ convertValue('rho_v2', pipeCalcs[name]?.rho_v2_calc ?? null) }}
+                </div>
               </td>
               <td class="pk-text-right-mono-muted crit-col">
                 <template v-if="pipeCriteria[name]?.state && pipeCriteria[name]?.criteria">
@@ -439,6 +535,96 @@ onMounted(() => {
         </div>
       </div>
     </div>
+
+    <!-- Justification Modal -->
+    <div v-if="justificationModal.open" 
+         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+         @click.self="closeJustificationModal">
+      <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">
+              Justification for {{ justificationModal.pipeName }}
+            </h3>
+            <button @click="closeJustificationModal" class="text-gray-400 hover:text-gray-600">
+              <XCircle class="w-5 h-5" />
+            </button>
+          </div>
+
+          <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
+            <p class="text-sm text-blue-800">
+              <strong>Criteria:</strong> {{ justificationModal.criteriaLabel }}
+            </p>
+          </div>
+
+          <div class="mb-4">
+            <h4 class="text-sm font-medium text-gray-700 mb-2">Violation Details</h4>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+              <div v-if="justificationModal.violations?.dp_exceeds" class="p-2 bg-red-50 border border-red-200 rounded">
+                <span class="text-red-700">dP Exceeds:</span>
+                <span class="ml-2 font-mono">{{ convertValue('dp', justificationModal.calcInfo?.dp_calc ?? null) }}</span>
+                <span class="mx-1">></span>
+                <span class="font-mono">{{ convertValue('dp', justificationModal.criteriaValues?.max_dp ?? null) }}</span>
+              </div>
+              <div v-if="justificationModal.violations?.vel_below_min" class="p-2 bg-red-50 border border-red-200 rounded">
+                <span class="text-red-700">Velocity Below Min:</span>
+                <span class="ml-2 font-mono">{{ convertValue('velocity', justificationModal.calcInfo?.vel_calc ?? null) }}</span>
+                <span class="mx-1"><</span>
+                <span class="font-mono">{{ convertValue('velocity', justificationModal.criteriaValues?.min_vel ?? null) }}</span>
+              </div>
+              <div v-if="justificationModal.violations?.vel_above_max" class="p-2 bg-red-50 border border-red-200 rounded">
+                <span class="text-red-700">Velocity Above Max:</span>
+                <span class="ml-2 font-mono">{{ convertValue('velocity', justificationModal.calcInfo?.vel_calc ?? null) }}</span>
+                <span class="mx-1">></span>
+                <span class="font-mono">{{ convertValue('velocity', justificationModal.criteriaValues?.max_vel ?? null) }}</span>
+              </div>
+              <div v-if="justificationModal.violations?.rho_v2_below_min" class="p-2 bg-red-50 border border-red-200 rounded">
+                <span class="text-red-700">ρV² Below Min:</span>
+                <span class="ml-2 font-mono">{{ convertValue('rho_v2', justificationModal.calcInfo?.rho_v2_calc ?? null) }}</span>
+                <span class="mx-1"><</span>
+                <span class="font-mono">{{ convertValue('rho_v2', justificationModal.criteriaValues?.rho_v2_min ?? null) }}</span>
+              </div>
+              <div v-if="justificationModal.violations?.rho_v2_above_max" class="p-2 bg-red-50 border border-red-200 rounded">
+                <span class="text-red-700">ρV² Above Max:</span>
+                <span class="ml-2 font-mono">{{ convertValue('rho_v2', justificationModal.calcInfo?.rho_v2_calc ?? null) }}</span>
+                <span class="mx-1">></span>
+                <span class="font-mono">{{ convertValue('rho_v2', justificationModal.criteriaValues?.rho_v2_max ?? null) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Justification <span class="text-gray-500">(optional, clears if empty)</span>
+            </label>
+            <textarea
+              v-model="justificationModal.justification"
+              rows="4"
+              class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter justification for this criteria violation (e.g., 'Temporary design exception approved by engineering lead')"
+            ></textarea>
+          </div>
+
+          <div class="flex justify-end gap-2">
+            <button
+              @click="closeJustificationModal"
+              class="px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              @click="saveJustificationLoading.execute()"
+              :disabled="saveJustificationLoading.isLoading.value"
+              class="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+            >
+              <span v-if="saveJustificationLoading.isLoading.value" class="pk-spinner" />
+              <CheckCircle class="w-4 h-4" />
+              Save Justification
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -459,5 +645,11 @@ onMounted(() => {
 .viol-red {
   background-color: #fee2e2 !important;
   color: #dc2626;
+}
+
+/* Justified violation highlighting — blue background */
+.viol-justified {
+  background-color: #dbeafe !important;
+  color: #1e40af;
 }
 </style>

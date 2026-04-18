@@ -81,12 +81,14 @@ class ResultExporter:
         remarks: str = "",
         hold: str = "",
         references: list[dict] | None = None,
+        justifications: dict[str, str] | None = None,
     ):
         self.model = model
         self._basis = basis
         self._remarks = remarks
         self._hold = hold
         self._references = references or []
+        self._justifications = justifications or {}
 
         self._converter = UnitConverter()
 
@@ -155,6 +157,18 @@ class ResultExporter:
         except Exception as exc:
             _logger.warning("validation failed: %s", exc)
 
+        # Add justified violations with "Justified" severity
+        if self._justifications:
+            for pipe_name, justification in self._justifications.items():
+                issues.append(
+                    {
+                        "Severity": "Justified",
+                        "Category": "Criteria",
+                        "Element": pipe_name,
+                        "Message": f"Pipe '{pipe_name}': criteria violation justified - {justification}",
+                    }
+                )
+
         if not issues:
             return pd.DataFrame(columns=["Severity", "Category", "Element", "Message"])
         return pd.DataFrame(issues)
@@ -188,10 +202,12 @@ class ResultExporter:
             assert worksheet is not None, "New workbook should have an active sheet"
             worksheet.title = sheet_name
 
-            # Set page setup for A3 Landscape
+            # Set page setup for A3 Landscape, fit to 1 page wide x 1 page tall
             worksheet.page_setup.paperSize = worksheet.PAPERSIZE_A3
             worksheet.page_setup.orientation = worksheet.ORIENTATION_LANDSCAPE
-            worksheet.page_setup.scale = 75
+            worksheet.page_setup.fitToPage = True
+            worksheet.page_setup.fitToWidth = 1
+            worksheet.page_setup.fitToHeight = 1
 
         # Insert References & Design Basis sheet as the first sheet (if data present)
         if self._basis or self._remarks or self._hold or self._references:
@@ -222,8 +238,24 @@ class ResultExporter:
 
         current_row_left = 8 if template_path else 5
         current_row_right = 8 if template_path else 5
+        max_left_col = 1
 
         element_keys = elements if elements is not None else list(self._extractors.keys())
+
+        # First pass: calculate max column width for left-side standard tables
+        # Only count Pipes, Compressors, Heat Exchangers (not Pumps/Valves which use transposed layout)
+        for element_type in element_keys:
+            if element_type not in dfs_flat or dfs_flat[element_type].empty:
+                continue
+            if element_type in ("Feeds", "Products", "Junctions", "Misc Equipment"):
+                continue
+            if element_type in ("Pumps", "Valves"):
+                continue  # Transposed tables don't contribute to left-side width
+            df = dfs_flat[element_type]
+            num_cols = len(df.columns)
+            end_col = 1 + num_cols - 1
+            if end_col > max_left_col:
+                max_left_col = end_col
 
         for element_type in element_keys:
             if element_type not in dfs_flat or dfs_flat[element_type].empty:
@@ -233,7 +265,7 @@ class ResultExporter:
 
             is_right_side = element_type in ("Feeds", "Products", "Junctions", "Misc Equipment")
             current_row = current_row_right if is_right_side else current_row_left
-            start_col = 14 if is_right_side else 1
+            start_col = max_left_col + 2 if is_right_side else 1
 
             start_table_row = current_row
 
@@ -263,6 +295,7 @@ class ResultExporter:
                 current_row = self._write_pipe_stats(worksheet, df, end_row + 2, start_col)
             else:
                 current_row = end_row + 3
+
             if is_right_side:
                 current_row_right = current_row
             else:
@@ -333,12 +366,29 @@ class ResultExporter:
 
         # Write Data
         data_start_row = row + 2
+        rhov2_col_indices = {
+            start_col + i
+            for i, col in enumerate(df.columns)
+            if "ρV²" in col  # noqa: RUF001
+        }
+        criteria_col_idx = (
+            start_col + len(descriptions) - 1 if "Criteria Check" in descriptions else None
+        )
         for r_idx, row_data in enumerate(
             dataframe_to_rows(df, index=False, header=False), start=data_start_row
         ):
             for c_idx, val in enumerate(row_data, start=start_col):
                 cell = ws.cell(row=r_idx, column=c_idx, value=val)
                 cell.font = self._styles["data"]
+                if c_idx != start_col:
+                    cell.alignment = Alignment(horizontal="center")
+                if c_idx in rhov2_col_indices:
+                    cell.number_format = "#,##0"
+                if criteria_col_idx is not None and c_idx == criteria_col_idx and val == "FAIL":
+                    cell.font = Font(bold=True, size=10, color="9C0006")
+                    cell.fill = PatternFill(
+                        start_color="FFC7CE", end_color="FFC7CE", fill_type="solid"
+                    )
 
         last_row = data_start_row + len(df) - 1
         self._apply_column_widths(ws, len(descriptions), start_col)
@@ -379,6 +429,7 @@ class ResultExporter:
             for v_idx, val in enumerate(vals, start=start_col + 2):
                 cell_v = ws.cell(row=current_row, column=v_idx, value=val)
                 cell_v.font = self._styles["data"]
+                cell_v.alignment = Alignment(horizontal="center")
 
             current_row += 1
 
@@ -564,7 +615,17 @@ class ResultExporter:
         error_count = (df["Severity"] == "Error").sum()
         warning_count = (df["Severity"] == "Warning").sum()
         info_count = (df["Severity"] == "Info").sum()
-        summary = f"{len(df)} issue(s) found — {error_count} error(s), {warning_count} warning(s), {info_count} info"
+        justified_count = (df["Severity"] == "Justified").sum()
+        summary_parts = [f"{len(df)} issue(s)"]
+        if error_count:
+            summary_parts.append(f"{error_count} error(s)")
+        if warning_count:
+            summary_parts.append(f"{warning_count} warning(s)")
+        if info_count:
+            summary_parts.append(f"{info_count} info")
+        if justified_count:
+            summary_parts.append(f"{justified_count} justified")
+        summary = " — ".join(summary_parts)
         val_ws.cell(row=row, column=1, value=summary).font = Font(
             italic=True, size=10, color="555555"
         )
@@ -576,11 +637,13 @@ class ResultExporter:
             "Error": "9C0006",
             "Warning": "9C5700",
             "Info": "003366",
+            "Justified": "003366",
         }
         severity_fills: Mapping[str, str] = {
             "Error": "FFC7CE",
             "Warning": "FFEB9C",
             "Info": "D9E2F3",
+            "Justified": "D9E2F3",
         }
         for c_idx, header in enumerate(headers, start=1):
             cell = val_ws.cell(row=row, column=c_idx, value=header)
@@ -631,16 +694,36 @@ class ResultExporter:
             return row + 3
 
         col_names = list(df.columns)
+        criteria_col_idx = start_col + col_names.index(criteria_col) if criteria_col else None
 
-        def _fmt(col: str) -> str | None:
+        def _fmt(col: str, thousand_comma: bool = False) -> str | None:
             try:
                 numeric = pd.to_numeric(df[col], errors="coerce")
                 lo, hi = numeric.min(), numeric.max()
                 if pd.isna(lo) or pd.isna(hi):
                     return None
+                if thousand_comma:
+                    return f"{lo:,.0f} - {hi:,.0f}"
                 return f"{lo:.4g} - {hi:.4g}"
             except Exception:
                 return None
+
+        # Collect column indices that have data in Min-Max row
+        data_col_indices = []
+        if dpdl_col:
+            data_col_indices.append(start_col + col_names.index(dpdl_col))
+        if vel_col:
+            data_col_indices.append(start_col + col_names.index(vel_col))
+        if rhov2_col:
+            data_col_indices.append(start_col + col_names.index(rhov2_col))
+        if criteria_col:
+            data_col_indices.append(criteria_col_idx)
+
+        min_max_cols = [start_col, *data_col_indices]
+        start_col_idx = min(min_max_cols)
+        end_col_idx = max(min_max_cols)
+        thin_s = self._styles["thin_side"]
+        thick_s = self._styles["thick_side"]
 
         # -- Row 1: Min - Max ----------------------------------------------------
         lc = ws.cell(row=row, column=start_col, value="Min - Max")
@@ -648,20 +731,50 @@ class ResultExporter:
 
         if dpdl_col:
             c_idx = start_col + col_names.index(dpdl_col)
-            ws.cell(row=row, column=c_idx, value=_fmt(dpdl_col)).font = self._styles["data"]
+            cell = ws.cell(row=row, column=c_idx, value=_fmt(dpdl_col))
+            cell.font = self._styles["data"]
+            cell.alignment = Alignment(horizontal="center")
 
         if vel_col:
             c_idx = start_col + col_names.index(vel_col)
-            ws.cell(row=row, column=c_idx, value=_fmt(vel_col)).font = self._styles["data"]
+            cell = ws.cell(row=row, column=c_idx, value=_fmt(vel_col))
+            cell.font = self._styles["data"]
+            cell.alignment = Alignment(horizontal="center")
 
         if rhov2_col:
             c_idx = start_col + col_names.index(rhov2_col)
-            ws.cell(row=row, column=c_idx, value=_fmt(rhov2_col)).font = self._styles["data"]
+            cell = ws.cell(row=row, column=c_idx, value=_fmt(rhov2_col, thousand_comma=True))
+            cell.font = self._styles["data"]
+            cell.alignment = Alignment(horizontal="center")
+
+        # Apply borders to Min-Max row
+        for c_idx in range(start_col_idx, end_col_idx + 1):
+            cell = ws.cell(row=row, column=c_idx)
+            left = thick_s if c_idx == start_col_idx else thin_s
+            right = thick_s if c_idx == end_col_idx else thin_s
+            top = thick_s
+            bottom = thin_s
+            cell.border = Border(left=left, right=right, top=top, bottom=bottom)
+            if c_idx not in min_max_cols:
+                cell.alignment = Alignment(horizontal="center")
 
         # -- Row 2: Overall Criteria Check (OR logic - any FAIL -> FAIL) --------
         if criteria_col:
-            overall = "FAIL" if (df[criteria_col] == "FAIL").any() else "PASS"
-            is_fail = overall == "FAIL"
+            has_fail = (df[criteria_col] == "FAIL").any()
+            has_justified = (df[criteria_col] == "JUSTIFIED").any()
+
+            if has_fail:
+                overall = "FAIL"
+                color = "9C0006"
+                fill = "FFC7CE"
+            elif has_justified:
+                overall = "PASS with Justification"
+                color = "003366"
+                fill = "D9E2F3"
+            else:
+                overall = "PASS"
+                color = "276221"
+                fill = "C6EFCE"
 
             label_cell = ws.cell(row=row + 1, column=start_col, value="Overall Criteria")
             label_cell.font = Font(bold=True, size=10)
@@ -671,13 +784,25 @@ class ResultExporter:
             result_cell.font = Font(
                 bold=True,
                 size=10,
-                color="9C0006" if is_fail else "276221",
+                color=color,
             )
             result_cell.fill = PatternFill(
-                start_color="FFC7CE" if is_fail else "C6EFCE",
-                end_color="FFC7CE" if is_fail else "C6EFCE",
+                start_color=fill,
+                end_color=fill,
                 fill_type="solid",
             )
+            result_cell.alignment = Alignment(horizontal="center")
+
+            # Apply borders to Overall Criteria row
+            for c_idx in range(start_col_idx, end_col_idx + 1):
+                cell = ws.cell(row=row + 1, column=c_idx)
+                left = thick_s if c_idx == start_col_idx else thin_s
+                right = thick_s if c_idx == end_col_idx else thin_s
+                top = thin_s
+                bottom = thick_s
+                cell.border = Border(left=left, right=right, top=top, bottom=bottom)
+                if c_idx != start_col and c_idx != criteria_col_idx:
+                    cell.alignment = Alignment(horizontal="center")
 
         return row + 3
 
@@ -687,7 +812,7 @@ class ResultExporter:
 
     def _extract_pipes(self) -> list[dict]:
         return [
-            pipe.summary(export=True)
+            pipe.summary(export=True, justifications=self._justifications)
             for idx, pipe in self.model.pipes.items()
             if idx != 0 and not pipe.name.startswith("d")
         ]

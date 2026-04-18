@@ -16,12 +16,9 @@ class TestCaseSet:
     def _cs(self):
         return CaseSet(Model.load(PUMP_KDF))  # type: ignore[arg-type]
 
-    def test_names(self):
+    def test_names_and_count(self):
         cs = self._cs()
         assert cs.names == ["NORMAL", "RATED", "MINIMUM"]
-
-    def test_count(self):
-        cs = self._cs()
         assert cs.count == 3
 
     def test_get_case_value(self):

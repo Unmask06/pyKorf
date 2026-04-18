@@ -10,7 +10,12 @@ from fastapi import APIRouter
 
 from pykorf.app.api import session_state as _sess
 from pykorf.app.api.deps import require_model
-from pykorf.app.api.schemas import ApplyDataResponse, ApplyHmbRequest, ApplyPmsRequest, StatusMessage
+from pykorf.app.api.schemas import (
+    ApplyDataResponse,
+    ApplyHmbRequest,
+    ApplyPmsRequest,
+    StatusMessage,
+)
 from pykorf.core.log import get_logger
 
 logger = get_logger(__name__)
@@ -32,8 +37,18 @@ def _apply_pms_from_source(model, pms_source: Path) -> None:
     # Do NOT call reload_sync() here — it writes module-level globals from a
     # worker thread without the asyncio.Lock, causing a data race.
     from pykorf.app.operation.config.config import set_pms_excel_last_imported
+
     set_pms_excel_last_imported(datetime.now(UTC).isoformat())
     logger.info("pms_applied", pms_source=str(pms_source))
+
+
+def _apply_hmb_from_source(model, hmb_source: Path) -> None:
+    """Apply HMB from a given Excel source to the model."""
+    from pykorf.app.operation.data_import.hmb import apply_hmb as _apply_hmb
+
+    _apply_hmb(hmb_source, model, save=False)
+    model.save()
+    logger.info("hmb_applied", hmb_source=str(hmb_source))
 
 
 def apply_pms_if_stale(model) -> bool:
@@ -61,7 +76,7 @@ def apply_pms_if_stale(model) -> bool:
         return False
 
 
-@router.post("/apply-pms", response_model=ApplyDataResponse)
+@router.post("/apply-pms", response_model=ApplyDataResponse, operation_id="applyPms")
 async def apply_pms(req: ApplyPmsRequest) -> ApplyDataResponse:
     """Apply PMS data from Excel or JSON file."""
     model = await require_model()
@@ -81,8 +96,7 @@ async def apply_pms(req: ApplyPmsRequest) -> ApplyDataResponse:
         converted = get_local_path_from_sp_url(pms_source_str)
         if converted is None:
             errors.append(
-                "SharePoint URL could not be converted to local path. "
-                "No matching override found."
+                "SharePoint URL could not be converted to local path. No matching override found."
             )
             return ApplyDataResponse(success=False, errors=errors)
         pms_source_str = converted
@@ -106,7 +120,7 @@ async def apply_pms(req: ApplyPmsRequest) -> ApplyDataResponse:
     return ApplyDataResponse(success=len(errors) == 0, messages=messages, errors=errors)
 
 
-@router.post("/apply-hmb", response_model=ApplyDataResponse)
+@router.post("/apply-hmb", response_model=ApplyDataResponse, operation_id="applyHmb")
 async def apply_hmb(req: ApplyHmbRequest) -> ApplyDataResponse:
     """Apply HMB data from Excel or JSON file."""
     model = await require_model()
@@ -125,8 +139,7 @@ async def apply_hmb(req: ApplyHmbRequest) -> ApplyDataResponse:
         converted = get_local_path_from_sp_url(hmb_source_str)
         if converted is None:
             errors.append(
-                "SharePoint URL could not be converted to local path. "
-                "No matching override found."
+                "SharePoint URL could not be converted to local path. No matching override found."
             )
             return ApplyDataResponse(success=False, errors=errors)
         hmb_source_str = converted
@@ -137,14 +150,9 @@ async def apply_hmb(req: ApplyHmbRequest) -> ApplyDataResponse:
         return ApplyDataResponse(success=False, errors=errors)
 
     try:
-        from pykorf.app.operation.data_import.hmb import apply_hmb as _apply_hmb
         from pykorf.app.operation.config.config import set_last_hmb_path
 
-        def _do_apply():
-            _apply_hmb(hmb_source, model, save=False)
-            model.save()
-
-        await asyncio.to_thread(_do_apply)
+        await asyncio.to_thread(_apply_hmb_from_source, model, hmb_source)
         await _sess.reload()
         set_last_hmb_path(hmb_source)
         messages.append(

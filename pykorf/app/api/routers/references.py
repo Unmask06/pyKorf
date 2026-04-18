@@ -32,7 +32,7 @@ def _load_refs():
     return ReferencesStore.load(kdf_path)
 
 
-@router.get("/", response_model=ReferencesStoreSchema)
+@router.get("/", response_model=ReferencesStoreSchema, operation_id="getReferences")
 async def get_references() -> ReferencesStoreSchema:
     """Get references store for the active model."""
     await require_model()
@@ -56,7 +56,7 @@ async def get_references() -> ReferencesStoreSchema:
     )
 
 
-@router.post("/save-all", response_model=OkResponse)
+@router.post("/save-all", response_model=OkResponse, operation_id="saveReferences")
 async def save_all(req: SaveAllReferencesRequest) -> OkResponse:
     """Save basis, remarks, and hold items."""
     await require_model()
@@ -71,7 +71,7 @@ async def save_all(req: SaveAllReferencesRequest) -> OkResponse:
     return OkResponse(success=True)
 
 
-@router.post("/add", response_model=OkResponse)
+@router.post("/add", response_model=OkResponse, operation_id="addReference")
 async def add_reference(req: AddReferenceRequest) -> OkResponse:
     """Add or update a reference entry."""
     await require_model()
@@ -103,7 +103,7 @@ async def add_reference(req: AddReferenceRequest) -> OkResponse:
     return OkResponse(success=True)
 
 
-@router.post("/update", response_model=OkResponse)
+@router.post("/update", response_model=OkResponse, operation_id="updateReference")
 async def update_reference(req: UpdateReferenceRequest) -> OkResponse:
     """Update an existing reference by ID."""
     await require_model()
@@ -124,7 +124,7 @@ async def update_reference(req: UpdateReferenceRequest) -> OkResponse:
     return OkResponse(success=True)
 
 
-@router.post("/delete", response_model=OkResponse)
+@router.post("/delete", response_model=OkResponse, operation_id="deleteReference")
 async def delete_reference(req: DeleteReferenceRequest) -> OkResponse:
     """Delete a reference by ID."""
     await require_model()
@@ -138,7 +138,7 @@ async def delete_reference(req: DeleteReferenceRequest) -> OkResponse:
     return OkResponse(success=True)
 
 
-@router.post("/shortcuts", response_model=ShortcutsResponse)
+@router.post("/shortcuts", response_model=ShortcutsResponse, operation_id="getReferenceShortcuts")
 async def create_shortcuts(_: EmptyRequest) -> ShortcutsResponse:
     """Create .url shortcut files in the reference/ folder."""
     await require_model()

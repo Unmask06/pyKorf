@@ -6,8 +6,8 @@ import { useModelStore } from '../stores/model'
 import { useToastStore } from '../composables/useToast'
 import { useLoading } from '../composables/useLoading'
 import { Copy, FileText, Files, Lightbulb, ListChecks } from 'lucide-vue-next'
-import { api, getErrorMessage } from '../api/client'
-import type { BulkCopyRequest, BulkCopyResponse } from '../types/api'
+import { getErrorMessage } from '../api/client'
+import type { BulkCopyRequest } from '../api/generated/types.gen'
 
 const router = useRouter()
 const session = useSessionStore()
@@ -39,10 +39,7 @@ const copyLoading = useLoading(async () => {
     target_pipes: targetPipes.value,
     exclude: excludeMode.value,
   }
-  const { data } = await api.post<BulkCopyResponse>('/api/model/bulk-copy', req)
-  await session.fetchStatus()
-  await model.fetchSummary()
-  return data
+  return await model.bulkCopy(req)
 })
 
 async function doCopy() {

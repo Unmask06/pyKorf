@@ -411,6 +411,8 @@ class Pump(BaseElement):
         density_unit = "kg/m³"
         visc_unit = "cP"
 
+        temperature = None
+        temp_unit = "°C"
         if model and inlet_idx > 0 and inlet_idx in model.pipes:
             inlet_pipe = model.pipes[inlet_idx]
             try:
@@ -418,6 +420,13 @@ class Pump(BaseElement):
                 viscosity = float(inlet_pipe._scalar(Pipe.TPROP, 5))
                 density_unit = str(inlet_pipe._scalar(Pipe.TPROP, 4))
                 visc_unit = str(inlet_pipe._scalar(Pipe.TPROP, 6))
+            except (TypeError, ValueError, IndexError):
+                pass
+            try:
+                temp_vals = inlet_pipe._values(Pipe.TEMP)
+                if temp_vals:
+                    temperature = float(temp_vals[0])
+                    temp_unit = str(temp_vals[-1])
             except (TypeError, ValueError, IndexError):
                 pass
 
@@ -473,6 +482,7 @@ class Pump(BaseElement):
                 self.format_export_header(
                     "Discharge Shut-Off Pressure", pres_unit
                 ): max_dis_pressure,
+                self.format_export_header("Suction Temperature", temp_unit): temperature,
                 self.format_export_header("Suction Density", density_unit): density_in,
                 self.format_export_header("Suction Viscosity", visc_unit): viscosity,
                 self.format_export_header(

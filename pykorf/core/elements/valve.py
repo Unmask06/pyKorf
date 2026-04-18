@@ -171,14 +171,11 @@ class Valve(BaseElement):
 
             return {
                 "Valve Name": self.name,
-                "Type": self.valve_type,
-                "CV": self.cv,
                 self.format_export_header("Flow Rate", flow_unit): flow_rate_val
                 if flow_unit
                 else "",
-                self.format_export_header("Differential Pressure", dp_unit): dp_val,
                 self.format_export_header("Inlet Pressure", pin_unit): pin_val,
-                self.format_export_header("Outlet Pressure", pout_unit): pout_val,
+                self.format_export_header("Differential Pressure", dp_unit): dp_val,
                 "Opening [%]": self.opening_string,
             }
 

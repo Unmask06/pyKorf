@@ -18,6 +18,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
 
+from pykorf.core.elements import Symbol
 from pykorf.core.exceptions import LayoutError
 
 if TYPE_CHECKING:
@@ -678,7 +679,7 @@ class LayoutService:
             coords.append((x, y))
         return coords
 
-    def center_layout(self) -> None:
+    def center_layout(self, title_margin_height: float = 500.0) -> None:
         """Translate all placed elements so the bounding box is centred on the page boundary.
 
         The bounding box is computed from every non-zero XY coordinate pair across
@@ -686,7 +687,19 @@ class LayoutService:
         visual extent of the drawing is used as the reference.  Every element is
         then shifted by the same (dx, dy) offset so the bounding-box midpoint
         coincides with the page centre.
+
+        A title symbol is always present after this call: if one already exists
+        in the top margin it is recentred; if none exists, one is created from
+        the model filename (via :meth:`ensure_title`) and then centred.
+
+        Args:
+            title_margin_height: Height of the top margin used to locate title
+                symbols. Defaults to 500.
         """
+        # Ensure a title symbol exists before centering so the re-centre step
+        # below always finds something to position.
+        self.ensure_title(margin_height=title_margin_height)
+
         all_coords: list[tuple[float, float]] = []
         elems_to_move: list[BaseElement] = []
         for elem in self.model.elements:
@@ -712,6 +725,21 @@ class LayoutService:
 
         for elem in elems_to_move:
             self._translate_xy(elem, dx, dy)
+
+        # Re-centre any title symbol sitting in the top margin
+        for rec in self.model._parser.records:
+            if rec.element_type != Symbol.ETYPE or rec.index is None:
+                continue
+            xy_rec = self.model._parser.get(Symbol.ETYPE, rec.index, Symbol.XY)
+            if xy_rec is None or len(xy_rec.values) < 2:
+                continue
+            try:
+                sym_x, sym_y = float(xy_rec.values[0]), float(xy_rec.values[1])
+            except (ValueError, TypeError):
+                continue
+            if x_min <= sym_x <= x_max and 0 <= sym_y <= title_margin_height:
+                xy_rec.values[0] = str(page_cx)
+                xy_rec.raw_line = ""
 
     def _symbol_in_top_margin(self, margin_height: float = 500.0) -> bool:
         """Check if any symbol exists in the top margin area.

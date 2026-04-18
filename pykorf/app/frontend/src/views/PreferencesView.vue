@@ -20,7 +20,17 @@ import {
   Trash2,
 } from "lucide-vue-next";
 import { computed, onMounted, ref } from "vue";
-import { api, getErrorMessage } from "../api/client";
+import {
+  getPreferences,
+  addSpOverride,
+  editSpOverride,
+  deleteSpOverride,
+  setSkipSp,
+  rebuildDocRegisterDb,
+  setDocRegisterConfigFromPreferences,
+  resolveSpUrl,
+  getErrorMessage,
+} from "../api/client";
 import PathBrowser from "../components/PathBrowser.vue";
 import { useLoading } from "../composables/useLoading";
 import { useToastStore } from "../composables/useToast";
@@ -29,11 +39,10 @@ import type {
   DeleteSpOverrideRequest,
   DocRegisterRebuildResponse,
   EditSpOverrideRequest,
-  OkResponse,
   PreferencesResponse,
   SetDocRegisterConfigRequest,
   SetSkipSpRequest,
-} from "../types/api";
+} from "../api/generated/types.gen";
 
 const toast = useToastStore();
 
@@ -48,19 +57,19 @@ const defaultDocRegisterUrl = ref("");
 const defaultSpSiteUrl = ref("");
 
 function applyPreferences(data: PreferencesResponse) {
-  spOverrides.value = data.sp_overrides;
-  skipSpOverride.value = data.skip_sp_override;
-  docRegisterExcelPath.value = data.doc_register_excel_path;
-  docRegisterSpSiteUrl.value = data.doc_register_sp_site_url;
-  docRegisterDbLastImported.value = data.doc_register_db_last_imported;
-  spOverridesConfigured.value = data.sp_overrides_configured;
-  defaultDocRegisterUrl.value = data.default_doc_register_url;
-  defaultSpSiteUrl.value = data.default_sp_site_url;
+  spOverrides.value = data.sp_overrides ?? {};
+  skipSpOverride.value = data.skip_sp_override ?? false;
+  docRegisterExcelPath.value = data.doc_register_excel_path ?? null;
+  docRegisterSpSiteUrl.value = data.doc_register_sp_site_url ?? null;
+  docRegisterDbLastImported.value = data.doc_register_db_last_imported ?? null;
+  spOverridesConfigured.value = data.sp_overrides_configured ?? false;
+  defaultDocRegisterUrl.value = data.default_doc_register_url ?? "";
+  defaultSpSiteUrl.value = data.default_sp_site_url ?? "";
 }
 
 async function fetchAll() {
-  const { data } = await api.get<PreferencesResponse>("/api/preferences/");
-  applyPreferences(data);
+  const response = await getPreferences();
+  applyPreferences(response.data!);
 }
 
 // SP Override form
@@ -105,10 +114,8 @@ async function addOverride() {
     local_path: newLocalPath.value,
     sp_url: newSpUrl.value,
   };
-  const { data } = await api.post<OkResponse>(
-    "/api/preferences/sp-overrides/add",
-    req,
-  );
+  const response = await addSpOverride({ body: req });
+  const data = response.data!;
   if (data.success) {
     await fetchAll();
     newLocalPath.value = "";
@@ -134,10 +141,8 @@ async function saveOverride() {
     local_path: newLocalPath.value,
     sp_url: newSpUrl.value,
   };
-  const { data } = await api.post<OkResponse>(
-    "/api/preferences/sp-overrides/edit",
-    req,
-  );
+  const response = await editSpOverride({ body: req });
+  const data = response.data!;
   if (data.success) {
     await fetchAll();
     editOriginalPath.value = null;
@@ -150,10 +155,8 @@ async function saveOverride() {
 
 async function deleteOverride(localPath: string) {
   const req: DeleteSpOverrideRequest = { local_path: localPath };
-  const { data } = await api.post<OkResponse>(
-    "/api/preferences/sp-overrides/delete",
-    req,
-  );
+  const response = await deleteSpOverride({ body: req });
+  const data = response.data!;
   if (data.success) {
     await fetchAll();
     toast.info("Override removed.");
@@ -172,7 +175,7 @@ function cancelEdit() {
 async function toggleSkipSp() {
   const newValue = !skipSpOverride.value;
   const req: SetSkipSpRequest = { skip: newValue };
-  await api.post<OkResponse>("/api/preferences/skip-sp", req);
+  await setSkipSp({ body: req });
   skipSpOverride.value = newValue;
   toast.info(
     newValue ? "SP override check skipped." : "SP override check enabled.",
@@ -185,11 +188,9 @@ const docConfigLoading = useLoading(async () => {
     excel_path: docExcelPath.value || null,
     sp_site_url: docSpSiteUrl.value || null,
   };
-  const { data } = await api.post<DocRegisterRebuildResponse>(
-    "/api/preferences/doc-register",
-    req,
-  );
-  rebuildResult.value = data;
+  const response = await setDocRegisterConfigFromPreferences({ body: req });
+  rebuildResult.value = response.data ?? null;
+  const data = response.data!;
   if (data.success) {
     await fetchAll();
     docExcelPath.value = defaultDocRegisterUrl.value;
@@ -202,28 +203,23 @@ const docConfigLoading = useLoading(async () => {
   }
 });
 
-// Rebuild DB
 const rebuildLoading = useLoading(async () => {
-  const { data } = await api.post<DocRegisterRebuildResponse>(
-    "/api/doc-register/rebuild-db",
-    {},
-  );
-  rebuildResult.value = data;
-  if (data.success) toast.success(data.message);
-  else toast.error(data.error || data.message);
+  const response = await rebuildDocRegisterDb({ body: {} });
+  rebuildResult.value = response.data ?? null;
+  const data = response.data!;
+  if (data.success) toast.success(data.message ?? "");
+  else toast.error(data.error ?? data.message ?? "");
 });
 
-// Resolve SharePoint URL to local path
-async function resolveSpUrl() {
+async function resolveSpUrlHandler() {
   const url = docExcelPath.value.trim();
   if (!url.startsWith("https://")) return;
 
   try {
-    const { data } = await api.post<OkResponse>("/api/sharepoint/resolve-url", {
-      sp_url: url,
-    });
+    const response = await resolveSpUrl({ body: { sp_url: url } });
+    const data = response.data!;
     if (data.success && data.message) {
-      docExcelPath.value = data.message;
+      docExcelPath.value = data.message ?? "";
       toast.success("Converted to local path.");
     } else {
       toast.error(data.error || "Could not resolve SharePoint URL.");
@@ -365,20 +361,18 @@ onMounted(() => {
                   <tr v-for="(spUrl, localPath) in spOverrides" :key="localPath" class="hover:bg-gray-50">
                     <td class="font-mono text-xs break-all">{{ localPath }}</td>
                     <td class="font-mono text-xs break-all">
-                      <a v-if="spUrl" :href="spUrl as string" target="_blank" rel="noopener"
-                        class="text-blue-600 hover:underline" :title="spUrl as string">
+                      <a v-if="spUrl" :href="spUrl" target="_blank" rel="noopener"
+                        class="text-blue-600 hover:underline" :title="spUrl">
                         <ExternalLink class="w-3 h-3 inline mr-1" />{{ spUrl }}
                       </a>
                     </td>
                     <td>
-                      <button @click="
-                        editOverride(localPath as string, spUrl as string)
-                        "
+                      <button @click="editOverride(localPath, spUrl)"
                         class="border border-gray-300 rounded px-1 py-0 mr-1 text-gray-500 hover:text-blue-600 hover:border-blue-300"
                         title="Edit">
                         <PenSquare class="w-3 h-3" />
                       </button>
-                      <button @click="deleteOverride(localPath as string)"
+                      <button @click="deleteOverride(localPath)"
                         class="border border-red-200 rounded px-1 py-0 text-red-400 hover:text-red-600 hover:border-red-400"
                         title="Delete">
                         <Trash2 class="w-3 h-3" />
@@ -460,7 +454,7 @@ onMounted(() => {
                 <FileSpreadsheet class="w-3.5 h-3.5 text-gray-500" />
               </span>
               <input v-model="docExcelPath" type="text" class="pk-input-mono text-sm rounded-none"
-                placeholder="C:\path\to\Document Register.xlsx" autocomplete="off" @click="resolveSpUrl" />
+                placeholder="C:\path\to\Document Register.xlsx" autocomplete="off" @click="resolveSpUrlHandler" />
               <button type="button" @click="showDocExcelBrowser = true"
                 class="flex items-center justify-center px-2 py-1 text-xs border border-l-0 border-gray-300 rounded-r-md bg-gray-100 hover:bg-gray-50"
                 title="Browse for Excel file">

@@ -84,3 +84,30 @@ def set_pipe_criteria(kdf_path: Path, criteria: dict[str, dict]) -> None:
     data = _load(kdf_path)
     data["pipe_criteria"] = criteria
     _save(kdf_path, data)
+
+
+def get_justifications(kdf_path: Path) -> dict[str, str]:
+    """Load justifications from the .pykorf sidecar.
+
+    Args:
+        kdf_path: Path to the .kdf model file.
+
+    Returns:
+        Dict mapping pipe name to justification text.
+        Empty dict if no sidecar exists or no justifications key.
+    """
+    return _load(kdf_path).get("justifications", {})
+
+
+def set_justifications(kdf_path: Path, justifications: dict[str, str]) -> None:
+    """Save justifications to the .pykorf sidecar.
+
+    Merges into any existing .pykorf data so other sections are preserved.
+
+    Args:
+        kdf_path: Path to the .kdf model file.
+        justifications: Dict mapping pipe name to justification text.
+    """
+    data = _load(kdf_path)
+    data["justifications"] = justifications
+    _save(kdf_path, data)

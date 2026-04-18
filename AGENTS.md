@@ -41,6 +41,10 @@ uv run mypy pykorf
 uv run pykorf
 uv run pykorf --port 9000
 uv run pykorf --debug
+
+# Generate TypeScript types from OpenAPI (Hey API)
+cd pykorf/app/frontend
+npm run generate-types
 ```
 
 ## Code Style Guidelines
@@ -136,9 +140,10 @@ model = await require_model()
 
 **Frontend** (`pykorf/app/frontend/`): Vue 3 + Vite + Pinia + Tailwind CSS + TypeScript.
 - `src/stores/session.ts` — model status, `skipSpOverride` (doc register search guard), `kdfPath`
-- `src/types/api.ts` — Pydantic-mirrored TypeScript interfaces
+- `src/api/generated/` — Hey API generated TypeScript client and types (auto-generated via `npm run generate-types`)
 - `npm run dev` (from `pykorf/app/frontend/`) — HMR dev server, proxies `/api/*` to localhost:8000
 - `npm run build` — produces `dist/` consumed by FastAPI
+- `npm run generate-types` — generates TypeScript client from OpenAPI schema (`/openapi.json`) using Hey API
 
 ### Import Rules
 

@@ -270,7 +270,7 @@ class TestModel:
 
     def test_summary(self):
         m = Model.load(PUMP_KDF)
-        s = m.summary()
+        s = m.get_summary()
         assert s["num_pipes"] == 5
         assert s["num_pumps"] == 1
 
@@ -279,4 +279,4 @@ class TestModel:
 
         m = Model.load(PUMP_KDF)
         with pytest.raises(ElementNotFound):
-            m.pipe(999)
+            m.get_element("DOES_NOT_EXIST_999")

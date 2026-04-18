@@ -1,13 +1,15 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { api } from '../api/client'
+import {
+  getSessionStatus as apiGetSessionStatus,
+  openFile as apiOpenFile,
+  reloadModel as apiReloadModel,
+  closeModel as apiCloseModel,
+} from '../api/generated/sdk.gen'
 import type {
-  EmptyRequest,
-  SessionCloseResponse,
   SessionOpenRequest,
-  SessionReloadResponse,
   SessionStatusResponse,
-} from '../types/api'
+} from '../api/generated/types.gen'
 
 /**
  * Session store — mirrors the in-process model state held by FastAPI.
@@ -46,23 +48,24 @@ export const useSessionStore = defineStore('session', () => {
   })
 
   function _applyStatus(data: SessionStatusResponse) {
-    modelLoaded.value = data.model_loaded
-    kdfPath.value = data.kdf_path
-    kdfMtime.value = data.kdf_mtime
-    recentFiles.value = data.recent_files
-    setupOk.value = data.setup_ok
-    spOk.value = data.sp_ok
-    docRegisterOk.value = data.doc_register_ok
-    skipSpOverride.value = data.skip_sp_override
-    username.value = data.username
-    updateAvailable.value = data.update_available
-    version.value = data.version
+    modelLoaded.value = data.model_loaded ?? false
+    kdfPath.value = data.kdf_path ?? null
+    kdfMtime.value = data.kdf_mtime ?? null
+    recentFiles.value = data.recent_files ?? []
+    setupOk.value = data.setup_ok ?? false
+    spOk.value = data.sp_ok ?? false
+    docRegisterOk.value = data.doc_register_ok ?? false
+    skipSpOverride.value = data.skip_sp_override ?? false
+    username.value = data.username ?? ''
+    updateAvailable.value = data.update_available ?? false
+    version.value = data.version ?? ''
   }
 
   async function fetchStatus() {
     try {
-      const { data } = await api.get<SessionStatusResponse>('/api/session/status')
-      _applyStatus(data)
+      const response = await apiGetSessionStatus()
+      if (!response.data) return
+      _applyStatus(response.data)
     } catch {
       modelLoaded.value = false
     }
@@ -70,22 +73,20 @@ export const useSessionStore = defineStore('session', () => {
 
   async function openFile(path: string) {
     const req: SessionOpenRequest = { kdf_path: path }
-    const { data } = await api.post<SessionStatusResponse>('/api/session/open', req)
-    _applyStatus(data)
+    const response = await apiOpenFile({ body: req })
+    if (response.data) {
+      _applyStatus(response.data)
+    }
   }
 
   async function reloadModel() {
-    const req: EmptyRequest = {}
-    await api.post<SessionReloadResponse>('/api/session/reload', req)
+    await apiReloadModel({ body: {} })
     await fetchStatus()
   }
 
   async function closeModel() {
-    const req: EmptyRequest = {}
-    await api.post<SessionCloseResponse>('/api/session/close', req)
-    modelLoaded.value = false
-    kdfPath.value = null
-    kdfMtime.value = null
+    await apiCloseModel({ body: {} })
+    await fetchStatus()
   }
 
   return {

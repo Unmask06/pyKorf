@@ -2,18 +2,21 @@
 
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from pykorf.app.api import session_state as _sess
 from pykorf.app.api.deps import pipe_names, require_model
 from pykorf.app.api.schemas import (
     BulkCopyRequest,
     BulkCopyResponse,
-    CriteriaViolationsInfo,
     CriteriaValuesInfo,
+    CriteriaViolationsInfo,
     EmptyRequest,
+    JustificationRequest,
+    JustificationSaveResponse,
     ModelFullResponse,
     ModelPipesResponse,
     ModelSummaryResponse,
@@ -26,13 +29,16 @@ from pykorf.app.api.schemas import (
     ProjectInfoResponse,
     SaveProjectInfoRequest,
     SaveResponse,
-    SmartDefaultsResponse,
-    StatusMessage,
     SetCriteriaResponse,
     SetPipeCriteriaRequest,
+    SmartDefaultsResponse,
+    StatusMessage,
     UnitConversionInfo,
+    ViolationSummary,
 )
+from pykorf.app.operation.project.pykorf_file import get_justifications, set_justifications
 from pykorf.core.log import get_logger
+from pykorf.core.model import Model
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -59,13 +65,13 @@ def _is_korf_default(field: str, value: str) -> bool:
     return value in KORF_DEFAULTS.get(field, [])
 
 
-@router.get("/summary", response_model=ModelFullResponse)
+@router.get("/summary", response_model=ModelFullResponse, operation_id="getModelSummary")
 async def get_summary() -> ModelFullResponse:
     """Return model summary, prerequisites, and project info."""
     model = await require_model()
     from pykorf.app.api.routers.data import apply_pms_if_stale
 
-    if apply_pms_if_stale(model):
+    if await asyncio.to_thread(apply_pms_if_stale, model):
         await _sess.reload()
 
     kdf_path = await _sess.get_kdf_path()
@@ -101,7 +107,7 @@ async def get_summary() -> ModelFullResponse:
     )
 
 
-@router.post("/save", response_model=SaveResponse)
+@router.post("/save", response_model=SaveResponse, operation_id="saveModel")
 async def save_model(_: EmptyRequest) -> SaveResponse:
     """Save the in-memory model back to its source .kdf file."""
     model = await require_model()
@@ -116,7 +122,7 @@ async def save_model(_: EmptyRequest) -> SaveResponse:
     return SaveResponse(message="Model saved to disk.", logs=logs)
 
 
-@router.post("/project-info", response_model=SaveResponse)
+@router.post("/project-info", response_model=SaveResponse, operation_id="saveProjectInfo")
 async def save_project_info(req: SaveProjectInfoRequest) -> SaveResponse:
     """Save project metadata (COM, PRJ, ENG) to the active KDF file."""
     model = await require_model()
@@ -149,14 +155,14 @@ async def save_project_info(req: SaveProjectInfoRequest) -> SaveResponse:
     return SaveResponse(message="Project info saved.", logs=logs)
 
 
-@router.get("/pipes", response_model=ModelPipesResponse)
+@router.get("/pipes", response_model=ModelPipesResponse, operation_id="getPipes")
 async def get_pipes() -> ModelPipesResponse:
     """Return list of pipe names for dropdowns."""
     model = await require_model()
     return ModelPipesResponse(pipes=pipe_names(model))
 
 
-@router.post("/bulk-copy", response_model=BulkCopyResponse)
+@router.post("/bulk-copy", response_model=BulkCopyResponse, operation_id="bulkCopy")
 async def bulk_copy(req: BulkCopyRequest) -> BulkCopyResponse:
     """Copy fluid properties from one pipe to multiple others."""
     model = await require_model()
@@ -188,12 +194,12 @@ async def bulk_copy(req: BulkCopyRequest) -> BulkCopyResponse:
 # --- Pipe Criteria ---
 
 
-@router.get("/pipe-criteria", response_model=PipeCriteriaResponse)
+@router.get("/pipe-criteria", response_model=PipeCriteriaResponse, operation_id="getPipeCriteria")
 async def get_pipe_criteria() -> PipeCriteriaResponse:
     """Get pipe criteria data for the criteria table."""
     model = await require_model()
+    from pykorf.app.operation.integration.sizing_criteria import FLUID_LABELS, all_codes_by_type
     from pykorf.app.operation.project.pykorf_file import get_pipe_criteria
-    from pykorf.app.operation.integration.sizing_criteria import all_codes_by_type, FLUID_LABELS
 
     kdf_path = await _sess.get_kdf_path()
     pipes = _get_pipes_list(model)
@@ -203,6 +209,19 @@ async def get_pipe_criteria() -> PipeCriteriaResponse:
     pipe_criteria_values = _precompute_criteria_values(model, pipes, codes)
     pipe_calcs = _compute_pipe_calcs(model, pipes)
     pipe_criteria_violations = _compute_criteria_violations(pipe_calcs, pipe_criteria_values)
+
+    justifications = get_justifications(kdf_path) if kdf_path else {}
+    if justifications and pipe_calcs:
+        violating_pipes = {
+            name
+            for name, crits in pipe_criteria_violations.items()
+            if any(v.overall == "FAIL" for v in crits.values())
+        }
+        justifications = {k: v for k, v in justifications.items() if k in violating_pipes}
+        if kdf_path:
+            set_justifications(kdf_path, justifications)
+
+    violation_summary = _compute_violation_summary(pipe_criteria_violations, justifications, existing)
 
     return PipeCriteriaResponse(
         kdf_path=str(kdf_path or ""),
@@ -214,10 +233,12 @@ async def get_pipe_criteria() -> PipeCriteriaResponse:
         pipe_calcs=pipe_calcs,
         pipe_criteria_violations=pipe_criteria_violations,
         units_data=_load_units_data(),
+        justifications=justifications,
+        violation_summary=violation_summary,
     )
 
 
-@router.post("/pipe-criteria", response_model=SetCriteriaResponse)
+@router.post("/pipe-criteria", response_model=SetCriteriaResponse, operation_id="setPipeCriteria")
 async def set_pipe_criteria(req: SetPipeCriteriaRequest) -> SetCriteriaResponse:
     """Apply criteria to pipe SIZ parameters."""
     model = await require_model()
@@ -240,7 +261,11 @@ async def set_pipe_criteria(req: SetPipeCriteriaRequest) -> SetCriteriaResponse:
     return result
 
 
-@router.post("/pipe-criteria/predict", response_model=PredictCriteriaResponse)
+@router.post(
+    "/pipe-criteria/predict",
+    response_model=PredictCriteriaResponse,
+    operation_id="predictPipeCriteria",
+)
 async def predict_criteria(_req: PredictCriteriaRequest) -> PredictCriteriaResponse:
     """Auto-predict state and criteria for all pipes."""
     model = await require_model()
@@ -256,7 +281,74 @@ async def predict_criteria(_req: PredictCriteriaRequest) -> PredictCriteriaRespo
     return predict_result
 
 
+@router.post(
+    "/pipe-criteria/justification",
+    response_model=JustificationSaveResponse,
+    operation_id="savePipeJustification",
+)
+async def save_justification(req: JustificationRequest) -> JustificationSaveResponse:
+    """Save or clear a justification for a pipe criteria violation."""
+    model = await require_model()
+    kdf_path = await _sess.get_kdf_path()
+    if not kdf_path:
+        raise HTTPException(status_code=400, detail="No KDF file loaded")
+
+    valid_names = {name for _, name in _get_pipes_list(model)}
+    if req.pipe_name not in valid_names:
+        raise HTTPException(status_code=400, detail=f"Pipe '{req.pipe_name}' not found")
+
+    justifications = get_justifications(kdf_path)
+    if req.justification.strip():
+        justifications[req.pipe_name] = req.justification
+    else:
+        justifications.pop(req.pipe_name, None)
+    set_justifications(kdf_path, justifications)
+
+    return JustificationSaveResponse(justifications=justifications, saved=True)
+
+
 # --- Helper functions (ported from routes/pipe_criteria.py) ---
+
+
+def _compute_violation_summary(
+    pipe_criteria_violations: dict[str, dict],
+    justifications: dict[str, str],
+    existing: dict[str, dict],
+) -> ViolationSummary:
+    def _selected(pipe_name: str) -> CriteriaViolationsInfo | None:
+        entry = existing.get(pipe_name)
+        if entry is None or not entry.state or not entry.criteria:
+            return None
+        return pipe_criteria_violations.get(pipe_name, {}).get(f"{entry.state}:{entry.criteria}")
+
+    selected: dict[str, CriteriaViolationsInfo | None] = {
+        name: _selected(name) for name in pipe_criteria_violations
+    }
+
+    def _flag_count(info: CriteriaViolationsInfo) -> int:
+        return sum([
+            info.dp_exceeds,
+            info.vel_below_min,
+            info.vel_above_max,
+            info.rho_v2_below_min,
+            info.rho_v2_above_max,
+        ])
+
+    failing_pipes = {name for name, v in selected.items() if v is not None and v.overall == "FAIL"}
+    justified = {p for p in failing_pipes if p in justifications}
+    unjustified = failing_pipes - justified
+
+    def _total_flags(pipes_set: set[str]) -> int:
+        return sum(_flag_count(selected[p]) for p in pipes_set if selected[p] is not None)
+
+    return ViolationSummary(
+        total_pipes_with_violations=len(failing_pipes),
+        total_violations=_total_flags(failing_pipes),
+        justified_pipes=len(justified),
+        justified_violations=_total_flags(justified),
+        pipes_needing_justification=len(unjustified),
+        violations_needing_justification=_total_flags(unjustified),
+    )
 
 
 def _get_pipes_list(model) -> list[tuple[int, str]]:
@@ -267,11 +359,11 @@ def _get_pipes_list(model) -> list[tuple[int, str]]:
     ]
 
 
-def _build_prereqs(model, kdf_path) -> PrereqsResponse:
+def _build_prereqs(model: Model, kdf_path: Path) -> PrereqsResponse:
     from pykorf.app.operation.config.config import (
         get_pms_excel_path,
-        get_sp_overrides,
         get_skip_sp_override,
+        get_sp_overrides,
     )
 
     issues = model.validate()
