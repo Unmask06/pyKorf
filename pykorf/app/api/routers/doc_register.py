@@ -46,7 +46,9 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
-@router.get("/status", response_model=DocRegisterStatusResponse)
+@router.get(
+    "/status", response_model=DocRegisterStatusResponse, operation_id="getDocRegisterStatus"
+)
 async def api_status() -> DocRegisterStatusResponse:
     """Return Document Register configuration and DB status."""
     excel_path = get_doc_register_excel_path()
@@ -65,7 +67,7 @@ async def api_status() -> DocRegisterStatusResponse:
     )
 
 
-@router.get("/search-eddr", response_model=DocRegisterSearchEddrResponse)
+@router.get("/search-eddr", response_model=DocRegisterSearchEddrResponse, operation_id="searchEddr")
 async def api_search_eddr(
     req: Annotated[DocRegisterSearchEddrRequest, Query()],
 ) -> DocRegisterSearchEddrResponse:
@@ -76,7 +78,9 @@ async def api_search_eddr(
     return DocRegisterSearchEddrResponse(results=[EddrResult(**r) for r in results])
 
 
-@router.get("/search-query", response_model=DocRegisterSearchQueryResponse)
+@router.get(
+    "/search-query", response_model=DocRegisterSearchQueryResponse, operation_id="searchQuery"
+)
 async def api_search_query(
     req: Annotated[DocRegisterSearchQueryRequest, Query()],
 ) -> DocRegisterSearchQueryResponse:
@@ -87,7 +91,9 @@ async def api_search_query(
     return DocRegisterSearchQueryResponse(results=[QueryEntryResult(**r) for r in results])
 
 
-@router.get("/search-files", response_model=DocRegisterSearchFilesResponse)
+@router.get(
+    "/search-files", response_model=DocRegisterSearchFilesResponse, operation_id="searchFiles"
+)
 async def api_search_files(
     req: Annotated[DocRegisterSearchFilesRequest, Query()],
 ) -> DocRegisterSearchFilesResponse:
@@ -98,7 +104,9 @@ async def api_search_files(
     return DocRegisterSearchFilesResponse(results=[QueryEntryResult(**r) for r in results])
 
 
-@router.post("/rebuild-db", response_model=DocRegisterRebuildResponse)
+@router.post(
+    "/rebuild-db", response_model=DocRegisterRebuildResponse, operation_id="rebuildDocRegisterDb"
+)
 async def api_rebuild_db(_: EmptyRequest) -> DocRegisterRebuildResponse:
     """Force rebuild the Document Register database from Excel."""
     excel_path_str = get_doc_register_excel_path()
@@ -129,7 +137,9 @@ async def api_rebuild_db(_: EmptyRequest) -> DocRegisterRebuildResponse:
         return DocRegisterRebuildResponse(error=str(exc))
 
 
-@router.post("/config", response_model=DocRegisterConfigResponse)
+@router.post(
+    "/config", response_model=DocRegisterConfigResponse, operation_id="setDocRegisterConfig"
+)
 async def api_config(req: SetDocRegisterConfigRequest) -> DocRegisterConfigResponse:
     """Save Document Register configuration."""
     if req.excel_path:

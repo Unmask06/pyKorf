@@ -52,7 +52,7 @@ def _invalidate_all_caches() -> None:
     clear_cache()
 
 
-@router.get("/", response_model=PreferencesResponse)
+@router.get("/", response_model=PreferencesResponse, operation_id="getPreferences")
 async def get_preferences() -> PreferencesResponse:
     """Return all preference settings."""
     overrides = get_sp_overrides()
@@ -71,7 +71,7 @@ async def get_preferences() -> PreferencesResponse:
     )
 
 
-@router.post("/sp-overrides/add", response_model=OkResponse)
+@router.post("/sp-overrides/add", response_model=OkResponse, operation_id="addSpOverride")
 async def add_sp_override(req: AddSpOverrideRequest) -> OkResponse:
     """Add a new SharePoint override."""
     from urllib.parse import urlparse
@@ -91,7 +91,7 @@ async def add_sp_override(req: AddSpOverrideRequest) -> OkResponse:
     return OkResponse(success=True, message="Override added.")
 
 
-@router.post("/sp-overrides/edit", response_model=OkResponse)
+@router.post("/sp-overrides/edit", response_model=OkResponse, operation_id="editSpOverride")
 async def edit_sp_override(req: EditSpOverrideRequest) -> OkResponse:
     """Edit an existing SharePoint override."""
     overrides = get_sp_overrides()
@@ -103,7 +103,7 @@ async def edit_sp_override(req: EditSpOverrideRequest) -> OkResponse:
     return OkResponse(success=True, message="Override updated.")
 
 
-@router.post("/sp-overrides/delete", response_model=OkResponse)
+@router.post("/sp-overrides/delete", response_model=OkResponse, operation_id="deleteSpOverride")
 async def delete_sp_override(req: DeleteSpOverrideRequest) -> OkResponse:
     """Delete a SharePoint override."""
     overrides = get_sp_overrides()
@@ -115,14 +115,14 @@ async def delete_sp_override(req: DeleteSpOverrideRequest) -> OkResponse:
     return OkResponse(success=False, error="Override not found.")
 
 
-@router.post("/skip-sp", response_model=OkResponse)
+@router.post("/skip-sp", response_model=OkResponse, operation_id="setSkipSp")
 async def set_skip_sp(req: SetSkipSpRequest) -> OkResponse:
     """Toggle skip SharePoint override validation."""
     set_skip_sp_override(req.skip)
     return OkResponse(success=True)
 
 
-@router.post("/license", response_model=LicenseValidationResponse)
+@router.post("/license", response_model=LicenseValidationResponse, operation_id="setLicense")
 async def set_license(req: SetLicenseKeyRequest) -> LicenseValidationResponse:
     """Validate and save a license key."""
     if not req.license_key:
@@ -134,7 +134,11 @@ async def set_license(req: SetLicenseKeyRequest) -> LicenseValidationResponse:
     return LicenseValidationResponse(valid=False, expiry=str(expiry) if expiry else None, error=err)
 
 
-@router.post("/doc-register", response_model=DocRegisterRebuildResponse)
+@router.post(
+    "/doc-register",
+    response_model=DocRegisterRebuildResponse,
+    operation_id="setDocRegisterConfigFromPreferences",
+)
 async def set_doc_register_config(req: SetDocRegisterConfigRequest) -> DocRegisterRebuildResponse:
     """Save Document Register configuration and rebuild DB if Excel path changed."""
     from pykorf.app.doc_register.excel_to_db import build_db_from_excel

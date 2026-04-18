@@ -831,18 +831,22 @@ class Pipe(BaseElement):
             vel_calc_val, vel_calc_unit = self.get_value_and_unit(
                 Pipe.VEL, val_index=0, unit_index=-1
             )
+            line_length, line_length_unit = self.get_value_and_unit(
+                Pipe.LEN, val_index=0, unit_index=-1
+            )
 
             parsed_line = LineNumber.parse(self.notes)
             return {
                 "Pipe Name": self.name,
-                "Line Number": parsed_line.raw_line_number if parsed_line else "",
                 "Criteria Code": self.criteria_code,
+                "Line Number": parsed_line.raw_line_number if parsed_line else "",
+                self.format_export_header("Line Length", line_length_unit): line_length,
                 self.format_export_header("dP max Criteria", dp_crit_unit): dp_crit_val,
                 self.format_export_header("v min Criteria", vel_min_crit_unit): vel_min_crit_val,
                 self.format_export_header("v max Criteria", vel_max_crit_unit): vel_max_crit_val,
                 "ρV² min Criteria [Pa]": rho_v2_min_crit,  # noqa: RUF001
                 "ρV² max Criteria [Pa]": rho_v2_max_crit,  # noqa: RUF001
-                self.format_export_header("DP / DL", dp_calc_unit): dp_calc_val,
+                self.format_export_header("DP/Length", dp_calc_unit): dp_calc_val,
                 self.format_export_header("Velocity", vel_calc_unit): vel_calc_val,
                 "ρV² calc [Pa]": round(self.rho_v2) if self.rho_v2 is not None else None,  # noqa: RUF001
                 "Criteria Check": self.check_criteria()["status"],

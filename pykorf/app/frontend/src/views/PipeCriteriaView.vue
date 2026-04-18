@@ -15,7 +15,7 @@ import type {
   PredictCriteriaResponse,
   SetCriteriaResponse,
   UnitConversionInfo,
-} from '../types/api'
+} from '../api/generated/types.gen'
 
 const router = useRouter()
 const session = useSessionStore()
@@ -34,7 +34,7 @@ const fluidLabels = ref<Record<string, string>>({})
 
 // Edited criteria entries
 const pipeCriteria = ref<Record<string, PipeCriteriaEntry>>({})
-const changedPipes = ref<Set<string>>(new Set())
+const dirtyPipes = ref<Set<string>>(new Set())
 const predictResult = ref<PredictCriteriaResponse | null>(null)
 
 // UI state
@@ -57,23 +57,23 @@ const velocityUnit = computed(() => 'm/s')
 const rhoV2Unit = computed(() => 'Pa')
 
 function _applyResponse(data: PipeCriteriaResponse) {
-  pipes.value = data.pipes
-  existing.value = data.existing
-  codes.value = data.codes
-  criteriaValues.value = data.pipe_criteria_values
-  criteriaViolations.value = data.pipe_criteria_violations
-  pipeCalcs.value = data.pipe_calcs
-  unitsData.value = data.units_data
-  fluidLabels.value = data.fluid_labels
-  setResult.value = data.set_result
-  predictResult.value = data.predict_result as PredictCriteriaResponse | null
+  pipes.value = data.pipes ?? []
+  existing.value = data.existing ?? {}
+  codes.value = data.codes ?? {}
+  criteriaValues.value = data.pipe_criteria_values ?? {}
+  criteriaViolations.value = data.pipe_criteria_violations ?? {}
+  pipeCalcs.value = data.pipe_calcs ?? {}
+  unitsData.value = data.units_data ?? {}
+  fluidLabels.value = data.fluid_labels ?? {}
+  setResult.value = data.set_result ?? null
+  predictResult.value = data.predict_result ?? null
 
   const initial: Record<string, PipeCriteriaEntry> = {}
-  for (const [name, vals] of Object.entries(data.existing)) {
+  for (const [name, vals] of Object.entries(data.existing ?? {})) {
     initial[name] = { state: vals.state || '', criteria: vals.criteria || '' }
   }
   pipeCriteria.value = initial
-  changedPipes.value = new Set()
+  dirtyPipes.value = new Set()
 }
 
 const criteriaLoading = useLoading(async () => {
@@ -84,20 +84,20 @@ const criteriaLoading = useLoading(async () => {
 const predictLoading = useLoading(async () => {
   const data = await model.predictCriteria()
   predictResult.value = data
-  for (const [name, entry] of Object.entries(data.predicted)) {
+  for (const [name, entry] of Object.entries(data.predicted ?? {})) {
     if (!pipeCriteria.value[name]?.state || !pipeCriteria.value[name]?.criteria) {
-      pipeCriteria.value[name] = { ...entry }
-      changedPipes.value.add(name)
+      pipeCriteria.value[name] = { state: entry.state || '', criteria: entry.criteria || '' }
+      dirtyPipes.value.add(name)
     }
   }
-  toast.info(`Predicted: ${data.filled_state} states, ${data.filled_criteria} criteria codes filled.`)
+  toast.info(`Predicted: ${data.filled_state ?? 0} states, ${data.filled_criteria ?? 0} criteria codes filled.`)
 })
 
 const saveLoading = useLoading(async () => {
   const result = await model.setPipeCriteria(pipeCriteria.value)
   await session.fetchStatus()
-  toast.success(`Applied criteria to ${result.applied} pipe(s).`)
-  if (result.skipped.length) {
+  toast.success(`Applied criteria to ${result.applied ?? 0} pipe(s).`)
+  if (result.skipped?.length) {
     toast.warning(`Skipped: ${result.skipped.join(', ')}`)
   }
   await criteriaLoading.execute()
@@ -108,7 +108,7 @@ function updateEntry(name: string, field: 'state' | 'criteria', value: string) {
     pipeCriteria.value[name] = { state: '', criteria: '' }
   }
   pipeCriteria.value[name][field] = value
-  changedPipes.value.add(name)
+  dirtyPipes.value.add(name)
 }
 
 function getAvailableCriteriaForState(state: string): Array<[string, string]> {
@@ -240,7 +240,7 @@ function applyBulk() {
 function clearAll() {
   for (const [, name] of pipes.value) {
     pipeCriteria.value[name] = { state: '', criteria: '' }
-    changedPipes.value.add(name)
+    dirtyPipes.value.add(name)
   }
   toast.info('All criteria cleared.')
 }
@@ -256,27 +256,27 @@ onMounted(() => {
 
     <!-- Set result alert -->
     <div v-if="setResult" class="flex items-start gap-2 p-3 rounded"
-      :class="setResult.skipped.length ? 'bg-yellow-50 border border-yellow-200 text-yellow-700' : 'bg-green-50 border border-green-200 text-green-700'">
-      <CheckCircle v-if="!setResult.skipped.length" class="w-5 h-5 shrink-0 mt-0.5" />
+      :class="(setResult.skipped ?? []).length ? 'bg-yellow-50 border border-yellow-200 text-yellow-700' : 'bg-green-50 border border-green-200 text-green-700'">
+      <CheckCircle v-if="!(setResult.skipped ?? []).length" class="w-5 h-5 shrink-0 mt-0.5" />
       <AlertTriangle v-else class="w-5 h-5 shrink-0 mt-0.5" />
       <div>
         Applied Pipe Sizing criteria to <strong>{{ setResult.applied }}</strong> pipe(s) in model.
-        <span v-if="setResult.skipped.length" class="block mt-1 text-xs">
-          Skipped (no criteria assigned): {{ setResult.skipped.join(', ') }}
+        <span v-if="(setResult.skipped ?? []).length" class="block mt-1 text-xs">
+          Skipped (no criteria assigned): {{ (setResult.skipped ?? []).join(', ') }}
         </span>
       </div>
     </div>
 
     <!-- Predict result alert -->
     <div v-if="predictResult" class="flex items-start gap-2 p-3 rounded"
-      :class="predictResult.errors.length ? 'bg-yellow-50 border border-yellow-200 text-yellow-700' : 'bg-blue-50 border border-blue-200 text-blue-700'">
+      :class="(predictResult.errors ?? []).length ? 'bg-yellow-50 border border-yellow-200 text-yellow-700' : 'bg-blue-50 border border-blue-200 text-blue-700'">
       <Wand2 class="w-5 h-5 shrink-0 mt-0.5" />
       <div>
         Predicted <strong>{{ predictResult.filled_state }}</strong> state(s) and
         <strong>{{ predictResult.filled_criteria }}</strong> criteria code(s).
         Review below, then click <strong>Set Criteria to Model</strong> to apply.
-        <ul v-if="predictResult.errors.length" class="mt-2 pl-4 text-xs list-disc">
-          <li v-for="e in predictResult.errors" :key="e">{{ e }}</li>
+        <ul v-if="(predictResult.errors ?? []).length" class="mt-2 pl-4 text-xs list-disc">
+          <li v-for="e in (predictResult.errors ?? [])" :key="e">{{ e }}</li>
         </ul>
       </div>
     </div>
@@ -359,7 +359,7 @@ onMounted(() => {
           <tbody>
             <tr v-for="[idx, name] in filteredPipes" :key="name"
               class="border-b hover:bg-gray-50"
-              :class="{ 'bg-yellow-50': changedPipes.has(name) }">
+              :class="{ 'bg-yellow-50': dirtyPipes.has(name) }">
               <td class="text-center">
                 <input type="checkbox" :checked="selectedRows.has(name)"
                   @change="toggleRow(name)" class="rounded" />

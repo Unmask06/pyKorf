@@ -11,7 +11,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import Column, Integer, String, Text, create_engine, or_
+import sqlalchemy.dialects.sqlite  # pre-load sqlite dialect; PyArmor blocks lazy dialect resolution
+from sqlalchemy import Column, Integer, String, Text, create_engine, event, or_
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
 from pykorf.app.doc_register.excel_to_db import get_db_path
@@ -76,8 +77,6 @@ def get_engine():
     """
     global _engine, _SessionFactory
     if _engine is None:
-        from sqlalchemy import event
-
         db_path = get_db_path()
         _engine = create_engine(
             f"sqlite:///{db_path}",

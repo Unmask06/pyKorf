@@ -136,9 +136,10 @@ model = await require_model()
 
 **Frontend** (`pykorf/app/frontend/`): Vue 3 + Vite + Pinia + Tailwind CSS + TypeScript.
 - `src/stores/session.ts` — model status, `skipSpOverride` (doc register search guard), `kdfPath`
-- `src/types/api.ts` — Pydantic-mirrored TypeScript interfaces
+- `src/types/api.ts` — Pydantic-mirrored TypeScript interfaces (auto-generated via `npm run build-types`)
 - `npm run dev` (from `pykorf/app/frontend/`) — HMR dev server, proxies `/api/*` to localhost:8000
 - `npm run build` — produces `dist/` consumed by FastAPI
+- `npm run build-types` — generates TypeScript types from OpenAPI schema (`/openapi.json`)
 
 ### Import Rules
 

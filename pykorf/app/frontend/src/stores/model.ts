@@ -1,16 +1,21 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { api } from '../api/client'
+import {
+  getModelSummary as apiGetModelSummary,
+  getPipes as apiGetPipes,
+  saveModel as apiSaveModel,
+  saveProjectInfo as apiSaveProjectInfo,
+  bulkCopy as apiBulkCopy,
+  setPipeCriteria as apiSetPipeCriteria,
+  predictPipeCriteria as apiPredictPipeCriteria,
+  getPipeCriteria as apiGetPipeCriteria,
+} from '../api/generated/sdk.gen'
 import type {
-  ModelFullResponse,
-  ModelPipesResponse,
-  ModelSummary,
-  Prereqs,
-  ProjectInfo,
+  ModelSummaryResponse,
+  PrereqsResponse,
+  ProjectInfoResponse,
   BulkCopyRequest,
   BulkCopyResponse,
-  EmptyRequest,
-  PredictCriteriaRequest,
   SaveProjectInfoRequest,
   SaveResponse,
   SetPipeCriteriaRequest,
@@ -18,7 +23,7 @@ import type {
   PipeCriteriaEntry,
   PredictCriteriaResponse,
   PipeCriteriaResponse,
-} from '../types/api'
+} from '../api/generated/types.gen'
 
 /**
  * Model store — caches current model data for the active page.
@@ -33,10 +38,10 @@ import type {
  * We never serialize it — only derived data comes over the API.
  */
 export const useModelStore = defineStore('model', () => {
-  const summary = ref<ModelSummary | null>(null)
-  const prereqs = ref<Prereqs | null>(null)
-  const projectInfo = ref<ProjectInfo | null>(null)
-  const smartDefaults = ref<ProjectInfo | null>(null)
+  const summary = ref<ModelSummaryResponse | null>(null)
+  const prereqs = ref<PrereqsResponse | null>(null)
+  const projectInfo = ref<ProjectInfoResponse | null>(null)
+  const smartDefaults = ref<ProjectInfoResponse | null>(null)
   const pipes = ref<string[]>([])
 
   async function _postReloadSession() {
@@ -46,11 +51,12 @@ export const useModelStore = defineStore('model', () => {
 
   async function fetchSummary() {
     try {
-      const { data } = await api.get<ModelFullResponse>('/api/model/summary')
-      summary.value = data.summary
-      prereqs.value = data.prereqs
-      projectInfo.value = data.project_info
-      smartDefaults.value = data.smart_defaults
+      const response = await apiGetModelSummary()
+      if (!response.data) return
+      summary.value = response.data.summary ?? null
+      prereqs.value = response.data.prereqs ?? null
+      projectInfo.value = response.data.project_info ?? null
+      smartDefaults.value = response.data.smart_defaults ?? null
     } catch {
       // 409 = no model loaded, router guard handles redirect
     }
@@ -58,51 +64,54 @@ export const useModelStore = defineStore('model', () => {
 
   async function fetchPipes() {
     try {
-      const { data } = await api.get<ModelPipesResponse>('/api/model/pipes')
-      pipes.value = data.pipes
+      const response = await apiGetPipes()
+      if (!response.data) {
+        pipes.value = []
+        return
+      }
+      pipes.value = response.data.pipes ?? []
     } catch {
       pipes.value = []
     }
   }
 
   async function save(): Promise<SaveResponse> {
-    const req: EmptyRequest = {}
-    const { data } = await api.post<SaveResponse>('/api/model/save', req)
+    const response = await apiSaveModel({ body: {} })
     await _postReloadSession()
     await fetchSummary()
-    return data
+    return response.data!
   }
 
   async function saveProjectInfo(info: SaveProjectInfoRequest): Promise<SaveResponse> {
-    const { data } = await api.post<SaveResponse>('/api/model/project-info', info)
+    const response = await apiSaveProjectInfo({ body: info })
     await _postReloadSession()
     await fetchSummary()
-    return data
+    return response.data!
   }
 
   async function bulkCopy(req: BulkCopyRequest): Promise<BulkCopyResponse> {
-    const { data } = await api.post<BulkCopyResponse>('/api/model/bulk-copy', req)
+    const response = await apiBulkCopy({ body: req })
     await _postReloadSession()
     await fetchSummary()
-    return data
+    return response.data!
   }
 
   async function setPipeCriteria(criteria: Record<string, PipeCriteriaEntry>): Promise<SetCriteriaResponse> {
     const req: SetPipeCriteriaRequest = { criteria }
-    const { data } = await api.post<SetCriteriaResponse>('/api/model/pipe-criteria', req)
+    const response = await apiSetPipeCriteria({ body: req })
     await _postReloadSession()
-    return data
+    await fetchSummary()
+    return response.data!
   }
 
   async function predictCriteria(): Promise<PredictCriteriaResponse> {
-    const req: PredictCriteriaRequest = {}
-    const { data } = await api.post<PredictCriteriaResponse>('/api/model/pipe-criteria/predict', req)
-    return data
+    const response = await apiPredictPipeCriteria({ body: {} })
+    return response.data!
   }
 
   async function fetchPipeCriteria(): Promise<PipeCriteriaResponse> {
-    const { data } = await api.get<PipeCriteriaResponse>('/api/model/pipe-criteria')
-    return data
+    const response = await apiGetPipeCriteria()
+    return response.data!
   }
 
   return {

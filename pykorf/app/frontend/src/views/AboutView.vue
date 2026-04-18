@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { api } from '../api/client'
 import { Info, CheckCircle, Home } from 'lucide-vue-next'
-import type { AboutResponse } from '../types/api'
+import { getAbout } from '../api/generated/sdk.gen'
 
 const version = ref('')
 const releaseDate = ref('')
 
 onMounted(async () => {
   try {
-    const { data } = await api.get<AboutResponse>('/api/about/')
+    const { data } = await getAbout()
+    if (!data) return
     version.value = data.version
     releaseDate.value = data.release_date
   } catch { /* ignore */ }

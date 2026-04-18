@@ -4,7 +4,13 @@ import { useRouter } from "vue-router";
 import { useSessionStore } from "../stores/session";
 import { useToastStore } from "../composables/useToast";
 import { useLoading } from "../composables/useLoading";
-import { api, getErrorMessage } from "../api/client";
+import {
+  getReferences,
+  saveReferences,
+  addReference,
+  deleteReference,
+  getErrorMessage,
+} from "../api/client";
 import {
   Plus,
   Trash2,
@@ -25,11 +31,9 @@ import ReferenceSearchView from "../components/ReferenceSearchView.vue";
 import type {
   AddReferenceRequest,
   DeleteReferenceRequest,
-  OkResponse,
-  Reference,
-  ReferencesStore,
+  ReferenceSchema,
   SaveAllReferencesRequest,
-} from "../types/api";
+} from "../api/generated/types.gen";
 
 const router = useRouter();
 const session = useSessionStore();
@@ -38,7 +42,7 @@ const toast = useToastStore();
 const basis = ref("");
 const remarks = ref("");
 const hold = ref("");
-const references = ref<Reference[]>([]);
+const references = ref<ReferenceSchema[]>([]);
 const dirty = ref(false);
 
 // New reference form
@@ -85,11 +89,12 @@ function openDocSearch() {
 
 async function fetchReferences() {
   try {
-    const { data } = await api.get<ReferencesStore>("/api/references/");
-    basis.value = data.basis;
-    remarks.value = data.remarks;
-    hold.value = data.hold;
-    references.value = data.references;
+    const response = await getReferences();
+    const data = response.data!;
+    basis.value = data.basis ?? "";
+    remarks.value = data.remarks ?? "";
+    hold.value = data.hold ?? "";
+    references.value = data.references ?? [];
     dirty.value = false;
   } catch (err: unknown) {
     toast.error(getErrorMessage(err, "Failed to load references."));
@@ -103,7 +108,7 @@ const saveAllLoading = useLoading(async () => {
       remarks: remarks.value,
       hold: hold.value,
     };
-    await api.post<OkResponse>("/api/references/save-all", req);
+    await saveReferences({ body: req });
     dirty.value = false;
     toast.success("Basis, remarks, and hold saved.");
   } catch (err: unknown) {
@@ -124,7 +129,7 @@ const addRefLoading = useLoading(async () => {
       description: newRefDesc.value,
       category: newRefCategory.value,
     };
-    await api.post<OkResponse>("/api/references/add", req);
+    await addReference({ body: req });
     newRefName.value = "";
     newRefLink.value = "";
     newRefDesc.value = "";
@@ -137,10 +142,10 @@ const addRefLoading = useLoading(async () => {
   }
 });
 
-async function deleteReference(refId: string) {
+async function deleteReferenceHandler(refId: string) {
   try {
     const req: DeleteReferenceRequest = { ref_id: refId };
-    await api.post<OkResponse>("/api/references/delete", req);
+    await deleteReference({ body: req });
     await fetchReferences();
     toast.info("Reference deleted.");
   } catch (err: unknown) {
@@ -148,12 +153,12 @@ async function deleteReference(refId: string) {
   }
 }
 
-function editReference(ref: Reference) {
+function editReference(ref: ReferenceSchema) {
   editingId.value = ref.id;
   newRefName.value = ref.name;
   newRefLink.value = ref.link;
-  newRefDesc.value = ref.description;
-  newRefCategory.value = ref.category;
+  newRefDesc.value = ref.description ?? "";
+  newRefCategory.value = ref.category ?? "";
 }
 
 function cancelEdit() {
@@ -181,8 +186,8 @@ const filteredReferences = computed(() => {
   return references.value.filter(
     (r) =>
       r.name.toLowerCase().includes(q) ||
-      r.category.toLowerCase().includes(q) ||
-      r.description.toLowerCase().includes(q) ||
+      (r.category ?? "").toLowerCase().includes(q) ||
+      (r.description ?? "").toLowerCase().includes(q) ||
       r.link.toLowerCase().includes(q),
   );
 });
@@ -471,12 +476,12 @@ onMounted(() => {
                   <td>
                     <span
                       class="text-xs px-1.5 py-0.5 rounded"
-                      :class="categoryBadgeCls(ref.category)"
+                      :class="categoryBadgeCls(ref.category ?? '')"
                     >
-                      {{ ref.category }}
+                      {{ ref.category ?? '' }}
                     </span>
                   </td>
-                  <td>
+                    <td>
                     <a
                       v-if="ref.link"
                       :href="ref.link"
@@ -488,7 +493,7 @@ onMounted(() => {
                       <ExternalLink class="w-3 h-3" /> {{ ref.link }}
                     </a>
                   </td>
-                  <td class="text-xs text-gray-500">{{ ref.description }}</td>
+                  <td class="text-xs text-gray-500">{{ ref.description ?? "" }}</td>
                   <td class="text-right">
                     <button
                       @click="editReference(ref)"
@@ -498,7 +503,7 @@ onMounted(() => {
                       <PenSquare class="w-3 h-3" />
                     </button>
                     <button
-                      @click="deleteReference(ref.id)"
+                      @click="deleteReferenceHandler(ref.id)"
                       class="border border-red-200 rounded px-1 py-0 text-red-400 hover:text-red-600 hover:border-red-400"
                       title="Delete"
                       :confirm="'Delete this reference?'"

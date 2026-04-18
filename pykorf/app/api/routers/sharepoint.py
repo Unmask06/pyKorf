@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
-@router.post("/resolve-url", response_model=OkResponse)
+@router.post("/resolve-url", response_model=OkResponse, operation_id="resolveSpUrl")
 async def resolve_sp_url(req: ResolveSpUrlRequest) -> OkResponse:
     """Resolve a SharePoint URL to its local OneDrive-synced path.
 

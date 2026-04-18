@@ -12,7 +12,14 @@ import {
 } from "lucide-vue-next";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { api, getErrorMessage } from "../api/client";
+import {
+  generateReport,
+  exportReport,
+  importReport,
+  batchReport,
+  getPreferences,
+  getErrorMessage,
+} from "../api/client";
 import PathBrowser from "../components/PathBrowser.vue";
 import { useLoading } from "../composables/useLoading";
 import { useToastStore } from "../composables/useToast";
@@ -23,9 +30,7 @@ import type {
   ExportRequest,
   GenerateReportRequest,
   ImportRequest,
-  PreferencesResponse,
-  ReportResponse,
-} from "../types/api";
+} from "../api/generated/types.gen";
 
 const router = useRouter();
 const session = useSessionStore();
@@ -37,7 +42,6 @@ const exportPath = ref("");
 const importPath = ref("");
 const batchFolder = ref("");
 const singleReport = ref(false);
-const showReportBrowser = ref(false);
 const showExportBrowser = ref(false);
 const showImportBrowser = ref(false);
 const showBatchBrowser = ref(false);
@@ -46,21 +50,21 @@ const genLoading = useLoading(async () => {
   const req: GenerateReportRequest = {
     report_path: reportPath.value || null,
   };
-  await api.post<ReportResponse>("/api/report/generate", req);
+  await generateReport({ body: req });
 });
 
 const exportLoading = useLoading(async () => {
   const req: ExportRequest = {
     file_path: exportPath.value || null,
   };
-  await api.post<ReportResponse>("/api/report/export", req);
+  await exportReport({ body: req });
 });
 
 const importLoading = useLoading(async () => {
   const req: ImportRequest = {
     file_path: importPath.value || null,
   };
-  await api.post<ReportResponse>("/api/report/import", req);
+  await importReport({ body: req });
   await session.fetchStatus();
   await model.fetchSummary();
 });
@@ -70,7 +74,7 @@ const batchLoading = useLoading(async () => {
     batch_folder: batchFolder.value || null,
     single_report: singleReport.value,
   };
-  await api.post<ReportResponse>("/api/report/batch", req);
+  await batchReport({ body: req });
 });
 
 async function generate() {
@@ -129,9 +133,9 @@ onMounted(async () => {
     exportPath.value = `${folder}${sep}${stem}_export.xlsx`;
   }
   try {
-    const { data } = await api.get<PreferencesResponse>("/api/preferences/");
-    if (data.last_batch_folder_path) {
-      batchFolder.value = data.last_batch_folder_path;
+    const response = await getPreferences();
+    if (response.data!.last_batch_folder_path) {
+      batchFolder.value = response.data!.last_batch_folder_path;
     }
   } catch {
     // ignore — prefill is best-effort
@@ -347,17 +351,6 @@ onMounted(async () => {
     </div>
   </div>
 
-  <PathBrowser
-    v-if="showReportBrowser"
-    filter="any"
-    @close="showReportBrowser = false"
-    @select="
-      (p: string) => {
-        reportPath = p;
-        showReportBrowser = false;
-      }
-    "
-  />
   <PathBrowser
     v-if="showExportBrowser"
     filter="excel"

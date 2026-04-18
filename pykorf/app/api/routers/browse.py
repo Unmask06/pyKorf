@@ -17,7 +17,11 @@ from pykorf.app.api.schemas import (
     PinnedFolderRequest,
     PinnedFoldersResponse,
 )
-from pykorf.app.operation.config.config import add_pinned_folder, get_pinned_folders, remove_pinned_folder
+from pykorf.app.operation.config.config import (
+    add_pinned_folder,
+    get_pinned_folders,
+    remove_pinned_folder,
+)
 from pykorf.app.operation.integration.sharepoint import get_sharepoint_url, is_sharepoint_synced
 from pykorf.core.log import get_logger
 
@@ -73,7 +77,7 @@ def _is_safe_path(path: Path) -> bool:
     return False
 
 
-@router.get("", response_model=BrowseResponse)
+@router.get("", response_model=BrowseResponse, operation_id="browseFiles")
 async def api_browse(req: Annotated[BrowseRequest, Query()]) -> BrowseResponse:
     """Return directory listing for the path browser widget."""
     ext_filter = _EXT_MAP.get(req.filter.lower(), set())
@@ -124,7 +128,9 @@ async def api_browse(req: Annotated[BrowseRequest, Query()]) -> BrowseResponse:
 
     parent = str(target.parent) if target != target.parent else None
 
-    drives = [str(d) for d in _get_available_drives() if os.name == "nt" and d.anchor.endswith(":\\")]
+    drives = [
+        str(d) for d in _get_available_drives() if os.name == "nt" and d.anchor.endswith(":\\")
+    ]
 
     pinned = get_pinned_folders()
 
@@ -139,7 +145,7 @@ async def api_browse(req: Annotated[BrowseRequest, Query()]) -> BrowseResponse:
     )
 
 
-@router.post("/pin", response_model=PinnedFoldersResponse)
+@router.post("/pin", response_model=PinnedFoldersResponse, operation_id="pinFolder")
 async def pin_folder(req: PinnedFolderRequest) -> PinnedFoldersResponse:
     """Pin a folder for quick access in the path browser."""
     p = Path(req.folder)
@@ -149,7 +155,7 @@ async def pin_folder(req: PinnedFolderRequest) -> PinnedFoldersResponse:
     return PinnedFoldersResponse(pinned_folders=get_pinned_folders())
 
 
-@router.post("/unpin", response_model=PinnedFoldersResponse)
+@router.post("/unpin", response_model=PinnedFoldersResponse, operation_id="unpinFolder")
 async def unpin_folder(req: PinnedFolderRequest) -> PinnedFoldersResponse:
     """Unpin a folder from quick access."""
     remove_pinned_folder(req.folder)

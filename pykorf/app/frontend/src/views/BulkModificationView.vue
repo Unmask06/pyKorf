@@ -5,7 +5,17 @@ import { useSessionStore } from '../stores/session'
 import { useModelStore } from '../stores/model'
 import { useToastStore } from '../composables/useToast'
 import { useLoading } from '../composables/useLoading'
-import { api, getErrorMessage } from '../api/client'
+import {
+  applyPms as apiApplyPms,
+  applyHmb as apiApplyHmb,
+  getSettings,
+  applySettings,
+  centerLayout,
+  snapOrthogonal,
+  resolveSpUrl,
+  getPreferences,
+  getErrorMessage,
+} from '../api/client'
 import { Sliders, Move, Terminal, XCircle, Magnet, CheckCircle, Grid3X3, FolderOpen, Upload, FileSpreadsheet } from 'lucide-vue-next'
 import PathBrowser from '../components/PathBrowser.vue'
 import type {
@@ -13,22 +23,17 @@ import type {
   ApplyGlobalSettingsRequest,
   ApplyHmbRequest,
   ApplyPmsRequest,
-  CenterLayoutResponse,
-  EmptyRequest,
-  GlobalSetting,
-  OkResponse,
-  PreferencesResponse,
+  GlobalSettingSchema,
   SettingsApplyResponse,
-  SettingsGetResponse,
   SnapOrthogonalRequest,
-} from '../types/api'
+} from '../api/generated/types.gen'
 
 const router = useRouter()
 const session = useSessionStore()
 const model = useModelStore()
 const toast = useToastStore()
 
-const settings = ref<GlobalSetting[]>([])
+const settings = ref<GlobalSettingSchema[]>([])
 const selectedIds = ref<string[]>([])
 const dpMargin = ref(0)
 const shutoffMargin = ref(0)
@@ -48,20 +53,20 @@ const pmsLoading = useLoading(async () => {
   const req: ApplyPmsRequest = {
     pms_source: pmsSource.value,
   }
-  const { data } = await api.post<ApplyDataResponse>('/api/data/apply-pms', req)
+  const response = await apiApplyPms({ body: req })
   await session.fetchStatus()
   await model.fetchSummary()
-  return data
+  return response.data
 })
 
 const hmbLoading = useLoading(async () => {
   const req: ApplyHmbRequest = {
     hmb_source: hmbSource.value,
   }
-  const { data } = await api.post<ApplyDataResponse>('/api/data/apply-hmb', req)
+  const response = await apiApplyHmb({ body: req })
   await session.fetchStatus()
   await model.fetchSummary()
-  return data
+  return response.data
 })
 
 async function applyPms() {
@@ -111,12 +116,13 @@ const shutoffMarginPct = computed(() => Math.round((shutoffMargin.value - 1) * 1
 
 async function fetchSettings() {
   try {
-    const { data } = await api.get<SettingsGetResponse>('/api/settings/')
-    settings.value = data.settings
-    selectedIds.value = data.saved_selections
-    dpMargin.value = parseFloat(data.saved_dp_margin)
-    shutoffMargin.value = parseFloat(data.saved_shutoff_margin)
-    pumpElevation.value = parseFloat(data.saved_min_pump_elev)
+    const response = await getSettings()
+    const data = response.data!
+    settings.value = data.settings ?? []
+    selectedIds.value = data.saved_selections ?? []
+    dpMargin.value = parseFloat(data.saved_dp_margin ?? '1')
+    shutoffMargin.value = parseFloat(data.saved_shutoff_margin ?? '1')
+    pumpElevation.value = parseFloat(data.saved_min_pump_elev ?? '0')
   } catch (err: unknown) {
     toast.error(getErrorMessage(err, 'Failed to load settings.'))
   }
@@ -129,18 +135,17 @@ const applyLoading = useLoading(async () => {
     shutoff_margin: shutoffMargin.value,
     min_pump_elevation: pumpElevation.value,
   }
-  const { data } = await api.post<SettingsApplyResponse>('/api/settings/apply', req)
-  applyResults.value = data
+  const response = await applySettings({ body: req })
+  applyResults.value = response.data ?? null
   await session.fetchStatus()
   await model.fetchSummary()
-  return data
+  return response.data
 })
 
 const centerLoading = useLoading(async () => {
-  const req: EmptyRequest = {}
-  const { data } = await api.post<CenterLayoutResponse>('/api/settings/center-layout', req)
+  const response = await centerLayout({ body: {} })
   await session.fetchStatus()
-  toast.success(data.message)
+  toast.success(response.data!.message)
 })
 
 const snapLoading = useLoading(async () => {
@@ -148,12 +153,12 @@ const snapLoading = useLoading(async () => {
     threshold_deg: thresholdDeg.value,
     grid_size: gridSize.value,
   }
-  const { data } = await api.post<CenterLayoutResponse>('/api/settings/snap-orthogonal', req)
+  const response = await snapOrthogonal({ body: req })
   await session.fetchStatus()
-  toast.success(data.message)
+  toast.success(response.data!.message)
 })
 
-async function apply_global_params() {
+async function applyGlobalParams() {
   if (!selectedIds.value.length) {
     toast.error('Select at least one setting to apply.')
     return
@@ -228,7 +233,8 @@ async function resolvePmsSpUrl() {
   if (!url.startsWith('https://')) return
 
   try {
-    const { data } = await api.post<OkResponse>('/api/sharepoint/resolve-url', { sp_url: url })
+    const response = await resolveSpUrl({ body: { sp_url: url } })
+    const data = response.data!
     if (data.success && data.message) {
       pmsSource.value = data.message
       toast.success('Converted to local path.')
@@ -247,7 +253,8 @@ onMounted(async () => {
     pmsSource.value = model.prereqs.pms_path
   } else {
     try {
-      const { data } = await api.get<PreferencesResponse>('/api/preferences/')
+      const response = await getPreferences()
+      const data = response.data!
       // default_pms_url already resolves: saved path → factory default on the backend
       if (data.default_pms_url) {
         pmsSource.value = data.default_pms_url
@@ -427,7 +434,7 @@ onMounted(async () => {
           <button type="button" @click="selectedIds = []" class="pk-btn-secondary">
             <XCircle class="w-4 h-4" /> Clear All
           </button>
-          <button @click="apply_global_params" class="pk-btn-primary ml-auto" :disabled="applyLoading.isLoading.value">
+          <button @click="applyGlobalParams" class="pk-btn-primary ml-auto" :disabled="applyLoading.isLoading.value">
             <span v-if="applyLoading.isLoading.value" class="pk-spinner" />
             Apply Selected
           </button>

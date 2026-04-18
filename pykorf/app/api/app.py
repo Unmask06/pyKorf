@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, cast
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -37,6 +38,20 @@ def create_app() -> FastAPI:
         Configured FastAPI app with all routers registered.
     """
     app = FastAPI(title="pyKorf", version="0.18.0")
+
+    # --- CORS Middleware: allow localhost:5173 (Vite dev server) ---
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            "http://localhost:5173",  # Vite dev server
+            "http://localhost:5174",  # Vite dev server (fallback port)
+            "http://127.0.0.1:5173",
+            "http://127.0.0.1:5174",
+        ],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     # --- Middleware: stale header ---
     app.add_middleware(_StaleHeaderMiddleware)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 
 from fastapi import APIRouter
@@ -59,13 +60,13 @@ def _is_korf_default(field: str, value: str) -> bool:
     return value in KORF_DEFAULTS.get(field, [])
 
 
-@router.get("/summary", response_model=ModelFullResponse)
+@router.get("/summary", response_model=ModelFullResponse, operation_id="getModelSummary")
 async def get_summary() -> ModelFullResponse:
     """Return model summary, prerequisites, and project info."""
     model = await require_model()
     from pykorf.app.api.routers.data import apply_pms_if_stale
 
-    if apply_pms_if_stale(model):
+    if await asyncio.to_thread(apply_pms_if_stale, model):
         await _sess.reload()
 
     kdf_path = await _sess.get_kdf_path()
@@ -101,7 +102,7 @@ async def get_summary() -> ModelFullResponse:
     )
 
 
-@router.post("/save", response_model=SaveResponse)
+@router.post("/save", response_model=SaveResponse, operation_id="saveModel")
 async def save_model(_: EmptyRequest) -> SaveResponse:
     """Save the in-memory model back to its source .kdf file."""
     model = await require_model()
@@ -116,7 +117,7 @@ async def save_model(_: EmptyRequest) -> SaveResponse:
     return SaveResponse(message="Model saved to disk.", logs=logs)
 
 
-@router.post("/project-info", response_model=SaveResponse)
+@router.post("/project-info", response_model=SaveResponse, operation_id="saveProjectInfo")
 async def save_project_info(req: SaveProjectInfoRequest) -> SaveResponse:
     """Save project metadata (COM, PRJ, ENG) to the active KDF file."""
     model = await require_model()
@@ -149,14 +150,14 @@ async def save_project_info(req: SaveProjectInfoRequest) -> SaveResponse:
     return SaveResponse(message="Project info saved.", logs=logs)
 
 
-@router.get("/pipes", response_model=ModelPipesResponse)
+@router.get("/pipes", response_model=ModelPipesResponse, operation_id="getPipes")
 async def get_pipes() -> ModelPipesResponse:
     """Return list of pipe names for dropdowns."""
     model = await require_model()
     return ModelPipesResponse(pipes=pipe_names(model))
 
 
-@router.post("/bulk-copy", response_model=BulkCopyResponse)
+@router.post("/bulk-copy", response_model=BulkCopyResponse, operation_id="bulkCopy")
 async def bulk_copy(req: BulkCopyRequest) -> BulkCopyResponse:
     """Copy fluid properties from one pipe to multiple others."""
     model = await require_model()
@@ -188,7 +189,7 @@ async def bulk_copy(req: BulkCopyRequest) -> BulkCopyResponse:
 # --- Pipe Criteria ---
 
 
-@router.get("/pipe-criteria", response_model=PipeCriteriaResponse)
+@router.get("/pipe-criteria", response_model=PipeCriteriaResponse, operation_id="getPipeCriteria")
 async def get_pipe_criteria() -> PipeCriteriaResponse:
     """Get pipe criteria data for the criteria table."""
     model = await require_model()
@@ -217,7 +218,7 @@ async def get_pipe_criteria() -> PipeCriteriaResponse:
     )
 
 
-@router.post("/pipe-criteria", response_model=SetCriteriaResponse)
+@router.post("/pipe-criteria", response_model=SetCriteriaResponse, operation_id="setPipeCriteria")
 async def set_pipe_criteria(req: SetPipeCriteriaRequest) -> SetCriteriaResponse:
     """Apply criteria to pipe SIZ parameters."""
     model = await require_model()
@@ -240,7 +241,11 @@ async def set_pipe_criteria(req: SetPipeCriteriaRequest) -> SetCriteriaResponse:
     return result
 
 
-@router.post("/pipe-criteria/predict", response_model=PredictCriteriaResponse)
+@router.post(
+    "/pipe-criteria/predict",
+    response_model=PredictCriteriaResponse,
+    operation_id="predictPipeCriteria",
+)
 async def predict_criteria(_req: PredictCriteriaRequest) -> PredictCriteriaResponse:
     """Auto-predict state and criteria for all pipes."""
     model = await require_model()

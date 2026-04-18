@@ -84,6 +84,7 @@ class ColoredFormatter(logging.Formatter):
                 "exc_text",
                 "thread",
                 "threadName",
+                "taskName",
                 "message",
                 "asctime",
             }:

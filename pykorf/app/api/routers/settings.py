@@ -21,7 +21,7 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
-@router.get("/", response_model=SettingsGetResponse)
+@router.get("/", response_model=SettingsGetResponse, operation_id="getSettings")
 async def get_settings() -> SettingsGetResponse:
     """Return list of available global settings with saved selections."""
     from pykorf.app.operation.config.config import (
@@ -53,7 +53,7 @@ async def get_settings() -> SettingsGetResponse:
     )
 
 
-@router.post("/apply", response_model=SettingsApplyResponse)
+@router.post("/apply", response_model=SettingsApplyResponse, operation_id="applySettings")
 async def apply_settings(req: ApplyGlobalSettingsRequest) -> SettingsApplyResponse:
     """Apply selected global settings to the model."""
     model = await require_model()
@@ -95,7 +95,7 @@ async def apply_settings(req: ApplyGlobalSettingsRequest) -> SettingsApplyRespon
         return SettingsApplyResponse(errors=[str(exc)])
 
 
-@router.post("/center-layout", response_model=CenterLayoutResponse)
+@router.post("/center-layout", response_model=CenterLayoutResponse, operation_id="centerLayout")
 async def center_layout(_: EmptyRequest) -> CenterLayoutResponse:
     """Center all elements on the page."""
     model = await require_model()
@@ -112,7 +112,7 @@ async def center_layout(_: EmptyRequest) -> CenterLayoutResponse:
         raise
 
 
-@router.post("/snap-orthogonal", response_model=CenterLayoutResponse)
+@router.post("/snap-orthogonal", response_model=CenterLayoutResponse, operation_id="snapOrthogonal")
 async def snap_orthogonal(req: SnapOrthogonalRequest) -> CenterLayoutResponse:
     """Snap near-orthogonal connections and align to grid."""
     model = await require_model()

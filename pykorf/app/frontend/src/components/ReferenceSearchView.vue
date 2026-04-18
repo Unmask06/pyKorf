@@ -10,16 +10,16 @@ import {
   Folder,
 } from "lucide-vue-next";
 import { useLoading } from "../composables/useLoading";
-import { api } from "../api/client";
+import {
+  searchEddr,
+  searchQuery,
+  rebuildDocRegisterDb,
+  getDocRegisterStatus,
+} from "../api/client";
 import type {
-  DocRegisterSearchEddrRequest,
-  DocRegisterSearchEddrResponse,
-  DocRegisterSearchQueryRequest,
-  DocRegisterSearchQueryResponse,
-  DocRegisterStatusResponse,
   EddrResult,
   QueryEntryResult,
-} from "../types/api";
+} from "../api/generated/types.gen";
 
 const props = defineProps<{
   initialQuery?: string;
@@ -82,15 +82,11 @@ const docSearchLoading = useLoading(async () => {
       docSearchResults.value = [];
       return;
     }
-    const req: DocRegisterSearchEddrRequest = { q: docSearchQuery.value };
-    const { data } = await api.get<DocRegisterSearchEddrResponse>(
-      "/api/doc-register/search-eddr",
-      { params: req },
-    );
-    docSearchResults.value = data.results;
+    const response = await searchEddr({ query: { q: docSearchQuery.value } });
+    docSearchResults.value = response.data!.results ?? [];
   } else {
     const docNo =
-      selectedEddrItem.value?.document_no ||
+      selectedEddrItem.value?.document_no ??
       (!selectedEddrItem.value && queryFilter.value.trim()
         ? queryFilter.value.trim()
         : "");
@@ -98,17 +94,13 @@ const docSearchLoading = useLoading(async () => {
       queryResults.value = [];
       return;
     }
-    const req: DocRegisterSearchQueryRequest = { doc_no: docNo };
-    const { data } = await api.get<DocRegisterSearchQueryResponse>(
-      "/api/doc-register/search-query",
-      { params: req },
-    );
-    queryResults.value = data.results;
+    const response = await searchQuery({ query: { doc_no: docNo } });
+    queryResults.value = response.data!.results ?? [];
   }
 });
 
 const refreshDbLoading = useLoading(async () => {
-  await api.post("/api/doc-register/rebuild-db", {});
+  await rebuildDocRegisterDb({ body: {} });
   isStale.value = false;
   // Re-search with existing query
   if (docSearchQuery.value.trim()) {
@@ -177,8 +169,9 @@ watch(queryFilter, (val) => {
 
 onMounted(async () => {
   try {
-    const { data } = await api.get<DocRegisterStatusResponse>("/api/doc-register/status");
-    spSiteUrl.value = data.sp_site_url || "";
+    const response = await getDocRegisterStatus();
+    const data = response.data!;
+    spSiteUrl.value = data.sp_site_url ?? "";
     isStale.value = data.is_stale ?? false;
   } catch { /* ignore */ }
 
