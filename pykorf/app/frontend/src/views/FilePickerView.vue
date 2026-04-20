@@ -1,66 +1,76 @@
 <script setup lang="ts">
-import { ArrowRight, Clock, FileText, FolderOpen, Lightbulb, Shield } from 'lucide-vue-next'
-import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { getErrorMessage } from '../api/client'
-import PathBrowser from '../components/PathBrowser.vue'
-import { useLoading } from '../composables/useLoading'
-import { useToastStore } from '../composables/useToast'
-import { useSessionStore } from '../stores/session'
+import {
+  ArrowRight,
+  Clock,
+  FileText,
+  FolderOpen,
+  Lightbulb,
+  Shield,
+} from "lucide-vue-next";
+import { onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
+import { getErrorMessage } from "../api/client";
+import PathBrowser from "../components/PathBrowser.vue";
+import { useLoading } from "../composables/useLoading";
+import { useToastStore } from "../composables/useToast";
+import { useSessionStore } from "../stores/session";
 
-const router = useRouter()
-const session = useSessionStore()
-const toast = useToastStore()
+const router = useRouter();
+const session = useSessionStore();
+const toast = useToastStore();
 
-const kdfPath = ref('')
-const showBrowser = ref(false)
+const kdfPath = ref("");
+const showBrowser = ref(false);
 
 const openLoading = useLoading(async (path: string) => {
-  await session.openFile(path)
-})
+  await session.openFile(path);
+});
 
 async function openFile() {
-  const path = kdfPath.value.trim().replace(/^"|"$/g, '')
+  const path = kdfPath.value.trim().replace(/^"|"$/g, "");
   if (!path) {
-    toast.error('Please enter a file path.')
-    return
+    toast.error("Please enter a file path.");
+    return;
   }
   try {
-    await openLoading.execute(path)
+    await openLoading.execute(path);
     if (session.isLoaded) {
-      toast.success('Model loaded successfully.')
-      router.push('/model')
+      toast.success("Model loaded successfully.");
+      router.push("/model");
     }
   } catch (err: unknown) {
-    toast.error(getErrorMessage(err, 'Failed to load model.'))
+    toast.error(getErrorMessage(err, "Failed to load model."));
   }
 }
 
 function selectRecent(path: string) {
-  kdfPath.value = path
-  openFile()
+  kdfPath.value = path;
+  openFile();
 }
 
-onMounted(() => {
-  session.fetchStatus()
+onMounted(async () => {
+  await session.fetchStatus();
   if (session.recentFiles.length > 0 && !kdfPath.value) {
-    kdfPath.value = session.recentFiles[0]
+    kdfPath.value = session.recentFiles[0];
   }
-})
+});
 </script>
 
 <template>
   <div class="flex justify-center mt-4">
-    <div class="w-full" style="max-width: 720px;">
-
+    <div class="w-full" style="max-width: 720px">
       <!-- Hero section -->
       <div class="text-center mb-4">
-        <p class="text-gray-500 mb-1">Hello, <strong>{{ session.username }}</strong>!</p>
-        <h1 class="text-2xl font-bold text-blue-600 flex items-center justify-center gap-2">
+        <p class="text-gray-500 mb-1">
+          Hello, <strong>{{ session.username }}</strong
+          >!
+        </p>
+        <h1
+          class="text-2xl font-bold text-blue-600 flex items-center justify-center gap-2"
+        >
           <FolderOpen class="w-6 h-6" /> pyKorf
         </h1>
         <p class="pk-desc">Copilot for Hydraulic Network Modeling using KORF</p>
-
       </div>
 
       <!-- Setup required alert -->
@@ -69,11 +79,17 @@ onMounted(() => {
           <Shield class="w-4 h-4" /> Setup Required Before Opening a Model
         </div>
         <ul class="text-sm mb-2 list-disc pl-5 space-y-0.5">
-          <li v-if="!session.spOk && !session.skipSpOverride">SharePoint Override — not configured</li>
-          <li v-if="!session.docRegisterOk && !session.skipSpOverride">Document Register Excel path — not set or file not found</li>
+          <li v-if="!session.spOk && !session.skipSpOverride">
+            SharePoint Override — not configured
+          </li>
+          <li v-if="!session.docRegisterOk && !session.skipSpOverride">
+            Document Register Excel path — not set or file not found
+          </li>
         </ul>
-        <router-link to="/preferences"
-          class="inline-flex items-center gap-1 bg-yellow-500 text-white px-3 py-1 rounded text-sm hover:bg-yellow-600">
+        <router-link
+          to="/preferences"
+          class="inline-flex items-center gap-1 bg-yellow-500 text-white px-3 py-1 rounded text-sm hover:bg-yellow-600"
+        >
           Go to Preferences
         </router-link>
       </div>
@@ -83,24 +99,40 @@ onMounted(() => {
         <div class="pk-card-body">
           <form @submit.prevent="openFile">
             <div class="mb-3">
-              <label class="font-bold text-blue-600 block mb-2">{{ session.filename || 'Select file' }}</label>
+              <label class="font-bold text-blue-600 block mb-2">{{
+                session.filename || "Select file"
+              }}</label>
               <label class="pk-label">File Path</label>
               <div class="flex">
-                <span class="flex items-center justify-center px-3 py-1.5 text-sm bg-gray-100 border border-r-0 border-gray-300 rounded-l-md">
+                <span
+                  class="flex items-center justify-center px-3 py-1.5 text-sm bg-gray-100 border border-r-0 border-gray-300 rounded-l-md"
+                >
                   <FileText class="w-4 h-4 text-gray-500" />
                 </span>
-                <textarea v-model="kdfPath" class="pk-input-mono resize-none rounded-none"
-                  rows="2" placeholder="C:/projects/model.kdf" />
-                <button type="button" @click="showBrowser = true"
+                <textarea
+                  v-model="kdfPath"
+                  class="pk-input-mono resize-none rounded-none"
+                  rows="2"
+                  placeholder="C:/projects/model.kdf"
+                />
+                <button
+                  type="button"
+                  @click="showBrowser = true"
                   class="flex items-center justify-center px-3 py-1.5 text-sm border border-l-0 border-gray-300 rounded-r-md bg-gray-100 hover:bg-gray-200"
-                  title="Browse for .kdf file">
+                  title="Browse for .kdf file"
+                >
                   <FolderOpen class="w-4 h-4" />
                 </button>
               </div>
-              <div class="pk-hint">Paste the absolute path or choose from recent files below.</div>
+              <div class="pk-hint">
+                Paste the absolute path or choose from recent files below.
+              </div>
             </div>
-            <button type="submit" class="w-full bg-blue-600 text-white rounded py-2 hover:bg-blue-700 flex items-center justify-center gap-1 disabled:opacity-50"
-              :disabled="!session.setupOk || openLoading.isLoading.value">
+            <button
+              type="submit"
+              class="w-full bg-blue-600 text-white rounded py-2 hover:bg-blue-700 flex items-center justify-center gap-1 disabled:opacity-50"
+              :disabled="!session.setupOk || openLoading.isLoading.value"
+            >
               <span v-if="openLoading.isLoading.value" class="pk-spinner" />
               <ArrowRight class="w-4 h-4" /> Open Model
             </button>
@@ -115,14 +147,24 @@ onMounted(() => {
         </div>
         <ul class="divide-y">
           <li v-for="f in session.recentFiles" :key="f" class="p-0">
-            <a href="#"
+            <a
+              href="#"
               class="flex items-center gap-2 py-2 px-3 no-underline hover:bg-gray-50"
               :class="{ 'pointer-events-none text-gray-400': !session.setupOk }"
               @click.prevent="session.setupOk && selectRecent(f)"
-              :title="!session.setupOk ? 'Complete setup in Preferences first' : f">
+              :title="
+                !session.setupOk ? 'Complete setup in Preferences first' : f
+              "
+            >
               <FileText class="w-4 h-4 text-gray-400 shrink-0" />
-              <span class="font-mono text-sm grow truncate text-gray-800">{{ f.split(/[\/\\]/).pop() }}</span>
-              <span class="text-gray-400 text-xs truncate" style="max-width: 45%;">{{ f }}</span>
+              <span class="font-mono text-sm grow truncate text-gray-800">{{
+                f.split(/[\/\\]/).pop()
+              }}</span>
+              <span
+                class="text-gray-400 text-xs truncate"
+                style="max-width: 45%"
+                >{{ f }}</span
+              >
               <ArrowRight class="w-3 h-3 text-blue-600 shrink-0" />
             </a>
           </li>
@@ -136,15 +178,28 @@ onMounted(() => {
         </div>
         <div class="p-4 text-sm text-gray-500">
           <ol class="pl-4 space-y-1 mb-0">
-            <li>Type or paste the full path to a <code class="bg-gray-100 rounded px-1">.kdf</code> file, or use the <FolderOpen class="w-3 h-3 inline" /> browse button.</li>
+            <li>
+              Type or paste the full path to a
+              <code class="bg-gray-100 rounded px-1">.kdf</code> file, or use
+              the <FolderOpen class="w-3 h-3 inline" /> browse button.
+            </li>
             <li>Click <strong>Open Model</strong> to load it.</li>
             <li>Recent files appear below for quick access.</li>
           </ol>
         </div>
       </div>
-
     </div>
   </div>
 
-  <PathBrowser v-if="showBrowser" @close="showBrowser = false" @select="(p: string) => { kdfPath = p; showBrowser = false }" filter="kdf" />
+  <PathBrowser
+    v-if="showBrowser"
+    @close="showBrowser = false"
+    @select="
+      (p: string) => {
+        kdfPath = p;
+        showBrowser = false;
+      }
+    "
+    filter="kdf"
+  />
 </template>

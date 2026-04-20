@@ -43,8 +43,14 @@ curl -L --fail --silent --max-time 30 -o "!SELF_TMP!" "!SELF_URL!" 2>nul
 if %errorlevel% neq 0 goto :self_update_skip
 if not exist "!SELF_TMP!" goto :self_update_skip
 
-REM Extract BAT_VERSION from downloaded file
-for /f "tokens=2 delims==" %%v in ('findstr "BAT_VERSION=" "!SELF_TMP!"') do set "SELF_REMOTE_VER=%%v"
+REM Extract BAT_VERSION from downloaded file.
+REM Regex anchors to lines starting with `set ` and uses `.` to match the
+REM literal `"` after `set `. Without anchoring, findstr would also match
+REM this very for-line (it contains the literal string `BAT_VERSION=`),
+REM and the for-line's token 2 would clobber the real version string —
+REM silently breaking the entire self-update path.
+set "SELF_REMOTE_VER="
+for /f "tokens=2 delims==" %%v in ('findstr /r "^^set .BAT_VERSION=" "!SELF_TMP!"') do set "SELF_REMOTE_VER=%%v"
 set "SELF_REMOTE_VER=!SELF_REMOTE_VER:"=!"
 if "!SELF_REMOTE_VER!"=="" goto :self_update_skip
 
@@ -179,25 +185,59 @@ REM Overlay new files onto APPDATA_DIR, preserving data/ and config.json
 robocopy "!UPD_DIR!" "%APPDATA_DIR%" /E /XD "data" /XF "config.json" /NFL /NDL /NJH /NJS >nul 2>&1
 rd /s /q "!UPD_DIR!" >nul 2>&1
 
-REM Delete .venv and rebuild fresh
-cd /d "%APPDATA_DIR%"
-if exist ".venv" (
-    echo %GRAY%  Removing old virtual environment...%RESET%
-    rd /s /q ".venv" >nul 2>&1
-)
-
-echo %GRAY%  Creating fresh virtual environment...%RESET%
-set "PYTHON_EXE=py -3.13"
-!PYTHON_EXE! -m uv venv .venv --quiet
-
-echo %GRAY%  Installing dependencies...%RESET%
-py -3.13 -m uv pip install --python ".venv\Scripts\python.exe" -e . --quiet
-if %errorlevel% neq 0 (
-    echo %YELLOW%  Dependency installation failed - launching existing version%RESET%
+REM Verify overlay succeeded (pyproject.toml must exist)
+if not exist "%APPDATA_DIR%\pyproject.toml" (
+    echo %YELLOW%  Update overlay failed (pyproject.toml missing) - launching existing version%RESET%
     echo.
     goto :app_update_done
 )
 
+cd /d "%APPDATA_DIR%"
+
+REM Signature-based smart update: only rebuild venv / reinstall deps when needed.
+REM Signature hashes pyproject.toml (excluding the package's own version line) +
+REM Python major.minor + BAT_MAJOR. Minor app-version bumps with unchanged deps
+REM produce an identical signature and skip pip entirely.
+call :compute_signature NEW_SIG
+set "OLD_SIG="
+if exist ".venv_signature" set /p OLD_SIG=<".venv_signature"
+
+REM Fast path: venv intact AND signature matches - nothing to do
+if exist ".venv\Scripts\python.exe" if "!OLD_SIG!"=="!NEW_SIG!" (
+    echo %GRAY%  Dependencies unchanged - skipping venv rebuild%RESET%
+    goto :upd_done_ok
+)
+
+REM Venv missing or corrupt - create fresh
+if not exist ".venv\Scripts\python.exe" (
+    if exist ".venv" (
+        echo %GRAY%  Removing corrupt virtual environment...%RESET%
+        rd /s /q ".venv" >nul 2>&1
+    )
+    echo %GRAY%  Creating virtual environment...%RESET%
+    py -3.13 -m venv .venv
+    if !errorlevel! neq 0 (
+        echo %YELLOW%  Venv creation failed - launching existing version%RESET%
+        echo.
+        goto :app_update_done
+    )
+)
+
+REM Signature differs - dependencies may have changed; run pip install on
+REM existing venv. pip is a no-op when everything is already satisfied, so
+REM this is cheap (~5-15s) versus a full rebuild (~1-5 min).
+echo %GRAY%  Updating dependencies...%RESET%
+".venv\Scripts\python.exe" -m pip install -e . --quiet
+if !errorlevel! neq 0 (
+    echo %YELLOW%  Dependency update failed - launching existing version%RESET%
+    echo %GRAY%  (Will retry on next launch; run pykorf.bat --uninstall-app for clean reinstall)%RESET%
+    echo.
+    goto :app_update_done
+)
+
+(echo !NEW_SIG!)>".venv_signature"
+
+:upd_done_ok
 echo %GREEN%  OK  Updated to !REMOTE_APP_VER!%RESET%
 echo.
 
@@ -216,7 +256,7 @@ echo %YELLOW%  pyKorf exited with error !LAUNCH_ERR! - attempting venv repair...
 echo.
 
 if exist ".venv" rd /s /q ".venv" >nul 2>&1
-py -3.13 -m uv venv .venv --quiet
+py -3.13 -m venv .venv
 if %errorlevel% neq 0 (
     echo %RED%  Failed to create virtual environment.%RESET%
     echo %YELLOW%  Hint: Python 3.13 may need to be reinstalled (run pykorf.bat again after reinstalling).%RESET%
@@ -224,18 +264,16 @@ if %errorlevel% neq 0 (
     goto :launch_reinstall
 )
 
-set "VENV_UV=%APPDATA_DIR%\.venv\Scripts\uv.exe"
-if exist "!VENV_UV!" (
-    "!VENV_UV!" pip install --python ".venv\Scripts\python.exe" -e . --quiet
-) else (
-    py -3.13 -m uv pip install --python ".venv\Scripts\python.exe" -e . --quiet
-)
+".venv\Scripts\python.exe" -m pip install -e . --quiet
 if %errorlevel% neq 0 (
     echo %RED%  Failed to reinstall dependencies.%RESET%
     echo %YELLOW%  Hint: Check your network connection, then run pykorf.bat again.%RESET%
     echo.
     goto :launch_reinstall
 )
+
+call :compute_signature NEW_SIG
+(echo !NEW_SIG!)>".venv_signature"
 
 echo %GREEN%  OK Venv repaired - relaunching...%RESET%
 echo.
@@ -312,14 +350,16 @@ REM Now perform fresh install
 echo %GRAY%  Performing fresh installation...%RESET%
 cd /d "%APPDATA_DIR%"
 set "PYTHON_EXE=py -3.13"
-!PYTHON_EXE! -m uv venv .venv --quiet
-py -3.13 -m uv pip install --python ".venv\Scripts\python.exe" -e . --quiet
+!PYTHON_EXE! -m venv .venv
+".venv\Scripts\python.exe" -m pip install -e . --quiet
 if %errorlevel% neq 0 (
     echo %RED%  Failed to install dependencies.%RESET%
     echo %YELLOW%  Check your network connection, then run pykorf.bat again.%RESET%
     echo.
     goto :launch_failed
 )
+call :compute_signature NEW_SIG
+(echo !NEW_SIG!)>".venv_signature"
 echo %GREEN%  OK  Installation complete.%RESET%
 echo.
 echo %GRAY%  Launching pyKorf...%RESET%
@@ -426,25 +466,7 @@ REM ============================================
 echo %CYAN%  +-- [2 / 4]  Package Manager%RESET%
 echo %CYAN%  ^|%RESET%
 
-!PYTHON_EXE! -m uv --version >nul 2>&1
-if %errorlevel% neq 0 (
-    echo %CYAN%  ^|%RESET%  %GRAY%  Installing uv...%RESET%
-    !PYTHON_EXE! -m pip install --quiet uv
-    if %errorlevel% neq 0 (
-        echo %CYAN%  ^|%RESET%  %YELLOW%  uv unavailable - falling back to pip%RESET%
-        set "USE_UV=0"
-    ) else (
-        set "USE_UV=1"
-    )
-) else (
-    set "USE_UV=1"
-)
-
-if "!USE_UV!"=="1" (
-    echo %CYAN%  ^|%RESET%  %GREEN%OK  uv ready%RESET%
-) else (
-    echo %CYAN%  ^|%RESET%  %GREEN%OK  pip ready%RESET%
-)
+echo %CYAN%  ^|%RESET%  %GREEN%OK  pip ready%RESET%
 echo %CYAN%  +--%RESET%
 echo.
 
@@ -506,17 +528,12 @@ cd /d "%APPDATA_DIR%"
 
 if not exist ".venv\Scripts\python.exe" (
     echo %CYAN%  ^|%RESET%  %GRAY%  Creating environment...%RESET%
-    if "!USE_UV!"=="1" (
-        !PYTHON_EXE! -m uv venv .venv --quiet
-    ) else (
-        !PYTHON_EXE! -m venv .venv
-    )
+    !PYTHON_EXE! -m venv .venv
     if %errorlevel% neq 0 (
         echo %CYAN%  ^|%RESET%
         echo %CYAN%  +--%RESET%  %RED%X  Failed to create virtual environment%RESET%
         echo.
-        echo %YELLOW%     Try right-clicking pykorf.bat and selecting "Run as Administrator".%RESET%
-        echo %YELLOW%     If the issue persists, reinstall Python 3.13 and try again.%RESET%
+        echo %YELLOW%     Reinstall Python 3.13 and run pykorf.bat again.%RESET%
         echo.
         pause
         exit /b 1
@@ -524,11 +541,7 @@ if not exist ".venv\Scripts\python.exe" (
 )
 
 echo %CYAN%  ^|%RESET%  %GRAY%  Installing dependencies...%RESET%
-if "!USE_UV!"=="1" (
-    !PYTHON_EXE! -m uv pip install --python ".venv\Scripts\python.exe" -e . --quiet
-) else (
-    ".venv\Scripts\python.exe" -m pip install -e . --quiet
-)
+".venv\Scripts\python.exe" -m pip install -e . --quiet
 
 if %errorlevel% neq 0 (
     echo %CYAN%  ^|%RESET%
@@ -540,6 +553,9 @@ if %errorlevel% neq 0 (
     pause
     exit /b 1
 )
+
+call :compute_signature NEW_SIG
+(echo !NEW_SIG!)>"%APPDATA_DIR%\.venv_signature"
 
 echo %CYAN%  ^|%RESET%  %GREEN%OK  Environment ready%RESET%
 echo %CYAN%  +--%RESET%
@@ -699,3 +715,44 @@ echo %RED%  +-------------------------------------------------------+%RESET%
 echo.
 pause
 exit /b 1
+
+REM ============================================
+REM :compute_signature  -  venv signature helper
+REM ============================================
+REM Computes a SHA256 signature representing the dependency-relevant state
+REM of the installed app. The signature intentionally IGNORES the package's
+REM own `version = "..."` line in pyproject.toml, so patch/minor app bumps
+REM with unchanged deps produce an identical signature and skip reinstall.
+REM
+REM Inputs hashed:
+REM   1. pyproject.toml contents, minus the `version = ...` line
+REM   2. Python major.minor (e.g. "3.13") — minor bumps break venv ABI
+REM   3. BAT_MAJOR — launcher major version tag
+REM
+REM Usage:
+REM   call :compute_signature VAR_NAME
+REM   (on return, %VAR_NAME% contains the hex digest)
+REM ============================================
+:compute_signature
+set "_SIG_FILE=%TEMP%\pykorf_sig_input.txt"
+if exist "!_SIG_FILE!" del "!_SIG_FILE!" >nul 2>&1
+if exist "%APPDATA_DIR%\pyproject.toml" (
+    findstr /v /r /c:"^version *=" "%APPDATA_DIR%\pyproject.toml" > "!_SIG_FILE!" 2>nul
+) else (
+    echo NOTOML>"!_SIG_FILE!"
+)
+set "_SIG_PYV="
+for /f "tokens=2" %%v in ('py -3.13 --version 2^>^&1') do set "_SIG_PYV=%%v"
+if defined _SIG_PYV (
+    for /f "tokens=1,2 delims=." %%a in ("!_SIG_PYV!") do echo PY=%%a.%%b>>"!_SIG_FILE!"
+) else (
+    echo PY=NONE>>"!_SIG_FILE!"
+)
+echo MAJOR=!BAT_MAJOR!>>"!_SIG_FILE!"
+set "_SIG_VAL="
+for /f "skip=1 tokens=1" %%h in ('certutil -hashfile "!_SIG_FILE!" SHA256 2^>nul') do (
+    if not defined _SIG_VAL set "_SIG_VAL=%%h"
+)
+del "!_SIG_FILE!" >nul 2>&1
+set "%~1=!_SIG_VAL!"
+exit /b 0

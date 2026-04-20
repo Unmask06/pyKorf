@@ -5,6 +5,14 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.23.1] - 2026-04-20
+
+### Fixed
+
+- The launcher no longer rebuilds the Python virtual environment on every update when only the version number changed and no dependencies were added or removed. Updates with unchanged dependencies now complete in seconds instead of minutes.
+- The launcher's automatic self-update feature was silently doing nothing due to an internal parsing bug. Self-updates now work correctly and the launcher will keep itself up to date.
+- The launcher now verifies the downloaded update is complete before applying it, preventing a corrupted install if the download is interrupted.
+
 ## [0.23.0] - 2026-04-20
 
 ### What's New

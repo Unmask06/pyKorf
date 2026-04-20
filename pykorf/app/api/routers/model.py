@@ -211,16 +211,6 @@ async def get_pipe_criteria() -> PipeCriteriaResponse:
     pipe_criteria_violations = _compute_criteria_violations(pipe_calcs, pipe_criteria_values)
 
     justifications = get_justifications(kdf_path) if kdf_path else {}
-    if justifications and pipe_calcs:
-        violating_pipes = {
-            name
-            for name, crits in pipe_criteria_violations.items()
-            if any(v.overall == "FAIL" for v in crits.values())
-        }
-        justifications = {k: v for k, v in justifications.items() if k in violating_pipes}
-        if kdf_path:
-            set_justifications(kdf_path, justifications)
-
     violation_summary = _compute_violation_summary(pipe_criteria_violations, justifications, existing)
 
     return PipeCriteriaResponse(
