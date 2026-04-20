@@ -23,8 +23,7 @@ elements/      - One module per KORF element type
 connectivity   - Connection management
 layout         - Element positioning
 validation     - KDF format compliance
-visualization/ - PyVis network visualization
-export         - Export to JSON, YAML, Excel, CSV
+export         - Export to JSON, Excel, CSV
 types          - Pydantic models for type safety
 config         - Configuration management
 log            - Structured logging

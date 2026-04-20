@@ -11,7 +11,11 @@ REM   3. First-time download and extraction
 REM   4. Delegation to pykorf_installer.py for all other operations
 REM
 REM All install/update/repair/launch logic is handled by:
-REM   py -3.13 pykorf_installer.py <command>
+REM   py -3.13 pykorf_installer.py <command> [--verbose] [--force-update]
+REM
+REM Exit codes:
+REM   0 = success
+REM   1 = error (check installer output for details)
 
 REM --- Launcher constants ---
 set "BAT_MAJOR=0"
@@ -69,10 +73,6 @@ REM Delegate uninstall to installer.py
 
 if /i "%~1"=="/uninstall" goto :run_uninstall
 if /i "%~1"=="--uninstall" goto :run_uninstall
-if /i "%~1"=="--uninstall-app" (
-    set "UNINSTALL_FULL="
-    goto :run_uninstall
-)
 
 REM ============================================
 REM 3. Python Runtime Check
@@ -117,6 +117,7 @@ REM ============================================
 REM 5. Delegate to Python Installer
 REM ============================================
 REM All operations after Python exists are handled by installer.py
+REM Installer returns: 0=success, 1=error
 
 :delegate_to_installer
 cd /d "%APPDATA_DIR%"
@@ -218,12 +219,7 @@ echo   Setting up installation...
 cd /d "%APPDATA_DIR%"
 py -3.13 pykorf_installer.py install
 
-REM Parse JSON response for status
-REM Installer outputs: {"status":"success",...} or {"status":"error",...}
-for /f "tokens=2 delims=:," %%s in ('py -3.13 pykorf_installer.py install 2^&1 ^| findstr /c:"status"') do set "INST_STATUS=%%s"
-set "INST_STATUS=!INST_STATUS:"=!"
-
-if "!INST_STATUS!"=="error" (
+if %errorlevel% neq 0 (
     echo.
     echo   X  Installation failed
     echo   Check the error message above and try again.

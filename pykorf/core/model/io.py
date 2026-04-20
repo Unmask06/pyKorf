@@ -237,58 +237,6 @@ class IOService:
                     context=None,
                 ) from e
 
-    def export_to_yaml(
-        self,
-        path: str | Path,
-        *,
-        options: ExportOptions | None = None,
-        overwrite: bool = True,
-    ) -> None:
-        """Export model data to YAML.
-
-        Args:
-            model: The model to export
-            path: Output file path
-            options: Export options
-            overwrite: Whether to overwrite existing files
-
-        Raises:
-            ExportError: If export fails or file exists and overwrite=False
-        """
-        options = options or ExportOptions()
-        path = Path(path)
-
-        if not overwrite and path.exists():
-            raise ExportError(
-                f"File already exists: {path}. Use overwrite=True to replace.",
-                context=None,
-            )
-
-        with log_operation("export_to_yaml", path=str(path)):
-            try:
-                import yaml
-
-                data = self._model_to_dict(options)
-
-                yaml_content = yaml.dump(
-                    data,
-                    default_flow_style=False,
-                    allow_unicode=True,
-                    sort_keys=False,
-                )
-
-                path.write_text(yaml_content, encoding=options.encoding)
-                logger.info("export_to_yaml_success", path=str(path))
-
-            except ImportError as e:
-                raise ExportError(
-                    "PyYAML is required for YAML export. Install with: pip install pyyaml",
-                ) from e
-            except Exception as e:
-                if isinstance(e, ExportError):
-                    raise
-                raise ExportError(f"Failed to export to YAML: {e}") from e
-
     def export_to_excel(
         self,
         path: str | Path,
@@ -1245,25 +1193,6 @@ def export_to_json(
     IOService(model=model).export_to_json(path, options=options)
 
 
-def export_to_yaml(
-    model: Model,
-    path: str | Path,
-    *,
-    options: ExportOptions | None = None,
-) -> None:
-    """Export model data to YAML.
-
-    Args:
-        model: The model to export
-        path: Output file path
-        options: Export options
-
-    Raises:
-        ExportError: If export fails
-    """
-    IOService(model=model).export_to_yaml(path, options=options)
-
-
 def export_to_excel(
     model: Model,
     path: str | Path,
@@ -1318,7 +1247,6 @@ __all__ = [
     "export_to_csv",
     "export_to_excel",
     "export_to_json",
-    "export_to_yaml",
     "model_from_dataframes",
     "model_to_dataframes",
 ]
