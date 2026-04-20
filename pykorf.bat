@@ -191,7 +191,7 @@ set "PYTHON_EXE=py -3.13"
 !PYTHON_EXE! -m uv venv .venv --quiet
 
 echo %GRAY%  Installing dependencies...%RESET%
-py -3.13 -m uv pip install --python ".venv\Scripts\python.exe" -e . --quiet
+".venv\Scripts\python.exe" -m pip install -e . --quiet
 if %errorlevel% neq 0 (
     echo %YELLOW%  Dependency installation failed - launching existing version%RESET%
     echo.
@@ -224,12 +224,7 @@ if %errorlevel% neq 0 (
     goto :launch_reinstall
 )
 
-set "VENV_UV=%APPDATA_DIR%\.venv\Scripts\uv.exe"
-if exist "!VENV_UV!" (
-    "!VENV_UV!" pip install --python ".venv\Scripts\python.exe" -e . --quiet
-) else (
-    py -3.13 -m uv pip install --python ".venv\Scripts\python.exe" -e . --quiet
-)
+".venv\Scripts\python.exe" -m pip install -e . --quiet
 if %errorlevel% neq 0 (
     echo %RED%  Failed to reinstall dependencies.%RESET%
     echo %YELLOW%  Hint: Check your network connection, then run pykorf.bat again.%RESET%
@@ -313,7 +308,7 @@ echo %GRAY%  Performing fresh installation...%RESET%
 cd /d "%APPDATA_DIR%"
 set "PYTHON_EXE=py -3.13"
 !PYTHON_EXE! -m uv venv .venv --quiet
-py -3.13 -m uv pip install --python ".venv\Scripts\python.exe" -e . --quiet
+".venv\Scripts\python.exe" -m pip install -e . --quiet
 if %errorlevel% neq 0 (
     echo %RED%  Failed to install dependencies.%RESET%
     echo %YELLOW%  Check your network connection, then run pykorf.bat again.%RESET%
@@ -524,11 +519,7 @@ if not exist ".venv\Scripts\python.exe" (
 )
 
 echo %CYAN%  ^|%RESET%  %GRAY%  Installing dependencies...%RESET%
-if "!USE_UV!"=="1" (
-    !PYTHON_EXE! -m uv pip install --python ".venv\Scripts\python.exe" -e . --quiet
-) else (
-    ".venv\Scripts\python.exe" -m pip install -e . --quiet
-)
+".venv\Scripts\python.exe" -m pip install -e . --quiet
 
 if %errorlevel% neq 0 (
     echo %CYAN%  ^|%RESET%
