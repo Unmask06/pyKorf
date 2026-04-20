@@ -5,6 +5,27 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.0] - 2026-04-20
+
+### What's New
+
+- The launcher now uses a standalone Python installer (`pykorf_installer.py`) for all installation operations, making updates and repairs more reliable and easier to debug.
+- All installer operations now output structured JSON messages, enabling better error tracking and batch file integration.
+- Update checks now run twice per day (every 12 hours) instead of on every launch, reducing unnecessary GitHub API calls.
+
+### Improved
+
+- The installer now uses the global Python interpreter instead of the virtual environment, ensuring it works even when the app's venv is broken or missing.
+- Automatic repair cascade is now more robust: if the app fails to start, the installer attempts repair, then full reinstall if repair fails.
+- The installer waits up to 10 seconds for the app to start and exits gracefully once confirmed running, instead of staying attached to the process.
+- The batch file is now minimal (~240 lines) and delegates all complex logic to the Python installer, making it easier to maintain and update.
+- Existing users will automatically receive the new installer on their first run of the updated launcher.
+
+### Fixed
+
+- Batch file syntax error in the signature computation function that caused "was unexpected at this time" errors on some systems.
+- Missing `bat_version.txt` file in releases that could cause GitHub release upload warnings.
+
 ## [0.23.2] - 2026-04-20
 
 ### Fixed

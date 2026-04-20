@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pykorf"
-version = "0.23.2"
+version = "0.24.0"
 description = "Enterprise Python toolkit for reading, editing and writing KORF hydraulic model files (.kdf)"
 readme = "README.md"
 license = { text = "MIT" }
@@ -298,3 +298,8 @@ quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
+
+[tool.pykorf.launcher]
+bat-version = "0.6.3"
+bat-major = "0"
+auto-update = true
