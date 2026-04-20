@@ -2837,6 +2837,17 @@
               }
             ],
             "title": "Rho V2 Calc"
+          },
+          "length_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Length M"
           }
         },
         "type": "object",

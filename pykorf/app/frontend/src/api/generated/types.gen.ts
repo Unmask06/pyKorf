@@ -689,6 +689,10 @@ export type PipeCalcInfo = {
      * Rho V2 Calc
      */
     rho_v2_calc?: number | null;
+    /**
+     * Length M
+     */
+    length_m?: number | null;
 };
 
 /**

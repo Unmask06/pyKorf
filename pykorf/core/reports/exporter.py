@@ -398,7 +398,11 @@ class ResultExporter:
     def _write_transposed_table(
         self, ws: Any, df: pd.DataFrame, row: int, start_col: int = 1
     ) -> tuple[int, int]:
-        """Writes a transposed table (Pumps, Valves)."""
+        """Writes a transposed table (Pumps, Valves).
+
+        Detects section markers (rows where parameter name is empty and value is non-empty)
+        and renders them as styled separator rows with section headings.
+        """
         descriptions, units = self._parse_headers(df.columns)
         pump_names = df.iloc[:, 0].tolist()
         num_cols = 2 + len(pump_names)
@@ -415,21 +419,58 @@ class ResultExporter:
         # Data Rows (One row per parameter)
         current_row = row + 1
         for p_idx in range(1, len(descriptions)):
-            # Param Name
-            cell_p = ws.cell(row=current_row, column=start_col, value=descriptions[p_idx])
-            cell_p.font = self._styles["header"]
-            cell_p.fill = self._styles["fill"]
+            param_name = descriptions[p_idx]
+            unit_text = units[p_idx]
 
-            # Unit
-            cell_u = ws.cell(row=current_row, column=start_col + 1, value=units[p_idx])
-            cell_u.font = self._styles["unit"]
+            # Check if this is a section marker row
+            # Section markers have empty unit and the column value equals the param name
+            row_values = df.iloc[:, p_idx].tolist()
+            is_section_marker = (
+                param_name
+                and unit_text == ""
+                and len(row_values) > 0
+                and row_values[0] == param_name
+            )
 
-            # Values across pumps
-            vals = df.iloc[:, p_idx].tolist()
-            for v_idx, val in enumerate(vals, start=start_col + 2):
-                cell_v = ws.cell(row=current_row, column=v_idx, value=val)
-                cell_v.font = self._styles["data"]
-                cell_v.alignment = Alignment(horizontal="center")
+            if is_section_marker:
+                # Write section separator row
+                section_name = param_name
+                merged_cell = ws.cell(row=current_row, column=start_col, value=section_name)
+                merged_cell.font = Font(bold=True, italic=True, size=11, color="003366")
+                merged_cell.fill = PatternFill(
+                    start_color="D6EAF8", end_color="D6EAF8", fill_type="solid"
+                )
+                merged_cell.alignment = Alignment(horizontal="left", vertical="center")
+
+                # Merge cells across all columns for section header
+                end_col = start_col + num_cols - 1
+                ws.merge_cells(
+                    start_row=current_row,
+                    start_column=start_col,
+                    end_row=current_row,
+                    end_column=end_col,
+                )
+                ws.row_dimensions[current_row].height = 25
+            else:
+                # Param Name
+                cell_p = ws.cell(row=current_row, column=start_col, value=param_name)
+                cell_p.font = self._styles["header"]
+                cell_p.fill = self._styles["fill"]
+
+                # Unit
+                cell_u = ws.cell(row=current_row, column=start_col + 1, value=unit_text)
+                cell_u.font = self._styles["unit"]
+
+                # Values across pumps
+                vals = df.iloc[:, p_idx].tolist()
+                for v_idx, val in enumerate(vals, start=start_col + 2):
+                    cell_v = ws.cell(row=current_row, column=v_idx, value=val)
+                    cell_v.font = self._styles["data"]
+                    cell_v.alignment = Alignment(horizontal="center")
+                    if "Differential Head" in param_name:
+                        cell_v.number_format = "#,##0"
+                    if "Discharge Shut-Off Pressure" in param_name:
+                        cell_v.number_format = "#0.0"
 
             current_row += 1
 
