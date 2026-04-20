@@ -5,6 +5,18 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.1] - 2026-04-20
+
+### Improved
+
+- Installation now completes faster by using uv package manager when available, with automatic fallback to pip.
+- Installer output is now cleaner and easier to read, showing only essential information during normal operation.
+- Update checks now run automatically when the application fails to start, ensuring broken installations are repaired with the latest version.
+
+### Fixed
+
+- Update check was being skipped when the virtual environment was broken, preventing automatic repairs with the latest version.
+
 ## [0.24.0] - 2026-04-20
 
 ### What's New

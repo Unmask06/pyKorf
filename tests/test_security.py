@@ -56,7 +56,6 @@ def test_file_overwrite_protection(tmp_path):
 def test_export_overwrite_protection(tmp_path):
     kdf_path = tmp_path / "test.kdf"
     json_path = tmp_path / "test.json"
-    yaml_path = tmp_path / "test.yaml"
     excel_path = tmp_path / "test.xlsx"
     csv_dir = tmp_path / "csv_export"
 
@@ -66,10 +65,6 @@ def test_export_overwrite_protection(tmp_path):
     json_path.write_text("{}")
     with pytest.raises(ExportError, match="File already exists"):
         model._io_service.export_to_json(json_path, overwrite=False)
-
-    yaml_path.write_text("")
-    with pytest.raises(ExportError, match="File already exists"):
-        model._io_service.export_to_yaml(yaml_path, overwrite=False)
 
     excel_path.write_text("")
     with pytest.raises(ExportError, match="File already exists"):

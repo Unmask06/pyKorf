@@ -13,8 +13,9 @@ Commands:
     uninstall        - Remove app (preserve data)
     reinstall        - Full reinstall from failure state
 
-JSON Output Format:
-    {"status": "success|error|warning|info", "message": "...", "action": "...", "details": {...}}
+Exit Codes:
+    0 - Success
+    1 - Error
 """
 
 from __future__ import annotations
@@ -22,18 +23,20 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import logging
 import os
 import re
 import shutil
 import subprocess
 import sys
 import time
+import traceback
+import urllib.error
 import urllib.request
 import zipfile
-from collections.abc import Callable
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 APPDATA_DIR = Path(os.environ.get("APPDATA", "")) / "pyKorf"
 VENV_DIR = APPDATA_DIR / ".venv"
@@ -42,6 +45,7 @@ SIGNATURE_FILE = APPDATA_DIR / ".venv_signature"
 LAST_CHECK_FILE = APPDATA_DIR / ".last_update_check"
 GITHUB_API_URL = "https://api.github.com/repos/Unmask06/pykorf/releases/latest"
 GITHUB_RELEASE_URL = "https://github.com/Unmask06/pykorf/releases/latest/download"
+
 UPDATE_CHECK_INTERVAL = timedelta(hours=12)
 
 MAX_RETRIES = 3
@@ -51,27 +55,37 @@ DOWNLOAD_TIMEOUT = 120
 APP_STARTUP_WAIT = 10
 
 
+def setup_logging(verbose: bool = False) -> logging.Logger:
+    """Configure logging with minimal output for users, detailed for errors."""
+    level = logging.DEBUG if verbose else logging.INFO
+    fmt = "  %(message)s" if not verbose else "  %(levelname)s: %(message)s"
+
+    logging.basicConfig(
+        level=level,
+        format=fmt,
+        handlers=[logging.StreamHandler(sys.stdout)],
+    )
+
+    logger = logging.getLogger("installer")
+
+    if verbose:
+        logger.debug("Verbose mode enabled")
+        logger.debug(f"APPDATA_DIR: {APPDATA_DIR}")
+        logger.debug(
+            f"Python: {sys.executable} ({sys.version_info.major}.{sys.version_info.minor})"
+        )
+
+    return logger
+
+
+log: logging.Logger = logging.getLogger("installer")
+
+
 def download_file(url: str, dest: Path, timeout: int = DOWNLOAD_TIMEOUT) -> None:
     """Download file with timeout using urlopen."""
     req = urllib.request.Request(url)
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         dest.write_bytes(resp.read())
-
-
-def json_response(status: str, message: str, action: str, details: dict | None = None) -> dict:
-    """Create standardized JSON response."""
-    return {
-        "status": status,
-        "message": message,
-        "action": action,
-        "details": details or {},
-        "timestamp": datetime.now().isoformat(),
-    }
-
-
-def print_json(response: dict) -> None:
-    """Print JSON response to stdout (single line for batch parsing)."""
-    print(json.dumps(response, separators=(",", ":")))
 
 
 def retry_operation(
@@ -89,6 +103,9 @@ def retry_operation(
         except Exception as e:
             last_error = e
             if attempt < retries - 1:
+                log.debug(
+                    f"Attempt {attempt + 1} failed: {e}. Retrying in {delay_base * (attempt + 1)}s..."
+                )
                 time.sleep(delay_base * (attempt + 1))
 
     return False, last_error
@@ -112,54 +129,55 @@ def main() -> int:
             "reinstall",
         ],
     )
-    parser.add_argument("--full", action="store_true", help="Full uninstall")
-    parser.add_argument("--port", type=int, default=8000)
-    parser.add_argument("--debug", action="store_true")
-    parser.add_argument("--no-debug", action="store_true")
+    parser.add_argument("--full", action="store_true", help="Full uninstall (removes data)")
+    parser.add_argument("--port", type=int, default=8000, help="Port for web UI")
+    parser.add_argument("--debug", action="store_true", help="Run app in debug mode")
+    parser.add_argument("--no-debug", action="store_true", help="Run app without debug output")
+    parser.add_argument("--verbose", action="store_true", help="Show detailed output")
+    parser.add_argument(
+        "--force-update", action="store_true", help="Force update check (skip interval)"
+    )
     args = parser.parse_args()
+
+    global log
+    log = setup_logging(args.verbose)
 
     commands = {
         "install": lambda: cmd_install(),
-        "launch": lambda: cmd_launch(args.port, args.debug, args.no_debug),
-        "check-update": lambda: cmd_check_update(),
-        "apply-update": lambda: cmd_apply_update(),
+        "launch": lambda: cmd_launch(args.port, args.debug, args.no_debug, args.force_update),
+        "check-update": lambda: cmd_check_update(args.force_update),
+        "apply-update": lambda: cmd_apply_update(args.force_update),
         "repair-venv": lambda: cmd_repair_venv(),
         "uninstall": lambda: cmd_uninstall(args.full),
         "reinstall": lambda: cmd_reinstall(),
     }
 
     try:
-        response = commands[args.command]()
-        print_json(response)
-        return 0 if response["status"] in ("success", "info") else 1
+        return commands[args.command]()
     except Exception as e:
-        print_json(
-            json_response(
-                "error",
-                f"Unexpected error: {e}",
-                args.command,
-                {"exception": str(e)},
-            )
-        )
+        log.error(f"Unexpected error: {e}")
+        if args.verbose:
+            log.debug(traceback.format_exc())
         return 1
 
 
-def cmd_install() -> dict:
+def cmd_install() -> int:
     """First-time install or repair-mode for existing users."""
     if not APPDATA_DIR.exists():
         APPDATA_DIR.mkdir(parents=True, exist_ok=True)
 
     if VENV_DIR.exists() and venv_is_valid():
-        print_json(json_response("info", "Detected existing installation", "install"))
+        log.info("Detected existing installation")
         ensure_last_check_file()
         write_signature()
-        return json_response("success", "Installation valid", "install")
+        log.info("OK  Installation valid")
+        return 0
 
     if VENV_DIR.exists():
-        print_json(json_response("info", "Existing venv needs repair", "install"))
+        log.info("Existing venv needs repair")
         return repair_venv()
 
-    print_json(json_response("info", "Creating virtual environment...", "install"))
+    log.info("Creating virtual environment...")
 
     success, error = retry_operation(
         lambda: subprocess.run(
@@ -170,75 +188,71 @@ def cmd_install() -> dict:
     )
 
     if not success:
-        return json_response(
-            "error",
-            "Failed to create virtual environment",
-            "install",
-            {"error": str(error)},
-        )
+        log.error("Failed to create virtual environment")
+        if error:
+            log.debug(f"Error details: {error}")
+        return 1
 
     if not VENV_DIR.joinpath("Scripts/python.exe").exists():
-        return json_response(
-            "error",
-            "Venv creation incomplete - python.exe missing",
-            "install",
-        )
+        log.error("Venv creation incomplete - python.exe missing")
+        return 1
 
-    print_json(json_response("info", "Installing dependencies...", "install"))
+    log.info("Installing dependencies...")
 
     success, error = retry_operation(pip_install)
 
     if not success:
-        return json_response(
-            "error",
-            "Failed to install dependencies",
-            "install",
-            {"error": str(error)},
-        )
+        log.error("Failed to install dependencies")
+        if error:
+            log.debug(f"Error details: {error}")
+        return 1
 
     write_signature()
     ensure_last_check_file()
     write_version_from_pyproject()
 
-    return json_response("success", "Installation complete", "install")
+    log.info("OK  Installation complete")
+    return 0
 
 
-def cmd_launch(port: int, debug: bool, no_debug: bool) -> dict:
-    """Main launch flow: check update, repair, start app."""
-    if should_check_update():
-        print_json(json_response("info", "Checking for updates...", "launch"))
-        update_info = get_update_info()
+def cmd_launch(port: int, debug: bool, no_debug: bool, force_update: bool) -> int:
+    """Main launch flow: check update, repair, start app.
+
+    If venv is broken, ALWAYS check for updates (force=True) before repair.
+    If venv is OK, use normal interval-based update check.
+    """
+    venv_ok = venv_is_valid()
+
+    if not venv_ok:
+        log.info("Venv needs repair")
+
+        update_info = get_update_info(force=True)
+        if update_info and update_info.get("available"):
+            current = update_info.get("current", "unknown")
+            latest = update_info.get("latest", "unknown")
+            log.info(f"Update available: {current} -> {latest}")
+
+            result = apply_update(update_info)
+            if result != 0:
+                log.warning("Update failed, continuing with repair")
+
+        result = repair_venv()
+        if result != 0:
+            log.error("Venv repair failed, attempting reinstall")
+            return cmd_reinstall()
+
+    elif should_check_update() or force_update:
+        log.info("Checking for updates...")
+        update_info = get_update_info(force=force_update)
 
         if update_info and update_info.get("available"):
-            print_json(
-                json_response(
-                    "info",
-                    f"Update available: {update_info['current']} → {update_info['latest']}",
-                    "update",
-                    update_info,
-                )
-            )
-            result = apply_update(update_info)
-            if result["status"] == "error":
-                print_json(result)
-                return json_response(
-                    "warning",
-                    "Update failed, launching existing version",
-                    "launch",
-                    {"update_error": result["message"]},
-                )
+            current = update_info.get("current", "unknown")
+            latest = update_info.get("latest", "unknown")
+            log.info(f"Update available: {current} -> {latest}")
 
-    if not venv_is_valid():
-        print_json(json_response("info", "Venv needs repair...", "launch"))
-        result = repair_venv()
-        if result["status"] == "error":
-            print_json(result)
-            return json_response(
-                "error",
-                "Venv repair failed, attempting reinstall",
-                "launch",
-                {"repair_error": result["message"]},
-            )
+            result = apply_update(update_info)
+            if result != 0:
+                log.warning("Update failed, launching existing version")
 
     return start_app(port, debug, no_debug)
 
@@ -258,8 +272,18 @@ def should_check_update() -> bool:
         return True
 
 
-def get_update_info() -> dict | None:
-    """Query GitHub API for latest release with retry."""
+def get_update_info(force: bool = False) -> dict | None:
+    """Query GitHub API for latest release.
+
+    Args:
+        force: If True, always check (ignore interval). If False, use interval.
+
+    Returns:
+        dict with version info, or None if check failed or skipped.
+    """
+    if not force and not should_check_update():
+        log.debug("Update check skipped (interval not elapsed)")
+        return None
 
     def fetch() -> dict:
         req = urllib.request.Request(
@@ -283,42 +307,32 @@ def get_update_info() -> dict | None:
         ensure_last_check_file()
         return result
 
-    print_json(
-        json_response(
-            "warning",
-            "GitHub API request failed",
-            "check-update",
-            {"error": str(result)},
-        )
-    )
+    log.warning("GitHub API request failed")
+    log.debug(f"Error: {result}")
     return None
 
 
-def apply_update(update_info: dict) -> dict:
+def apply_update(update_info: dict) -> int:
     """Download and apply update from GitHub."""
     zip_url = update_info.get("zip_url", "")
     if not zip_url:
-        return json_response("error", "No update URL available", "apply-update")
+        log.error("No update URL available")
+        return 1
 
     zip_path = APPDATA_DIR / "_update.zip"
     extract_dir = APPDATA_DIR / "_update_extract"
 
-    print_json(json_response("info", "Downloading update...", "apply-update"))
+    log.info("Downloading update...")
 
-    def download():
-        download_file(zip_url, zip_path, timeout=DOWNLOAD_TIMEOUT)
-
-    success, error = retry_operation(download)
+    success, error = retry_operation(lambda: download_file(zip_url, zip_path))
 
     if not success:
-        return json_response(
-            "error",
-            "Update download failed",
-            "apply-update",
-            {"error": str(error)},
-        )
+        log.error("Update download failed")
+        log.debug(f"URL: {zip_url}")
+        log.debug(f"Error: {error}")
+        return 1
 
-    print_json(json_response("info", "Extracting update...", "apply-update"))
+    log.info("Extracting update...")
 
     try:
         with zipfile.ZipFile(zip_path, "r") as zf:
@@ -326,12 +340,9 @@ def apply_update(update_info: dict) -> dict:
     except Exception as e:
         zip_path.unlink(missing_ok=True)
         shutil.rmtree(extract_dir, ignore_errors=True)
-        return json_response(
-            "error",
-            "Update extraction failed",
-            "apply-update",
-            {"error": str(e)},
-        )
+        log.error("Update extraction failed")
+        log.debug(f"Error: {e}")
+        return 1
 
     overlay_update(extract_dir)
 
@@ -342,32 +353,20 @@ def apply_update(update_info: dict) -> dict:
     new_sig = compute_signature()
 
     if old_sig != new_sig:
-        print_json(
-            json_response("info", "Dependencies changed, rebuilding venv...", "apply-update")
-        )
+        log.info("Dependencies changed, rebuilding venv...")
         result = repair_venv()
-        if result["status"] == "error":
-            return json_response(
-                "error",
-                "Venv rebuild failed after update",
-                "apply-update",
-                {"repair_error": result["message"]},
-            )
+        if result != 0:
+            log.error("Venv rebuild failed after update")
+            return 1
     else:
-        print_json(
-            json_response("info", "Dependencies unchanged, skipping venv rebuild", "apply-update")
-        )
+        log.debug("Dependencies unchanged, skipping venv rebuild")
 
     write_signature()
     write_version(update_info.get("latest", ""))
     ensure_last_check_file()
 
-    return json_response(
-        "success",
-        f"Updated to {update_info.get('latest', '')}",
-        "apply-update",
-        {"version": update_info.get("latest", "")},
-    )
+    log.info(f"OK  Updated to {update_info.get('latest', '')}")
+    return 0
 
 
 def overlay_update(extract_dir: Path) -> None:
@@ -399,14 +398,13 @@ def overlay_update(extract_dir: Path) -> None:
             shutil.copy2(item, dest)
 
 
-def repair_venv() -> dict:
+def repair_venv() -> int:
     """Rebuild venv and reinstall dependencies."""
-    print_json(json_response("info", "Removing existing venv...", "repair-venv"))
-
     if VENV_DIR.exists():
+        log.debug("Removing existing venv...")
         shutil.rmtree(VENV_DIR, ignore_errors=True)
 
-    print_json(json_response("info", "Creating virtual environment...", "repair-venv"))
+    log.info("Creating virtual environment...")
 
     success, error = retry_operation(
         lambda: subprocess.run(
@@ -417,60 +415,53 @@ def repair_venv() -> dict:
     )
 
     if not success:
-        return json_response(
-            "error",
-            "Failed to create virtual environment",
-            "repair-venv",
-            {"error": str(error)},
-        )
+        log.error("Failed to create virtual environment")
+        log.debug(f"Error: {error}")
+        return 1
 
-    print_json(json_response("info", "Installing dependencies...", "repair-venv"))
+    log.info("Installing dependencies...")
 
     success, error = retry_operation(pip_install)
 
     if not success:
-        return json_response(
-            "error",
-            "Failed to install dependencies",
-            "repair-venv",
-            {"error": str(error)},
-        )
+        log.error("Failed to install dependencies")
+        log.debug(f"Error: {error}")
+        return 1
 
     write_signature()
 
-    return json_response("success", "Venv repaired", "repair-venv")
+    log.info("OK  Venv repaired")
+    return 0
 
 
 def pip_install() -> None:
-    """Run pip install -e . in venv."""
+    """Install package using uv if available, else pip.
+
+    Tries uv first for faster installation (2-10x faster than pip).
+    Falls back to pip if uv is not available.
+    """
     python_exe = VENV_DIR / "Scripts" / "python.exe"
 
     if not python_exe.exists():
         raise FileNotFoundError(f"python.exe not found: {python_exe}")
 
+    # Try uv first (much faster)
+    try:
+        subprocess.run(
+            ["uv", "pip", "install", "-e", str(APPDATA_DIR)],
+            cwd=str(APPDATA_DIR),
+            capture_output=True,
+            check=True,
+            timeout=300,
+        )
+        log.debug("Installed using uv")
+        return
+    except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
+        log.debug("uv not available or failed, falling back to pip")
+
+    # Fallback to pip
     result = subprocess.run(
         [str(python_exe), "-m", "pip", "install", "-e", str(APPDATA_DIR), "--quiet"],
-        cwd=str(APPDATA_DIR),
-        capture_output=True,
-        check=True,
-    )
-
-
-def pip_install_no_cache() -> None:
-    """Run pip install without cache (fallback)."""
-    python_exe = VENV_DIR / "Scripts" / "python.exe"
-
-    subprocess.run(
-        [
-            str(python_exe),
-            "-m",
-            "pip",
-            "install",
-            "-e",
-            str(APPDATA_DIR),
-            "--quiet",
-            "--no-cache-dir",
-        ],
         cwd=str(APPDATA_DIR),
         capture_output=True,
         check=True,
@@ -511,13 +502,13 @@ def compute_signature() -> str:
     return hashlib.sha256(content).hexdigest()
 
 
-def start_app(port: int, debug: bool, no_debug: bool) -> dict:
+def start_app(port: int, debug: bool, no_debug: bool) -> int:
     """Launch pykorf.exe and exit gracefully."""
     pykorf_exe = VENV_DIR / "Scripts" / "pykorf.exe"
 
     if not pykorf_exe.exists():
-        print_json(json_response("error", "pykorf.exe not found", "launch"))
-        return handle_launch_failure(9009, port, debug, no_debug)
+        log.error("pykorf.exe not found")
+        return handle_launch_failure(-1, port, debug, no_debug, "pykorf.exe missing")
 
     args = [str(pykorf_exe)]
     if debug:
@@ -526,14 +517,7 @@ def start_app(port: int, debug: bool, no_debug: bool) -> dict:
         args.append("--no-debug")
     args.extend(["--port", str(port)])
 
-    print_json(
-        json_response(
-            "info",
-            "Launching pyKorf...",
-            "launch",
-            {"port": port},
-        )
-    )
+    log.info("Launching pyKorf...")
 
     try:
         proc = subprocess.Popen(args, cwd=str(APPDATA_DIR))
@@ -546,36 +530,24 @@ def start_app(port: int, debug: bool, no_debug: bool) -> dict:
             break
 
     if proc.poll() is None:
-        print_json(
-            json_response(
-                "success",
-                "pyKorf started",
-                "launch",
-                {"port": port, "pid": proc.pid},
-            )
-        )
-        sys.exit(0)
+        log.info(f"OK  pyKorf started (port {port})")
+        return 0
 
     return handle_launch_failure(proc.returncode or -1, port, debug, no_debug)
 
 
 def handle_launch_failure(
     exit_code: int, port: int, debug: bool, no_debug: bool, error_msg: str | None = None
-) -> dict:
+) -> int:
     """Handle app launch failure with repair/reinstall cascade."""
-    print_json(
-        json_response(
-            "warning",
-            f"pyKorf exited with code {exit_code}, attempting repair...",
-            "launch",
-            {"exit_code": exit_code, "error": error_msg},
-        )
-    )
+    log.warning(f"pyKorf exited with code {exit_code}, attempting repair...")
+    if error_msg:
+        log.debug(f"Error: {error_msg}")
 
     result = repair_venv()
 
-    if result["status"] == "success":
-        print_json(json_response("info", "Venv repaired, retrying launch...", "launch"))
+    if result == 0:
+        log.info("Venv repaired, retrying launch...")
 
         pykorf_exe = VENV_DIR / "Scripts" / "pykorf.exe"
         args = [str(pykorf_exe)]
@@ -596,37 +568,24 @@ def handle_launch_failure(
                 break
 
         if proc.poll() is None:
-            print_json(
-                json_response(
-                    "success",
-                    "pyKorf started after repair",
-                    "launch",
-                    {"port": port, "pid": proc.pid, "repaired": True},
-                )
-            )
-            sys.exit(0)
+            log.info(f"OK  pyKorf started after repair (port {port})")
+            return 0
 
         return handle_reinstall(
             port, debug, no_debug, f"Launch failed after repair: {proc.returncode}"
         )
 
-    return handle_reinstall(port, debug, no_debug, f"Repair failed: {result['message']}")
+    return handle_reinstall(port, debug, no_debug, "Repair failed")
 
 
-def handle_reinstall(port: int, debug: bool, no_debug: bool, reason: str) -> dict:
+def handle_reinstall(port: int, debug: bool, no_debug: bool, reason: str) -> int:
     """Attempt full reinstall when repair fails."""
-    print_json(
-        json_response(
-            "warning",
-            "Repair failed, attempting full reinstall...",
-            "reinstall",
-            {"reason": reason},
-        )
-    )
+    log.warning("Repair failed, attempting full reinstall...")
+    log.debug(f"Reason: {reason}")
 
     result = cmd_reinstall()
 
-    if result["status"] == "success":
+    if result == 0:
         pykorf_exe = VENV_DIR / "Scripts" / "pykorf.exe"
         args = [str(pykorf_exe)]
         if debug:
@@ -643,76 +602,65 @@ def handle_reinstall(port: int, debug: bool, no_debug: bool, reason: str) -> dic
                     break
 
             if proc.poll() is None:
-                print_json(
-                    json_response(
-                        "success",
-                        "pyKorf started after reinstall",
-                        "launch",
-                        {"port": port, "pid": proc.pid, "reinstalled": True},
-                    )
-                )
-                sys.exit(0)
+                log.info(f"OK  pyKorf started after reinstall (port {port})")
+                return 0
         except Exception:
             pass
 
-    return json_response(
-        "error",
-        "pyKorf failed to start after reinstall",
-        "launch",
-        {"reinstall_error": result.get("message", "Unknown error")},
-    )
+    log.error("pyKorf failed to start after reinstall")
+    return 1
 
 
-def cmd_check_update() -> dict:
-    """Query GitHub API and return update info."""
-    update_info = get_update_info()
+def cmd_check_update(force: bool = False) -> int:
+    """Query GitHub API and show update info."""
+    update_info = get_update_info(force=force)
 
     if update_info:
-        return json_response(
-            "success",
-            "Update check complete",
-            "check-update",
-            update_info,
-        )
+        current = update_info.get("current", "unknown")
+        latest = update_info.get("latest", "unknown")
+        available = update_info.get("available", False)
 
-    return json_response(
-        "error",
-        "Failed to check for updates",
-        "check-update",
-    )
+        if available:
+            log.info(f"Update available: {current} -> {latest}")
+        else:
+            log.info(f"No update available (current: {current})")
+
+        log.debug(f"Details: {update_info}")
+        return 0
+
+    log.error("Failed to check for updates")
+    return 1
 
 
-def cmd_apply_update() -> dict:
+def cmd_apply_update(force: bool = False) -> int:
     """Apply update (called manually or by launch)."""
-    update_info = get_update_info()
+    update_info = get_update_info(force=force)
 
     if not update_info:
-        return json_response("error", "Could not get update info", "apply-update")
+        log.error("Could not get update info")
+        return 1
 
     if not update_info.get("available"):
-        return json_response(
-            "info",
-            f"No update available (current: {update_info['current']})",
-            "apply-update",
-            update_info,
-        )
+        log.info(f"No update available (current: {update_info['current']})")
+        return 0
 
     return apply_update(update_info)
 
 
-def cmd_repair_venv() -> dict:
+def cmd_repair_venv() -> int:
     """Manual venv repair command."""
     return repair_venv()
 
 
-def cmd_uninstall(full: bool) -> dict:
+def cmd_uninstall(full: bool) -> int:
     """Remove app, preserve data unless --full."""
     if not APPDATA_DIR.exists():
-        return json_response("info", "pyKorf is not installed", "uninstall")
+        log.info("pyKorf is not installed")
+        return 0
 
     preserve = [] if full else ["data", "config.json"]
 
-    print_json(json_response("info", "Removing application...", "uninstall"))
+    log.info("Removing application...")
 
     for item in list(APPDATA_DIR.iterdir()):
         if item.name in preserve:
@@ -728,19 +676,16 @@ def cmd_uninstall(full: bool) -> dict:
 
     if full:
         shutil.rmtree(APPDATA_DIR, ignore_errors=True)
-        return json_response("success", "pyKorf completely removed", "uninstall")
+        log.info("OK  pyKorf completely removed")
+    else:
+        log.info("OK  Application removed (data preserved)")
 
-    return json_response(
-        "success",
-        "Application removed, data preserved",
-        "uninstall",
-        {"preserved": preserve},
-    )
+    return 0
 
 
-def cmd_reinstall() -> dict:
+def cmd_reinstall() -> int:
     """Full reinstall from failure state."""
-    print_json(json_response("info", "Starting full reinstall...", "reinstall"))
+    log.info("Starting full reinstall...")
 
     backup_dir = Path(os.environ.get("TEMP", "")) / "pykorf_reinstall_bak"
     backup_dir.mkdir(parents=True, exist_ok=True)
@@ -764,23 +709,18 @@ def cmd_reinstall() -> dict:
     shutil.rmtree(APPDATA_DIR, ignore_errors=True)
     APPDATA_DIR.mkdir(parents=True, exist_ok=True)
 
-    print_json(json_response("info", "Downloading latest release...", "reinstall"))
+    log.info("Downloading latest release...")
 
     zip_url = f"{GITHUB_RELEASE_URL}/pykorf-v{get_bat_major()}.zip"
     zip_path = Path(os.environ.get("TEMP", "")) / "pykorf_reinstall.zip"
 
-    def download():
-        download_file(zip_url, zip_path, timeout=DOWNLOAD_TIMEOUT)
-
-    success, error = retry_operation(download)
+    success, error = retry_operation(lambda: download_file(zip_url, zip_path))
 
     if not success:
-        return json_response(
-            "error",
-            "Failed to download release",
-            "reinstall",
-            {"error": str(error)},
-        )
+        log.error("Failed to download release")
+        log.debug(f"URL: {zip_url}")
+        log.debug(f"Error: {error}")
+        return 1
 
     try:
         with zipfile.ZipFile(zip_path, "r") as zf:
@@ -788,12 +728,9 @@ def cmd_reinstall() -> dict:
         zip_path.unlink(missing_ok=True)
     except Exception as e:
         zip_path.unlink(missing_ok=True)
-        return json_response(
-            "error",
-            "Failed to extract release",
-            "reinstall",
-            {"error": str(e)},
-        )
+        log.error("Failed to extract release")
+        log.debug(f"Error: {e}")
+        return 1
 
     if backup_dir.joinpath("data").exists():
         try:
@@ -809,7 +746,7 @@ def cmd_reinstall() -> dict:
 
     shutil.rmtree(backup_dir, ignore_errors=True)
 
-    print_json(json_response("info", "Creating fresh installation...", "reinstall"))
+    log.info("Creating fresh installation...")
 
     success, error = retry_operation(
         lambda: subprocess.run(
@@ -820,33 +757,23 @@ def cmd_reinstall() -> dict:
     )
 
     if not success:
-        return json_response(
-            "error",
-            "Failed to create venv",
-            "reinstall",
-            {"error": str(error)},
-        )
+        log.error("Failed to create venv")
+        log.debug(f"Error: {error}")
+        return 1
 
     success, error = retry_operation(pip_install)
 
     if not success:
-        return json_response(
-            "error",
-            "Failed to install dependencies",
-            "reinstall",
-            {"error": str(error)},
-        )
+        log.error("Failed to install dependencies")
+        log.debug(f"Error: {error}")
+        return 1
 
     write_signature()
     ensure_last_check_file()
     write_version_from_pyproject()
 
-    return json_response(
-        "success",
-        "Reinstall complete",
-        "reinstall",
-        {"preserved": preserved},
-    )
+    log.info("OK  Reinstall complete")
+    return 0
 
 
 def get_installed_version() -> str:
