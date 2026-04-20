@@ -181,6 +181,17 @@ echo.
 echo Creating VERSION file...
 echo %VERSION%> %DIST_DIR%\VERSION
 
+REM Extract BAT_VERSION from pykorf.bat for launcher version tracking
+uv run python -c "import re;v=re.search(r'BAT_VERSION[=]([0-9.]+)',open('pykorf.bat').read()).group(1);open('dist/bat_version.txt','w').write(v)"
+
+REM Copy standalone installer (must be inside zip for existing users)
+if exist pykorf_installer.py (
+    copy /y pykorf_installer.py %DIST_DIR%\ >nul
+    echo   Copied pykorf_installer.py
+) else (
+    echo WARNING: pykorf_installer.py not found
+)
+
 REM Step 5: Create distribution zip
 echo.
 echo ==========================================
@@ -215,9 +226,15 @@ echo ==========================================
 echo Distribution package: %DIST_DIR%\pykorf-v%MAJOR%.zip
 echo.
 echo Contents:
-echo   - pykorf/            (obfuscated package + Vue dist assets)
-echo   - pyproject.toml     (dependencies)
-echo   - pykorf.bat         (launcher)
-echo   - VERSION            (version tracker)
+echo   - pykorf/               (obfuscated package + Vue dist assets)
+echo   - pyproject.toml        (dependencies)
+echo   - pykorf_installer.py   (standalone installer)
+echo   - VERSION               (version tracker)
+echo   - bat_version.txt       (launcher version)
+echo.
+echo Release assets:
+echo   - pykorf-v%MAJOR%.zip
+echo   - pykorf-v%MAJOR%.zip.sha256
+echo   - pykorf.bat            (launcher - separate download)
 echo.
 echo Extract and run pykorf.bat to launch the web application.
