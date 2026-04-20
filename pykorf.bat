@@ -188,7 +188,7 @@ if exist ".venv" (
 
 echo %GRAY%  Creating fresh virtual environment...%RESET%
 set "PYTHON_EXE=py -3.13"
-!PYTHON_EXE! -m uv venv .venv --quiet
+!PYTHON_EXE! -m venv .venv
 
 echo %GRAY%  Installing dependencies...%RESET%
 ".venv\Scripts\python.exe" -m pip install -e . --quiet
@@ -216,7 +216,7 @@ echo %YELLOW%  pyKorf exited with error !LAUNCH_ERR! - attempting venv repair...
 echo.
 
 if exist ".venv" rd /s /q ".venv" >nul 2>&1
-py -3.13 -m uv venv .venv --quiet
+py -3.13 -m venv .venv
 if %errorlevel% neq 0 (
     echo %RED%  Failed to create virtual environment.%RESET%
     echo %YELLOW%  Hint: Python 3.13 may need to be reinstalled (run pykorf.bat again after reinstalling).%RESET%
@@ -307,7 +307,7 @@ REM Now perform fresh install
 echo %GRAY%  Performing fresh installation...%RESET%
 cd /d "%APPDATA_DIR%"
 set "PYTHON_EXE=py -3.13"
-!PYTHON_EXE! -m uv venv .venv --quiet
+!PYTHON_EXE! -m venv .venv
 ".venv\Scripts\python.exe" -m pip install -e . --quiet
 if %errorlevel% neq 0 (
     echo %RED%  Failed to install dependencies.%RESET%
@@ -421,25 +421,7 @@ REM ============================================
 echo %CYAN%  +-- [2 / 4]  Package Manager%RESET%
 echo %CYAN%  ^|%RESET%
 
-!PYTHON_EXE! -m uv --version >nul 2>&1
-if %errorlevel% neq 0 (
-    echo %CYAN%  ^|%RESET%  %GRAY%  Installing uv...%RESET%
-    !PYTHON_EXE! -m pip install --quiet uv
-    if %errorlevel% neq 0 (
-        echo %CYAN%  ^|%RESET%  %YELLOW%  uv unavailable - falling back to pip%RESET%
-        set "USE_UV=0"
-    ) else (
-        set "USE_UV=1"
-    )
-) else (
-    set "USE_UV=1"
-)
-
-if "!USE_UV!"=="1" (
-    echo %CYAN%  ^|%RESET%  %GREEN%OK  uv ready%RESET%
-) else (
-    echo %CYAN%  ^|%RESET%  %GREEN%OK  pip ready%RESET%
-)
+echo %CYAN%  ^|%RESET%  %GREEN%OK  pip ready%RESET%
 echo %CYAN%  +--%RESET%
 echo.
 
@@ -501,17 +483,12 @@ cd /d "%APPDATA_DIR%"
 
 if not exist ".venv\Scripts\python.exe" (
     echo %CYAN%  ^|%RESET%  %GRAY%  Creating environment...%RESET%
-    if "!USE_UV!"=="1" (
-        !PYTHON_EXE! -m uv venv .venv --quiet
-    ) else (
-        !PYTHON_EXE! -m venv .venv
-    )
+    !PYTHON_EXE! -m venv .venv
     if %errorlevel% neq 0 (
         echo %CYAN%  ^|%RESET%
         echo %CYAN%  +--%RESET%  %RED%X  Failed to create virtual environment%RESET%
         echo.
-        echo %YELLOW%     Try right-clicking pykorf.bat and selecting "Run as Administrator".%RESET%
-        echo %YELLOW%     If the issue persists, reinstall Python 3.13 and try again.%RESET%
+        echo %YELLOW%     Reinstall Python 3.13 and run pykorf.bat again.%RESET%
         echo.
         pause
         exit /b 1
