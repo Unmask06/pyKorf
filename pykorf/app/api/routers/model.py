@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from functools import cache
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
@@ -538,6 +539,7 @@ def _compute_criteria_violations(
     return result
 
 
+@cache
 def _load_units_data() -> dict[str, dict[str, UnitConversionInfo]]:
     import json
 
