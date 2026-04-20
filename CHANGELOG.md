@@ -5,6 +5,20 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.23.0] - 2026-04-20
+
+### What's New
+
+- Pipe Criteria table now displays pipe length in meters, positioned between the Pipe name and State columns for quick reference.
+- The dev server launcher now automatically generates TypeScript types from the OpenAPI schema on startup, keeping the frontend client in sync.
+
+### Improved
+
+- Excel report section headers (Liquid Characteristics, Operating Conditions, Performance Characteristics) now display in italic with consistent light blue fill.
+- Pipe Differential Head values in Excel reports are formatted as whole numbers for cleaner presentation.
+- All calculation columns in the Pipe Criteria table are now center-aligned, including units in headers for better visual consistency.
+- The Pipe Criteria view now shows a loading indicator while fetching data, improving user feedback during table generation.
+
 ## [0.22.0] - 2026-04-18
 
 ### What's New

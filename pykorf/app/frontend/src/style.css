@@ -163,6 +163,11 @@
 .pk-table-head-cell {
   @apply px-3 py-2 text-left font-semibold;
 }
+
+.pk-table-head-cell-center {
+  @apply px-3 py-2 font-semibold;
+  text-align: center;
+}
 .pk-table-row-dirty {
   @apply bg-yellow-50;
 }

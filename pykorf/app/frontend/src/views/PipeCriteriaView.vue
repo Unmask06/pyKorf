@@ -414,7 +414,13 @@ onMounted(() => {
 
       <!-- Table -->
       <div style="max-height: 65vh; overflow-y: auto;">
-        <table class="pk-table">
+        <div v-if="criteriaLoading.isLoading.value" class="flex items-center justify-center py-12">
+          <div class="flex items-center gap-2 text-gray-500">
+            <span class="pk-spinner" />
+            <span>Loading pipe criteria...</span>
+          </div>
+        </div>
+        <table v-else class="pk-table">
           <thead class="sticky top-0 z-10 bg-gray-50 border-b">
             <tr>
               <th style="width: 36px;" class="text-center">
@@ -423,15 +429,16 @@ onMounted(() => {
               </th>
               <th style="width: 60px;" class="pk-table-head-cell">#</th>
               <th style="width: 180px;" class="pk-table-head-cell">Pipe</th>
+              <th style="width: 60px;" class="pk-table-head-cell-center">Length<br /><small class="font-normal text-gray-400">m</small></th>
               <th style="width: 130px;" class="pk-table-head-cell">State</th>
               <th style="min-width: 180px;" class="pk-table-head-cell">Criteria</th>
-              <th style="width: 90px;" class="pk-table-head-cell text-center">dP calc<br /><small class="font-normal text-gray-400">{{ dpUnit }}</small></th>
-              <th style="width: 100px;" class="pk-table-head-cell text-center crit-col">dP max<br /><small class="font-normal text-gray-400">{{ dpUnit }}</small></th>
-              <th style="width: 80px;" class="pk-table-head-cell text-center">vel calc<br /><small class="font-normal text-gray-400">{{ velocityUnit }}</small></th>
-              <th style="width: 80px;" class="pk-table-head-cell text-center crit-col">v min<br /><small class="font-normal text-gray-400">{{ velocityUnit }}</small></th>
-              <th style="width: 80px;" class="pk-table-head-cell text-center crit-col">v max<br /><small class="font-normal text-gray-400">{{ velocityUnit }}</small></th>
-              <th style="width: 90px;" class="pk-table-head-cell text-center">ρV² calc<br /><small class="font-normal text-gray-400">{{ rhoV2Unit }}</small></th>
-              <th style="width: 120px;" class="pk-table-head-cell text-center crit-col">ρV² range<br /><small class="font-normal text-gray-400">{{ rhoV2Unit }}</small></th>
+              <th style="width: 90px;" class="pk-table-head-cell-center">dP calc<br /><small class="font-normal text-gray-400">{{ dpUnit }}</small></th>
+              <th style="width: 100px;" class="pk-table-head-cell-center crit-col">dP max<br /><small class="font-normal text-gray-400">{{ dpUnit }}</small></th>
+              <th style="width: 80px;" class="pk-table-head-cell-center">vel calc<br /><small class="font-normal text-gray-400">{{ velocityUnit }}</small></th>
+              <th style="width: 80px;" class="pk-table-head-cell-center crit-col">v min<br /><small class="font-normal text-gray-400">{{ velocityUnit }}</small></th>
+              <th style="width: 80px;" class="pk-table-head-cell-center crit-col">v max<br /><small class="font-normal text-gray-400">{{ velocityUnit }}</small></th>
+              <th style="width: 90px;" class="pk-table-head-cell-center">ρV² calc<br /><small class="font-normal text-gray-400">{{ rhoV2Unit }}</small></th>
+              <th style="width: 120px;" class="pk-table-head-cell-center crit-col">ρV² range<br /><small class="font-normal text-gray-400">{{ rhoV2Unit }}</small></th>
             </tr>
           </thead>
           <tbody>
@@ -444,7 +451,10 @@ onMounted(() => {
               </td>
               <td class="px-3 py-1.5 text-gray-400 font-mono text-xs">{{ idx }}</td>
               <td class="px-3 py-1.5 font-mono text-sm">{{ name }}</td>
-              <td class="px-3 py-1.5">
+              <td class="pk-text-center-mono-muted">
+                {{ pipeCalcs[name]?.length_m !== null && pipeCalcs[name]?.length_m !== undefined ? Math.round(pipeCalcs[name]?.length_m) : '—' }}
+              </td>
+              <td class="px-3 py-1.5 text-center">
                 <select :value="pipeCriteria[name]?.state || ''"
                   @change="updateEntry(name, 'state', ($event.target as HTMLSelectElement).value)"
                   class="pk-select">
@@ -463,52 +473,52 @@ onMounted(() => {
                   </option>
                 </select>
               </td>
-              <td class="pk-text-right-mono" 
+              <td class="pk-text-center-mono" 
                   :class="{ 'viol-red': getViolations(name)?.dp_exceeds && !justifications[name], 'viol-justified': getViolations(name)?.dp_exceeds && justifications[name] }"
                   @click="getViolations(name)?.dp_exceeds && openJustificationModal(name, criteriaKeyFor(name))"
                   :style="(getViolations(name)?.dp_exceeds) ? 'cursor: pointer;' : ''">
-                <div class="flex items-center justify-end gap-1">
+                <div class="flex items-center justify-center gap-1">
                   <MessageSquare v-if="justifications[name] && getViolations(name)?.dp_exceeds" class="w-3 h-3 text-blue-500 shrink-0" />
                   {{ convertValue('dp', pipeCalcs[name]?.dp_calc ?? null) }}
                 </div>
               </td>
-              <td class="pk-text-right-mono-muted crit-col">
+              <td class="pk-text-center-mono crit-col">
                 <template v-if="pipeCriteria[name]?.state && pipeCriteria[name]?.criteria">
                   {{ convertValue('dp', currentCriteriaInfo(name)?.max_dp ?? null) }}
                 </template>
                 <template v-else>—</template>
               </td>
-              <td class="pk-text-right-mono" 
+              <td class="pk-text-center-mono" 
                   :class="{ 'viol-red': (getViolations(name)?.vel_below_min || getViolations(name)?.vel_above_max) && !justifications[name], 'viol-justified': (getViolations(name)?.vel_below_min || getViolations(name)?.vel_above_max) && justifications[name] }"
                   @click="(getViolations(name)?.vel_below_min || getViolations(name)?.vel_above_max) && openJustificationModal(name, criteriaKeyFor(name))"
                   :style="(getViolations(name)?.vel_below_min || getViolations(name)?.vel_above_max) ? 'cursor: pointer;' : ''">
-                <div class="flex items-center justify-end gap-1">
+                <div class="flex items-center justify-center gap-1">
                   <MessageSquare v-if="justifications[name] && (getViolations(name)?.vel_below_min || getViolations(name)?.vel_above_max)" class="w-3 h-3 text-blue-500 shrink-0" />
                   {{ convertValue('velocity', pipeCalcs[name]?.vel_calc ?? null) }}
                 </div>
               </td>
-              <td class="pk-text-right-mono-muted crit-col">
+              <td class="pk-text-center-mono crit-col">
                 <template v-if="pipeCriteria[name]?.state && pipeCriteria[name]?.criteria">
                   {{ convertValue('velocity', currentCriteriaInfo(name)?.min_vel ?? null) }}
                 </template>
                 <template v-else>—</template>
               </td>
-              <td class="pk-text-right-mono-muted crit-col">
+              <td class="pk-text-center-mono crit-col">
                 <template v-if="pipeCriteria[name]?.state && pipeCriteria[name]?.criteria">
                   {{ convertValue('velocity', currentCriteriaInfo(name)?.max_vel ?? null) }}
                 </template>
                 <template v-else>—</template>
               </td>
-              <td class="pk-text-right-mono" 
+              <td class="pk-text-center-mono" 
                   :class="{ 'viol-red': (getViolations(name)?.rho_v2_below_min || getViolations(name)?.rho_v2_above_max) && !justifications[name], 'viol-justified': (getViolations(name)?.rho_v2_below_min || getViolations(name)?.rho_v2_above_max) && justifications[name] }"
                   @click="(getViolations(name)?.rho_v2_below_min || getViolations(name)?.rho_v2_above_max) && openJustificationModal(name, criteriaKeyFor(name))"
                   :style="(getViolations(name)?.rho_v2_below_min || getViolations(name)?.rho_v2_above_max) ? 'cursor: pointer;' : ''">
-                <div class="flex items-center justify-end gap-1">
+                <div class="flex items-center justify-center gap-1">
                   <MessageSquare v-if="justifications[name] && (getViolations(name)?.rho_v2_below_min || getViolations(name)?.rho_v2_above_max)" class="w-3 h-3 text-blue-500 shrink-0" />
                   {{ convertValue('rho_v2', pipeCalcs[name]?.rho_v2_calc ?? null) }}
                 </div>
               </td>
-              <td class="pk-text-right-mono-muted crit-col">
+              <td class="pk-text-center-mono crit-col">
                 <template v-if="pipeCriteria[name]?.state && pipeCriteria[name]?.criteria">
                   {{ convertValue('rho_v2', currentCriteriaInfo(name)?.rho_v2_min ?? null) }}
                   –
@@ -636,9 +646,15 @@ onMounted(() => {
 }
 
 /* Center-align calculation columns */
-.pk-text-right-mono,
-.pk-text-right-mono-muted {
+.pk-text-center-mono,
+.pk-text-center-mono-muted {
   text-align: center;
+  font-family: monospace;
+  font-size: 0.875rem;
+}
+
+.pk-text-center-mono-muted {
+  color: #6c757d;
 }
 
 /* Violation highlighting — red background */

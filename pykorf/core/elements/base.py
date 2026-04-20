@@ -278,11 +278,38 @@ class BaseElement:
         return val, unit
 
     def format_export_header(self, base_name: str, unit: str) -> str:
-        """Creates a clean column header: 'Velocity [m/s]'"""
+        """Creates a clean column header: 'Velocity [m/s]'."""
         header = base_name
         if unit:
             header += f" [{unit}]"
         return header
+
+    @staticmethod
+    def section_marker(section_name: str) -> dict[str, str]:
+        """Creates a section marker for use in summary export dictionaries.
+
+        When the Excel exporter encounters these markers, it will insert
+        a styled separator row with the section name.
+
+        Parameters
+        ----------
+        section_name:
+            Name of the section (e.g., "Liquid Characteristics")
+
+        Returns:
+        -------
+        dict[str, str]:
+            Single-entry dict with section name as both key and value
+
+        Example:
+        -------
+        >>> return {
+        ...     "Pump Name": self.name,
+        ...     **BaseElement.section_marker("Liquid Characteristics"),
+        ...     "Pressure": 100,
+        ... }
+        """
+        return {section_name: section_name}
 
     # ------------------------------------------------------------------
     # Dunder

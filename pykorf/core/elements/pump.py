@@ -466,28 +466,31 @@ class Pump(BaseElement):
 
             return {
                 "Pump Name": self.name,
-                self.format_export_header("Suction Pressure", press_unit): suc_press,
-                self.format_export_header("Discharge Pressure", dis_unit): dis_press,
-                self.format_export_header("Shut-Off Margin", ""): margin_val,
-                self.format_export_header("Suc Vessel Max Pressure", press_unit): ves_max_press,
-                self.format_export_header("Suc Vessel Max Level", lvl_unit): ves_max_lvl,
+                **self.section_marker("Liquid Characteristics"),
+                self.format_export_header(
+                    "Vapour Pressure", press_unit.replace("g", "")
+                ): vap_pres_val,
+                self.format_export_header("Density", density_unit): density_in,
+                self.format_export_header("Viscosity", visc_unit): viscosity,
+                **self.section_marker("Operating Conditions"),
+                self.format_export_header("Pumping Temperature", temp_unit): temperature,
                 self.format_export_header("Volumetric Flow", flow_unit): flow_val,
-                self.format_export_header("Head", head_unit): head_val,
+                self.format_export_header("Discharge Pressure", dis_unit): dis_press,
+                self.format_export_header("Suction Pressure", press_unit): suc_press,
                 self.format_export_header("Differential Pressure", dp_unit): dp_val,
-                self.format_export_header("Hydraulic Power", pow_unit): pow_val,
+                self.format_export_header("Differential Head", head_unit): head_val,
                 self.format_export_header("NPSH Available", npsh_unit): npsha_val,
+                self.format_export_header("Hydraulic Power", pow_unit): pow_val,
+                **self.section_marker("Performance Characteristics"),
+                self.format_export_header("Shut-Off Margin", ""): margin_val,
+                self.format_export_header("Suc Vessel Design Pressure", press_unit): ves_max_press,
+                self.format_export_header("Suc Vessel Max Level", lvl_unit): ves_max_lvl,
                 self.format_export_header("NPSH Required", npsh_unit): npshr_val,
                 self.format_export_header("Shut-Off DP", pres_unit): shutoff_dp,
                 self.format_export_header("Suction Max Pressure", pres_unit): max_suc_pressure,
                 self.format_export_header(
                     "Discharge Shut-Off Pressure", pres_unit
                 ): max_dis_pressure,
-                self.format_export_header("Suction Temperature", temp_unit): temperature,
-                self.format_export_header("Suction Density", density_unit): density_in,
-                self.format_export_header("Suction Viscosity", visc_unit): viscosity,
-                self.format_export_header(
-                    "Vapour Pressure", press_unit.replace("g", "")
-                ): vap_pres_val,
             }
 
         return {

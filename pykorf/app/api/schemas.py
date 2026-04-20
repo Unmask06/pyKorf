@@ -261,6 +261,7 @@ class PipeCalcInfo(BaseModel):
     dp_calc: float | None = None
     vel_calc: float | None = None
     rho_v2_calc: float | None = None
+    length_m: float | None = None
 
 
 class CriteriaViolationsInfo(BaseModel):

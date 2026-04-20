@@ -60,7 +60,14 @@ for /l %%i in (1,1,30) do (
 echo [WARN] Backend may not have started correctly. Check the backend window.
 :backend_ready
 
-echo [2/2] Starting Vite dev server on port 5173...
+echo [2/3] Generating TypeScript types from OpenAPI schema...
+cd /d "%FRONTEND_DIR%" && call npm run generate-types
+if %errorlevel% neq 0 (
+    echo [WARN] Type generation failed. Continuing anyway...
+)
+echo.
+
+echo [3/3] Starting Vite dev server on port 5173...
 start "pyKorf Frontend" /D "%FRONTEND_DIR%" cmd /c npm run dev
 
 echo.
@@ -72,6 +79,8 @@ timeout /t 2 /nobreak >nul
 start "" "http://localhost:5173"
 echo.
 echo  Close both terminal windows to stop the servers.
+echo.
+echo  TypeScript types auto-generated from OpenAPI schema.
 echo.
 
 exit /b 0

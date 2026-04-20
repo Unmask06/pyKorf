@@ -485,6 +485,7 @@ def _compute_pipe_calcs(model, pipes) -> dict[str, PipeCalcInfo]:
             dp_calc=dp if dp else None,
             vel_calc=vel_list[0] if vel_list else None,
             rho_v2_calc=pipe.rho_v2,
+            length_m=pipe.length_m,
         )
     return result
 
