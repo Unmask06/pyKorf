@@ -43,8 +43,8 @@ async def generate_report(req: GenerateReportRequest) -> ReportResponse:
         errors.append(f"Output directory does not exist: {report_file.parent}")
     else:
         try:
-            from pykorf.core.reports.exporter import ResultExporter
             from pykorf.app.operation.project.references import ReferencesStore
+            from pykorf.core.reports.exporter import ResultExporter
 
             ref_store = ReferencesStore.load(kdf_path) if kdf_path else None
             basis = ref_store.basis if ref_store else ""
