@@ -5,6 +5,18 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.1] - 2026-04-21
+
+### Improved
+
+- The launcher now automatically updates the installer script on each run, ensuring users always have the latest installation logic without waiting for a full release update.
+- Update failure messages now show full error details instead of hiding them in debug logs, making it easier to diagnose download or extraction issues.
+- The installer script is now included as a release asset, allowing manual recovery when the automatic update mechanism encounters problems.
+
+### Fixed
+
+- Existing users with an outdated installer script will now automatically receive the updated version on first run, fixing issues with stale download URLs.
+
 ## [0.25.0] - 2026-04-21
 
 ### What's New

@@ -318,8 +318,8 @@ def apply_update(update_info: dict) -> int:
 
     if not success:
         log.error("Update download failed")
-        log.debug(f"URL: {zip_url}")
-        log.debug(f"Error: {error}")
+        log.error(f"URL: {zip_url}")
+        log.error(f"Error: {error}")
         return 1
 
     log.info("Extracting update...")
