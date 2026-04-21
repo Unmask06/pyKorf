@@ -188,7 +188,7 @@ class SummaryService:
         }
 
         for etype, collection in etype_collection.items():
-            declared = self.model._parser.num_instances(etype)
+            declared = len(collection)
             actual = sum(1 for idx in collection if idx >= 1)
             if declared != actual:
                 issues.append(
@@ -364,7 +364,7 @@ class SummaryService:
         """
         issues: list[str] = []
 
-        for idx in range(1, self.model.num_pipes + 1):
+        for idx in range(1, len(self.model.pipes) + 1):
             pipe = self.model.pipes[idx]
 
             siz_rec = pipe.get_param(Pipe.SIZ)
@@ -508,15 +508,15 @@ class SummaryService:
             "file": str(self.model._parser.path),
             "version": self.model.version,
             "cases": self.model.general.case_descriptions,
-            "num_pipes": self.model.num_pipes,
-            "num_pumps": self.model.num_pumps,
-            "num_junctions": self.model._parser.num_instances("JUNC"),
-            "num_feeds": self.model._parser.num_instances("FEED"),
-            "num_products": self.model._parser.num_instances("PROD"),
-            "num_valves": self.model._parser.num_instances("VALVE"),
-            "num_orifices": self.model._parser.num_instances("FO"),
-            "num_exchangers": self.model._parser.num_instances("HX"),
-            "num_misc": self.model._parser.num_instances("MISC"),
+            "num_pipes": len(self.model.pipes),
+            "num_pumps": len(self.model.pumps),
+            "num_junctions": len(self.model.junctions),
+            "num_feeds": len(self.model.feeds),
+            "num_products": len(self.model.products),
+            "num_valves": len(self.model.valves),
+            "num_orifices": len(self.model.orifices),
+            "num_exchangers": len(self.model.exchangers),
+            "num_misc": len(self.model.misc_equipment),
         }
 
     def __repr__(self) -> str:
@@ -536,9 +536,10 @@ class SummaryService:
             if etype in (Element.GEN, Element.SYMBOL, Element.TOOLS, Element.PSEUDO):
                 continue
             display_name = token_to_name.get(etype, etype.lower())
-            count = self.model._parser.num_instances(etype)
+            collection = self.model._collection_for_etype(etype)
+            count = len(collection) if collection else 0
             parts.append(f"{display_name}={count}")
-        parts.append(f"cases={self.model.num_cases}")
+        parts.append(f"cases={self.model.general.num_cases}")
 
         return f"Model({', '.join(parts)})"
 

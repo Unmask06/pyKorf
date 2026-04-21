@@ -17,6 +17,7 @@ Persistence boundary:
 from __future__ import annotations
 
 import logging
+import warnings
 from pathlib import Path
 from typing import Any
 
@@ -46,6 +47,20 @@ from pykorf.core.parser import KdfParser
 _DEFAULT_TEMPLATE = Path(__file__).resolve().parent.parent.parent / "library" / "New.kdf"
 
 _logger = logging.getLogger(__name__)
+
+
+class ElementCollection(dict[int, Any]):
+    """Dict subclass for element collections where __len__ excludes index 0.
+
+    KORF models use index 0 as the template record, with real instances
+    starting at index 1. This collection makes len() return the count of
+    real instances only.
+    """
+
+    def __len__(self) -> int:
+        """Return count of real instances (excluding index 0 template)."""
+        count = super().__len__()
+        return count - 1 if 0 in self else count
 
 
 class _ModelBase:
@@ -92,31 +107,31 @@ class _ModelBase:
         """Populate element dict-of-dicts from the parser records."""
         self.general = General(self._parser)
 
-        self.pipes: dict[int, Pipe] = self._build(Element.PIPE, Pipe)
-        self.feeds: dict[int, Feed] = self._build(Element.FEED, Feed)
-        self.products: dict[int, Product] = self._build(Element.PROD, Product)
-        self.pumps: dict[int, Pump] = self._build(Element.PUMP, Pump)
-        self.valves: dict[int, Valve] = self._build(Element.VALVE, Valve)
-        self.check_valves: dict[int, CheckValve] = self._build(Element.CHECK, CheckValve)
-        self.orifices: dict[int, FlowOrifice] = self._build(Element.ORIFICE, FlowOrifice)
-        self.exchangers: dict[int, HeatExchanger] = self._build(Element.HX, HeatExchanger)
-        self.compressors: dict[int, Compressor] = self._build(Element.COMP, Compressor)
-        self.misc_equipment: dict[int, MiscEquipment] = self._build(Element.MISC, MiscEquipment)
-        self.expanders: dict[int, Expander] = self._build(Element.EXPAND, Expander)
-        self.junctions: dict[int, Junction] = self._build(Element.JUNC, Junction)
-        self.tees: dict[int, Tee] = self._build(Element.TEE, Tee)
-        self.vessels: dict[int, Vessel] = self._build(Element.VESSEL, Vessel)
-        self.pipedata: dict[int, PipeData] = self._build(Element.PIPEDATA, PipeData)
+        self.pipes: ElementCollection = self._build(Element.PIPE, Pipe)
+        self.feeds: ElementCollection = self._build(Element.FEED, Feed)
+        self.products: ElementCollection = self._build(Element.PROD, Product)
+        self.pumps: ElementCollection = self._build(Element.PUMP, Pump)
+        self.valves: ElementCollection = self._build(Element.VALVE, Valve)
+        self.check_valves: ElementCollection = self._build(Element.CHECK, CheckValve)
+        self.orifices: ElementCollection = self._build(Element.ORIFICE, FlowOrifice)
+        self.exchangers: ElementCollection = self._build(Element.HX, HeatExchanger)
+        self.compressors: ElementCollection = self._build(Element.COMP, Compressor)
+        self.misc_equipment: ElementCollection = self._build(Element.MISC, MiscEquipment)
+        self.expanders: ElementCollection = self._build(Element.EXPAND, Expander)
+        self.junctions: ElementCollection = self._build(Element.JUNC, Junction)
+        self.tees: ElementCollection = self._build(Element.TEE, Tee)
+        self.vessels: ElementCollection = self._build(Element.VESSEL, Vessel)
+        self.pipedata: ElementCollection = self._build(Element.PIPEDATA, PipeData)
 
         self._rebuild_name_map()
 
-    def _build(self, etype: str, cls) -> dict:
+    def _build(self, etype: str, cls) -> ElementCollection:
         """Collect all distinct indices for *etype* from the record list.
 
         Return a dict mapping index -> element object.
         """
         seen = set()
-        result = {}
+        result = ElementCollection()
         for rec in self._parser.records:
             if rec.element_type == etype and rec.index not in seen:
                 seen.add(rec.index)
@@ -134,7 +149,7 @@ class _ModelBase:
                 if name:
                     self._name_map[name] = elem
 
-    def _all_collections(self) -> list[dict]:
+    def _all_collections(self) -> list[ElementCollection]:
         """Return all element collection dicts."""
         return [
             self.pipes,
@@ -154,7 +169,7 @@ class _ModelBase:
             self.pipedata,
         ]
 
-    def _collection_for_etype(self, etype: str) -> Any:
+    def _collection_for_etype(self, etype: str) -> ElementCollection | None:
         """Return the collection dict for a given element type keyword."""
         et = etype.upper()
         if et == Element.PIPE:
@@ -247,19 +262,120 @@ class _ModelBase:
 
     @property
     def num_pipes(self) -> int:
-        return self._parser.num_instances("PIPE")
+        warnings.warn(
+            "model.num_pipes is deprecated, use len(model.pipes) instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return len(self.pipes)
 
     @property
     def num_pumps(self) -> int:
-        return self._parser.num_instances("PUMP")
+        warnings.warn(
+            "model.num_pumps is deprecated, use len(model.pumps) instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return len(self.pumps)
 
     @property
     def num_junctions(self) -> int:
-        return self._parser.num_instances("JUNC")
+        warnings.warn(
+            "model.num_junctions is deprecated, use len(model.junctions) instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return len(self.junctions)
 
     @property
     def num_cases(self) -> int:
+        warnings.warn(
+            "model.num_cases is deprecated, use model.general.num_cases instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self.general.num_cases
+
+    @property
+    def num_feeds(self) -> int:
+        warnings.warn(
+            "model.num_feeds is deprecated, use len(model.feeds) instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return len(self.feeds)
+
+    @property
+    def num_products(self) -> int:
+        warnings.warn(
+            "model.num_products is deprecated, use len(model.products) instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return len(self.products)
+
+    @property
+    def num_valves(self) -> int:
+        warnings.warn(
+            "model.num_valves is deprecated, use len(model.valves) instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return len(self.valves)
+
+    @property
+    def num_compressors(self) -> int:
+        warnings.warn(
+            "model.num_compressors is deprecated, use len(model.compressors) instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return len(self.compressors)
+
+    @property
+    def num_orifices(self) -> int:
+        warnings.warn(
+            "model.num_orifices is deprecated, use len(model.orifices) instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return len(self.orifices)
+
+    @property
+    def num_exchangers(self) -> int:
+        warnings.warn(
+            "model.num_exchangers is deprecated, use len(model.exchangers) instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return len(self.exchangers)
+
+    @property
+    def num_check_valves(self) -> int:
+        warnings.warn(
+            "model.num_check_valves is deprecated, use len(model.check_valves) instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return len(self.check_valves)
+
+    @property
+    def num_misc_equipment(self) -> int:
+        warnings.warn(
+            "model.num_misc_equipment is deprecated, use len(model.misc_equipment) instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return len(self.misc_equipment)
+
+    @property
+    def num_expanders(self) -> int:
+        warnings.warn(
+            "model.num_expanders is deprecated, use len(model.expanders) instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return len(self.expanders)
 
     @property
     def elements(self) -> list[BaseElement]:

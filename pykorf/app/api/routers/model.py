@@ -345,7 +345,7 @@ def _compute_violation_summary(
 def _get_pipes_list(model) -> list[tuple[int, str]]:
     return [
         (idx, model.pipes[idx].name)
-        for idx in range(1, model.num_pipes + 1)
+        for idx in range(1, len(model.pipes) + 1)
         if model.pipes[idx].name and not model.pipes[idx].name.startswith("d")
     ]
 
@@ -431,7 +431,7 @@ def _seed_from_kdf(
 def _build_pipe_lookup(model):
     return {
         model.pipes[i].name: model.pipes[i]
-        for i in range(1, model.num_pipes + 1)
+        for i in range(1, len(model.pipes) + 1)
         if model.pipes[i].name and not model.pipes[i].name.startswith("d")
     }
 
@@ -552,7 +552,7 @@ def _load_units_data() -> dict[str, dict[str, UnitConversionInfo]]:
 
 
 def _get_pipe_by_name(model, pipe_name):
-    for i in range(1, model.num_pipes + 1):
+    for i in range(1, len(model.pipes) + 1):
         if model.pipes[i].name == pipe_name:
             return model.pipes[i]
     return None

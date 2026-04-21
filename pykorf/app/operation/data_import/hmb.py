@@ -28,11 +28,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from pykorf.app.exceptions import UseCaseError
-
-from pykorf.core.fluid import Fluid
-from pykorf.app.exceptions import ExcelConversionError, StreamNotFoundError
+from pykorf.app.exceptions import ExcelConversionError, StreamNotFoundError, UseCaseError
 from pykorf.app.operation.data_import.line_number import parse_stream_from_notes
+from pykorf.core.fluid import Fluid
 
 if TYPE_CHECKING:
     from pykorf.core.model import Model
@@ -450,7 +448,7 @@ def apply_hmb(
     hmb_data = load_hmb(hmb_source)
     updated_pipes: list[str] = []
 
-    for idx in range(1, model.num_pipes + 1):
+    for idx in range(1, len(model.pipes) + 1):
         pipe = model.pipes[idx]
         notes = pipe.notes
 

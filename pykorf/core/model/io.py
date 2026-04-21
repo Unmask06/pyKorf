@@ -491,7 +491,7 @@ class IOService:
             "metadata": {
                 "version": self.model.version,
                 "file": str(self.model.path),
-                "num_cases": self.model.num_cases,
+                "num_cases": self.model.general.num_cases,
             },
             "elements": {},
         }

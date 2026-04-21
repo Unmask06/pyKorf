@@ -320,7 +320,7 @@ class PipedataProcessor:
                 result.errors.append(f"HMB error: {e}")
 
         # Build per-pipe results for reporting
-        for idx in range(1, model.num_pipes + 1):
+        for idx in range(1, len(model.pipes) + 1):
             pipe = model.pipes[idx]
             result.pipes_processed += 1
 

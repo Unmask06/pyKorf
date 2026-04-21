@@ -44,6 +44,6 @@ def pipe_names(model) -> list[str]:
     """
     return sorted(
         model.pipes[idx].name
-        for idx in range(1, model.num_pipes + 1)
+        for idx in range(1, len(model.pipes) + 1)
         if model.pipes[idx].name
     )
