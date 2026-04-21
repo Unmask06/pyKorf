@@ -438,9 +438,24 @@ class Pump(BaseElement):
             head_val, head_unit = self.get_value_and_unit(Pump.HQACT, val_index=0, unit_index=1)
             dp_val, dp_unit = self.get_value_and_unit(Pump.DP, val_index=1, unit_index=-1)
 
-            npsha_val, npsh_unit = self.get_value_and_unit(
-                Pump.NPSH_AVAILABLE, val_index=1, unit_index=-1
-            )
+            # npsha_val, npsh_unit = self.get_value_and_unit(
+            #     Pump.NPSH_AVAILABLE, val_index=1, unit_index=-1
+            # )
+
+            # calculate npsha manually
+            def calculate_npsha() -> float | None:
+                g = 9.8066  # m/s²
+                p_suc = float(suc_press) if suc_press is not None else None
+                p_vap_raw = self._scalar(Pump.PUMP_VAP_PRESS, 0)
+                p_vap = float(p_vap_raw) if p_vap_raw is not None else None
+                rho = density_in  # kg/m³
+                if p_suc is None or p_vap is None or rho is None:
+                    return None
+                npsha_m = ((p_suc - p_vap + 101.325) * 10**3 / (rho * g))
+                return npsha_m
+
+            npsha_val: float | None
+            npsha_val, npsh_unit = calculate_npsha(), "m"
             npshr_val, _ = self.get_value_and_unit(Pump.NPSH_R, val_index=1, unit_index=-1)
 
             pow_val, pow_unit = self.get_value_and_unit(Pump.POW, val_index=0, unit_index=-1)
