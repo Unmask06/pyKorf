@@ -18,7 +18,6 @@ REM   0 = success
 REM   1 = error (check installer output for details)
 
 REM --- Launcher constants ---
-set "BAT_MAJOR=0"
 set "BAT_VERSION=0.6.3"
 set "AUTO_UPDATE=TRUE"
 set "APPDATA_DIR=%APPDATA%\pyKorf"
@@ -122,6 +121,14 @@ REM Installer returns: 0=success, 1=error
 :delegate_to_installer
 cd /d "%APPDATA_DIR%"
 py -3.13 pykorf_installer.py launch %*
+if %errorlevel% neq 0 (
+    echo.
+    echo   X  Launch failed with exit code %errorlevel%
+    echo   Check the error message above and try again.
+    echo   Run pykorf_installer.py launch --verbose for more details.
+    echo.
+    pause
+)
 exit /b %errorlevel%
 
 REM ============================================
@@ -144,10 +151,17 @@ if /i "%~2"=="--full" (
 ) else (
     py -3.13 pykorf_installer.py uninstall
 )
+if %errorlevel% neq 0 (
+    echo.
+    echo   X  Uninstall failed with exit code %errorlevel%
+    echo   Check the error message above for details.
+    echo.
+    pause
+)
 exit /b %errorlevel%
 
 :download_for_uninstall
-set "ZIP_URL=https://github.com/Unmask06/pykorf/releases/latest/download/pykorf-v!BAT_MAJOR!.zip"
+set "ZIP_URL=https://github.com/Unmask06/pykorf/releases/latest/download/pykorf-latest.zip"
 set "ZIP_PATH=%TEMP%\pykorf_uninstall.zip"
 curl.exe -L --fail --silent --max-time 60 -o "!ZIP_PATH!" "!ZIP_URL!" 2>nul
 if %errorlevel% neq 0 (
@@ -173,7 +187,7 @@ echo   First-time setup or installer update
 echo   -------------------------------------------------
 echo.
 
-set "ZIP_URL=https://github.com/Unmask06/pykorf/releases/latest/download/pykorf-v!BAT_MAJOR!.zip"
+set "ZIP_URL=https://github.com/Unmask06/pykorf/releases/latest/download/pykorf-latest.zip"
 set "ZIP_PATH=%TEMP%\pykorf.zip"
 
 echo   Downloading pyKorf...
@@ -234,4 +248,12 @@ echo.
 
 REM Launch after install
 py -3.13 pykorf_installer.py launch %*
+if %errorlevel% neq 0 (
+    echo.
+    echo   X  Launch failed with exit code %errorlevel%
+    echo   Check the error message above and try again.
+    echo   Run pykorf_installer.py launch --verbose for more details.
+    echo.
+    pause
+)
 exit /b %errorlevel%

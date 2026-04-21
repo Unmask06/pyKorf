@@ -10,8 +10,11 @@ Commands:
     check-update     - Query GitHub API, compare versions
     apply-update     - Download and apply update from GitHub
     repair-venv      - Rebuild/reinstall venv if needed
-    uninstall        - Remove app (preserve data)
+    uninstall        - Remove app only (preserves data/config - no confirmation)
     reinstall        - Full reinstall from failure state
+
+Flags:
+    --full           - Full uninstall (removes everything, requires confirmation)
 
 Exit Codes:
     0 - Success
@@ -31,22 +34,18 @@ import subprocess
 import sys
 import time
 import traceback
-import urllib.error
 import urllib.request
 import zipfile
-from datetime import datetime, timedelta
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 APPDATA_DIR = Path(os.environ.get("APPDATA", "")) / "pyKorf"
 VENV_DIR = APPDATA_DIR / ".venv"
 VERSION_FILE = APPDATA_DIR / "VERSION"
 SIGNATURE_FILE = APPDATA_DIR / ".venv_signature"
-LAST_CHECK_FILE = APPDATA_DIR / ".last_update_check"
 GITHUB_API_URL = "https://api.github.com/repos/Unmask06/pykorf/releases/latest"
 GITHUB_RELEASE_URL = "https://github.com/Unmask06/pykorf/releases/latest/download"
-
-UPDATE_CHECK_INTERVAL = timedelta(hours=12)
 
 MAX_RETRIES = 3
 RETRY_DELAY_BASE = 5
@@ -129,7 +128,11 @@ def main() -> int:
             "reinstall",
         ],
     )
-    parser.add_argument("--full", action="store_true", help="Full uninstall (removes data)")
+    parser.add_argument(
+        "--full",
+        action="store_true",
+        help="Full uninstall (removes all data, requires confirmation)",
+    )
     parser.add_argument("--port", type=int, default=8000, help="Port for web UI")
     parser.add_argument("--debug", action="store_true", help="Run app in debug mode")
     parser.add_argument("--no-debug", action="store_true", help="Run app without debug output")
@@ -168,7 +171,6 @@ def cmd_install() -> int:
 
     if VENV_DIR.exists() and venv_is_valid():
         log.info("Detected existing installation")
-        ensure_last_check_file()
         write_signature()
         log.info("OK  Installation valid")
         return 0
@@ -208,7 +210,6 @@ def cmd_install() -> int:
         return 1
 
     write_signature()
-    ensure_last_check_file()
     write_version_from_pyproject()
 
     log.info("OK  Installation complete")
@@ -258,18 +259,8 @@ def cmd_launch(port: int, debug: bool, no_debug: bool, force_update: bool) -> in
 
 
 def should_check_update() -> bool:
-    """Return True if we haven't checked in 12 hours."""
-    if not LAST_CHECK_FILE.exists():
-        return True
-
-    try:
-        content = LAST_CHECK_FILE.read_text().strip()
-        if not content:
-            return True
-        last_check = datetime.fromisoformat(content)
-        return datetime.now() - last_check >= UPDATE_CHECK_INTERVAL
-    except Exception:
-        return True
+    """Return True to always check for updates."""
+    return True
 
 
 def get_update_info(force: bool = False) -> dict | None:
@@ -297,14 +288,13 @@ def get_update_info(force: bool = False) -> dict | None:
                 "latest": latest_version,
                 "current": get_installed_version(),
                 "available": latest_version != get_installed_version(),
-                "zip_url": f"{GITHUB_RELEASE_URL}/pykorf-v{get_bat_major()}.zip",
+                "zip_url": f"{GITHUB_RELEASE_URL}/pykorf-latest.zip",
                 "bat_url": f"{GITHUB_RELEASE_URL}/pykorf.bat",
             }
 
     success, result = retry_operation(fetch)
 
     if success:
-        ensure_last_check_file()
         return result
 
     log.warning("GitHub API request failed")
@@ -363,7 +353,6 @@ def apply_update(update_info: dict) -> int:
 
     write_signature()
     write_version(update_info.get("latest", ""))
-    ensure_last_check_file()
 
     log.info(f"OK  Updated to {update_info.get('latest', '')}")
     return 0
@@ -460,7 +449,7 @@ def pip_install() -> None:
         log.debug("uv not available or failed, falling back to pip")
 
     # Fallback to pip
-    result = subprocess.run(
+    subprocess.run(
         [str(python_exe), "-m", "pip", "install", "-e", str(APPDATA_DIR), "--quiet"],
         cwd=str(APPDATA_DIR),
         capture_output=True,
@@ -496,8 +485,7 @@ def compute_signature() -> str:
     content = re.sub(rb'^version = "[^"]+"\n', b"", content, flags=re.MULTILINE)
 
     py_version = f"{sys.version_info.major}.{sys.version_info.minor}"
-    bat_major = get_bat_major()
-    content += f"\nPY={py_version}\nBAT_MAJOR={bat_major}\n".encode()
+    content += f"\nPY={py_version}\n".encode()
 
     return hashlib.sha256(content).hexdigest()
 
@@ -653,14 +641,37 @@ def cmd_repair_venv() -> int:
 
 
 def cmd_uninstall(full: bool) -> int:
-    """Remove app, preserve data unless --full."""
+    """Remove app, preserve data unless --full (requires confirmation)."""
     if not APPDATA_DIR.exists():
         log.info("pyKorf is not installed")
         return 0
 
-    preserve = [] if full else ["data", "config.json"]
+    if full:
+        log.warning(
+            "Full uninstall will remove the configuration and preferences of the application"
+        )
+        log.warning("")
+        log.warning("This action cannot be undone!")
+        log.warning("")
 
-    log.info("Removing application...")
+        try:
+            response = input("Type 'yes' to confirm full uninstall: ").strip().lower()
+            if response not in ("yes", "y"):
+                log.info("Cancelled - no changes made")
+                return 0
+        except (EOFError, KeyboardInterrupt):
+            log.info("Cancelled - no changes made")
+            return 0
+
+        log.info("Removing everything...")
+
+        shutil.rmtree(APPDATA_DIR, ignore_errors=True)
+        log.info("OK  pyKorf completely removed")
+        return 0
+
+    preserve = ["data", "config.json"]
+
+    log.info("Removing application (preserving data)...")
 
     for item in list(APPDATA_DIR.iterdir()):
         if item.name in preserve:
@@ -674,11 +685,8 @@ def cmd_uninstall(full: bool) -> int:
         except Exception:
             pass
 
-    if full:
-        shutil.rmtree(APPDATA_DIR, ignore_errors=True)
-        log.info("OK  pyKorf completely removed")
-    else:
-        log.info("OK  Application removed (data preserved)")
+    log.info("OK  Application removed (data preserved)")
+    log.info("Run with --full to remove everything including data")
 
     return 0
 
@@ -711,7 +719,7 @@ def cmd_reinstall() -> int:
 
     log.info("Downloading latest release...")
 
-    zip_url = f"{GITHUB_RELEASE_URL}/pykorf-v{get_bat_major()}.zip"
+    zip_url = f"{GITHUB_RELEASE_URL}/pykorf-latest.zip"
     zip_path = Path(os.environ.get("TEMP", "")) / "pykorf_reinstall.zip"
 
     success, error = retry_operation(lambda: download_file(zip_url, zip_path))
@@ -769,7 +777,6 @@ def cmd_reinstall() -> int:
         return 1
 
     write_signature()
-    ensure_last_check_file()
     write_version_from_pyproject()
 
     log.info("OK  Reinstall complete")
@@ -820,36 +827,6 @@ def write_signature() -> None:
     sig = compute_signature()
     if sig:
         SIGNATURE_FILE.write_text(sig)
-
-
-def ensure_last_check_file() -> None:
-    """Create/update last check timestamp."""
-    LAST_CHECK_FILE.write_text(datetime.now().isoformat())
-
-
-def get_bat_major() -> str:
-    """Extract BAT_MAJOR from bat_version.txt or pyproject.toml."""
-    bat_version_file = APPDATA_DIR / "bat_version.txt"
-
-    if bat_version_file.exists():
-        version = bat_version_file.read_text().strip()
-        return version.split(".")[0] if version else "0"
-
-    pyproject_path = APPDATA_DIR / "pyproject.toml"
-
-    if pyproject_path.exists():
-        try:
-            import tomllib
-
-            with open(pyproject_path, "rb") as f:
-                data = tomllib.load(f)
-                launcher = data.get("tool", {}).get("pykorf", {}).get("launcher", {})
-                bat_major = launcher.get("bat-major", "0")
-                return str(bat_major)
-        except Exception:
-            pass
-
-    return "0"
 
 
 if __name__ == "__main__":

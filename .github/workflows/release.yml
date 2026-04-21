@@ -31,10 +31,8 @@ jobs:
         shell: pwsh
         run: |
           $VERSION = uv run python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])"
-          $MAJOR = $VERSION.Split('.')[0]
           echo "VERSION=$VERSION" >> $env:GITHUB_OUTPUT
-          echo "MAJOR=$MAJOR" >> $env:GITHUB_OUTPUT
-          echo "Target version: $VERSION (major: $MAJOR)"
+          echo "Target version: $VERSION"
 
       - name: Check if Tag Exists
         id: check_tag
@@ -76,8 +74,6 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            dist/pykorf-v${{ steps.get_version.outputs.MAJOR }}.zip
-            dist/pykorf-v${{ steps.get_version.outputs.MAJOR }}.zip.sha256
+            dist/pykorf-latest.zip
             dist/pykorf.bat
-            dist/bat_version.txt
           generate_release_notes: true
