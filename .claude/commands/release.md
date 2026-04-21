@@ -3,7 +3,7 @@ Release a new version of pyKorf. Follow these steps exactly:
 ## Step 0 — Generate OpenAPI schema and TypeScript types
 
 Run:
-```powershell
+```powershell with Set ExecutionPolicy Bypass
 uv run python -c "from pykorf.app.api import create_app; import json; app = create_app(); openapi = app.openapi(); json.dump(openapi, open('openapi.json', 'w'), indent=2)"
 cd pykorf/app/frontend
 npm run generate-types

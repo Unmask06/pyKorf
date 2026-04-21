@@ -66,7 +66,30 @@ if %errorlevel% equ 0 (
 if exist "!SELF_TMP!" del "!SELF_TMP!" >nul 2>&1
 
 REM ============================================
-REM 2. Uninstall flag check
+REM 2. Installer Script Update
+REM ============================================
+REM Download latest pykorf_installer.py to keep the installer current.
+REM This fixes the case where the installed installer.py is outdated
+REM (e.g. using a stale download URL like pykorf-v0.zip).
+
+if /i "!AUTO_UPDATE!"=="FALSE" goto :installer_update_skip
+if not exist "%APPDATA_DIR%" goto :installer_update_skip
+
+set "INST_TMP=%TEMP%\pykorf_installer_upd.py"
+set "INST_URL=https://github.com/Unmask06/pykorf/releases/latest/download/pykorf_installer.py"
+
+curl.exe -L --fail --silent --max-time 30 -o "!INST_TMP!" "!INST_URL!" 2>nul
+if %errorlevel% neq 0 goto :installer_update_skip
+if not exist "!INST_TMP!" goto :installer_update_skip
+
+copy /y "!INST_TMP!" "%APPDATA_DIR%\pykorf_installer.py" >nul 2>&1
+del "!INST_TMP!" >nul 2>&1
+
+:installer_update_skip
+if exist "!INST_TMP!" del "!INST_TMP!" >nul 2>&1
+
+REM ============================================
+REM 3. Uninstall flag check
 REM ============================================
 REM Delegate uninstall to installer.py
 
@@ -74,7 +97,7 @@ if /i "%~1"=="/uninstall" goto :run_uninstall
 if /i "%~1"=="--uninstall" goto :run_uninstall
 
 REM ============================================
-REM 3. Python Runtime Check
+REM 4. Python Runtime Check
 REM ============================================
 REM Python must exist before we can use the installer.
 
@@ -103,7 +126,7 @@ exit /b
 :python_ok
 
 REM ============================================
-REM 4. First Install / Missing Installer Check
+REM 5. First Install / Missing Installer Check
 REM ============================================
 REM Existing users: new bat detects missing installer.py and downloads it.
 
@@ -113,7 +136,7 @@ REM Need to download release (first install or existing user upgrade)
 goto :download_and_install
 
 REM ============================================
-REM 5. Delegate to Python Installer
+REM 6. Delegate to Python Installer
 REM ============================================
 REM All operations after Python exists are handled by installer.py
 REM Installer returns: 0=success, 1=error

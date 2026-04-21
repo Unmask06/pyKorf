@@ -76,4 +76,5 @@ jobs:
           files: |
             dist/pykorf-latest.zip
             dist/pykorf.bat
+            pykorf_installer.py
           generate_release_notes: true
