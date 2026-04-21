@@ -201,8 +201,8 @@ class TestExportFunctions:
         try:
             dataframes_to_kdf(dfs, tmp_path)
             restored = Model(tmp_path)
-            assert restored.num_pipes == model.num_pipes
-            assert restored.num_pumps == model.num_pumps
+            assert len(restored.pipes) == len(model.pipes)
+            assert len(restored.pumps) == len(model.pumps)
             assert sorted(e.name for e in restored.elements) == sorted(e.name for e in model.elements)
         finally:
             Path(tmp_path).unlink(missing_ok=True)
@@ -246,9 +246,9 @@ class TestModelPreservation:
         model = Model(PUMP_KDF)
         dfs = model.to_dataframes()
         reconstructed = model_from_dataframes(dfs)
-        assert reconstructed.num_pipes == model.num_pipes
-        assert reconstructed.num_pumps == model.num_pumps
-        assert reconstructed.num_cases == model.num_cases
+        assert len(reconstructed.pipes) == len(model.pipes)
+        assert len(reconstructed.pumps) == len(model.pumps)
+        assert reconstructed.general.num_cases == model.general.num_cases
 
     def test_element_names_preserved(self):
         model = Model(PUMP_KDF)

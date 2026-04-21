@@ -5,6 +5,22 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.2] - 2026-04-21
+
+### What's New
+
+- Element counts can now be obtained using Python's built-in `len()` function, making the API more intuitive and consistent with standard Python collections.
+
+### Improved
+
+- Error handling across the API and frontend has been enhanced to provide clearer feedback when operations fail.
+- Pump datum elevation is now included in data exports, ensuring complete pump configuration information is preserved.
+- Sidecar file operations now use caching to reduce redundant disk reads and improve performance.
+
+### Fixed
+
+- Deprecated element count properties now emit warnings to guide users toward the new `len()` API while maintaining backward compatibility.
+
 ## [0.24.1] - 2026-04-20
 
 ### Improved

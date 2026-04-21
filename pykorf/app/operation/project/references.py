@@ -162,17 +162,24 @@ class ReferencesStore:
     def save(self, kdf_path: Path) -> None:
         """Persist to the ``.pykorf`` sidecar beside the KDF file.
 
+        Merges into any existing sidecar data so other sections (e.g.
+        ``pipe_criteria``, ``justifications``) are not overwritten.
+
         Args:
             kdf_path: Path to the .kdf file; sidecar is written next to it.
         """
         sidecar = self._sidecar_path(kdf_path)
-        payload = {
+        try:
+            data: dict = json.loads(sidecar.read_text(encoding="utf-8")) if sidecar.is_file() else {}
+        except (json.JSONDecodeError, OSError):
+            data = {}
+        data.update({
             "basis": self.basis,
             "remarks": self.remarks,
             "hold": self.hold,
             "references": [asdict(r) for r in self.references],
-        }
-        sidecar.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+        })
+        sidecar.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
 
     # ── Shortcut creation ─────────────────────────────────────────────────
 

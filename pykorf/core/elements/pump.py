@@ -473,6 +473,7 @@ class Pump(BaseElement):
                 self.format_export_header("Density", density_unit): density_in,
                 self.format_export_header("Viscosity", visc_unit): viscosity,
                 **self.section_marker("Operating Conditions"),
+                self.format_export_header("Pump Datum Elevation", "m"): self.elevation_m,
                 self.format_export_header("Pumping Temperature", temp_unit): temperature,
                 self.format_export_header("Volumetric Flow", flow_unit): flow_val,
                 self.format_export_header("Discharge Pressure", dis_unit): dis_press,

@@ -60,19 +60,19 @@ class TestModelConstructor:
         m = Model()
         assert m.version.startswith("KORF")
         # Template has 0 real instances
-        assert m.num_pipes == 0
-        assert m.num_pumps == 0
+        assert len(m.pipes) == 0
+        assert len(m.pumps) == 0
 
     def test_model_with_path(self):
         """Model(path) should load from that file."""
         m = Model(PUMP_KDF)
-        assert m.num_pipes == 5
-        assert m.num_pumps == 1
+        assert len(m.pipes) == 5
+        assert len(m.pumps) == 1
 
     def test_model_load_classmethod(self):
         """Backward compat: Model.load(path) still works."""
         m = Model.load(PUMP_KDF)
-        assert m.num_pipes == 5
+        assert len(m.pipes) == 5
 
     def test_repr(self):
         m = Model(PUMP_KDF)
@@ -81,7 +81,7 @@ class TestModelConstructor:
     def test_load_v36(self):
         m = Model(CWC_KDF)
         assert m.version == "KORF_3.6"
-        assert m.num_pipes == 9
+        assert len(m.pipes) == 9
 
 
 # ------------------------------------------------------------------
@@ -234,7 +234,7 @@ class TestAddElement:
 
     def test_add_elements_batch(self):
         m = Model(PUMP_KDF)
-        orig_pumps = m.num_pumps
+        orig_pumps = len(m.pumps)
         results = m.add_elements(
             [
                 ("PUMP", "P_B1", None),
@@ -242,7 +242,7 @@ class TestAddElement:
             ]
         )
         assert len(results) == 2
-        assert m.num_pumps == orig_pumps + 1
+        assert len(m.pumps) == orig_pumps + 1
 
     def test_add_unknown_type_raises(self):
         m = Model(PUMP_KDF)
@@ -269,7 +269,7 @@ class TestAddElement:
             m.save(tmp)
             m2 = Model(tmp)
             assert "P_SAVE" in m2
-            assert m2.num_pumps == 2  # was 1
+            assert len(m2.pumps) == 2  # was 1
         finally:
             os.unlink(tmp)
 
@@ -310,10 +310,10 @@ class TestDeleteElement:
     def test_delete_pipe(self):
         m = Model(PUMP_KDF)
         assert "L1" in m
-        original = m.num_pipes
+        original = len(m.pipes)
         m.delete_element("L1")
         assert "L1" not in m
-        assert m.num_pipes == original - 1
+        assert len(m.pipes) == original - 1
 
     def test_delete_nonexistent_raises(self):
         m = Model(PUMP_KDF)
@@ -322,11 +322,11 @@ class TestDeleteElement:
 
     def test_delete_elements_batch(self):
         m = Model(PUMP_KDF)
-        original = m.num_pipes
+        original = len(m.pipes)
         # Get first two pipe names
         pipe_names = [p.name for p in m.get_elements_by_type("PIPE")[:2]]
         m.delete_elements(pipe_names)
-        assert m.num_pipes == original - 2
+        assert len(m.pipes) == original - 2
 
 
 # ------------------------------------------------------------------
@@ -337,11 +337,11 @@ class TestDeleteElement:
 class TestCopyElement:
     def test_copy_pipe(self):
         m = Model(PUMP_KDF)
-        original = m.num_pipes
+        original = len(m.pipes)
         new_elem = m.copy_element("L1", "L_COPY")
         assert new_elem.name == "L_COPY"
         assert new_elem.etype == "PIPE"
-        assert m.num_pipes == original + 1
+        assert len(m.pipes) == original + 1
 
     def test_copy_preserves_params(self):
         m = Model(PUMP_KDF)

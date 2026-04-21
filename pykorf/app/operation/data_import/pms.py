@@ -583,7 +583,7 @@ def apply_pms(
     all_materials = load_all_pms(pms_source)
     updated_pipes: list[str] = []
 
-    for idx in range(1, model.num_pipes + 1):
+    for idx in range(1, len(model.pipes) + 1):
         pipe = model.pipes[idx]
         notes = pipe.notes
 

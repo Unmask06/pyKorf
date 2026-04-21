@@ -99,7 +99,7 @@ model = Model("Pumpcases.kdf")
 # Inspect the model
 print(f"Version: {model.version}")
 print(f"Cases: {model.general.case_descriptions}")
-print(f"Pipes: {model.num_pipes}")
+print(f"Pipes: {len(model.pipes)}")
 
 # Modify a pipe
 model.update_element("L1", {"LEN": 200, "TFLOW": "80;90;60"})

@@ -15,8 +15,8 @@ model = Model("Pumpcases.kdf")
 # Display basic information
 print(f"Version: {model.version}")
 print(f"Cases: {model.general.case_descriptions}")
-print(f"Pipes: {model.num_pipes}")
-print(f"Pumps: {model.num_pumps}")
+print(f"Pipes: {len(model.pipes)}")
+print(f"Pumps: {len(model.pumps)}")
 ```
 
 ### Creating a New Model

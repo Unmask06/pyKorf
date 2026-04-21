@@ -9,6 +9,7 @@ Provides helpers for loading and querying the three sizing criteria tables:
 from __future__ import annotations
 
 import tomllib
+from functools import cache
 from pathlib import Path
 from typing import NamedTuple
 
@@ -42,6 +43,7 @@ FLUID_LABELS: dict[str, str] = {
 }
 
 
+@cache
 def load_criteria(fluid_type: str) -> list[dict]:
     """Return all entries for a fluid type.
 
@@ -73,6 +75,7 @@ def get_codes(fluid_type: str) -> list[tuple[str, str]]:
     return [(code, f"{code} \u2014 {svc}") for code, svc in seen.items()]
 
 
+@cache
 def all_codes_by_type() -> dict[str, list[tuple[str, str]]]:
     """Return {fluid_type: [(code, label), ...]} for all three types.
 

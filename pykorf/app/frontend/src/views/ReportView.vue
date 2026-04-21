@@ -50,23 +50,35 @@ const genLoading = useLoading(async () => {
   const req: GenerateReportRequest = {
     report_path: reportPath.value || null,
   };
-  await generateReport({ body: req });
+  const res = await generateReport({ body: req });
+  if (!res.data?.success) {
+    throw new Error(res.data?.errors?.[0] || 'Report generation failed');
+  }
+  return res.data;
 });
 
 const exportLoading = useLoading(async () => {
   const req: ExportRequest = {
     file_path: exportPath.value || null,
   };
-  await exportReport({ body: req });
+  const res = await exportReport({ body: req });
+  if (!res.data?.success) {
+    throw new Error(res.data?.errors?.[0] || 'Export failed');
+  }
+  return res.data;
 });
 
 const importLoading = useLoading(async () => {
   const req: ImportRequest = {
     file_path: importPath.value || null,
   };
-  await importReport({ body: req });
+  const res = await importReport({ body: req });
+  if (!res.data?.success) {
+    throw new Error(res.data?.errors?.[0] || 'Import failed');
+  }
   await session.fetchStatus();
   await model.fetchSummary();
+  return res.data;
 });
 
 const batchLoading = useLoading(async () => {
@@ -74,7 +86,11 @@ const batchLoading = useLoading(async () => {
     batch_folder: batchFolder.value || null,
     single_report: singleReport.value,
   };
-  await batchReport({ body: req });
+  const res = await batchReport({ body: req });
+  if (!res.data?.success) {
+    throw new Error(res.data?.errors?.[0] || 'Batch report failed');
+  }
+  return res.data;
 });
 
 async function generate() {

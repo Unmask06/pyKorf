@@ -220,7 +220,11 @@ class TestAlignElements:
         m = Model(CWC_KDF)
         names = [e.name for e in m.elements if m._layout_service.get_position(e) is not None][:4]
         m._layout_service.align_horizontal(names)
-        ys = {m._layout_service.get_position(m[n])[1] for n in names if m._layout_service.get_position(m[n]) is not None}
+        ys = {
+            m._layout_service.get_position(m[n])[1]
+            for n in names
+            if m._layout_service.get_position(m[n]) is not None
+        }
         assert len(ys) == 1
 
     def test_align_horizontal_anchor(self):
@@ -236,7 +240,11 @@ class TestAlignElements:
         m = Model(CWC_KDF)
         names = [e.name for e in m.elements if m._layout_service.get_position(e) is not None][:4]
         m._layout_service.align_vertical(names)
-        xs = {m._layout_service.get_position(m[n])[0] for n in names if m._layout_service.get_position(m[n]) is not None}
+        xs = {
+            m._layout_service.get_position(m[n])[0]
+            for n in names
+            if m._layout_service.get_position(m[n]) is not None
+        }
         assert len(xs) == 1
 
     def test_align_vertical_anchor(self):
@@ -262,7 +270,11 @@ class TestDistributeElements:
             return
         names = [e.name for e in positioned[:5]]
         m._layout_service.distribute_horizontal(names)
-        xs = sorted(m._layout_service.get_position(m[n])[0] for n in names if m._layout_service.get_position(m[n]))
+        xs = sorted(
+            m._layout_service.get_position(m[n])[0]
+            for n in names
+            if m._layout_service.get_position(m[n])
+        )
         gaps = [xs[i + 1] - xs[i] for i in range(len(xs) - 1)]
         assert all(abs(g - gaps[0]) < 0.01 for g in gaps)
 
@@ -273,7 +285,11 @@ class TestDistributeElements:
             return
         names = [e.name for e in positioned[:5]]
         m._layout_service.distribute_vertical(names)
-        ys = sorted(m._layout_service.get_position(m[n])[1] for n in names if m._layout_service.get_position(m[n]))
+        ys = sorted(
+            m._layout_service.get_position(m[n])[1]
+            for n in names
+            if m._layout_service.get_position(m[n])
+        )
         gaps = [ys[i + 1] - ys[i] for i in range(len(ys) - 1)]
         assert all(abs(g - gaps[0]) < 0.01 for g in gaps)
 
@@ -330,9 +346,7 @@ class TestCenterLayout:
         m = Model(CWC_KDF)
         m._layout_service.center_layout()
         all_coords = [
-            coord
-            for e in m.elements
-            for coord in m._layout_service._all_nonzero_coords(e)
+            coord for e in m.elements for coord in m._layout_service._all_nonzero_coords(e)
         ]
         if not all_coords:
             return

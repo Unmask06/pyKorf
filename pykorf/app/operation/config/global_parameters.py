@@ -27,6 +27,8 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
+from pykorf.core.elements import Expand
+
 if TYPE_CHECKING:
     from collections.abc import Callable
 
@@ -65,6 +67,9 @@ def apply_dummy_pipe_settings(model: Model) -> list[str]:
     For all junctions:
     - Set LBL = [0, 0, 50] (turn off labels)
 
+    For all expanders/reducers:
+    - Set LBL = [0, 0, 50] (turn off labels)
+
     Args:
         model: Loaded KDF model.
 
@@ -81,8 +86,8 @@ def apply_dummy_pipe_settings(model: Model) -> list[str]:
     id_meters = 1.5
 
     # 1. Iterate through all pipes (index >= 1 are real instances)
-    if model.num_pipes > 0:
-        for idx in range(1, model.num_pipes + 1):
+    if len(model.pipes) > 0:
+        for idx in range(1, len(model.pipes) + 1):
             pipe = model.pipes[idx]
             pipe_name = pipe.name
 
@@ -119,7 +124,7 @@ def apply_dummy_pipe_settings(model: Model) -> list[str]:
                 errors.append(error_msg)
 
     # 2. Iterate through all junctions (index >= 1)
-    if model.num_junctions > 0:
+    if len(model.junctions) > 0:
         for idx, junc in model.junctions.items():
             if idx == 0:
                 continue
@@ -133,6 +138,24 @@ def apply_dummy_pipe_settings(model: Model) -> list[str]:
                 logger.info("Junction %s: LBL=OFF", junc_name)
             except Exception as e:
                 error_msg = f"Error setting LBL on junction {junc_name}: {e}"
+                logger.error(error_msg)
+                errors.append(error_msg)
+
+    # 3. Iterate through all Expanders/Reducers (index >= 1)
+    if len(model.expanders) > 0:
+        for idx, expander in model.expanders.items():
+            if idx == 0:
+                continue
+            expander_name = expander.name
+            if not expander_name:
+                continue
+
+            try:
+                model.set_params(expander_name, {Expand.LBL: [0, 0, 50]})
+                affected_names.append(expander_name)
+                logger.info("Expander/Reducer %s: LBL=OFF", expander_name)
+            except Exception as e:
+                error_msg = f"Error setting LBL on expander/reducer {expander_name}: {e}"
                 logger.error(error_msg)
                 errors.append(error_msg)
 
@@ -154,13 +177,13 @@ def apply_dp_margin_settings(model: Model, margin: float) -> list[str]:
     from pykorf.core.elements import Pipe
     from pykorf.core.exceptions import ParameterError
 
-    if model.num_pipes <= 0:
+    if len(model.pipes) <= 0:
         return []
 
     affected_pipes: list[str] = []
     errors: list[str] = []
 
-    for idx in range(1, model.num_pipes + 1):
+    for idx in range(1, len(model.pipes) + 1):
         pipe = model.pipes[idx]
         pipe_name = pipe.name
 
@@ -206,14 +229,14 @@ def apply_rename_line_settings(model: Model) -> list[str]:
     from pykorf.core.elements.pipe import propagate_pipe_rename
     from pykorf.core.exceptions import ParameterError
 
-    if model.num_pipes <= 0:
+    if len(model.pipes) <= 0:
         return []
 
     affected_pipes: list[str] = []
     errors: list[str] = []
     used_names: set[str] = set()
 
-    for idx in range(1, model.num_pipes + 1):
+    for idx in range(1, len(model.pipes) + 1):
         pipe = model.pipes[idx]
         pipe_name = pipe.name
 
@@ -313,13 +336,13 @@ def apply_pump_shutoff_settings(model: Model, margin: float) -> list[str]:
     from pykorf.core.elements import Pump
     from pykorf.core.exceptions import ParameterError
 
-    if model.num_pumps <= 0:
+    if len(model.pumps) <= 0:
         return []
 
     affected_pumps: list[str] = []
     errors: list[str] = []
 
-    for idx in range(1, model.num_pumps + 1):
+    for idx in range(1, len(model.pumps) + 1):
         pump = model.pumps[idx]
         pump_name = pump.name
 
@@ -373,13 +396,13 @@ def apply_min_pump_elevation(model: Model, elevation: float) -> list[str]:
     from pykorf.core.elements import Pump
     from pykorf.core.exceptions import ParameterError
 
-    if model.num_pumps <= 0:
+    if len(model.pumps) <= 0:
         return []
 
     affected_pumps: list[str] = []
     errors: list[str] = []
 
-    for idx in range(1, model.num_pumps + 1):
+    for idx in range(1, len(model.pumps) + 1):
         pump = model.pumps[idx]
         pump_name = pump.name
 
@@ -424,7 +447,7 @@ _GLOBAL_SETTINGS: dict[str, GlobalSetting] = {
     "dummy_pipe": GlobalSetting(
         id="dummy_pipe",
         name="Dummy Pipe & Junction Labels",
-        description='Pipes starting with "d": LEN=0.1m, ID=1500mm, LBL=OFF. Junctions: LBL=OFF',
+        description="""Pipes starting with "d": Set LEN=0.1m, ID=1500mm, SCH=ID, LBL=OFF. Junctions: LBL=OFF. Expanders/Reducers: LBL=OFF""",
         apply_func=apply_dummy_pipe_settings,
     ),
     "dp_margin": GlobalSetting(

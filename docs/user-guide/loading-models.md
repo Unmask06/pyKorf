@@ -41,10 +41,13 @@ model = Model(template_path)
 print(model.path)        # Path to the loaded file
 print(model.version)     # KDF version (e.g., "KORF_3.6")
 
-# Element counts
-print(model.num_pipes)
-print(model.num_pumps)
-print(model.num_cases)
+# Element counts (use len() for element collections)
+print(len(model.pipes))
+print(len(model.pumps))
+print(model.general.num_cases)
+
+# Deprecated: model.num_pipes, model.num_pumps, etc. still work but will warn
+```
 
 # Summary
 summary = model.summary()
@@ -183,7 +186,7 @@ with log_operation("batch_update", file="model.kdf"):
     model = Model("model.kdf")
     
     # Multiple changes
-    for i in range(1, model.num_pipes + 1):
+    for i in range(1, len(model.pipes) + 1):
         pipe = model.pipes[i]
         model.update_element(pipe.name, {Pipe.LEN: 100})
     

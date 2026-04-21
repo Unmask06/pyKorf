@@ -23,7 +23,7 @@ print("\n1. KorfModel is Model:", KorfModel is Model)
 try:
     m = KorfModel.load(PUMP_KDF)
     print("2. KorfModel.load() works: ✓")
-    print(f"   Loaded {m.num_pipes} pipes, {m.num_pumps} pumps")
+    print(f"   Loaded {len(m.pipes)} pipes, {len(m.pumps)} pumps")
 except Exception as e:
     print(f"2. KorfModel.load() FAILED: {e}")
 
@@ -38,7 +38,7 @@ except Exception as e:
 try:
     m3 = Model()
     print("4. Model() no args works: ✓")
-    print(f"   Created blank model: {m3.num_pipes} pipes")
+    print(f"   Created blank model: {len(m3.pipes)} pipes")
 except Exception as e:
     print(f"4. Model() FAILED: {e}")
 
@@ -80,12 +80,12 @@ print("=" * 60)
 # Test 6: Add element updates NUM
 try:
     m = Model(PUMP_KDF)
-    orig_count = m.num_pipes
+    orig_count = len(m.pipes)
     orig_num = m._parser.num_instances("PIPE")
 
     new_pipe = m.add_element("PIPE", "L_TEST", {"LEN": "50"})
 
-    new_count = m.num_pipes
+    new_count = len(m.pipes)
     new_num = m._parser.num_instances("PIPE")
 
     print("\n6. Add element:")
@@ -111,14 +111,14 @@ except Exception as e:
 # Test 7: Delete element updates NUM
 try:
     m = Model(PUMP_KDF)
-    orig_count = m.num_pipes
+    orig_count = len(m.pipes)
     orig_num = m._parser.num_instances("PIPE")
 
     # Delete first pipe
     first_pipe_name = m.get_elements_by_type("PIPE")[0].name
     m.delete_element(first_pipe_name)
 
-    new_count = m.num_pipes
+    new_count = len(m.pipes)
     new_num = m._parser.num_instances("PIPE")
 
     print("\n7. Delete element:")
@@ -144,13 +144,13 @@ except Exception as e:
 # Test 8: Copy element updates NUM
 try:
     m = Model(PUMP_KDF)
-    orig_count = m.num_pipes
+    orig_count = len(m.pipes)
     orig_num = m._parser.num_instances("PIPE")
 
     # Copy a pipe
     m.copy_element("L1", "L_COPY")
 
-    new_count = m.num_pipes
+    new_count = len(m.pipes)
     new_num = m._parser.num_instances("PIPE")
 
     print("\n8. Copy element:")
