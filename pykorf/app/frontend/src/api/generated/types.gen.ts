@@ -1524,7 +1524,7 @@ export type ValidationIssue = {
     /**
      * Category
      */
-    category?: string;
+    category: string;
 };
 
 /**

@@ -61,7 +61,7 @@ class ValidationIssue(BaseModel):
     """Categorized validation issue."""
 
     message: str
-    category: str = "Other"
+    category: str
 
 
 class PrereqsResponse(BaseModel):

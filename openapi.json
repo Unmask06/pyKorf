@@ -4043,13 +4043,13 @@
           },
           "category": {
             "type": "string",
-            "title": "Category",
-            "default": "Other"
+            "title": "Category"
           }
         },
         "type": "object",
         "required": [
-          "message"
+          "message",
+          "category"
         ],
         "title": "ValidationIssue",
         "description": "Categorized validation issue."
