@@ -14,7 +14,6 @@ Modules
 -------
 model          - Model : top-level container for a .kdf file
 parser         - KdfParser : low-level tokeniser / serialiser
-cases          - CaseSet : multi-case helpers
 results        - Results : extract calculated output values
 automation     - KorfApp : pywinauto wrapper (requires KORF to be open)
 exceptions     - Package-wide exception types
@@ -76,11 +75,9 @@ Example Usage
 
 from pathlib import Path
 
-from pykorf.core.cases import CaseSet
 from pykorf.core.elements import Element
 from pykorf.core.exceptions import (
     AutomationError,
-    CaseError,
     ConnectivityError,
     ElementAlreadyExists,
     ElementNotFound,
@@ -163,11 +160,9 @@ __author__ = "pyKorf Contributors"
 __all__ = [
     # Exceptions
     "AutomationError",
-    "CaseError",
     # Types
     "CaseInfo",
     # Core classes
-    "CaseSet",
     "CompressorData",
     "ConnectivityError",
     # Constants
