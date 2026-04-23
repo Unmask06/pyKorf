@@ -17,21 +17,16 @@ _logger = logging.getLogger(__name__)
 
 # ── Validation string parsing ──────────────────────────────────────────
 
-_SEVERITY_RULES: list[tuple[re.Pattern, str, str]] = [
-    (
-        re.compile(r"fails sizing|exceeds criteria|mismatch", re.I),
-        "Error",
-        "Sizing",
-    ),
-    (re.compile(r"references pipe index .+ which does not exist", re.I), "Error", "Connectivity"),
+_SEVERITY_RULES: list[tuple[re.Pattern, str]] = [
+    (re.compile(r"fails sizing|exceeds criteria|mismatch", re.I), "Error"),
+    (re.compile(r"references pipe index .+ which does not exist", re.I), "Error"),
     (
         re.compile(r"missing line number|missing NAME|missing CON|missing|not found in PMS", re.I),
         "Warning",
-        "Missing Data",
     ),
-    (re.compile(r"Add Title", re.I), "Info", "Model Setup"),
-    (re.compile(r"pipe.*criteria", re.I), "Error", "Sizing"),
-    (re.compile(r"CONN|connectiv|nozzle|CON value", re.I), "Error", "Connectivity"),
+    (re.compile(r"Add Title", re.I), "Info"),
+    (re.compile(r"pipe.*criteria", re.I), "Error"),
+    (re.compile(r"CONN|connectiv|nozzle|CON value", re.I), "Error"),
 ]
 
 
@@ -44,10 +39,8 @@ def _classify_issue(msg: str) -> tuple[str, str, str]:
     Returns:
         Tuple of (severity, category, element_name_or_empty).
     """
-    # Extract element name from common patterns:
-    # "Pipe 'L1': ..." → L1
-    # "PIPE L4 (idx 5): ..." → L4
-    # "V1 (VALVE): ..." → V1
+    from pykorf.app.validation import classify_issue
+
     elem_name = ""
     for pat in [
         re.compile(r"Pipe ['\"]?(\S+?)['\"]?[:\s]"),
@@ -59,11 +52,13 @@ def _classify_issue(msg: str) -> tuple[str, str, str]:
             elem_name = m.group(1)
             break
 
-    for pattern, severity, category in _SEVERITY_RULES:
+    category = classify_issue(msg)
+
+    for pattern, severity in _SEVERITY_RULES:
         if pattern.search(msg):
             return severity, category, elem_name
 
-    return "Warning", "Other", elem_name
+    return "Warning", category, elem_name
 
 
 class ResultExporter:

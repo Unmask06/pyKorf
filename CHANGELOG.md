@@ -5,6 +5,17 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.27.0] - 2026-04-23
+
+### What's New
+
+- Validation now checks that all pipes have a sizing criteria code assigned, helping catch missing configuration early.
+- Validation results are now organized by category (Sizing, Connectivity, Missing Data, Model Setup, Criteria Code) for easier review and prioritization.
+
+### Improved
+
+- The validation panel now displays color-coded category badges to quickly identify the type of each issue.
+
 ## [0.26.0] - 2026-04-21
 
 ### What's New

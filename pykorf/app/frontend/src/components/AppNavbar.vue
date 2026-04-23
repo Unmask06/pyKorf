@@ -8,7 +8,6 @@ import {
   Grid3X3,
   Home,
   Info,
-  RotateCw,
   Settings,
 } from "lucide-vue-next";
 import { computed } from "vue";
@@ -25,10 +24,6 @@ const isLoaded = computed(() => session.isLoaded);
 
 async function goHome() {
   router.push("/");
-}
-
-async function reloadModel() {
-  await session.reloadModel();
 }
 
 async function handleUpdateClick() {
@@ -75,16 +70,6 @@ async function handleUpdateClick() {
       <Clock class="w-3 h-3 inline" style="font-size: 0.7rem" />
       {{ session.kdfMtime }}
     </span>
-
-    <!-- Reload button -->
-    <button
-      v-if="isLoaded"
-      @click="reloadModel"
-      class="btn-reload ml-1"
-      title="Reload model from disk"
-    >
-      <RotateCw class="w-3.5 h-3.5" />
-    </button>
 
     <!-- Update badge -->
     <button

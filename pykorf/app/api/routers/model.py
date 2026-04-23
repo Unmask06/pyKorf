@@ -356,10 +356,13 @@ def _build_prereqs(model: Model, kdf_path: Path) -> PrereqsResponse:
         get_skip_sp_override,
         get_sp_overrides,
     )
+    from pykorf.app.validation import classify_issue
+    from pykorf.app.api.schemas import ValidationIssue
 
-    issues = model.validate()
+    raw_issues = model.validate()
+    issues = [ValidationIssue(message=msg, category=classify_issue(msg)) for msg in raw_issues]
     notes_ok = not any(
-        "NOTES" in i or "missing line number" in i or "line number" in i.lower() for i in issues
+        "NOTES" in i.message or "missing line number" in i.message or "line number" in i.message.lower() for i in issues
     )
     validation_ok = len(issues) == 0
     pms_raw = get_pms_excel_path()

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -304,6 +305,32 @@ class AppValidationService:
             except (ValueError, TypeError, ZeroDivisionError):
                 pass
         return s
+
+
+_SEVERITY_RULES: list[tuple[re.Pattern, str]] = [
+    (re.compile(r"fails sizing|exceeds criteria|mismatch", re.I), "Sizing"),
+    (re.compile(r"references pipe index .+ which does not exist", re.I), "Connectivity"),
+    (re.compile(r"missing line number|missing NAME|missing CON|missing|not found in PMS", re.I), "Missing Data"),
+    (re.compile(r"Add Title", re.I), "Model Setup"),
+    (re.compile(r"pipe.*criteria", re.I), "Sizing"),
+    (re.compile(r"CONN|connectiv|nozzle|CON value", re.I), "Connectivity"),
+    (re.compile(r"missing criteria code", re.I), "Criteria Code"),
+]
+
+
+def classify_issue(msg: str) -> str:
+    """Classify a validation message into a category.
+
+    Args:
+        msg: Human-readable validation issue string.
+
+    Returns:
+        Category string (e.g., "Sizing", "Connectivity", "Missing Data").
+    """
+    for pattern, category in _SEVERITY_RULES:
+        if pattern.search(msg):
+            return category
+    return "Other"
 
 
 def validate(model: Model) -> list[str]:

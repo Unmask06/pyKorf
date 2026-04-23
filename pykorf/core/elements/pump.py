@@ -456,7 +456,6 @@ class Pump(BaseElement):
 
             npsha_val: float | None
             npsha_val, npsh_unit = calculate_npsha(), "m"
-            npshr_val, _ = self.get_value_and_unit(Pump.NPSH_R, val_index=1, unit_index=-1)
 
             pow_val, pow_unit = self.get_value_and_unit(Pump.POW, val_index=0, unit_index=-1)
 
@@ -501,7 +500,6 @@ class Pump(BaseElement):
                 self.format_export_header("Shut-Off Margin", ""): margin_val,
                 self.format_export_header("Suc Vessel Design Pressure", press_unit): ves_max_press,
                 self.format_export_header("Suc Vessel Max Level", lvl_unit): ves_max_lvl,
-                self.format_export_header("NPSH Required", npsh_unit): npshr_val,
                 self.format_export_header("Shut-Off DP", pres_unit): shutoff_dp,
                 self.format_export_header("Suction Max Pressure", pres_unit): max_suc_pressure,
                 self.format_export_header(

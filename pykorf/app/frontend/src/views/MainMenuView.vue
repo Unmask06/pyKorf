@@ -54,20 +54,15 @@ function getSummaryValue(key: keyof ModelSummaryResponse): number {
 }
 
 // Category badge helper for validation issues
-function issueBadge(issue: string): { label: string; cls: string } {
-  if (issue.includes('NOTES') || issue.toLowerCase().includes('line number'))
-    return { label: 'NOTES', cls: 'bg-yellow-100 text-yellow-700' }
-  if (issue.includes('NAME'))
-    return { label: 'NAME', cls: 'bg-gray-200 text-gray-700' }
-  if (issue.includes('CONN'))
-    return { label: 'CONN', cls: 'bg-blue-100 text-blue-700' }
-  if (issue.includes('VALUE'))
-    return { label: 'VALUE', cls: 'bg-gray-200 text-gray-700' }
-  if (issue.includes('LAYOUT'))
-    return { label: 'LAYOUT', cls: 'bg-gray-200 text-gray-700' }
-  if (issue.includes('REQUIRED'))
-    return { label: 'REQUIRED', cls: 'bg-red-100 text-red-700' }
-  return { label: 'INFO', cls: 'bg-gray-200 text-gray-700' }
+function issueBadge(category: string): { label: string; cls: string } {
+  const categoryMap: Record<string, { label: string; cls: string }> = {
+    'Sizing': { label: 'SIZING', cls: 'bg-red-100 text-red-700' },
+    'Connectivity': { label: 'CONNECTIVITY', cls: 'bg-orange-100 text-orange-700' },
+    'Missing Data': { label: 'MISSING DATA', cls: 'bg-yellow-100 text-yellow-700' },
+    'Model Setup': { label: 'MODEL SETUP', cls: 'bg-purple-100 text-purple-700' },
+    'Criteria Code': { label: 'CRITERIA CODE', cls: 'bg-blue-100 text-blue-700' },
+  }
+  return categoryMap[category] || { label: category.toUpperCase(), cls: 'bg-gray-200 text-gray-700' }
 }
 
 onMounted(async () => {
@@ -372,9 +367,9 @@ onMounted(async () => {
             </div>
             <template v-else>
               <ul class="divide-y overflow-auto" style="max-height: 280px;">
-                <li v-for="issue in model.prereqs.issues" :key="issue" class="px-3 py-2 text-xs">
-                  <span class="text-xs px-1.5 py-0.5 rounded mr-1" :class="issueBadge(issue).cls">{{ issueBadge(issue).label }}</span>
-                  {{ issue }}
+                <li v-for="issue in model.prereqs.issues" :key="issue.message" class="px-3 py-2 text-xs">
+                  <span class="text-xs px-1.5 py-0.5 rounded mr-1" :class="issueBadge(issue.category).cls">{{ issueBadge(issue.category).label }}</span>
+                  {{ issue.message }}
                 </li>
               </ul>
             </template>

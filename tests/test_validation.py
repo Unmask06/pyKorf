@@ -65,3 +65,40 @@ class TestValidate:
     def test_cwc_validates_without_crash(self):
         issues = Model(CWC_KDF).validate()
         assert isinstance(issues, list)
+
+    def test_pipe_missing_criteria_code_detected(self):
+        """A pipe without a criteria code must be flagged in validation issues."""
+        m = Model(PUMP_KDF)
+        pipe = m.pipes[1]
+        original_code = pipe.criteria_code
+        pipe.criteria_code = ""
+        issues = m.validate()
+        pipe_issues = [i for i in issues if pipe.name in i and "missing criteria code" in i]
+        assert len(pipe_issues) >= 1
+        pipe.criteria_code = original_code
+
+    def test_pipe_with_criteria_code_passes(self):
+        """A pipe with a criteria code should not be flagged."""
+        m = Model(PUMP_KDF)
+        pipe = m.pipes[1]
+        pipe.criteria_code = "P-DIS"
+        issues = m.validate()
+        pipe_issues = [i for i in issues if pipe.name in i and "missing criteria code" in i]
+        assert len(pipe_issues) == 0
+
+    def test_dummy_pipes_skipped_for_criteria_code(self):
+        """Dummy pipes (names starting with 'd') should not be checked for criteria codes."""
+        m = Model(PUMP_KDF)
+        dummy_pipe = None
+        for pipe in m.pipes.values():
+            if pipe.name and pipe.name.lower().startswith("d"):
+                dummy_pipe = pipe
+                break
+        if dummy_pipe is None:
+            pytest.skip("No dummy pipes found in test model")
+        original_code = dummy_pipe.criteria_code
+        dummy_pipe.criteria_code = ""
+        issues = m.validate()
+        pipe_issues = [i for i in issues if dummy_pipe.name in i and "missing criteria code" in i]
+        assert len(pipe_issues) == 0
+        dummy_pipe.criteria_code = original_code

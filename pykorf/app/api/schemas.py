@@ -57,12 +57,19 @@ class ModelSummaryResponse(BaseModel):
     num_products: int = 0
 
 
+class ValidationIssue(BaseModel):
+    """Categorized validation issue."""
+
+    message: str
+    category: str = "Other"
+
+
 class PrereqsResponse(BaseModel):
     notes_ok: bool
     pms_ok: bool
     validation_ok: bool
     sharepoint_ok: bool
-    issues: list[str] = []
+    issues: list[ValidationIssue] = []
     pms_path: str = ""
 
 

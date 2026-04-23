@@ -894,7 +894,7 @@ export type PrereqsResponse = {
     /**
      * Issues
      */
-    issues?: Array<string>;
+    issues?: Array<ValidationIssue>;
     /**
      * Pms Path
      */
@@ -1509,6 +1509,22 @@ export type ValidationError = {
     ctx?: {
         [key: string]: unknown;
     };
+};
+
+/**
+ * ValidationIssue
+ *
+ * Categorized validation issue.
+ */
+export type ValidationIssue = {
+    /**
+     * Message
+     */
+    message: string;
+    /**
+     * Category
+     */
+    category?: string;
 };
 
 /**
