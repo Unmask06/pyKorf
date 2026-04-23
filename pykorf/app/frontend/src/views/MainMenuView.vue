@@ -366,7 +366,7 @@ onMounted(async () => {
               <div class="mt-2 font-semibold">All validations passed</div>
             </div>
             <template v-else>
-              <ul class="divide-y overflow-auto" style="max-height: 280px;">
+              <ul class="divide-y overflow-auto" style="max-height: 450px;">
                 <li v-for="issue in model.prereqs.issues" :key="issue.message" class="px-3 py-2 text-xs">
                   <span class="text-xs px-1.5 py-0.5 rounded mr-1" :class="issueBadge(issue.category).cls">{{ issueBadge(issue.category).label }}</span>
                   {{ issue.message }}

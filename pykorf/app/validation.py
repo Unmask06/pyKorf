@@ -46,6 +46,7 @@ class AppValidationService:
         valid_pms_keys, pms_path = self._load_pms_config(issues)
         self._validate_pipe_line_numbers(issues, valid_pms_keys, pms_path)
         issues.extend(self._verify_pipe_properties())
+        self._validate_references(issues)
         return issues
 
     # ── PMS config ────────────────────────────────────────────────────────
@@ -154,6 +155,24 @@ class AppValidationService:
                 err_msg = str(exc)
                 if "not defined" in err_msg.lower() or "not available" in err_msg.lower():
                     issues.append(f"Pipe '{name}': {err_msg}")
+
+    # ── References validation ─────────────────────────────────────────────
+
+    def _validate_references(self, issues: list[str]) -> None:
+        """Check that basis and at least one reference document are added.
+
+        Args:
+            issues: List to append validation issues to.
+        """
+        from pykorf.app.operation.project.references import ReferencesStore
+
+        ref_store = ReferencesStore.load(self.model._parser.path)
+
+        if not ref_store.basis or not ref_store.basis.strip():
+            issues.append("Design basis is not defined. Add design basis notes in References.")
+
+        if not ref_store.references:
+            issues.append("No reference documents added. Add at least one reference document.")
 
     # ── Pipe property verification ────────────────────────────────────────
 
@@ -310,11 +329,15 @@ class AppValidationService:
 _SEVERITY_RULES: list[tuple[re.Pattern, str]] = [
     (re.compile(r"fails sizing|exceeds criteria|mismatch", re.I), "Sizing"),
     (re.compile(r"references pipe index .+ which does not exist", re.I), "Connectivity"),
-    (re.compile(r"missing line number|missing NAME|missing CON|missing|not found in PMS", re.I), "Missing Data"),
+    (
+        re.compile(r"missing line number|missing NAME|missing CON|missing|not found in PMS", re.I),
+        "Missing Data",
+    ),
     (re.compile(r"Add Title", re.I), "Model Setup"),
     (re.compile(r"pipe.*criteria", re.I), "Sizing"),
     (re.compile(r"CONN|connectiv|nozzle|CON value", re.I), "Connectivity"),
     (re.compile(r"missing criteria code", re.I), "Criteria Code"),
+    (re.compile(r"Design basis|reference documents", re.I), "Documentation"),
 ]
 
 

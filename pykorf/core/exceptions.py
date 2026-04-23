@@ -147,12 +147,6 @@ class ElementAlreadyExists(KorfError):
         self.existing_type = existing_type
 
 
-class CaseError(KorfError):
-    """Raised when an invalid case index or string is used."""
-
-    pass
-
-
 class AutomationError(KorfError):
     """Raised when KORF UI automation fails."""
 
@@ -236,7 +230,6 @@ class ImportError(KorfError):
 
 __all__ = [
     "AutomationError",
-    "CaseError",
     "ConnectivityError",
     "ElementAlreadyExists",
     "ElementNotFound",
