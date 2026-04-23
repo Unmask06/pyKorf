@@ -3169,7 +3169,7 @@
           },
           "issues": {
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/ValidationIssue"
             },
             "type": "array",
             "title": "Issues",
@@ -4034,6 +4034,25 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "ValidationIssue": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category",
+            "default": "Other"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "ValidationIssue",
+        "description": "Categorized validation issue."
       },
       "ViolationSummary": {
         "properties": {

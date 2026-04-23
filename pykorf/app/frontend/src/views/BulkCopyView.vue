@@ -96,8 +96,8 @@ onMounted(() => {
                 <option v-for="p in model.pipes" :key="p" :value="p" />
               </datalist>
             </div>
-            <div class="pk-hint">The pipe whose fluid properties will be copied.</div>
-          </div>
+            <div class="pk-hint">Type or select the reference pipe name.</div>
+            </div>
 
           <!-- Target pipes input -->
           <div class="mb-3">
@@ -116,7 +116,7 @@ onMounted(() => {
                 ✕
               </button>
             </div>
-            <div class="pk-hint">Comma-separated list. Leave empty to copy to ALL pipes (except reference).</div>
+            <div class="pk-hint">Leave empty to copy to ALL pipes.</div>
           </div>
 
           <!-- Exclude checkbox -->

@@ -85,6 +85,7 @@ class SummaryService:
         issues: list[str] = []
 
         self._validate_pipe_sizing_criteria(issues)
+        self._validate_pipe_criteria_codes(issues)
         issues.extend(self._check_title_symbol())
 
         return issues
@@ -123,6 +124,31 @@ class SummaryService:
                 self._build_criteria_failure_message(issues, name, pipe)
             elif result["status"] == "JUSTIFIED":
                 _logger.debug("Pipe '%s': criteria violation justified - skipped from issues", name)
+
+    def _validate_pipe_criteria_codes(self, issues: list[str]) -> None:
+        """Validate that all pipes have a criteria code assigned.
+
+        For each pipe (excluding dummy pipes starting with 'd'):
+        - Check if criteria_code is set (non-empty)
+        - Skip pipes that don't have the criteria_code property
+
+        Args:
+            issues: List to append validation issues to.
+        """
+        for pipe_idx, pipe in self.model.pipes.items():
+            if pipe_idx == 0:
+                continue
+
+            name = pipe.name
+            if not name or name.lower().startswith("d"):
+                continue
+
+            if not hasattr(pipe, "criteria_code"):
+                continue
+
+            criteria_code = pipe.criteria_code
+            if not criteria_code or not criteria_code.strip():
+                issues.append(f"Pipe '{name}' (idx {pipe_idx}): missing criteria code")
 
     def _build_criteria_failure_message(self, issues: list[str], name: str, pipe) -> None:
         """Build detailed failure message for a pipe that failed sizing criteria.
