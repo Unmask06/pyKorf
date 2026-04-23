@@ -160,13 +160,13 @@ onMounted(async () => {
         </div>
         <div class="px-3 pb-2">
           <div class="relative">
-            <Search class="w-4 h-4 text-gray-400 absolute left-2 top-1/2 -translate-y-1/2" />
             <input
               v-model="searchQuery"
               type="text"
-              class="pk-input pl-8"
+              class="pk-input pr-8"
               placeholder="Search recent files..."
             />
+            <Search class="w-4 h-4 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2" />
           </div>
         </div>
         <ul class="divide-y overflow-auto" style="max-height: 280px;">
