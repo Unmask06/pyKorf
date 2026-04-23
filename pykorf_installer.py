@@ -223,6 +223,7 @@ def cmd_launch(port: int, debug: bool, no_debug: bool, force_update: bool) -> in
     If venv is OK, use normal interval-based update check.
     """
     venv_ok = venv_is_valid()
+    log.debug(f"Venv valid: {venv_ok}")
 
     if not venv_ok:
         log.info("Venv needs repair")
@@ -236,6 +237,8 @@ def cmd_launch(port: int, debug: bool, no_debug: bool, force_update: bool) -> in
             result = apply_update(update_info)
             if result != 0:
                 log.warning("Update failed, continuing with repair")
+        else:
+            log.debug("No update available or check failed")
 
         result = repair_venv()
         if result != 0:
@@ -254,6 +257,11 @@ def cmd_launch(port: int, debug: bool, no_debug: bool, force_update: bool) -> in
             result = apply_update(update_info)
             if result != 0:
                 log.warning("Update failed, launching existing version")
+        else:
+            if update_info:
+                log.info(f"No update available (current: {update_info.get('current', 'unknown')})")
+            else:
+                log.debug("Update check returned no info")
 
     return start_app(port, debug, no_debug)
 
@@ -276,18 +284,24 @@ def get_update_info(force: bool = False) -> dict | None:
         log.debug("Update check skipped (interval not elapsed)")
         return None
 
+    current_version = get_installed_version()
+    log.debug(f"Current installed version: {current_version}")
+
     def fetch() -> dict:
         req = urllib.request.Request(
             GITHUB_API_URL,
             headers={"Accept": "application/vnd.github.v3+json"},
         )
+        log.debug(f"Fetching GitHub API: {GITHUB_API_URL}")
         with urllib.request.urlopen(req, timeout=API_TIMEOUT) as resp:
             data = json.loads(resp.read().decode())
             latest_version = data.get("tag_name", "").lstrip("v")
+            log.debug(f"Latest release from GitHub: {latest_version}")
+            log.debug(f"Full API response: {json.dumps(data, indent=2)}")
             return {
                 "latest": latest_version,
-                "current": get_installed_version(),
-                "available": latest_version != get_installed_version(),
+                "current": current_version,
+                "available": latest_version != current_version,
                 "zip_url": f"{GITHUB_RELEASE_URL}/pykorf-latest.zip",
                 "bat_url": f"{GITHUB_RELEASE_URL}/pykorf.bat",
             }
@@ -295,6 +309,7 @@ def get_update_info(force: bool = False) -> dict | None:
     success, result = retry_operation(fetch)
 
     if success:
+        log.debug(f"Update check result: {result}")
         return result
 
     log.warning("GitHub API request failed")
@@ -308,6 +323,11 @@ def apply_update(update_info: dict) -> int:
     if not zip_url:
         log.error("No update URL available")
         return 1
+
+    current_version = update_info.get("current", "unknown")
+    latest_version = update_info.get("latest", "unknown")
+    log.debug(f"Applying update: {current_version} -> {latest_version}")
+    log.debug(f"Download URL: {zip_url}")
 
     zip_path = APPDATA_DIR / "_update.zip"
     extract_dir = APPDATA_DIR / "_update_extract"
@@ -369,22 +389,32 @@ def overlay_update(extract_dir: Path) -> None:
         "VERSION",
     ]
 
+    log.debug(f"Overlaying update from {extract_dir}")
+    log.debug(f"Preserving: {preserve}")
+
     for item in extract_dir.iterdir():
         if item.name in preserve:
+            log.debug(f"Preserving: {item.name}")
             continue
 
         dest = APPDATA_DIR / item.name
 
         if dest.exists():
             if dest.is_dir():
+                log.debug(f"Removing directory: {dest}")
                 shutil.rmtree(dest, ignore_errors=True)
             else:
+                log.debug(f"Removing file: {dest}")
                 dest.unlink(missing_ok=True)
 
         if item.is_dir():
+            log.debug(f"Copying directory: {item.name}")
             shutil.copytree(item, dest)
         else:
+            log.debug(f"Copying file: {item.name}")
             shutil.copy2(item, dest)
+
+    log.debug("Overlay complete")
 
 
 def repair_venv() -> int:
@@ -601,6 +631,7 @@ def handle_reinstall(port: int, debug: bool, no_debug: bool, reason: str) -> int
 
 def cmd_check_update(force: bool = False) -> int:
     """Query GitHub API and show update info."""
+    log.debug(f"Checking for updates (force={force})")
     update_info = get_update_info(force=force)
 
     if update_info:
@@ -613,7 +644,7 @@ def cmd_check_update(force: bool = False) -> int:
         else:
             log.info(f"No update available (current: {current})")
 
-        log.debug(f"Details: {update_info}")
+        log.debug(f"Full update info: {json.dumps(update_info, indent=2)}")
         return 0
 
     log.error("Failed to check for updates")
@@ -786,7 +817,10 @@ def cmd_reinstall() -> int:
 def get_installed_version() -> str:
     """Read VERSION file."""
     if VERSION_FILE.exists():
-        return VERSION_FILE.read_text().strip()
+        version = VERSION_FILE.read_text().strip()
+        log.debug(f"VERSION file exists, content: '{version}'")
+        return version
+    log.debug("VERSION file does not exist")
     return "0.0.0"
 
 
@@ -794,6 +828,7 @@ def write_version(version: str) -> None:
     """Write VERSION file."""
     if version:
         VERSION_FILE.write_text(version)
+        log.debug(f"VERSION file written: {version}")
 
 
 def write_version_from_pyproject() -> None:
@@ -801,6 +836,7 @@ def write_version_from_pyproject() -> None:
     pyproject_path = APPDATA_DIR / "pyproject.toml"
 
     if not pyproject_path.exists():
+        log.debug(f"pyproject.toml not found at {pyproject_path}")
         return
 
     try:
@@ -809,10 +845,12 @@ def write_version_from_pyproject() -> None:
         with open(pyproject_path, "rb") as f:
             data = tomllib.load(f)
             version = data.get("project", {}).get("version", "")
+            log.debug(f"Version from pyproject.toml: {version}")
             if version:
                 VERSION_FILE.write_text(version)
-    except Exception:
-        pass
+                log.debug(f"VERSION file written from pyproject: {version}")
+    except Exception as e:
+        log.debug(f"Failed to read version from pyproject.toml: {e}")
 
 
 def read_signature() -> str:
