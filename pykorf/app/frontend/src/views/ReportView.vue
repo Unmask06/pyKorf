@@ -3,12 +3,14 @@ import {
   AlertTriangle,
   ArrowDownRight,
   ArrowUpRight,
+  CheckCircle2,
   Clipboard,
   FileSpreadsheet,
   FileText,
   Folder,
   FolderOpen,
   Layers,
+  X,
 } from "lucide-vue-next";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
@@ -46,14 +48,23 @@ const showExportBrowser = ref(false);
 const showImportBrowser = ref(false);
 const showBatchBrowser = ref(false);
 
+// KORF Excel source
+const korfExcelPath = ref("");
+const showKorfBrowser = ref(false);
+const reportSource = ref<"korf" | "pykorf" | null>(null);
+
 const genLoading = useLoading(async () => {
   const req: GenerateReportRequest = {
     report_path: reportPath.value || null,
+    korf_excel_path: korfExcelPath.value || null,
   };
   const res = await generateReport({ body: req });
   if (!res.data?.success) {
     throw new Error(res.data?.errors?.[0] || 'Report generation failed');
   }
+  // Detect source from response message
+  const msg = res.data.messages?.[0]?.message || "";
+  reportSource.value = msg.includes("KORF report") ? "korf" : "pykorf";
   return res.data;
 });
 
@@ -96,7 +107,11 @@ const batchLoading = useLoading(async () => {
 async function generate() {
   try {
     await genLoading.execute();
-    toast.success("Report generated successfully.");
+    if (reportSource.value === "korf") {
+      toast.success("KORF Excel report generated (multi-case).");
+    } else {
+      toast.success("Report generated successfully.");
+    }
   } catch (err: unknown) {
     toast.error(getErrorMessage(err, "An unexpected error occurred."));
   }
@@ -194,6 +209,67 @@ onMounted(async () => {
               </button>
             </div>
             <div class="pk-hint">Auto-derived from the open KDF file.</div>
+          </div>
+          <div class="mb-3">
+            <label class="pk-label flex items-center gap-2">
+              KORF Excel File
+              <span class="text-xs text-gray-400 font-normal">(optional)</span>
+            </label>
+            <div class="flex">
+              <span
+                class="flex items-center justify-center px-3 py-1.5 text-sm bg-gray-100 border border-r-0 border-gray-300 rounded-l-md"
+              >
+                <FileSpreadsheet class="w-4 h-4 text-gray-500" />
+              </span>
+              <textarea
+                v-model="korfExcelPath"
+                class="pk-input-mono resize-none rounded-none"
+                rows="2"
+                placeholder="Auto-detected from KDF folder"
+                style="font-size: 0.82rem"
+              />
+              <button
+                v-if="korfExcelPath"
+                type="button"
+                @click="korfExcelPath = ''"
+                class="flex items-center justify-center px-2 py-1.5 text-sm border border-l-0 border-gray-300 bg-gray-100 hover:bg-gray-50 text-gray-500"
+                title="Clear"
+              >
+                <X class="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                @click="showKorfBrowser = true"
+                class="flex items-center justify-center px-3 py-1.5 text-sm border-l-0 border-gray-300 rounded-r-md bg-gray-100 hover:bg-gray-50"
+                title="Browse"
+              >
+                <FolderOpen class="w-4 h-4" />
+              </button>
+            </div>
+            <div class="pk-hint">
+              If omitted, auto-detected from KDF folder. Enables multi-case
+              reports with per-case sheets.
+            </div>
+          </div>
+          <div class="mb-3 flex items-center gap-2">
+            <CheckCircle2
+              v-if="reportSource === 'korf'"
+              class="w-4 h-4 text-green-600 shrink-0"
+            />
+            <span
+              v-if="reportSource === 'korf'"
+              class="text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded px-2 py-0.5"
+              >KORF Excel source</span
+            >
+            <CheckCircle2
+              v-if="reportSource === 'pykorf'"
+              class="w-4 h-4 text-blue-600 shrink-0"
+            />
+            <span
+              v-if="reportSource === 'pykorf'"
+              class="text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded px-2 py-0.5"
+              >pyKorf default source</span
+            >
           </div>
           <button
             @click="generate"
@@ -397,6 +473,17 @@ onMounted(async () => {
       (p: string) => {
         batchFolder = p;
         showBatchBrowser = false;
+      }
+    "
+  />
+  <PathBrowser
+    v-if="showKorfBrowser"
+    filter="excel"
+    @close="showKorfBrowser = false"
+    @select="
+      (p: string) => {
+        korfExcelPath = p;
+        showKorfBrowser = false;
       }
     "
   />

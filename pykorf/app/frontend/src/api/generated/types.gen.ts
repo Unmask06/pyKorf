@@ -483,6 +483,10 @@ export type GenerateReportRequest = {
      * Report Path
      */
     report_path?: string | null;
+    /**
+     * KORF Excel Path
+     */
+    korf_excel_path?: string | null;
 };
 
 /**
