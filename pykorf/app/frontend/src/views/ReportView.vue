@@ -162,6 +162,7 @@ onMounted(async () => {
       : filename;
     reportPath.value = `${folder}${sep}${stem}_report.xlsx`;
     exportPath.value = `${folder}${sep}${stem}_export.xlsx`;
+    korfExcelPath.value = `${folder}${sep}${stem}.xlsx`;
   }
   try {
     const response = await getPreferences();
