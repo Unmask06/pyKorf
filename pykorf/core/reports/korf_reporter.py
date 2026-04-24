@@ -135,7 +135,28 @@ class KorfReporter:
 
         primary_case = sorted(case_data.keys(), key=lambda c: int(c.number))[0]
         cd = case_data[primary_case]
+        return self._build_case_dataframes(cd)
 
+    def generate_all_case_dataframes(self) -> dict[str, dict[str, pd.DataFrame]]:
+        """Generate DataFrames for all element types, one dict per case.
+
+        Returns a dict mapping case name (e.g. "1 - Rated") to a dict of
+        element-type DataFrames (same structure as ``generate_dataframes()``).
+        """
+        case_data = self._get_case_data()
+        if not case_data:
+            _logger.warning("No case data found in KORF Excel: %s", self._excel_path)
+            return {}
+
+        result: dict[str, dict[str, pd.DataFrame]] = {}
+        for case_info in sorted(case_data.keys(), key=lambda c: int(c.number)):
+            case_name = f"{case_info.number} - {case_info.name}"
+            cd = case_data[case_info]
+            result[case_name] = self._build_case_dataframes(cd)
+        return result
+
+    def _build_case_dataframes(self, cd: KorfCaseData) -> dict[str, pd.DataFrame]:
+        """Build element DataFrames for a single case."""
         dfs: dict[str, pd.DataFrame] = {}
 
         feeds_data = self._extract_feeds(cd)

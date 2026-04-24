@@ -41,6 +41,15 @@ class Reporter(Protocol):
         """Return list of case names."""
         ...
 
+    def generate_all_case_dataframes(self) -> dict[str, dict[str, pd.DataFrame]]:
+        """Return dict mapping case name to dict of element DataFrames.
+
+        For single-case reporters (PykorfReporter), the dict has one entry
+        keyed by case name. For multi-case reporters (KorfReporter), there
+        is one entry per KORF case.
+        """
+        ...
+
     @property
     def basis(self) -> str:
         ...
@@ -178,6 +187,12 @@ class PykorfReporter:
     def get_case_names(self) -> list[str]:
         """Return case descriptions from the model."""
         return self.model.general.case_descriptions if hasattr(self.model, "general") else []
+
+    def generate_all_case_dataframes(self) -> dict[str, dict[str, pd.DataFrame]]:
+        """Return single-case DataFrames keyed by case description."""
+        case_names = self.get_case_names()
+        key = case_names[0] if case_names else ""
+        return {key: self.generate_dataframes()}
 
     def generate_dataframes(self) -> dict[str, pd.DataFrame]:
         """Runs all registered extractors and returns a dictionary of DataFrames."""
