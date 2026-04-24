@@ -27,10 +27,19 @@ def _find_korf_excel(kdf_path: Path) -> Path | None:
     """Auto-detect KORF Excel file alongside a KDF file.
 
     Looks for ``{stem}.xlsx`` (exact stem match) in the same directory.
+    Only returns it if the Excel file is newer than the KDF file,
+    ensuring the report was generated from the current model state.
     """
     candidate = kdf_path.parent / f"{kdf_path.stem}.xlsx"
-    if candidate.is_file():
-        return candidate
+    if not candidate.is_file():
+        return None
+    try:
+        kdf_mtime = kdf_path.stat().st_mtime
+        xlsx_mtime = candidate.stat().st_mtime
+        if xlsx_mtime >= kdf_mtime:
+            return candidate
+    except OSError:
+        return None
     return None
 
 

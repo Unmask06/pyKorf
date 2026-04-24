@@ -565,18 +565,37 @@ class TestResultExporterMultiCase:
         wb.close()
 
     def test_korf_excel_auto_detection(self, tmp_path):
-        """_find_korf_excel finds .xlsx alongside .kdf."""
+        """_find_korf_excel finds .xlsx alongside .kdf when xlsx is newer."""
+        import time
+
         from pykorf.app.api.routers.report import _find_korf_excel
 
-        # Create a fake .kdf and matching .xlsx
+        # Create .kdf first, then .xlsx so xlsx is newer
         kdf_path = tmp_path / "Pumpcases.kdf"
         kdf_path.write_text("dummy")
+        time.sleep(0.05)
         xlsx_path = tmp_path / "Pumpcases.xlsx"
         xlsx_path.write_text("dummy")
 
         result = _find_korf_excel(kdf_path)
         assert result is not None
         assert result.name == "Pumpcases.xlsx"
+
+    def test_korf_excel_stale_ignored(self, tmp_path):
+        """_find_korf_excel returns None when .xlsx is older than .kdf."""
+        import time
+
+        from pykorf.app.api.routers.report import _find_korf_excel
+
+        # Create .xlsx first, then .kdf so xlsx is older
+        xlsx_path = tmp_path / "Pumpcases.xlsx"
+        xlsx_path.write_text("dummy")
+        time.sleep(0.05)
+        kdf_path = tmp_path / "Pumpcases.kdf"
+        kdf_path.write_text("dummy")
+
+        result = _find_korf_excel(kdf_path)
+        assert result is None
 
     def test_korf_excel_no_detection(self, tmp_path):
         """_find_korf_excel returns None when no .xlsx found."""
