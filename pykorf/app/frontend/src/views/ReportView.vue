@@ -12,7 +12,7 @@ import {
   Layers,
   X,
 } from "lucide-vue-next";
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import {
   generateReport,
   batchReport,
@@ -32,21 +32,55 @@ import type {
 const session = useSessionStore();
 const toast = useToastStore();
 
-const reportPath = ref("");
-const batchFolder = ref("");
-const singleReport = ref(false);
-const showBatchBrowser = ref(false);
+// Report mode toggle
+const isMultiCase = ref(false);
 
-// KORF Excel source
+// KORF Excel source (only for multi-case)
 const korfExcelPath = ref("");
 const reportSource = ref<"korf" | "pykorf" | null>(null);
 const korfIsStale = ref(false);
 const korfExists = ref(false);
 
+// Batch report
+const batchFolder = ref("");
+const singleReport = ref(false);
+const showBatchBrowser = ref(false);
+
+const reportPath = computed(() => {
+  if (!session.kdfPath) return "";
+  const kdf = session.kdfPath;
+  const sep = kdf.includes("\\") ? "\\" : "/";
+  const lastSep = Math.max(kdf.lastIndexOf("\\"), kdf.lastIndexOf("/"));
+  const folder = kdf.substring(0, lastSep);
+  const filename = kdf.substring(lastSep + 1);
+  const stem = filename.includes(".")
+    ? filename.substring(0, filename.lastIndexOf("."))
+    : filename;
+  const suffix = isMultiCase.value ? "_multi-case_report.xlsx" : "_report.xlsx";
+  return `${folder}${sep}${stem}${suffix}`;
+});
+
+const canGenerate = computed(() => {
+  if (genLoading.isLoading.value) return false;
+  if (isMultiCase.value) {
+    if (!korfExists.value) return false;
+    if (korfIsStale.value) return false;
+  }
+  return true;
+});
+
+const generateTooltip = computed(() => {
+  if (isMultiCase.value) {
+    if (!korfExists.value) return "Multi-case requires KORF Excel report";
+    if (korfIsStale.value) return "KORF Excel is stale — regenerate from KORF first";
+  }
+  return "";
+});
+
 const genLoading = useLoading(async () => {
   const req: GenerateReportRequest = {
     report_path: reportPath.value || null,
-    korf_excel_path: korfExcelPath.value || null,
+    korf_excel_path: isMultiCase.value ? (korfExcelPath.value || null) : null,
   };
   const res = await generateReport({ body: req });
   if (!res.data?.success) {
@@ -73,10 +107,10 @@ const batchLoading = useLoading(async () => {
 async function generate() {
   try {
     await genLoading.execute();
-    if (reportSource.value === "korf") {
-      toast.success("KORF Excel report generated (multi-case).");
+    if (isMultiCase.value) {
+      toast.success("Multi-case report generated from KORF Excel.");
     } else {
-      toast.success("Report generated successfully.");
+      toast.success("Single-case report generated from KDF.");
     }
   } catch (err: unknown) {
     toast.error(getErrorMessage(err, "An unexpected error occurred."));
@@ -108,7 +142,6 @@ onMounted(async () => {
     const stem = filename.includes(".")
       ? filename.substring(0, filename.lastIndexOf("."))
       : filename;
-    reportPath.value = `${folder}${sep}${stem}_report.xlsx`;
     korfExcelPath.value = `${folder}${sep}${stem}.xlsx`;
   }
   try {
@@ -119,7 +152,11 @@ onMounted(async () => {
   } catch {
     // ignore — prefill is best-effort
   }
-  // Check KORF Excel staleness
+  // Check KORF Excel status (for multi-case mode)
+  await checkKorfExcelStatus();
+});
+
+async function checkKorfExcelStatus() {
   try {
     const status = await korfExcelStatus();
     if (status.data) {
@@ -129,7 +166,14 @@ onMounted(async () => {
   } catch {
     // ignore — staleness check is best-effort
   }
-});
+}
+
+function toggleMode() {
+  isMultiCase.value = !isMultiCase.value;
+  if (isMultiCase.value) {
+    checkKorfExcelStatus();
+  }
+}
 </script>
 
 <template>
@@ -150,7 +194,7 @@ onMounted(async () => {
                 <FileText class="w-4 h-4 text-gray-500" />
               </span>
               <textarea
-                v-model="reportPath"
+                :value="reportPath"
                 class="pk-input-mono resize-none rounded-none w-full"
                 rows="2"
                 style="font-size: 0.82rem"
@@ -165,12 +209,48 @@ onMounted(async () => {
                 <Clipboard class="w-4 h-4" />
               </button>
             </div>
-            <div class="pk-hint">Auto-derived from the open KDF file.</div>
+            <div class="pk-hint flex items-center gap-1">
+              Auto-derived from KDF file.
+              <span
+                v-if="isMultiCase"
+                class="text-xs text-gray-500"
+              >(multi-case)</span>
+            </div>
           </div>
-          <div>
+
+          <!-- Report Mode Toggle -->
+          <div class="flex items-center justify-between py-2">
+            <span class="text-sm text-gray-600">Report Mode</span>
+            <div class="flex items-center gap-3">
+              <span
+                :class="isMultiCase ? 'text-gray-400' : 'text-gray-700 font-medium'"
+                class="text-sm"
+              >Single Case</span>
+              <button
+                type="button"
+                @click="toggleMode"
+                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                :class="isMultiCase ? 'bg-green-600' : 'bg-gray-200'"
+                role="switch"
+                :aria-checked="isMultiCase"
+              >
+                <span
+                  class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                  :class="isMultiCase ? 'translate-x-6' : 'translate-x-1'"
+                />
+              </button>
+              <span
+                :class="isMultiCase ? 'text-gray-700 font-medium' : 'text-gray-400'"
+                class="text-sm"
+              >Multi Case</span>
+            </div>
+          </div>
+
+          <!-- KORF Excel File (only for multi-case) -->
+          <div v-if="isMultiCase">
             <label class="pk-label flex items-center gap-2">
               KORF Excel File
-              <span class="text-xs text-gray-400 font-normal">(optional)</span>
+              <span class="text-xs text-red-500 font-normal">(required)</span>
             </label>
             <div class="flex">
               <span
@@ -203,7 +283,9 @@ onMounted(async () => {
             </div>
           </div>
         </div>
-        <div class="mt-3 flex items-center gap-2 flex-wrap">
+
+        <!-- Status indicators (only for multi-case) -->
+        <div v-if="isMultiCase" class="mt-3 flex items-center gap-2 flex-wrap">
           <template v-if="korfExists && korfIsStale">
             <AlertTriangle class="w-4 h-4 text-amber-600 shrink-0" />
             <span
@@ -211,35 +293,33 @@ onMounted(async () => {
               >Stale KORF Excel Report</span
             >
           </template>
-          <template v-else>
-            <CheckCircle2
-              v-if="reportSource === 'korf'"
-              class="w-4 h-4 text-green-600 shrink-0"
-            />
+          <template v-else-if="korfExists">
+            <CheckCircle2 class="w-4 h-4 text-green-600 shrink-0" />
             <span
-              v-if="reportSource === 'korf'"
               class="text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded px-2 py-0.5"
-              >KORF Excel source</span
+              >KORF Excel ready</span
             >
-            <CheckCircle2
-              v-if="reportSource === 'pykorf'"
-              class="w-4 h-4 text-blue-600 shrink-0"
-            />
+          </template>
+          <template v-else>
+            <AlertTriangle class="w-4 h-4 text-red-600 shrink-0" />
             <span
-              v-if="reportSource === 'pykorf'"
-              class="text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded px-2 py-0.5"
-              >pyKorf default source</span
+              class="text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded px-2 py-0.5"
+              >KORF Excel not found</span
             >
           </template>
         </div>
-        <div v-if="korfExists && korfIsStale" class="mt-2 text-xs text-amber-600">
+        <div v-if="isMultiCase && korfExists && korfIsStale" class="mt-2 text-xs text-amber-600">
           KORF file has been updated after report generation. Regenerate the report from KORF again.
         </div>
+        <div v-if="isMultiCase && !korfExists" class="mt-2 text-xs text-red-600">
+          Multi-case report requires a KORF Excel report file. Generate it from KORF first.
+        </div>
+
         <button
           @click="generate"
           class="mt-3 w-full bg-green-600 text-white rounded py-1.5 text-sm hover:bg-green-700 flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-          :disabled="genLoading.isLoading.value || (korfExists && korfIsStale)"
-          :title="korfExists && korfIsStale ? 'KORF Excel is stale — regenerate from KORF first' : ''"
+          :disabled="!canGenerate"
+          :title="generateTooltip"
         >
           <span v-if="genLoading.isLoading.value" class="pk-spinner" />
           <ArrowDownRight class="w-4 h-4" /> Generate Report

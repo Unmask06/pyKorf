@@ -41,117 +41,116 @@ _SECTION_MARKERS_EQUIPMENT = {
     "MISCELLANEOUS",
 }
 
-# Column mapping dicts: param -> (header_name, offset)
+# Column mapping dicts: param -> explicit column index (1-based)
 
-_FEED_COL_MAP: dict[str, tuple[str, int]] = {
-    "name": ("Number", 0),
-    "description": ("Description", 0),
-    "pressure": ("Pressure", 9),
-    "pipe": ("Pipe", 0),
+_FEED_COL_MAP: dict[str, int] = {
+    "name": 1,
+    "description": 2,
+    "pressure": 12,
+    "pipe": 13,
 }
 
-_PRODUCT_COL_MAP: dict[str, tuple[str, int]] = {
-    "name": ("Number", 0),
-    "description": ("Description", 0),
-    "pressure": ("Pressure", 9),
-    "pipe": ("Pipe", 0),
+_PRODUCT_COL_MAP: dict[str, int] = {
+    "name": 1,
+    "description": 2,
+    "pressure": 12,
+    "pipe": 13,
 }
 
-_ORIFICE_COL_MAP: dict[str, tuple[str, int]] = {
-    "name": ("Number", 0),
-    "description": ("Description", 0),
-    "type": ("Type", 0),
-    "bore": ("Bore", 0),
-    "beta": ("Beta", 0),
-    "dp_flange": ("Pressures", 0),
-    "dp_pipe": ("Pressures", 1),
-    "pressure_in": ("Pressures", 2),
-    "pressure_out": ("Pressures", 3),
-    "pipe_inlet": ("Pipe", 0),
-    "pipe_outlet": ("Pipe", 1),
+_ORIFICE_COL_MAP: dict[str, int] = {
+    "name": 1,
+    "description": 2,
+    "type": 3,
+    "bore": 6,
+    "beta": 7,
+    "dp_flange": 10,
+    "dp_pipe": 11,
+    "pressure_in": 12,
+    "pressure_out": 13,
+    "pipe_inlet": 14,
+    "pipe_outlet": 15,
 }
 
-_VALVE_COL_MAP: dict[str, tuple[str, int]] = {
-    "name": ("Number", 0),
-    "description": ("Description", 0),
-    "type": ("Type", 0),
-    "elevation": ("Elevation", 0),
-    "cv": ("Cv", 0),
-    "dp": ("Pressures", 0),
-    "pressure_in": ("Pressures", 1),
-    "pressure_out": ("Pressures", 2),
-    "pipe_inlet": ("Pipe", 0),
-    "pipe_outlet": ("Pipe", 1),
+_VALVE_COL_MAP: dict[str, int] = {
+    "name": 1,
+    "description": 2,
+    "type": 3,
+    "cv": 6,
+    "dp": 13,
+    "pressure_in": 14,
+    "pressure_out": 15,
+    "pipe_inlet": 18,
+    "pipe_outlet": 19,
 }
 
-_PUMP_COL_MAP: dict[str, tuple[str, int]] = {
-    "name": ("Number", 0),
-    "description": ("Description", 0),
-    "elevation": ("Elevation", 0),
-    "efficiency": ("Efficiency (pump*motor)", 0),
-    "power": ("Power", 0),
-    "flow": ("Flow", 0),
-    "density": ("Density", 0),
-    "vol_flow": ("Vol Flow", 0),
-    "head": ("Head", 0),
-    "dp": ("Pressures", 0),
-    "pressure_in": ("Pressures", 1),
-    "pressure_out": ("Pressures", 2),
-    "pipe_inlet": ("Pipe", 0),
-    "pipe_outlet": ("Pipe", 1),
+_PUMP_COL_MAP: dict[str, int] = {
+    "name": 1,
+    "description": 2,
+    "elevation": 3,
+    "efficiency": 4,
+    "power": 5,
+    "flow": 6,
+    "density": 7,
+    "vol_flow": 8,
+    "head": 9,
+    "dp": 10,
+    "pressure_in": 11,
+    "pressure_out": 12,
+    "pipe_inlet": 13,
+    "pipe_outlet": 14,
 }
 
-_NPSH_COL_MAP: dict[str, tuple[str, int]] = {
-    "name": ("Number", 0),
-    "npsha": ("NPSHA", 0),
-    "npshr": ("NPSHR", 0),
-    "vapour_pressure": ("Vap Pres Value (Psat)", 0),
+_NPSH_COL_MAP: dict[str, int] = {
+    "name": 1,
+    "npsha": 14,
+    "npshr": 18,
+    "vapour_pressure": 6,
 }
 
-_SHUTOFF_COL_MAP: dict[str, tuple[str, int]] = {
-    "name": ("Number", 0),
-    "vessel_pressure": ("Pressure Maximum (top)", 0),
-    "vessel_max_level": ("Level Maximum", 0),
-    "suction_max_pressure": ("Pressure Maximum", 0),
-    "shutoff_dp": ("dP Shutoff", 0),
-    "shutoff_pressure": ("Pressure Shutoff", 0),
-    "raise_to_shutoff_dp": ("dP Shutoff/dP Calc", 0),
+_SHUTOFF_COL_MAP: dict[str, int] = {
+    "name": 1,
+    "vessel_pressure": 3,
+    "vessel_max_level": 6,
+    "suction_max_pressure": 9,
+    "shutoff_dp": 13,
+    "shutoff_pressure": 14,
+    "raise_to_shutoff_dp": 12,
 }
 
-_COMPRESSOR_COL_MAP: dict[str, tuple[str, int]] = {
-    "name": ("Number", 0),
-    "description": ("Description", 0),
-    "type": ("Type", 0),
-    "dp": ("Pressures", 0),
-    "pressure_in": ("Pressures", 1),
-    "pressure_out": ("Pressures", 2),
-    "flow": ("Flow", 0),
-    "power": ("Power", 0),
-    "efficiency": ("Efficiency", 0),
-    "head": ("Head", 0),
+_COMPRESSOR_COL_MAP: dict[str, int] = {
+    "name": 1,
+    "description": 2,
+    "type": 3,
+    "dp": 10,
+    "pressure_in": 11,
+    "pressure_out": 12,
+    "flow": 6,
+    "power": 5,
+    "efficiency": 4,
+    "head": 9,
 }
 
-_EXCHANGER_COL_MAP: dict[str, tuple[str, int]] = {
-    "name": ("Number", 0),
-    "description": ("Description", 0),
-    "type": ("Type", 0),
-    "side": ("Side", 0),
-    "duty": ("Duty", 0),
-    "dp": ("Pressures", 0),
-    "pressure_in": ("Pressures", 2),
-    "pressure_out": ("Pressures", 3),
-    "pipe_inlet": ("Pipe", 0),
-    "pipe_outlet": ("Pipe", 1),
+_EXCHANGER_COL_MAP: dict[str, int] = {
+    "name": 1,
+    "description": 2,
+    "type": 3,
+    "side": 4,
+    "duty": 5,
+    "dp": 10,
+    "pressure_in": 11,
+    "pressure_out": 12,
+    "pipe_inlet": 13,
+    "pipe_outlet": 14,
 }
 
-_MISC_COL_MAP: dict[str, tuple[str, int]] = {
-    "name": ("Number", 0),
-    "description": ("Description", 0),
-    "dp": ("Pressures", 0),
-    "pressure_in": ("Pressures", 2),
-    "pressure_out": ("Pressures", 3),
-    "pipe_inlet": ("Pipe", 0),
-    "pipe_outlet": ("Pipe", 1),
+_MISC_COL_MAP: dict[str, int] = {
+    "name": 1,
+    "description": 2,
+    "dp": 10,
+    "pressure_in": 11,
+    "pressure_out": 12,
+    "pipe_inlet": 13,
+    "pipe_outlet": 14,
 }
 
 
@@ -164,20 +163,15 @@ def _find_column(ws: Worksheet, header_row: int, header_name: str, offset: int =
     return 0
 
 
-def _extract_row_data(
+def _extract_row_data_direct(
     ws: Worksheet,
     data_row: int,
-    header_row: int,
-    col_map: dict[str, tuple[str, int]],
+    col_map: dict[str, int],
 ) -> dict[str, Any]:
-    """Extract data from a single row using a column mapping dict."""
+    """Extract data from a single row using explicit column indices."""
     result: dict[str, Any] = {}
-    for param, (header_name, offset) in col_map.items():
-        col = _find_column(ws, header_row, header_name, offset)
-        if col > 0:
-            result[param] = ws.cell(row=data_row, column=col).value
-        else:
-            result[param] = None
+    for param, col in col_map.items():
+        result[param] = ws.cell(row=data_row, column=col).value
     return result
 
 
@@ -241,89 +235,173 @@ def _parse_title_sheet(ws: Worksheet) -> tuple[list[ValidationEntry], str]:
 
 # ── PIPING SHEET PARSER ──────────────────────────────────────────────
 
+_PIPE_ROW_MAP: dict[tuple[str, str, str], str] = {
+    ("Total", "Flow", ""): "mass_flow",
+    ("", "Pressure", "In"): "pressure_in",
+    ("", "Pressure", "Out"): "pressure_out",
+    ("", "Temperature", "In"): "temperature_in",
+    ("", "Temperature", "Out"): "temperature_out",
+    ("", "Density (No slip)", "In"): "density_in",
+    ("", "Density (No slip)", "Out"): "density_out",
+    ("", "Volumetric Flow", "Avg"): "vol_flow",
+    ("Size", "", ""): "size",
+    ("Length", "", ""): "length",
+    ("Schedule", "", ""): "schedule",
+    ("Overall", "", ""): "dp_overall",
+    ("Friction", "", ""): "dp_friction",
+    ("Elevation", "", ""): "dp_elevation",
+    ("dP/Length", "", ""): "dp_length",
+    ("Velocity", "", "In"): "velocity_in",
+    ("dP/Length", "Target", "Max"): "dp_length_criteria_max",
+    ("Velocity", "Target", "Max"): "velocity_criteria_max",
+}
+
+_VISCOSITY_SPELLINGS = {"Viscocity (No slip)", "Viscosity (No slip)"}
+_RHO_V2_SPELLINGS = {"Rho.V^2", "Rho.V²", "ρV²"}  # noqa: RUF001
+
+_UNIT_STANDARDIZE: dict[str, str] = {
+    "kg/m3.(m/s": "Pa",
+    "kg/m3.(m/s]": "Pa",
+    "kg/m3.(m/s)^2": "Pa",
+    "kg/m3(m/s)^2": "Pa",
+    "barg": "barg",
+    "bar": "bar",
+    "bar/100m": "bar/100m",
+    "m": "m",
+    "m/s": "m/s",
+    "kg/h": "kg/h",
+    "m3/h": "m³/h",
+    "cP": "cP",
+    "C": "°C",
+    "kg/m3": "kg/m³",
+}
+
+
+def _standardize_unit(raw_unit: str) -> str:
+    """Standardize KORF unit strings to clean format."""
+    if not raw_unit:
+        return ""
+    unit = raw_unit.strip()
+    if unit in _UNIT_STANDARDIZE:
+        return _UNIT_STANDARDIZE[unit]
+    return unit
+
+
+_REPORT_FIELDS: set[str] = {
+    "length",
+    "dp_length",
+    "dp_length_criteria_max",
+    "velocity_in",
+    "velocity_criteria_max",
+    "velocity_criteria_min",
+    "rho_v2_in",
+    "dp_overall",
+    "dp_friction",
+    "dp_elevation",
+    "pressure_in",
+    "pressure_out",
+    "temperature_in",
+    "temperature_out",
+    "density_in",
+    "density_out",
+    "viscosity",
+    "mass_flow",
+    "vol_flow",
+}
+
+_CONTINUATION_FIELDS: dict[str, str] = {
+    "Pressure": "pressure_out",
+    "Temperature": "temperature_out",
+    "Density (No slip)": "density_out",
+}
+
 
 def _parse_piping_sheet(ws: Worksheet) -> list[PipeData]:
-    """Parse a Piping sheet to extract pipe result data."""
+    """Parse a Piping sheet to extract pipe result data using optimized lookup dict."""
     pipe_names: list[str] = []
-    pipe_data: dict[str, dict[str, float | None | str]] = {}
+    pipe_data: dict[str, dict[str, Any]] = {}
+    pipe_units: dict[str, dict[str, str]] = {}
 
     for col in range(5, ws.max_column + 1):
         name = _safe_str(ws.cell(row=2, column=col).value)
-        if name and name != "Number":
+        if name:
             pipe_names.append(name)
             pipe_data[name] = {}
+            pipe_units[name] = {}
 
     if not pipe_names:
         return []
 
-    def _set_all_pipes(label: str, row_idx: int, sub_key: str | None = None):
-        for i, pname in enumerate(pipe_names):
-            col = 5 + i
-            val = _safe_float(ws.cell(row=row_idx, column=col).value)
-            key = f"{label}" if not sub_key else f"{label}_{sub_key}"
-            pipe_data[pname][key] = val
+    prev_row_key: tuple[str, str, str] = ("", "", "")
+    prev_field_name: str = ""
 
-    for row_idx in range(1, ws.max_row + 1):
+    for row_idx in range(5, ws.max_row + 1):
         col_a = _safe_str(ws.cell(row=row_idx, column=1).value)
         col_b = _safe_str(ws.cell(row=row_idx, column=2).value)
         col_c = _safe_str(ws.cell(row=row_idx, column=3).value)
-        col_d = _safe_str(ws.cell(row=row_idx, column=4).value)
+        col_d_raw = _safe_str(ws.cell(row=row_idx, column=4).value)
+        col_d = _standardize_unit(col_d_raw)
 
-        if col_a == "Total" and col_b == "Flow":
-            _set_all_pipes("mass_flow", row_idx)
-        elif col_b == "Pressure" and col_c == "In":
-            _set_all_pipes("pressure_in", row_idx)
-        elif col_b == "Pressure" and col_c == "Out":
-            _set_all_pipes("pressure_out", row_idx)
-        elif col_b == "Temperature" and col_c == "In":
-            _set_all_pipes("temperature_in", row_idx)
-        elif col_b == "Temperature" and col_c == "Out":
-            _set_all_pipes("temperature_out", row_idx)
-        elif col_b == "Density (No slip)" and col_c == "In":
-            _set_all_pipes("density_in", row_idx)
-        elif col_b == "Density (No slip)" and col_c == "Out":
-            _set_all_pipes("density_out", row_idx)
-        elif col_b == "Viscocity (No slip)" or col_b == "Viscosity (No slip)":
-            _set_all_pipes("viscosity", row_idx)
-        elif col_b == "Volumetric Flow" and col_c == "Avg":
-            _set_all_pipes("vol_flow", row_idx)
-        elif col_a == "Size" and col_d == "in":
+        key = (col_a, col_b, col_c)
+
+        if col_b in _VISCOSITY_SPELLINGS:
             for i, pname in enumerate(pipe_names):
-                pipe_data[pname]["size"] = _safe_str(ws.cell(row=row_idx, column=5 + i).value)
-        elif col_a == "Length" and col_d == "m":
-            _set_all_pipes("length", row_idx)
-        elif col_a == "Schedule":
+                val = _safe_float(ws.cell(row=row_idx, column=5 + i).value)
+                pipe_data[pname]["viscosity"] = val
+                if "viscosity" in _REPORT_FIELDS:
+                    pipe_units[pname]["viscosity"] = col_d
+            prev_row_key = key
+            prev_field_name = "viscosity"
+            continue
+
+        if col_a in _RHO_V2_SPELLINGS and col_c == "In":
             for i, pname in enumerate(pipe_names):
-                pipe_data[pname]["schedule"] = _safe_str(ws.cell(row=row_idx, column=5 + i).value)
-        elif col_a == "dP/Length" and col_b == "" and col_d == "bar/100m":
-            _set_all_pipes("dp_length", row_idx)
-        elif col_a == "dP/Length" and col_b == "Target" and col_c == "Max":
-            _set_all_pipes("dp_length_criteria_max", row_idx)
-        elif col_a == "Velocity" and col_b == "" and col_c == "In":
-            _set_all_pipes("velocity_in", row_idx)
-        elif col_a == "Rho.V^2" or col_a == "Rho.V²" or col_a == "ρV²":  # noqa: RUF001
-            if col_c == "In":
-                _set_all_pipes("rho_v2_in", row_idx)
-        elif col_a == "Overall" and col_d == "bar":
-            _set_all_pipes("dp_overall", row_idx)
-        elif col_a == "Friction" and col_d == "bar":
-            _set_all_pipes("dp_friction", row_idx)
-        elif col_a == "Elevation" and col_d == "bar":
-            _set_all_pipes("dp_elevation", row_idx)
-        elif col_a == "dP/Length" and col_b == "Target" and col_c == "Max":
-            _set_all_pipes("dp_length_criteria_max", row_idx)
-        elif col_a == "Velocity" and col_b == "Target" and col_c == "Max":
-            _set_all_pipes("velocity_criteria_max", row_idx)
-        elif col_a == "" and col_b == "" and col_c == "Min" and col_d == "m/s":
-            if row_idx > 1:
-                row_above_a = _safe_str(ws.cell(row=row_idx - 1, column=1).value)
-                row_above_b = _safe_str(ws.cell(row=row_idx - 1, column=2).value)
-                if row_above_a == "Velocity" and row_above_b == "Target":
-                    _set_all_pipes("velocity_criteria_min", row_idx)
+                val = _safe_float(ws.cell(row=row_idx, column=5 + i).value)
+                pipe_data[pname]["rho_v2_in"] = val
+                if "rho_v2_in" in _REPORT_FIELDS:
+                    pipe_units[pname]["rho_v2_in"] = col_d
+            prev_row_key = key
+            prev_field_name = "rho_v2_in"
+            continue
+
+        if key in _PIPE_ROW_MAP:
+            field_name = _PIPE_ROW_MAP[key]
+            for i, pname in enumerate(pipe_names):
+                if field_name in ("size", "schedule"):
+                    val = _safe_str(ws.cell(row=row_idx, column=5 + i).value)
+                else:
+                    val = _safe_float(ws.cell(row=row_idx, column=5 + i).value)
+                pipe_data[pname][field_name] = val
+                if field_name in _REPORT_FIELDS and field_name not in ("size", "schedule"):
+                    pipe_units[pname][field_name] = col_d
+            prev_row_key = key
+            prev_field_name = col_b if col_b else col_a
+            continue
+
+        if key == ("", "", "Min") and prev_row_key == ("Velocity", "Target", "Max"):
+            for i, pname in enumerate(pipe_names):
+                val = _safe_float(ws.cell(row=row_idx, column=5 + i).value)
+                pipe_data[pname]["velocity_criteria_min"] = val
+                if "velocity_criteria_min" in _REPORT_FIELDS:
+                    pipe_units[pname]["velocity_criteria_min"] = col_d
+            continue
+
+        if key == ("", "", "Out") and prev_field_name in _CONTINUATION_FIELDS:
+            field_name = _CONTINUATION_FIELDS[prev_field_name]
+            for i, pname in enumerate(pipe_names):
+                val = _safe_float(ws.cell(row=row_idx, column=5 + i).value)
+                pipe_data[pname][field_name] = val
+                if field_name in _REPORT_FIELDS:
+                    pipe_units[pname][field_name] = col_d
+            continue
+
+        prev_row_key = key
+        prev_field_name = col_b if col_b else col_a
 
     results: list[PipeData] = []
     for pname in pipe_names:
         d = pipe_data.get(pname, {})
+        u = pipe_units.get(pname, {})
         results.append(
             PipeData(
                 name=pname,
@@ -348,6 +426,7 @@ def _parse_piping_sheet(ws: Worksheet) -> list[PipeData]:
                 dp_length_criteria_max=d.get("dp_length_criteria_max"),
                 velocity_criteria_max=d.get("velocity_criteria_max"),
                 velocity_criteria_min=d.get("velocity_criteria_min"),
+                units=u,
             )
         )
     return results
@@ -412,14 +491,12 @@ def _parse_equipment_sheet(ws: Worksheet) -> dict[str, list]:
 
 
 def _parse_feeds_section(ws: Worksheet, start_row: int) -> tuple[list[FeedData], int]:
-    """Parse FEEDS section from Equipment sheet using header-based column lookup."""
-    header_row = start_row + 1
+    """Parse FEEDS section from Equipment sheet using explicit column indices."""
     feeds: list[FeedData] = []
     row = start_row + 4
 
     while row <= ws.max_row:
-        name_col = _find_column(ws, header_row, "Number")
-        cell_a = ws.cell(row=row, column=name_col).value if name_col else None
+        cell_a = ws.cell(row=row, column=1).value
         cell_a_str = _safe_str(cell_a)
         if cell_a_str in _SECTION_MARKERS_EQUIPMENT:
             break
@@ -427,7 +504,7 @@ def _parse_feeds_section(ws: Worksheet, start_row: int) -> tuple[list[FeedData],
             row += 1
             continue
 
-        data = _extract_row_data(ws, row, header_row, _FEED_COL_MAP)
+        data = _extract_row_data_direct(ws, row, _FEED_COL_MAP)
         feeds.append(
             FeedData(
                 name=_safe_str(data.get("name")),
@@ -441,14 +518,12 @@ def _parse_feeds_section(ws: Worksheet, start_row: int) -> tuple[list[FeedData],
 
 
 def _parse_products_section(ws: Worksheet, start_row: int) -> tuple[list[ProductData], int]:
-    """Parse PRODUCTS section from Equipment sheet using header-based column lookup."""
-    header_row = start_row + 1
+    """Parse PRODUCTS section from Equipment sheet using explicit column indices."""
     products: list[ProductData] = []
     row = start_row + 4
 
     while row <= ws.max_row:
-        name_col = _find_column(ws, header_row, "Number")
-        cell_a = ws.cell(row=row, column=name_col).value if name_col else None
+        cell_a = ws.cell(row=row, column=1).value
         cell_a_str = _safe_str(cell_a)
         if cell_a_str in _SECTION_MARKERS_EQUIPMENT:
             break
@@ -456,7 +531,7 @@ def _parse_products_section(ws: Worksheet, start_row: int) -> tuple[list[Product
             row += 1
             continue
 
-        data = _extract_row_data(ws, row, header_row, _PRODUCT_COL_MAP)
+        data = _extract_row_data_direct(ws, row, _PRODUCT_COL_MAP)
         products.append(
             ProductData(
                 name=_safe_str(data.get("name")),
@@ -470,14 +545,12 @@ def _parse_products_section(ws: Worksheet, start_row: int) -> tuple[list[Product
 
 
 def _parse_orifices_section(ws: Worksheet, start_row: int) -> tuple[list[OrificeData], int]:
-    """Parse ORIFICES section from Equipment sheet using header-based column lookup."""
-    header_row = start_row + 1
+    """Parse ORIFICES section from Equipment sheet using explicit column indices."""
     orifices: list[OrificeData] = []
     row = start_row + 4
 
     while row <= ws.max_row:
-        name_col = _find_column(ws, header_row, "Number")
-        cell_a = ws.cell(row=row, column=name_col).value if name_col else None
+        cell_a = ws.cell(row=row, column=1).value
         cell_a_str = _safe_str(cell_a)
         if cell_a_str in _SECTION_MARKERS_EQUIPMENT:
             break
@@ -485,7 +558,7 @@ def _parse_orifices_section(ws: Worksheet, start_row: int) -> tuple[list[Orifice
             row += 1
             continue
 
-        data = _extract_row_data(ws, row, header_row, _ORIFICE_COL_MAP)
+        data = _extract_row_data_direct(ws, row, _ORIFICE_COL_MAP)
         orifices.append(
             OrificeData(
                 name=_safe_str(data.get("name")),
@@ -507,14 +580,12 @@ def _parse_orifices_section(ws: Worksheet, start_row: int) -> tuple[list[Orifice
 
 
 def _parse_valves_section(ws: Worksheet, start_row: int) -> tuple[list[ValveData], int]:
-    """Parse VALVES section from Equipment sheet using header-based column lookup."""
-    header_row = start_row + 1
+    """Parse VALVES section from Equipment sheet using explicit column indices."""
     valves: list[ValveData] = []
     row = start_row + 4
 
     while row <= ws.max_row:
-        name_col = _find_column(ws, header_row, "Number")
-        cell_a = ws.cell(row=row, column=name_col).value if name_col else None
+        cell_a = ws.cell(row=row, column=1).value
         cell_a_str = _safe_str(cell_a)
         if cell_a_str in _SECTION_MARKERS_EQUIPMENT:
             break
@@ -522,7 +593,7 @@ def _parse_valves_section(ws: Worksheet, start_row: int) -> tuple[list[ValveData
             row += 1
             continue
 
-        data = _extract_row_data(ws, row, header_row, _VALVE_COL_MAP)
+        data = _extract_row_data_direct(ws, row, _VALVE_COL_MAP)
         valves.append(
             ValveData(
                 name=_safe_str(data.get("name")),
@@ -543,15 +614,11 @@ def _parse_valves_section(ws: Worksheet, start_row: int) -> tuple[list[ValveData
 
 def _parse_pumps_section(ws: Worksheet, start_row: int) -> tuple[list[PumpData], int]:
     """Parse PUMPS section including NPSH and SHUT OFF PRESSURE subsections."""
-    header_row = start_row + 1
     pumps: list[PumpData] = []
-
-    # Parse main PUMPS data rows
     row = start_row + 4
 
     while row <= ws.max_row:
-        name_col = _find_column(ws, header_row, "Number")
-        cell_a = ws.cell(row=row, column=name_col).value if name_col else None
+        cell_a = ws.cell(row=row, column=1).value
         cell_a_str = _safe_str(cell_a)
         if (
             cell_a_str in ("NPSH", "SHUT OFF PRESSURE", "CURVES")
@@ -562,7 +629,7 @@ def _parse_pumps_section(ws: Worksheet, start_row: int) -> tuple[list[PumpData],
             row += 1
             continue
 
-        data = _extract_row_data(ws, row, header_row, _PUMP_COL_MAP)
+        data = _extract_row_data_direct(ws, row, _PUMP_COL_MAP)
         pumps.append(
             PumpData(
                 name=_safe_str(data.get("name")),
@@ -587,11 +654,10 @@ def _parse_pumps_section(ws: Worksheet, start_row: int) -> tuple[list[PumpData],
     while row <= ws.max_row:
         cell_a = _safe_str(ws.cell(row=row, column=1).value)
         if cell_a == "NPSH":
-            npsh_header_row = row + 2
             npsh_data_row = row + 4
             if npsh_data_row <= ws.max_row:
                 for pump in pumps:
-                    data = _extract_row_data(ws, npsh_data_row, npsh_header_row, _NPSH_COL_MAP)
+                    data = _extract_row_data_direct(ws, npsh_data_row, _NPSH_COL_MAP)
                     if _safe_str(data.get("name")) == pump.name:
                         pump.npsha = _safe_float(data.get("npsha"))
                         pump.npshr = _safe_float(data.get("npshr"))
@@ -606,13 +672,10 @@ def _parse_pumps_section(ws: Worksheet, start_row: int) -> tuple[list[PumpData],
     while row <= ws.max_row:
         cell_a = _safe_str(ws.cell(row=row, column=1).value)
         if cell_a == "SHUT OFF PRESSURE":
-            shutoff_header_row = row + 2
             shutoff_data_row = row + 4
             if shutoff_data_row <= ws.max_row:
                 for pump in pumps:
-                    data = _extract_row_data(
-                        ws, shutoff_data_row, shutoff_header_row, _SHUTOFF_COL_MAP
-                    )
+                    data = _extract_row_data_direct(ws, shutoff_data_row, _SHUTOFF_COL_MAP)
                     if _safe_str(data.get("name")) == pump.name:
                         pump.vessel_pressure = _safe_float(data.get("vessel_pressure"))
                         pump.vessel_max_level = _safe_float(data.get("vessel_max_level"))
@@ -632,14 +695,12 @@ def _parse_pumps_section(ws: Worksheet, start_row: int) -> tuple[list[PumpData],
 
 
 def _parse_compressors_section(ws: Worksheet, start_row: int) -> tuple[list[CompressorData], int]:
-    """Parse COMPRESSORS section from Equipment sheet."""
-    header_row = start_row + 1
+    """Parse COMPRESSORS section from Equipment sheet using explicit column indices."""
     compressors: list[CompressorData] = []
     row = start_row + 4
 
     while row <= ws.max_row:
-        name_col = _find_column(ws, header_row, "Number")
-        cell_a = ws.cell(row=row, column=name_col).value if name_col else None
+        cell_a = ws.cell(row=row, column=1).value
         cell_a_str = _safe_str(cell_a)
         if cell_a_str in _SECTION_MARKERS_EQUIPMENT:
             break
@@ -647,7 +708,7 @@ def _parse_compressors_section(ws: Worksheet, start_row: int) -> tuple[list[Comp
             row += 1
             continue
 
-        data = _extract_row_data(ws, row, header_row, _COMPRESSOR_COL_MAP)
+        data = _extract_row_data_direct(ws, row, _COMPRESSOR_COL_MAP)
         compressors.append(
             CompressorData(
                 name=_safe_str(data.get("name")),
@@ -668,14 +729,12 @@ def _parse_compressors_section(ws: Worksheet, start_row: int) -> tuple[list[Comp
 
 
 def _parse_exchangers_section(ws: Worksheet, start_row: int) -> tuple[list[ExchangerData], int]:
-    """Parse EXCHANGERS section from Equipment sheet."""
-    header_row = start_row + 1
+    """Parse EXCHANGERS section from Equipment sheet using explicit column indices."""
     exchangers: list[ExchangerData] = []
     row = start_row + 4
 
     while row <= ws.max_row:
-        name_col = _find_column(ws, header_row, "Number")
-        cell_a = ws.cell(row=row, column=name_col).value if name_col else None
+        cell_a = ws.cell(row=row, column=1).value
         cell_a_str = _safe_str(cell_a)
         if cell_a_str in _SECTION_MARKERS_EQUIPMENT:
             break
@@ -683,7 +742,7 @@ def _parse_exchangers_section(ws: Worksheet, start_row: int) -> tuple[list[Excha
             row += 1
             continue
 
-        data = _extract_row_data(ws, row, header_row, _EXCHANGER_COL_MAP)
+        data = _extract_row_data_direct(ws, row, _EXCHANGER_COL_MAP)
         exchangers.append(
             ExchangerData(
                 name=_safe_str(data.get("name")),
@@ -704,14 +763,12 @@ def _parse_exchangers_section(ws: Worksheet, start_row: int) -> tuple[list[Excha
 
 
 def _parse_misc_section(ws: Worksheet, start_row: int) -> tuple[list[MiscEquipmentData], int]:
-    """Parse MISCELLANEOUS section from Equipment sheet."""
-    header_row = start_row + 1
+    """Parse MISCELLANEOUS section from Equipment sheet using explicit column indices."""
     misc: list[MiscEquipmentData] = []
     row = start_row + 4
 
     while row <= ws.max_row:
-        name_col = _find_column(ws, header_row, "Number")
-        cell_a = ws.cell(row=row, column=name_col).value if name_col else None
+        cell_a = ws.cell(row=row, column=1).value
         cell_a_str = _safe_str(cell_a)
         if cell_a_str in _SECTION_MARKERS_EQUIPMENT:
             break
@@ -719,7 +776,7 @@ def _parse_misc_section(ws: Worksheet, start_row: int) -> tuple[list[MiscEquipme
             row += 1
             continue
 
-        data = _extract_row_data(ws, row, header_row, _MISC_COL_MAP)
+        data = _extract_row_data_direct(ws, row, _MISC_COL_MAP)
         misc.append(
             MiscEquipmentData(
                 name=_safe_str(data.get("name")),

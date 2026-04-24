@@ -39,6 +39,7 @@ class PipeData:
     dp_length_criteria_max: float | None = None
     velocity_criteria_max: float | None = None
     velocity_criteria_min: float | None = None
+    units: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass

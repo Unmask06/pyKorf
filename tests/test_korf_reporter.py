@@ -48,8 +48,11 @@ def _create_korf_excel(path: Path, num_cases: int = 1) -> Path:
         ws_pipe.append(["PIPES"])
         # Row 2: header row with pipe names
         ws_pipe.append(["Number", "", "", "", "VCL22-711", "L1"])
-        # Row 3+: data rows
-        ws_pipe.append(["Size", "", "in", "", "6", "4"])
+        # Row 3-4: intermediate headers (Name, Fluid per real KORF structure)
+        ws_pipe.append(["Name", "", "", "", "Pipe", "Pipe"])
+        ws_pipe.append(["Fluid", "", "", "", "", ""])
+        # Row 5+: data rows (Col A=field, Col B="", Col C="", Col D=unit per real KORF structure)
+        ws_pipe.append(["Size", "", "", "in", "6", "4"])
         ws_pipe.append(["Length", "", "", "m", 75, 50])
         ws_pipe.append(["Schedule", "", "", "", "40", "40"])
         ws_pipe.append(["dP/Length", "", "", "bar/100m", 0.008, 0.01])

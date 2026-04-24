@@ -267,19 +267,28 @@ class KorfReporter:
                                 round(crit.rho_v2_max) if crit.rho_v2_max is not None else None
                             )
 
+            units = pd_pipe.units
+            length_unit = units.get("length", "m")
+            dp_length_unit = units.get("dp_length", "bar/100m")
+            dp_crit_unit = units.get("dp_length_criteria_max", "bar/100m")
+            vel_unit = units.get("velocity_in", "m/s")
+            vel_max_unit = units.get("velocity_criteria_max", "m/s")
+            vel_min_unit = units.get("velocity_criteria_min", "m/s")
+            rho_v2_unit = units.get("rho_v2_in", "Pa")
+
             row = {
                 "Pipe Name": pd_pipe.name,
                 "Criteria Code": criteria_code,
                 "Line Number": line_number,
-                "Line Length [m]": pd_pipe.length,
-                "dP max Criteria [bar/100m]": pd_pipe.dp_length_criteria_max,
-                "v min Criteria [m/s]": pd_pipe.velocity_criteria_min,
-                "v max Criteria [m/s]": pd_pipe.velocity_criteria_max,
+                f"Line Length [{length_unit}]": pd_pipe.length,
+                f"dP max Criteria [{dp_crit_unit}]": pd_pipe.dp_length_criteria_max,
+                f"v min Criteria [{vel_min_unit}]": pd_pipe.velocity_criteria_min,
+                f"v max Criteria [{vel_max_unit}]": pd_pipe.velocity_criteria_max,
                 "ρV² min Criteria [Pa]": rho_v2_min,  # noqa: RUF001
                 "ρV² max Criteria [Pa]": rho_v2_max,  # noqa: RUF001
-                "DP/Length [bar/100m]": pd_pipe.dp_length,
-                "Velocity [m/s]": pd_pipe.velocity_in,
-                "ρV² calc [Pa]": (  # noqa: RUF001
+                f"DP/Length [{dp_length_unit}]": pd_pipe.dp_length,
+                f"Velocity [{vel_unit}]": pd_pipe.velocity_in,
+                f"ρV² calc [{rho_v2_unit}]": (  # noqa: RUF001
                     round(pd_pipe.rho_v2_in) if pd_pipe.rho_v2_in is not None else None
                 ),
                 "Criteria Check": self._check_pipe_criteria(pd_pipe),
@@ -320,7 +329,7 @@ class KorfReporter:
             inlet_pipe = next((p for p in cd.pipes if p.name == pump.pipe_inlet), None)
             temperature = inlet_pipe.temperature_out if inlet_pipe else None
             viscosity = inlet_pipe.viscosity if inlet_pipe else None
-            
+
             row = {
                 "Pump Name": pump.name,
                 "Section_Liquid Characteristics": "Liquid Characteristics",
@@ -353,9 +362,12 @@ class KorfReporter:
     def _extract_valves(self, cd: KorfCaseData) -> list[dict]:
         results = []
         for valve in cd.valves:
+            inlet_pipe = next((p for p in cd.pipes if p.name == valve.pipe_inlet), None)
+            flow_rate = inlet_pipe.mass_flow if inlet_pipe else None
+
             row = {
                 "Valve Name": valve.name,
-                "Flow Rate [kg/h]": None,
+                "Flow Rate [kg/h]": flow_rate,
                 "Inlet Pressure [barg]": valve.pressure_in,
                 "Differential Pressure [bar]": valve.dp,
                 "Opening [%]": None,
