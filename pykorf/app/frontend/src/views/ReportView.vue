@@ -247,8 +247,10 @@ onMounted(async () => {
               </button>
             </div>
             <div class="pk-hint">
-              If omitted, auto-detected from KDF folder. Enables multi-case
-              reports with per-case sheets.
+              To export from KORF: <strong>Hydraulics &gt; Results &gt; View
+              Excel Report</strong>, then save the XML as XLSX with the same
+              name as the KDF file. Enables multi-case reports with per-case
+              sheets.
             </div>
           </div>
         </div>
