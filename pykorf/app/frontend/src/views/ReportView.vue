@@ -177,15 +177,14 @@ onMounted(async () => {
 
 <template>
   <div class="space-y-4">
-    <!-- Top row: Generate Report + Batch Report -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-      <!-- Generate Report -->
-      <div class="pk-card h-full flex flex-col">
-        <div class="pk-card-header flex items-center gap-1">
-          <FileText class="w-4 h-4 text-green-600" /> Generate Report
-        </div>
-        <div class="p-4 flex flex-col flex-1">
-          <div class="mb-3 flex-1">
+    <!-- Generate Report (full width) -->
+    <div class="pk-card">
+      <div class="pk-card-header flex items-center gap-1">
+        <FileText class="w-4 h-4 text-green-600" /> Generate Report
+      </div>
+      <div class="p-4 flex flex-col">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
             <label class="pk-label">Output File</label>
             <div class="flex">
               <span
@@ -195,7 +194,7 @@ onMounted(async () => {
               </span>
               <textarea
                 v-model="reportPath"
-                class="pk-input-mono resize-none rounded-none"
+                class="pk-input-mono resize-none rounded-none w-full"
                 rows="3"
                 style="font-size: 0.82rem"
                 readonly
@@ -211,7 +210,7 @@ onMounted(async () => {
             </div>
             <div class="pk-hint">Auto-derived from the open KDF file.</div>
           </div>
-          <div class="mb-3">
+          <div>
             <label class="pk-label flex items-center gap-2">
               KORF Excel File
               <span class="text-xs text-gray-400 font-normal">(optional)</span>
@@ -224,7 +223,7 @@ onMounted(async () => {
               </span>
               <textarea
                 v-model="korfExcelPath"
-                class="pk-input-mono resize-none rounded-none"
+                class="pk-input-mono resize-none rounded-none w-full"
                 rows="2"
                 placeholder="Auto-detected from KDF folder"
                 style="font-size: 0.82rem"
@@ -252,97 +251,40 @@ onMounted(async () => {
               reports with per-case sheets.
             </div>
           </div>
-          <div class="mb-3 flex items-center gap-2">
-            <CheckCircle2
-              v-if="reportSource === 'korf'"
-              class="w-4 h-4 text-green-600 shrink-0"
-            />
-            <span
-              v-if="reportSource === 'korf'"
-              class="text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded px-2 py-0.5"
-              >KORF Excel source</span
-            >
-            <CheckCircle2
-              v-if="reportSource === 'pykorf'"
-              class="w-4 h-4 text-blue-600 shrink-0"
-            />
-            <span
-              v-if="reportSource === 'pykorf'"
-              class="text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded px-2 py-0.5"
-              >pyKorf default source</span
-            >
-          </div>
-          <button
-            @click="generate"
-            class="w-full bg-green-600 text-white rounded py-1.5 text-sm hover:bg-green-700 flex items-center justify-center gap-1 disabled:opacity-50"
-            :disabled="genLoading.isLoading.value"
+        </div>
+        <div class="mt-3 flex items-center gap-2">
+          <CheckCircle2
+            v-if="reportSource === 'korf'"
+            class="w-4 h-4 text-green-600 shrink-0"
+          />
+          <span
+            v-if="reportSource === 'korf'"
+            class="text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded px-2 py-0.5"
+            >KORF Excel source</span
           >
-            <span v-if="genLoading.isLoading.value" class="pk-spinner" />
-            <ArrowDownRight class="w-4 h-4" /> Generate Report
-          </button>
-        </div>
-      </div>
-
-      <!-- Batch Report -->
-      <div class="pk-card h-full flex flex-col">
-        <div class="pk-card-header flex items-center gap-1">
-          <Layers class="w-4 h-4 text-gray-500" /> Batch Report
-        </div>
-        <div class="p-4 flex flex-col flex-1">
-          <div class="mb-3 flex-1">
-            <label class="pk-label">KDF Folder</label>
-            <div class="flex">
-              <span
-                class="flex items-center justify-center px-3 py-1.5 text-sm bg-gray-100 border border-r-0 border-gray-300 rounded-l-md"
-              >
-                <Folder class="w-4 h-4 text-gray-500" />
-              </span>
-              <textarea
-                v-model="batchFolder"
-                class="pk-input-mono resize-none rounded-none"
-                rows="3"
-                placeholder="Folder containing .kdf files"
-                style="font-size: 0.82rem"
-              />
-              <button
-                type="button"
-                @click="showBatchBrowser = true"
-                class="flex items-center justify-center px-3 py-1.5 text-sm border border-l-0 border-gray-300 rounded-r-md bg-gray-100 hover:bg-gray-50"
-                title="Browse folder"
-              >
-                <FolderOpen class="w-4 h-4" />
-              </button>
-            </div>
-            <div class="pk-hint">
-              All <code class="bg-gray-100 rounded px-1">.kdf</code> files in
-              this folder will be processed into a combined report.
-            </div>
-          </div>
-          <div class="mb-3 flex items-center gap-2 text-sm text-gray-700">
-            <input
-              id="singleReport"
-              type="checkbox"
-              v-model="singleReport"
-              class="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
-            />
-            <label for="singleReport"
-              >Generate individual report for each KDF</label
-            >
-          </div>
-          <button
-            @click="doBatch"
-            class="w-full bg-gray-500 text-white rounded py-1.5 text-sm hover:bg-gray-600 flex items-center justify-center gap-1 disabled:opacity-50"
-            :disabled="batchLoading.isLoading.value"
+          <CheckCircle2
+            v-if="reportSource === 'pykorf'"
+            class="w-4 h-4 text-blue-600 shrink-0"
+          />
+          <span
+            v-if="reportSource === 'pykorf'"
+            class="text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded px-2 py-0.5"
+            >pyKorf default source</span
           >
-            <span v-if="batchLoading.isLoading.value" class="pk-spinner" />
-            <Layers class="w-4 h-4" /> Generate Batch Report
-          </button>
         </div>
+        <button
+          @click="generate"
+          class="mt-3 w-full bg-green-600 text-white rounded py-1.5 text-sm hover:bg-green-700 flex items-center justify-center gap-1 disabled:opacity-50"
+          :disabled="genLoading.isLoading.value"
+        >
+          <span v-if="genLoading.isLoading.value" class="pk-spinner" />
+          <ArrowDownRight class="w-4 h-4" /> Generate Report
+        </button>
       </div>
     </div>
 
-    <!-- Bottom row: Export + Import -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <!-- Bottom row: Export + Import + Batch -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <!-- Export to Excel -->
       <div class="pk-card h-full flex flex-col">
         <div class="pk-card-header flex items-center gap-1">
@@ -439,6 +381,63 @@ onMounted(async () => {
               Cancel
             </button>
           </div>
+        </div>
+      </div>
+
+      <!-- Batch Report -->
+      <div class="pk-card h-full flex flex-col">
+        <div class="pk-card-header flex items-center gap-1">
+          <Layers class="w-4 h-4 text-gray-500" /> Batch Report
+        </div>
+        <div class="p-4 flex flex-col flex-1">
+          <div class="mb-3 flex-1">
+            <label class="pk-label">KDF Folder</label>
+            <div class="flex">
+              <span
+                class="flex items-center justify-center px-3 py-1.5 text-sm bg-gray-100 border border-r-0 border-gray-300 rounded-l-md"
+              >
+                <Folder class="w-4 h-4 text-gray-500" />
+              </span>
+              <textarea
+                v-model="batchFolder"
+                class="pk-input-mono resize-none rounded-none"
+                rows="3"
+                placeholder="Folder containing .kdf files"
+                style="font-size: 0.82rem"
+              />
+              <button
+                type="button"
+                @click="showBatchBrowser = true"
+                class="flex items-center justify-center px-3 py-1.5 text-sm border border-l-0 border-gray-300 rounded-r-md bg-gray-100 hover:bg-gray-50"
+                title="Browse folder"
+              >
+                <FolderOpen class="w-4 h-4" />
+              </button>
+            </div>
+            <div class="pk-hint">
+              All <code class="bg-gray-100 rounded px-1">.kdf</code> files in
+              this folder will be processed into a combined report.
+            </div>
+          </div>
+          <div class="mb-3 flex items-center gap-2 text-sm text-gray-700">
+            <input
+              id="singleReport"
+              type="checkbox"
+              v-model="singleReport"
+              class="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+            />
+            <label for="singleReport"
+              >Generate individual report for each KDF</label
+            >
+          </div>
+          <button
+            @click="doBatch"
+            class="w-full bg-gray-500 text-white rounded py-1.5 text-sm hover:bg-gray-600 flex items-center justify-center gap-1 disabled:opacity-50"
+            :disabled="batchLoading.isLoading.value"
+          >
+            <span v-if="batchLoading.isLoading.value" class="pk-spinner" />
+            <Layers class="w-4 h-4" /> Generate Batch Report
+          </button>
         </div>
       </div>
     </div>
