@@ -80,23 +80,161 @@ def _create_korf_excel(path: Path, num_cases: int = 1) -> Path:
         # FEEDS section
         ws_equip.append(["FEEDS"])
         ws_equip.append(
-            ["Number", "Description", "", "", "", "Elevation", "", "", "", "", "", "Pressure"]
+            [
+                "Number",
+                "Description",
+                "Vessel",
+                "",
+                "Fluid",
+                "",
+                "Nozzle",
+                "",
+                "",
+                "Pipe",
+                "",
+                "",
+                "",
+            ]
         )
-        ws_equip.append(["", "", "", "", "m", "", "", "", "", "", "bar", "barg"])
-        ws_equip.append(["", "", "", "", "m", "", "", "", "", "", "bar", "barg"])
         ws_equip.append(
-            ["170-TC-009", "VC PRODUCT SPHERE", "", "", "", 0.7, "", "", "", "", "", 6.27]
+            [
+                "",
+                "",
+                "Pressure",
+                "Elevation",
+                "Level",
+                "Density",
+                "Elevation",
+                "dP Level",
+                "Pressure",
+                "dP Velocity",
+                "dP Friction",
+                "Pressure",
+                "Number",
+            ]
+        )
+        ws_equip.append(
+            [
+                "",
+                "",
+                "barg",
+                "m",
+                "m",
+                "kg/m3",
+                "m",
+                "bar",
+                "barg",
+                "bar",
+                "bar",
+                "barg",
+                "",
+            ]
+        )
+        ws_equip.append(
+            [
+                "170-TC-009",
+                "VC PRODUCT SPHERE",
+                6.27,
+                0,
+                0,
+                928,
+                0,
+                0,
+                6.27,
+                0,
+                0,
+                6.27,
+                "EEG-001",
+            ]
         )
 
         # PRODUCTS section
         ws_equip.append(["PRODUCTS"])
         ws_equip.append(
-            ["Number", "Description", "", "", "", "Elevation", "", "", "", "", "", "Pressure"]
+            [
+                "Number",
+                "Description",
+                "Vessel",
+                "",
+                "Fluid",
+                "",
+                "Nozzle",
+                "",
+                "",
+                "Pipe",
+                "",
+                "",
+                "",
+            ]
         )
-        ws_equip.append(["", "", "", "", "m", "", "", "", "", "", "bar", "barg"])
-        ws_equip.append(["", "", "", "", "m", "", "", "", "", "", "bar", "barg"])
-        ws_equip.append(["TLT Export", "Product", "", "", "", 0, "", "", "", "", "", 8.5])
-        ws_equip.append(["PVC Plant", "Product", "", "", "", 0, "", "", "", "", "", 10.07])
+        ws_equip.append(
+            [
+                "",
+                "",
+                "Pressure",
+                "Elevation",
+                "Level",
+                "Density",
+                "Elevation",
+                "dP Level",
+                "Pressure",
+                "dP Velocity",
+                "dP Friction",
+                "Pressure",
+                "Number",
+            ]
+        )
+        ws_equip.append(
+            [
+                "",
+                "",
+                "barg",
+                "m",
+                "m",
+                "kg/m3",
+                "m",
+                "bar",
+                "barg",
+                "bar",
+                "bar",
+                "barg",
+                "",
+            ]
+        )
+        ws_equip.append(
+            [
+                "TLT Export",
+                "Product",
+                8.5,
+                0,
+                0,
+                928,
+                0,
+                0,
+                8.5,
+                0,
+                0,
+                8.5,
+                "RGE02-421",
+            ]
+        )
+        ws_equip.append(
+            [
+                "PVC Plant",
+                "Product",
+                10.07,
+                0,
+                0,
+                928,
+                0,
+                0,
+                10.07,
+                0,
+                0,
+                10.07,
+                "RGE02-422",
+            ]
+        )
 
         # ORIFICES section
         ws_equip.append(["ORIFICES"])
@@ -105,32 +243,64 @@ def _create_korf_excel(path: Path, num_cases: int = 1) -> Path:
                 "Number",
                 "Description",
                 "Type",
-                "",
+                "Elevation",
                 "No Holes",
                 "Bore",
                 "Beta",
                 "",
                 "",
-                "DP Flange",
-                "DP Pipe",
-                "Pin",
-                "Pout",
-                "Pipe In",
-                "Pipe Out",
+                "Pressures",
+                "",
+                "",
+                "",
+                "Pipe",
+                "",
             ]
         )
         ws_equip.append(
-            ["", "", "", "", "", "mm", "", "", "", "bar", "bar", "barg", "barg", "", ""]
+            [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "dP Flange Tap",
+                "dP Pipe Tap",
+                "Inlet",
+                "Outlet",
+                "Inlet",
+                "Outlet",
+            ]
         )
         ws_equip.append(
-            ["", "", "", "", "", "mm", "", "", "", "bar", "bar", "barg", "barg", "", ""]
+            [
+                "",
+                "",
+                "",
+                "m",
+                "",
+                "mm",
+                "",
+                "",
+                "",
+                "bar",
+                "bar",
+                "barg",
+                "barg",
+                "",
+                "",
+            ]
         )
         ws_equip.append(
             [
                 "FT-0701",
                 "Orifice",
                 "Orifice",
-                "",
+                0,
                 1,
                 140.5,
                 0.5,
@@ -152,7 +322,8 @@ def _create_korf_excel(path: Path, num_cases: int = 1) -> Path:
                 "Number",
                 "Description",
                 "Type",
-                "",
+                "Elevation",
+                "Characteristics",
                 "Cv",
                 "",
                 "",
@@ -160,27 +331,68 @@ def _create_korf_excel(path: Path, num_cases: int = 1) -> Path:
                 "",
                 "",
                 "",
-                "DP",
-                "Pin",
-                "Pout",
+                "Pressures",
                 "",
                 "",
-                "Pipe In",
-                "Pipe Out",
+                "",
+                "",
+                "Pipe",
+                "",
             ]
         )
         ws_equip.append(
-            ["", "", "", "", "", "", "", "", "", "", "", "bar", "barg", "barg", "", "", "", ""]
+            [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "Pin-Pout",
+                "Inlet",
+                "Outlet",
+                "",
+                "",
+                "Inlet",
+                "Outlet",
+            ]
         )
         ws_equip.append(
-            ["", "", "", "", "", "", "", "", "", "", "", "bar", "barg", "barg", "", "", "", ""]
+            [
+                "",
+                "",
+                "",
+                "m",
+                "",
+                "Full Open",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "bar",
+                "barg",
+                "barg",
+                "",
+                "",
+                "",
+                "",
+            ]
         )
         ws_equip.append(
             [
                 "FV-0714",
                 "Control Valve",
                 "FCV",
-                "",
+                0,
+                "Linear",
                 120,
                 "",
                 "",
@@ -618,6 +830,49 @@ class TestResultExporterMultiCase:
 
         result = _find_korf_excel(kdf_path)
         assert result is None
+
+    def test_korf_status_fresh(self, tmp_path):
+        """_korf_excel_status returns path and is_stale=False when xlsx is newer."""
+        import time
+
+        from pykorf.app.api.routers.report import _korf_excel_status
+
+        kdf_path = tmp_path / "Pumpcases.kdf"
+        kdf_path.write_text("dummy")
+        time.sleep(0.05)
+        xlsx_path = tmp_path / "Pumpcases.xlsx"
+        xlsx_path.write_text("dummy")
+
+        result = _korf_excel_status(kdf_path)
+        assert result.korf_excel_path is not None
+        assert result.is_stale is False
+
+    def test_korf_status_stale(self, tmp_path):
+        """_korf_excel_status returns path and is_stale=True when xlsx is older."""
+        import time
+
+        from pykorf.app.api.routers.report import _korf_excel_status
+
+        xlsx_path = tmp_path / "Pumpcases.xlsx"
+        xlsx_path.write_text("dummy")
+        time.sleep(0.05)
+        kdf_path = tmp_path / "Pumpcases.kdf"
+        kdf_path.write_text("dummy")
+
+        result = _korf_excel_status(kdf_path)
+        assert result.korf_excel_path is not None
+        assert result.is_stale is True
+
+    def test_korf_status_no_excel(self, tmp_path):
+        """_korf_excel_status returns None path when no xlsx exists."""
+        from pykorf.app.api.routers.report import _korf_excel_status
+
+        kdf_path = tmp_path / "Pumpcases.kdf"
+        kdf_path.write_text("dummy")
+
+        result = _korf_excel_status(kdf_path)
+        assert result.korf_excel_path is None
+        assert result.is_stale is False
 
 
 # ── Data Class Tests ────────────────────────────────────────────────────────

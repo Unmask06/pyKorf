@@ -7,6 +7,7 @@ Guidance for agentic coding assistants working in this repository. Focus on **ab
 - **Shell**: PowerShell on Windows — use PowerShell syntax (`;` or `&&` for chaining, `$null` / `| Out-Null` instead of `/dev/null`, no bash heredocs).
 - **Python**: Managed via `uv`. Always prefix commands with `uv run` — never call `python` directly.
 - **Python version**: 3.13 exactly (enforced in `pyproject.toml` and `.python-version`).
+- **Node/npm**: Used only for frontend in `pykorf/app/frontend/`. Run via `& "C:\Program Files\nodejs\npm.cmd" ...` in PowerShell (script execution policy blocks bare `npm`).
 
 ## Build, Lint & Test Commands
 
@@ -43,9 +44,19 @@ uv run pykorf --port 9000
 uv run pykorf --debug
 
 # Generate TypeScript types from OpenAPI (Hey API)
+# ⚠️  MUST have backend server running first — script fetches live schema
 cd pykorf/app/frontend
-npm run generate-types
+& "C:\Program Files\nodejs\npm.cmd" run generate-types
 ```
+
+## TypeScript Type Generation (Critical)
+
+**`npm run generate-types` auto-fetches the OpenAPI schema from the running pyKorf server** (`http://localhost:8000/openapi.json`), then generates TypeScript types.
+
+- **Server must be running** (`uv run pykorf`) before running this command.
+- If the server is unavailable, it falls back to the cached `openapi.json` at repo root.
+- If no cached file exists and server is down, the script exits with an error.
+- **Never run the backend server yourself** — always ask the user to start it first.
 
 ## Code Style Guidelines
 
@@ -114,6 +125,24 @@ Public surface: `Model` (alias `KorfModel`), a facade that delegates to six serv
 
 17 typed element types. `ELEMENT_REGISTRY` maps KDF tokens (e.g. `\PIPE`) to classes. Multi-case parameters stored as semicolon-separated strings.
 
+Each element class defines `ETYPE`, `ENAME`, `ALL` (parameter tuple), and a `summary(export=False)` method. The `export=True` format dictates report column names.
+
+### Report System (`pykorf/core/reports/`)
+
+Two reporter implementations share the `Reporter` protocol:
+
+| Reporter | Data Source | Use Case |
+|---|---|---|
+| `PykorfReporter` | KDF model in memory | Single-case, KDF-only reports |
+| `KorfReporter` | KORF Excel + KDF model | Multi-case reports with per-case sheets + worst-case summary envelope |
+
+**KORF Excel parser** (`pykorf/core/reports/korf_parser/` package):
+- `models.py` — data classes (`CaseInfo`, `PipeData`, `FeedData`, `PumpData`, etc.)
+- `parser.py` — parsing logic with header-based column lookup (`_find_column`, `_extract_row_data`)
+- Column mappings use `(header_name, offset)` tuples to find columns dynamically, with hardcoded offsets for sub-headers (e.g., "Pressures" → +0=DP, +1=Inlet, +2=Outlet)
+
+**ResultExporter** (`exporter.py`): Accepts `model=` (PykorfReporter) or `reporter=` (any Reporter). Multi-case mode creates per-case sheets + a "Summary" envelope sheet with worst-case values per pipe.
+
 ### Web Layer (`pykorf/app/api/` + `pykorf/app/frontend/`)
 
 Single-user, localhost-only FastAPI + Vue 3 SPA application. Entry point: `pykorf.__main__:main` → `run_server()` → uvicorn serving `create_app()`. The built Vue SPA lives in `pykorf/app/frontend/dist/`; FastAPI serves it via a catch-all `/{path:path}` route.
@@ -138,12 +167,18 @@ model = await require_model()
 
 **Routers** (`pykorf/app/api/routers/`): `session`, `model`, `data`, `settings`, `report`, `browse`, `doc_register`, `preferences`, `references`, `about` — all mounted under `/api/*`.
 
+**Report API** (`pykorf/app/api/routers/report.py`):
+- `POST /api/report/generate` — generate single-model report (auto-detects KORF Excel)
+- `GET /api/report/korf-status` — returns KORF Excel path + staleness flag for UI badge
+- `_find_korf_excel(kdf_path)` — auto-detects `{stem}.xlsx` only if xlsx mtime >= kdf mtime
+- `_korf_excel_status(kdf_path)` — returns path regardless of staleness (for UI warning badge)
+
 **Frontend** (`pykorf/app/frontend/`): Vue 3 + Vite + Pinia + Tailwind CSS + TypeScript.
 - `src/stores/session.ts` — model status, `skipSpOverride` (doc register search guard), `kdfPath`
 - `src/api/generated/` — Hey API generated TypeScript client and types (auto-generated via `npm run generate-types`)
 - `npm run dev` (from `pykorf/app/frontend/`) — HMR dev server, proxies `/api/*` to localhost:8000
 - `npm run build` — produces `dist/` consumed by FastAPI
-- `npm run generate-types` — generates TypeScript client from OpenAPI schema (`/openapi.json`) using Hey API
+- `scripts/fetch-openapi.mjs` — fetches live OpenAPI schema before type generation
 
 ### Import Rules
 
@@ -163,10 +198,12 @@ Test markers: `unit`, `integration`, `slow`, `automation` (requires KORF GUI ins
 - **NEVER** launch a new KORF process. Always `Application().connect(path="korf.exe")`.
 - **NEVER** use hardcoded strings for element types/params. Use `pykorf.elements` constants.
 - **NEVER** delete files to resolve errors. Fix or rewrite tests; don't delete them.
+- **NEVER** start the backend server yourself — always ask the user to run `uv run pykorf` first.
 - All model operations are **in-memory**. Persistent only on `model.save()`.
 - Use `uv` for all package management and running commands.
 - After `model.io.save()`, always call `session_state.reload_sync()` (inside `asyncio.to_thread`) so in-memory state matches disk.
 - **KORF data priority**: If KDF file is modified externally (e.g., by KORF GUI), pyKorf automatically reloads from disk on next navigation. Unsaved pyKorf changes are discarded — users should save before switching applications.
+- Element `summary(export=True)` output is the single source of truth for report column names.
 
 ## Guardrails
 

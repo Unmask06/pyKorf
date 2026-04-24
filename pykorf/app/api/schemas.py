@@ -229,6 +229,13 @@ class ReportResponse(BaseModel):
     errors: list[str] = []
 
 
+class KorfExcelStatusResponse(BaseModel):
+    """KORF Excel source status for the report generator."""
+
+    korf_excel_path: str | None = None
+    is_stale: bool = False
+
+
 # --- Pipe Criteria ---
 
 

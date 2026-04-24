@@ -563,18 +563,22 @@ class ResultExporter:
             unit_text = units[p_idx]
 
             # Check if this is a section marker row
-            # Section markers have empty unit and the column value equals the param name
+            # Section markers have empty unit and the column value matches the param name
+            # (accounting for "Section_" prefix in column names)
             row_values = df.iloc[:, p_idx].tolist()
             is_section_marker = (
                 param_name
                 and unit_text == ""
                 and len(row_values) > 0
-                and row_values[0] == param_name
+                and (
+                    row_values[0] == param_name
+                    or (param_name.startswith("Section_") and row_values[0] == param_name[8:])
+                )
             )
 
             if is_section_marker:
                 # Write section separator row
-                section_name = param_name
+                section_name = param_name[8:] if param_name.startswith("Section_") else param_name
                 merged_cell = ws.cell(row=current_row, column=start_col, value=section_name)
                 merged_cell.font = Font(bold=True, italic=True, size=11, color="003366")
                 merged_cell.fill = PatternFill(

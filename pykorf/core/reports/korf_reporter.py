@@ -186,6 +186,18 @@ class KorfReporter:
         if orifices_data:
             dfs["Orifices"] = pd.DataFrame(orifices_data)
 
+        compressors_data = self._extract_compressors(cd)
+        if compressors_data:
+            dfs["Compressors"] = pd.DataFrame(compressors_data)
+
+        exchangers_data = self._extract_exchangers(cd)
+        if exchangers_data:
+            dfs["Exchangers"] = pd.DataFrame(exchangers_data)
+
+        misc_data = self._extract_misc_equipment(cd)
+        if misc_data:
+            dfs["Misc Equipment"] = pd.DataFrame(misc_data)
+
         return dfs
 
     # ── FEEDS ─────────────────────────────────────────────────────────
@@ -304,15 +316,20 @@ class KorfReporter:
     def _extract_pumps(self, cd: KorfCaseData) -> list[dict]:
         results = []
         for pump in cd.pumps:
+            # Find inlet pipe data by name to get temperature and viscosity
+            inlet_pipe = next((p for p in cd.pipes if p.name == pump.pipe_inlet), None)
+            temperature = inlet_pipe.temperature_out if inlet_pipe else None
+            viscosity = inlet_pipe.viscosity if inlet_pipe else None
+            
             row = {
                 "Pump Name": pump.name,
                 "Section_Liquid Characteristics": "Liquid Characteristics",
-                "Vapour Pressure [bara]": None,
+                "Vapour Pressure [bara]": pump.vapour_pressure,
                 "Density [kg/m³]": pump.density,
-                "Viscosity [cP]": None,
+                "Viscosity [cP]": viscosity,
                 "Section_Operating Conditions": "Operating Conditions",
                 "Pump Datum Elevation [m]": pump.elevation,
-                "Pumping Temperature [°C]": None,
+                "Pumping Temperature [°C]": temperature,
                 "Volumetric Flow [m³/h]": pump.vol_flow,
                 "Discharge Pressure [barg]": pump.pressure_out,
                 "Suction Pressure [barg]": pump.pressure_in,
@@ -321,7 +338,7 @@ class KorfReporter:
                 "NPSH Available [m]": pump.npsha,
                 "Hydraulic Power [kW]": pump.power,
                 "Section_Performance Characteristics": "Performance Characteristics",
-                "Shut-Off Margin []": None,
+                "Raise to Shutoff DP []": pump.raise_to_shutoff_dp,
                 "Suc Vessel Design Pressure [barg]": pump.vessel_pressure,
                 "Suc Vessel Max Level [m]": pump.vessel_max_level,
                 "Shut-Off DP [bar]": pump.shutoff_dp,
@@ -349,6 +366,9 @@ class KorfReporter:
     # ── ORIFICES ──────────────────────────────────────────────────────
 
     def _extract_orifices(self, cd: KorfCaseData) -> list[dict]:
+        # Aligns with FlowOrifice.summary(export=True) pattern:
+        # Orifice Name, Type, Bore, DP Flange Tap, DP Pipe Tap,
+        # Inlet Pressure, Outlet Pressure
         results = []
         for orif in cd.orifices:
             row = {
@@ -361,8 +381,60 @@ class KorfReporter:
                 "DP Pipe Tap [bar]": orif.dp_pipe_tap,
                 "Inlet Pressure [barg]": orif.pressure_in,
                 "Outlet Pressure [barg]": orif.pressure_out,
-                "Inlet Pipe": orif.pipe_inlet,
-                "Outlet Pipe": orif.pipe_outlet,
+            }
+            results.append(row)
+        return results
+
+    # ── COMPRESSORS ───────────────────────────────────────────────────
+
+    def _extract_compressors(self, cd: KorfCaseData) -> list[dict]:
+        # Aligns with Compressor.summary(export=True):
+        # Compressor Name, Suction Pressure, Discharge Pressure,
+        # Differential Pressure, Gas Volumetric Flow, Power
+        results = []
+        for comp in cd.compressors:
+            display_name = f"{comp.name} , {comp.description}" if comp.description else comp.name
+            row = {
+                "Compressor Name": display_name,
+                "Suction Pressure [barg]": comp.pressure_in,
+                "Discharge Pressure [barg]": comp.pressure_out,
+                "Differential Pressure [bar]": comp.dp,
+                "Gas Volumetric Flow [m³/h]": comp.flow,
+                "Power [kW]": comp.power,
+            }
+            results.append(row)
+        return results
+
+    # ── EXCHANGERS ────────────────────────────────────────────────────
+
+    def _extract_exchangers(self, cd: KorfCaseData) -> list[dict]:
+        # Aligns with HeatExchanger.summary(export=True):
+        # Heat Exchanger Name, Type, Side, Pressure Drop,
+        # Inlet Pressure, Outlet Pressure
+        results = []
+        for hx in cd.exchangers:
+            row = {
+                "Heat Exchanger Name": hx.name,
+                "Type": hx.type,
+                "Side": hx.side,
+                "Pressure Drop [bar]": hx.dp,
+                "Inlet Pressure [barg]": hx.pressure_in,
+                "Outlet Pressure [barg]": hx.pressure_out,
+            }
+            results.append(row)
+        return results
+
+    # ── MISC EQUIPMENT ────────────────────────────────────────────────
+
+    def _extract_misc_equipment(self, cd: KorfCaseData) -> list[dict]:
+        # Aligns with MiscEquipment.summary(export=True):
+        # Equipment Name, Pressure Drop
+        results = []
+        for misc in cd.misc_equipment:
+            display_name = f"{misc.name} , {misc.description}" if misc.description else misc.name
+            row = {
+                "Equipment Name": display_name,
+                "Pressure Drop [bar]": misc.dp,
             }
             results.append(row)
         return results

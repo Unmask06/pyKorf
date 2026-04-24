@@ -14,6 +14,7 @@ from pykorf.app.api.schemas import (
     ExportRequest,
     GenerateReportRequest,
     ImportRequest,
+    KorfExcelStatusResponse,
     ReportResponse,
     StatusMessage,
 )
@@ -41,6 +42,39 @@ def _find_korf_excel(kdf_path: Path) -> Path | None:
     except OSError:
         return None
     return None
+
+
+def _korf_excel_status(kdf_path: Path) -> KorfExcelStatusResponse:
+    """Return KORF Excel presence and staleness status.
+
+    Returns the xlsx path if it exists (regardless of staleness), and
+    ``is_stale=True`` when the xlsx is older than the kdf.
+    """
+    candidate = kdf_path.parent / f"{kdf_path.stem}.xlsx"
+    if not candidate.is_file():
+        return KorfExcelStatusResponse(korf_excel_path=None, is_stale=False)
+    try:
+        kdf_mtime = kdf_path.stat().st_mtime
+        xlsx_mtime = candidate.stat().st_mtime
+        return KorfExcelStatusResponse(
+            korf_excel_path=str(candidate),
+            is_stale=xlsx_mtime < kdf_mtime,
+        )
+    except OSError:
+        return KorfExcelStatusResponse(korf_excel_path=None, is_stale=False)
+
+
+@router.get("/korf-status", response_model=KorfExcelStatusResponse, operation_id="korfExcelStatus")
+async def korf_excel_status() -> KorfExcelStatusResponse:
+    """Check KORF Excel source status (presence + staleness).
+
+    Returns the detected KORF Excel path and whether it is stale
+    (i.e., the KDF has been modified since the Excel was generated).
+    """
+    kdf_path = await _sess.get_kdf_path()
+    if not kdf_path:
+        return KorfExcelStatusResponse(korf_excel_path=None, is_stale=False)
+    return _korf_excel_status(kdf_path)
 
 
 @router.post("/generate", response_model=ReportResponse, operation_id="generateReport")

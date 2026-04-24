@@ -497,7 +497,7 @@ class Pump(BaseElement):
                 self.format_export_header("NPSH Available", npsh_unit): npsha_val,
                 self.format_export_header("Hydraulic Power", pow_unit): pow_val,
                 **self.section_marker("Performance Characteristics"),
-                self.format_export_header("Shut-Off Margin", ""): margin_val,
+                self.format_export_header("Raise to Shutoff DP", ""): margin_val,
                 self.format_export_header("Suc Vessel Design Pressure", press_unit): ves_max_press,
                 self.format_export_header("Suc Vessel Max Level", lvl_unit): ves_max_lvl,
                 self.format_export_header("Shut-Off DP", pres_unit): shutoff_dp,
