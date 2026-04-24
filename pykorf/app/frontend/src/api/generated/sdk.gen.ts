@@ -287,6 +287,11 @@ export const snapOrthogonal = <ThrowOnError extends boolean = false>(options: Op
  * Generate Report
  *
  * Generate a single-model Excel report.
+ *
+ * When a KORF Excel file is found alongside the KDF (or explicitly provided
+ * via ``korf_excel_path``), uses KorfReporter to produce a multi-case report
+ * with per-case sheets and a worst-case summary envelope. Otherwise falls
+ * back to PykorfReporter (KDF-only, single-case).
  */
 export const generateReport = <ThrowOnError extends boolean = false>(options: Options<GenerateReportData, ThrowOnError>) => (options.client ?? client).post<GenerateReportResponses, GenerateReportErrors, ThrowOnError>({
     responseType: 'json',
