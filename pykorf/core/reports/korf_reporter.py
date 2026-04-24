@@ -101,7 +101,10 @@ class KorfReporter:
     def get_case_names(self) -> list[str]:
         """Return case names extracted from the KORF Excel sheet names."""
         case_data = self._get_case_data()
-        return [f"{ci.number} - {ci.name}" for ci in sorted(case_data.keys(), key=lambda c: int(c.number))]
+        return [
+            f"{ci.number} - {ci.name}"
+            for ci in sorted(case_data.keys(), key=lambda c: int(c.number))
+        ]
 
     def get_validation_dataframe(self) -> pd.DataFrame:
         """Combine validation issues from all KORF Excel cases."""
@@ -242,9 +245,7 @@ class KorfReporter:
                             size_inch = None
                         pressures = pipe_model.pressure or []
                         try:
-                            pressure_barg = (
-                                pressures[0] / 100.0 if pressures else None
-                            )
+                            pressure_barg = pressures[0] / 100.0 if pressures else None
                         except (IndexError, TypeError):
                             pressure_barg = None
                         crit = lookup_criteria(state, criteria_code, size_inch, pressure_barg)
@@ -291,7 +292,10 @@ class KorfReporter:
             if abs(pd_pipe.velocity_in) > abs(pd_pipe.velocity_criteria_max):
                 return "FAIL"
         if pd_pipe.velocity_criteria_min is not None and pd_pipe.velocity_in is not None:
-            if pd_pipe.velocity_criteria_min > 0 and abs(pd_pipe.velocity_in) < pd_pipe.velocity_criteria_min:
+            if (
+                pd_pipe.velocity_criteria_min > 0
+                and abs(pd_pipe.velocity_in) < pd_pipe.velocity_criteria_min
+            ):
                 return "FAIL"
         return "PASS"
 

@@ -51,20 +51,16 @@ class Reporter(Protocol):
         ...
 
     @property
-    def basis(self) -> str:
-        ...
+    def basis(self) -> str: ...
 
     @property
-    def remarks(self) -> str:
-        ...
+    def remarks(self) -> str: ...
 
     @property
-    def hold(self) -> str:
-        ...
+    def hold(self) -> str: ...
 
     @property
-    def references(self) -> list[dict]:
-        ...
+    def references(self) -> list[dict]: ...
 
 
 _SEVERITY_RULES: list[tuple[re.Pattern, str]] = [
@@ -289,7 +285,5 @@ class PykorfReporter:
 
     def _extract_misc(self) -> list[dict]:
         return [
-            misc.summary(export=True)
-            for idx, misc in self.model.misc_equipment.items()
-            if idx != 0
+            misc.summary(export=True) for idx, misc in self.model.misc_equipment.items() if idx != 0
         ]

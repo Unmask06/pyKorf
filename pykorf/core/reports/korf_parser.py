@@ -288,16 +288,12 @@ def _parse_piping_sheet(ws: Worksheet) -> list[PipeData]:
             _set_all_pipes("vol_flow", row_idx)
         elif col_a == "Size" and col_d == "in":
             for i, pname in enumerate(pipe_names):
-                pipe_data[pname]["size"] = _safe_str(
-                    ws.cell(row=row_idx, column=5 + i).value
-                )
+                pipe_data[pname]["size"] = _safe_str(ws.cell(row=row_idx, column=5 + i).value)
         elif col_a == "Length" and col_d == "m":
             _set_all_pipes("length", row_idx)
         elif col_a == "Schedule":
             for i, pname in enumerate(pipe_names):
-                pipe_data[pname]["schedule"] = _safe_str(
-                    ws.cell(row=row_idx, column=5 + i).value
-                )
+                pipe_data[pname]["schedule"] = _safe_str(ws.cell(row=row_idx, column=5 + i).value)
         elif col_a == "dP/Length" and col_b == "" and col_d == "bar/100m":
             _set_all_pipes("dp_length", row_idx)
         elif col_a == "dP/Length" and col_b == "Target" and col_c == "Max":
@@ -596,7 +592,10 @@ def _parse_pumps_section(ws: Worksheet, start_row: int) -> tuple[list[PumpData],
 
     while row <= ws.max_row:
         cell_a = _safe_str(ws.cell(row=row, column=1).value)
-        if cell_a in ("NPSH", "SHUT OFF PRESSURE", "CURVES") or cell_a in _SECTION_MARKERS_EQUIPMENT:
+        if (
+            cell_a in ("NPSH", "SHUT OFF PRESSURE", "CURVES")
+            or cell_a in _SECTION_MARKERS_EQUIPMENT
+        ):
             break
         if not cell_a:
             row += 1
@@ -645,16 +644,10 @@ def _parse_pumps_section(ws: Worksheet, start_row: int) -> tuple[list[PumpData],
             npsh_data_row = row + 4
             if npsh_data_row <= ws.max_row:
                 for pump in pumps:
-                    pump_name_in_npsh = _safe_str(
-                        ws.cell(row=npsh_data_row, column=1).value
-                    )
+                    pump_name_in_npsh = _safe_str(ws.cell(row=npsh_data_row, column=1).value)
                     if pump_name_in_npsh == pump.name:
-                        pump.npsha = _safe_float(
-                            ws.cell(row=npsh_data_row, column=15).value
-                        )
-                        pump.npshr = _safe_float(
-                            ws.cell(row=npsh_data_row, column=18).value
-                        )
+                        pump.npsha = _safe_float(ws.cell(row=npsh_data_row, column=15).value)
+                        pump.npshr = _safe_float(ws.cell(row=npsh_data_row, column=18).value)
             row += 1
             continue
         if cell_a in ("SHUT OFF PRESSURE", "CURVES") or cell_a in _SECTION_MARKERS_EQUIPMENT:
@@ -669,9 +662,7 @@ def _parse_pumps_section(ws: Worksheet, start_row: int) -> tuple[list[PumpData],
             shutoff_data_row = row + 4
             if shutoff_data_row <= ws.max_row:
                 for pump in pumps:
-                    pump_name_in_shutoff = _safe_str(
-                        ws.cell(row=shutoff_data_row, column=1).value
-                    )
+                    pump_name_in_shutoff = _safe_str(ws.cell(row=shutoff_data_row, column=1).value)
                     if pump_name_in_shutoff == pump.name:
                         pump.shutoff_dp = _safe_float(
                             ws.cell(row=shutoff_data_row, column=13).value

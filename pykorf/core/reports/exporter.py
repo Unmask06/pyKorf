@@ -114,7 +114,12 @@ class ResultExporter:
         workbook = openpyxl.Workbook()
         workbook.remove(workbook.active)
 
-        if self.reporter.basis or self.reporter.remarks or self.reporter.hold or self.reporter.references:
+        if (
+            self.reporter.basis
+            or self.reporter.remarks
+            or self.reporter.hold
+            or self.reporter.references
+        ):
             self._write_references_sheet(workbook)
 
         self._write_validation_sheet(workbook)
@@ -257,7 +262,9 @@ class ResultExporter:
         element_keys = elements if elements is not None else list(first_case_dfs.keys())
 
         envelope_dfs = self._build_envelope_dataframes(all_cases, element_keys)
-        summary_ws = self._write_case_sheet(workbook, "Summary", envelope_dfs, source_name, element_keys)
+        summary_ws = self._write_case_sheet(
+            workbook, "Summary", envelope_dfs, source_name, element_keys
+        )
 
         model_title = self.reporter.get_model_title()
         if model_title:
