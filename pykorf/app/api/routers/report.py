@@ -26,16 +26,11 @@ router = APIRouter()
 def _find_korf_excel(kdf_path: Path) -> Path | None:
     """Auto-detect KORF Excel file alongside a KDF file.
 
-    Looks for an .xlsx file with the same stem in the same directory.
-    If multiple Excel files share the stem, returns None (ambiguous).
+    Looks for ``{stem}.xlsx`` (exact stem match) in the same directory.
     """
-    candidates = list(kdf_path.parent.glob(f"{kdf_path.stem}*.xlsx"))
-    if len(candidates) == 1:
-        return candidates[0]
-    if len(candidates) > 1:
-        exact = [p for p in candidates if p.name == f"{kdf_path.stem}.xlsx"]
-        if len(exact) == 1:
-            return exact[0]
+    candidate = kdf_path.parent / f"{kdf_path.stem}.xlsx"
+    if candidate.is_file():
+        return candidate
     return None
 
 

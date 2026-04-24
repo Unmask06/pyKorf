@@ -588,6 +588,18 @@ class TestResultExporterMultiCase:
         result = _find_korf_excel(kdf_path)
         assert result is None
 
+    def test_korf_excel_exact_stem_only(self, tmp_path):
+        """_find_korf_excel ignores {stem}_report.xlsx and {stem}_export.xlsx."""
+        from pykorf.app.api.routers.report import _find_korf_excel
+
+        kdf_path = tmp_path / "Pumpcases.kdf"
+        kdf_path.write_text("dummy")
+        (tmp_path / "Pumpcases_report.xlsx").write_text("dummy")
+        (tmp_path / "Pumpcases_export.xlsx").write_text("dummy")
+
+        result = _find_korf_excel(kdf_path)
+        assert result is None
+
 
 # ── Data Class Tests ────────────────────────────────────────────────────────
 
