@@ -23,9 +23,31 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
+def _find_korf_excel(kdf_path: Path) -> Path | None:
+    """Auto-detect KORF Excel file alongside a KDF file.
+
+    Looks for an .xlsx file with the same stem in the same directory.
+    If multiple Excel files share the stem, returns None (ambiguous).
+    """
+    candidates = list(kdf_path.parent.glob(f"{kdf_path.stem}*.xlsx"))
+    if len(candidates) == 1:
+        return candidates[0]
+    if len(candidates) > 1:
+        exact = [p for p in candidates if p.name == f"{kdf_path.stem}.xlsx"]
+        if len(exact) == 1:
+            return exact[0]
+    return None
+
+
 @router.post("/generate", response_model=ReportResponse, operation_id="generateReport")
 async def generate_report(req: GenerateReportRequest) -> ReportResponse:
-    """Generate a single-model Excel report."""
+    """Generate a single-model Excel report.
+
+    When a KORF Excel file is found alongside the KDF (or explicitly provided
+    via ``korf_excel_path``), uses KorfReporter to produce a multi-case report
+    with per-case sheets and a worst-case summary envelope. Otherwise falls
+    back to PykorfReporter (KDF-only, single-case).
+    """
     model = await require_model()
     kdf_path = await _sess.get_kdf_path()
     kdf_folder = str(kdf_path.parent) if kdf_path else ""
@@ -64,25 +86,55 @@ async def generate_report(req: GenerateReportRequest) -> ReportResponse:
                 else []
             )
 
-            def _do_export():
+            korf_excel_path: Path | None = None
+            if req.korf_excel_path:
+                korf_excel_path = Path(req.korf_excel_path)
+            elif kdf_path:
+                korf_excel_path = _find_korf_excel(kdf_path)
+
+            if korf_excel_path and korf_excel_path.is_file():
+                from pykorf.core.reports.korf_reporter import KorfReporter
+
+                def _do_export():
+                    reporter = KorfReporter(
+                        excel_path=korf_excel_path,
+                        model=model,
+                        basis=basis,
+                        remarks=remarks,
+                        hold=hold,
+                        references=references,
+                    )
+                    exporter = ResultExporter(reporter=reporter)
+                    exporter.export_to_excel(str(report_file))
+
+                await asyncio.to_thread(_do_export)
+                messages.append(
+                    StatusMessage(
+                        type="success",
+                        message=f"KORF report saved to: {report_file} (source: {korf_excel_path.name})",
+                    )
+                )
+            else:
                 from pykorf.app.operation.project.pykorf_file import get_justifications
 
-                justifications = get_justifications(kdf_path) if kdf_path else {}
-                exporter = ResultExporter(
-                    model,
-                    basis=basis,
-                    remarks=remarks,
-                    hold=hold,
-                    references=references,
-                    justifications=justifications,
-                )
-                exporter.export_to_excel(str(report_file))
+                def _do_export():
+                    justifications = get_justifications(kdf_path) if kdf_path else {}
+                    exporter = ResultExporter(
+                        model=model,
+                        basis=basis,
+                        remarks=remarks,
+                        hold=hold,
+                        references=references,
+                        justifications=justifications,
+                    )
+                    exporter.export_to_excel(str(report_file))
 
-            await asyncio.to_thread(_do_export)
+                await asyncio.to_thread(_do_export)
+                messages.append(
+                    StatusMessage(type="success", message=f"Report saved to: {report_file}")
+                )
+
             set_last_report_path(str(report_file))
-            messages.append(
-                StatusMessage(type="success", message=f"Report saved to: {report_file}")
-            )
         except Exception as exc:
             errors.append(f"Error generating report: {exc}")
 

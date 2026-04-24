@@ -207,6 +207,7 @@ class BulkCopyResponse(BaseModel):
 
 class GenerateReportRequest(BaseModel):
     report_path: str | None = None
+    korf_excel_path: str | None = None
 
 
 class ExportRequest(BaseModel):
