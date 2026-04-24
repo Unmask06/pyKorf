@@ -10,11 +10,13 @@ from pykorf.core.reports.korf_parser import (
     ValidationEntry,
     parse_korf_excel,
 )
+from pykorf.core.reports.korf_reporter import KorfReporter
 from pykorf.core.reports.reporter import PykorfReporter, Reporter
 
 __all__ = [
     "CaseInfo",
     "KorfCaseData",
+    "KorfReporter",
     "OrificeData",
     "ResultExporter",
     "PykorfReporter",
