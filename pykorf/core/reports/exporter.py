@@ -1,6 +1,5 @@
 import logging
 import re
-from collections.abc import Mapping
 from typing import Any
 
 import openpyxl
@@ -10,102 +9,44 @@ from openpyxl.utils import get_column_letter
 from openpyxl.utils.dataframe import dataframe_to_rows
 
 from pykorf import Model
-from pykorf.core.reports.unit_converter import UnitConverter
+from pykorf.core.reports.reporter import PykorfReporter, Reporter
 
 _logger = logging.getLogger(__name__)
 
 
-# ── Validation string parsing ──────────────────────────────────────────
-
-_SEVERITY_RULES: list[tuple[re.Pattern, str]] = [
-    (re.compile(r"fails sizing|exceeds criteria|mismatch", re.I), "Error"),
-    (re.compile(r"references pipe index .+ which does not exist", re.I), "Error"),
-    (
-        re.compile(r"missing line number|missing NAME|missing CON|missing|not found in PMS", re.I),
-        "Warning",
-    ),
-    (re.compile(r"Add Title", re.I), "Info"),
-    (re.compile(r"pipe.*criteria", re.I), "Error"),
-    (re.compile(r"CONN|connectiv|nozzle|CON value", re.I), "Error"),
-]
-
-
-def _classify_issue(msg: str) -> tuple[str, str, str]:
-    """Classify a validation message into (severity, category, element_name).
-
-    Args:
-        msg: Human-readable validation issue string.
-
-    Returns:
-        Tuple of (severity, category, element_name_or_empty).
-    """
-    from pykorf.app.validation import classify_issue
-
-    elem_name = ""
-    for pat in [
-        re.compile(r"Pipe ['\"]?(\S+?)['\"]?[:\s]"),
-        re.compile(r"PIPE (\S+?) \("),
-        re.compile(r"^(\S+?) \((?:VALVE|PUMP|FEED|PRODUCT|COMPRESSOR|TEE|JUNC|VESSEL)\)"),
-    ]:
-        m = pat.search(msg)
-        if m:
-            elem_name = m.group(1)
-            break
-
-    category = classify_issue(msg)
-
-    for pattern, severity in _SEVERITY_RULES:
-        if pattern.search(msg):
-            return severity, category, elem_name
-
-    return "Warning", category, elem_name
-
-
 class ResultExporter:
-    """A scalable exporter to extract calculated results and input criteria from a pyKorf Model
-    and save them into a multi-sheet Excel report or DataFrame dictionary.
+    """A scalable exporter that generates formatted Excel reports from a Reporter.
 
-    This class correctly relies on the element 'summary' methods to parse the dynamic units
-    directly from the underlying KDF records and format them for export.
+    The Reporter provides the data (via PykorfReporter for KDF-based data,
+    or KorfReporter for KORF Excel-based data), and this class handles all
+    formatting, layout, and styling.
     """
 
     def __init__(
         self,
-        model: Model,
+        model: Model | None = None,
+        reporter: Reporter | None = None,
         basis: str = "",
         remarks: str = "",
         hold: str = "",
         references: list[dict] | None = None,
         justifications: dict[str, str] | None = None,
     ):
-        self.model = model
-        self._basis = basis
-        self._remarks = remarks
-        self._hold = hold
-        self._references = references or []
-        self._justifications = justifications or {}
+        if reporter is not None:
+            self.reporter = reporter
+        elif model is not None:
+            self.reporter = PykorfReporter(
+                model=model,
+                basis=basis,
+                remarks=remarks,
+                hold=hold,
+                references=references,
+                justifications=justifications,
+            )
+        else:
+            raise ValueError("Either model or reporter must be provided")
 
-        self._converter = UnitConverter()
-
-        # ---------------------------------------------------------
-        # REGISTRY: Add new element extractors here in the future
-        # ---------------------------------------------------------
-        self._extractors = {
-            "Feeds": self._extract_feeds,
-            "Products": self._extract_products,
-            "Pipes": self._extract_pipes,
-            "Pumps": self._extract_pumps,
-            "Compressors": self._extract_compressors,
-            "Valves": self._extract_valves,
-            "Heat Exchangers": self._extract_heat_exchangers,
-            "Junctions": self._extract_junctions,
-            "Misc Equipment": self._extract_misc,
-        }
-
-        # Header parsing pattern
-        self._header_pattern = re.compile(r"^(.*?) \[(.*?)\]$")
-
-        # Reuseable Styles
+        # Reusable Styles
         self._styles = {
             "model_title": Font(bold=True, size=18, color="003366"),
             "title": Font(bold=True, size=14, color="003366"),
@@ -118,55 +59,8 @@ class ResultExporter:
             "thick_side": Side(style="medium"),
         }
 
-    def generate_dataframes(self) -> dict[str, pd.DataFrame]:
-        """Runs all registered extractors and returns a dictionary of DataFrames."""
-        dfs = {}
-        for sheet_name, extractor_func in self._extractors.items():
-            data = extractor_func()
-            if data:  # Only add the sheet if there are actual elements
-                converted_data = self._converter.convert_summary(data)
-                dfs[sheet_name] = pd.DataFrame(converted_data)
-        return dfs
-
-    def _get_validation_dataframe(self) -> pd.DataFrame:
-        """Run all model validation checks, return a structured DataFrame.
-
-        Returns:
-            DataFrame with columns: Severity, Category, Element, Message.
-            Empty DataFrame if no issues found.
-        """
-        issues: list[dict[str, str]] = []
-
-        # model.validate() now includes core + app-level + connectivity
-        try:
-            for msg in self.model.validate():
-                severity, category, elem = _classify_issue(msg)
-                issues.append(
-                    {
-                        "Severity": severity,
-                        "Category": category,
-                        "Element": elem,
-                        "Message": msg,
-                    }
-                )
-        except Exception as exc:
-            _logger.warning("validation failed: %s", exc)
-
-        # Add justified violations with "Justified" severity
-        if self._justifications:
-            for pipe_name, justification in self._justifications.items():
-                issues.append(
-                    {
-                        "Severity": "Justified",
-                        "Category": "Criteria",
-                        "Element": pipe_name,
-                        "Message": f"Pipe '{pipe_name}': criteria violation justified - {justification}",
-                    }
-                )
-
-        if not issues:
-            return pd.DataFrame(columns=["Severity", "Category", "Element", "Message"])
-        return pd.DataFrame(issues)
+        # Header parsing pattern
+        self._header_pattern = re.compile(r"^(.*?) \[(.*?)\]$")
 
     def export_to_excel(
         self,
@@ -180,9 +74,9 @@ class ResultExporter:
 
         from openpyxl import load_workbook
 
-        source_name = Path(self.model._parser.path).name
+        source_name = self.reporter.get_source_name()
         _logger.info("── Generate Report ── %s", source_name)
-        dfs_flat = self.generate_dataframes()
+        dfs_flat = self.reporter.generate_dataframes()
         non_empty = [k for k, v in dfs_flat.items() if not v.empty]
         _logger.info("   Sections: %s", ", ".join(non_empty) if non_empty else "none")
 
@@ -205,27 +99,26 @@ class ResultExporter:
             worksheet.page_setup.fitToHeight = 1
 
         # Insert References & Design Basis sheet as the first sheet (if data present)
-        if self._basis or self._remarks or self._hold or self._references:
+        if self.reporter.basis or self.reporter.remarks or self.reporter.hold or self.reporter.references:
             self._write_references_sheet(workbook)
 
         # Insert Validation sheet as the first sheet (if issues exist)
         self._write_validation_sheet(workbook)
 
         # Row 1 — Model title from KORF SYMBOL (FSIZ=2)
-        model_title = self._get_model_title()
+        model_title = self.reporter.get_model_title()
         if model_title:
             title_cell = worksheet.cell(row=1, column=1, value=model_title)
             title_cell.font = self._styles["model_title"]
             worksheet.row_dimensions[1].height = 28
 
         # Row 2 — Source file
-        source_name = Path(self.model._parser.path).name
         worksheet.cell(row=2, column=1, value=f"Source File: {source_name}").font = self._styles[
             "header"
         ]
 
         # Row 3 — Cases
-        case_names = self.model.general.case_descriptions if hasattr(self.model, "general") else []
+        case_names = self.reporter.get_case_names()
         if case_names:
             worksheet.cell(
                 row=3, column=1, value=f"Cases: {'; '.join(case_names)}"
@@ -235,7 +128,7 @@ class ResultExporter:
         current_row_right = 8 if template_path else 5
         max_left_col = 1
 
-        element_keys = elements if elements is not None else list(self._extractors.keys())
+        element_keys = elements if elements is not None else list(dfs_flat.keys())
 
         # First pass: calculate max column width for left-side standard tables
         # Only count Pipes, Compressors, Heat Exchangers (not Pumps/Valves which use transposed layout)
@@ -500,28 +393,6 @@ class ResultExporter:
         for c in range(start_col + 1, start_col + num_cols):
             ws.column_dimensions[get_column_letter(c)].width = 15
 
-    def _get_model_title(self) -> str:
-        """Fetches the model title from the first SYMBOL with TYPE='Text' and FSIZ=2."""
-        from pykorf.core.elements import Symbol
-
-        symbol_indices = {
-            rec.index
-            for rec in self.model._parser.records
-            if rec.element_type == "SYMBOL" and rec.index is not None
-        }
-        for idx in symbol_indices:
-            type_rec = self.model._parser.get("SYMBOL", idx, Symbol.TYPE)
-            fsiz_rec = self.model._parser.get("SYMBOL", idx, Symbol.FSIZ)
-            text_rec = self.model._parser.get("SYMBOL", idx, Symbol.TEXT)
-            if not (type_rec and fsiz_rec and text_rec):
-                continue
-            try:
-                if type_rec.values[0] == "Text" and int(fsiz_rec.values[0]) == 2:
-                    return str(text_rec.values[0]) if text_rec.values else ""
-            except (ValueError, TypeError, IndexError):
-                continue
-        return ""
-
     def _write_references_sheet(self, workbook: Any) -> None:
         """Creates the 'References & Design Basis' sheet as the first sheet (A4 Landscape 80%)."""
         ref_ws = workbook.create_sheet("References & Design Basis", 0)
@@ -543,12 +414,12 @@ class ResultExporter:
         row += 2
 
         # ── Design Basis section ──────────────────────────────────────
-        if self._basis and self._basis.strip():
+        if self.reporter.basis and self.reporter.basis.strip():
             section_cell = ref_ws.cell(row=row, column=1, value="Design Basis")
             section_cell.font = self._styles["title"]
             row += 1
 
-            for line in self._basis.splitlines():
+            for line in self.reporter.basis.splitlines():
                 basis_cell = ref_ws.cell(row=row, column=1, value=line)
                 basis_cell.font = Font(size=10)
                 basis_cell.alignment = Alignment(wrap_text=False, horizontal="left")
@@ -557,12 +428,12 @@ class ResultExporter:
             row += 1  # blank separator
 
         # ── Remarks section ───────────────────────────────────────────
-        if self._remarks and self._remarks.strip():
+        if self.reporter.remarks and self.reporter.remarks.strip():
             section_cell = ref_ws.cell(row=row, column=1, value="Remarks")
             section_cell.font = self._styles["title"]
             row += 1
 
-            for line in self._remarks.splitlines():
+            for line in self.reporter.remarks.splitlines():
                 cell = ref_ws.cell(row=row, column=1, value=line)
                 cell.font = Font(size=10)
                 cell.alignment = Alignment(wrap_text=False, horizontal="left")
@@ -571,12 +442,12 @@ class ResultExporter:
             row += 1  # blank separator
 
         # ── Hold Items section ────────────────────────────────────────
-        if self._hold and self._hold.strip():
+        if self.reporter.hold and self.reporter.hold.strip():
             section_cell = ref_ws.cell(row=row, column=1, value="Hold Items")
             section_cell.font = self._styles["title"]
             row += 1
 
-            for line in self._hold.splitlines():
+            for line in self.reporter.hold.splitlines():
                 cell = ref_ws.cell(row=row, column=1, value=line)
                 cell.font = Font(size=10)
                 cell.alignment = Alignment(wrap_text=False, horizontal="left")
@@ -585,7 +456,7 @@ class ResultExporter:
             row += 1  # blank separator
 
         # ── References table section ──────────────────────────────────
-        if self._references:
+        if self.reporter.references:
             section_cell = ref_ws.cell(row=row, column=1, value="Reference Documents")
             section_cell.font = self._styles["title"]
             row += 1
@@ -602,7 +473,7 @@ class ResultExporter:
             row += 1
 
             # Table rows
-            for ref in self._references:
+            for ref in self.reporter.references:
                 ref_ws.cell(row=row, column=1, value=ref.get("name", "")).font = Font(
                     bold=True, size=10
                 )
@@ -626,7 +497,7 @@ class ResultExporter:
 
         Only added if there are actual issues. A4 Landscape, 90% scale.
         """
-        df = self._get_validation_dataframe()
+        df = self.reporter.get_validation_dataframe()
         if df.empty:
             return
 
@@ -669,13 +540,13 @@ class ResultExporter:
 
         # Table headers
         headers = list(df.columns)
-        severity_colors: Mapping[str, str] = {
+        severity_colors: dict[str, str] = {
             "Error": "9C0006",
             "Warning": "9C5700",
             "Info": "003366",
             "Justified": "003366",
         }
-        severity_fills: Mapping[str, str] = {
+        severity_fills: dict[str, str] = {
             "Error": "FFC7CE",
             "Warning": "FFEB9C",
             "Info": "D9E2F3",
@@ -719,8 +590,6 @@ class ResultExporter:
 
     def _write_pipe_stats(self, ws: Any, df: Any, row: int, start_col: int) -> int:
         """Writes a Min-Max summary row and an overall Criteria Check row below the pipe table."""
-        import pandas as pd
-
         dpdl_col = next((c for c in df.columns if "DP / DL" in c and "Criteria" not in c), None)
         vel_col = next((c for c in df.columns if "Velocity" in c and "Criteria" not in c), None)
         rhov2_col = next((c for c in df.columns if "ρV² calc" in c), None)  # noqa: RUF001
@@ -841,58 +710,3 @@ class ResultExporter:
                     cell.alignment = Alignment(horizontal="center")
 
         return row + 3
-
-    # =========================================================
-    # ELEMENT EXTRACTORS
-    # =========================================================
-
-    def _extract_pipes(self) -> list[dict]:
-        return [
-            pipe.summary(export=True, justifications=self._justifications)
-            for idx, pipe in self.model.pipes.items()
-            if idx != 0 and not pipe.name.startswith("d")
-        ]
-
-    def _extract_pumps(self) -> list[dict]:
-        return [
-            pump.summary(export=True, model=self.model)
-            for idx, pump in self.model.pumps.items()
-            if idx != 0
-        ]
-
-    def _extract_compressors(self) -> list[dict]:
-        return [
-            comp.summary(export=True) for idx, comp in self.model.compressors.items() if idx != 0
-        ]
-
-    def _extract_feeds(self) -> list[dict]:
-        return [feed.summary(export=True) for idx, feed in self.model.feeds.items() if idx != 0]
-
-    def _extract_products(self) -> list[dict]:
-        return [prod.summary(export=True) for idx, prod in self.model.products.items() if idx != 0]
-
-    def _extract_valves(self) -> list[dict]:
-        return [
-            valve.summary(export=True, model=self.model)
-            for idx, valve in self.model.valves.items()
-            if idx != 0
-        ]
-
-    def _extract_heat_exchangers(self) -> list[dict]:
-        return [hx.summary(export=True) for idx, hx in self.model.exchangers.items() if idx != 0]
-
-    def _extract_junctions(self) -> list[dict]:
-        """Extract junction data for export.
-
-        Only includes junctions whose names do NOT start with "J".
-        """
-        return [
-            junction.summary(export=True)
-            for idx, junction in self.model.junctions.items()
-            if idx != 0 and not junction.name.startswith("J")
-        ]
-
-    def _extract_misc(self) -> list[dict]:
-        return [
-            misc.summary(export=True) for idx, misc in self.model.misc_equipment.items() if idx != 0
-        ]

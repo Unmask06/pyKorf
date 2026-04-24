@@ -12,7 +12,8 @@ import pandas as pd
 from pykorf import Model
 from pykorf.app.operation.project.references import ReferencesStore
 from pykorf.core.log import get_logger
-from pykorf.core.reports.exporter import ResultExporter, _classify_issue
+from pykorf.core.reports.exporter import ResultExporter
+from pykorf.core.reports.reporter import PykorfReporter, _classify_issue
 
 logger = get_logger()
 
@@ -129,13 +130,13 @@ class BatchReportGenerator:
                 progress_callback(i, len(self.kdf_files), kdf_file.name)
             try:
                 model = Model.load(kdf_file)
-                exporter = ResultExporter(model)
+                reporter = PykorfReporter(model)
 
                 for sheet_name in types_to_process:
-                    if sheet_name not in exporter._extractors:
+                    if sheet_name not in reporter._extractors:
                         continue
 
-                    extractor = exporter._extractors[sheet_name]
+                    extractor = reporter._extractors[sheet_name]
                     elements = extractor()
 
                     for elem in elements:
