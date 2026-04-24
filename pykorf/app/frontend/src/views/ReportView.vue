@@ -248,9 +248,9 @@ onMounted(async () => {
             </div>
             <div class="pk-hint">
               To export from KORF: <strong>Hydraulics &gt; Results &gt; View
-              Excel Report</strong>, then save the XML as XLSX with the same
-              name as the KDF file. Enables multi-case reports with per-case
-              sheets.
+              Excel Report</strong>, then save the <strong>XML</strong> as
+              <strong>XLSX</strong> with the same name as the KDF file. Enables
+              multi-case reports with per-case sheets.
             </div>
           </div>
         </div>
