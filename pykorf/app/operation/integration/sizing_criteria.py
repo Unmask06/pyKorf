@@ -150,13 +150,21 @@ def predict_criteria(fluid_type: str, pipe_name: str) -> str | None:
 
 def _entry_to_criteria(entry: dict) -> CriteriaValues:
     """Convert a raw TOML entry dict to a CriteriaValues NamedTuple."""
-    dp_raw = entry["dp"][1]
-    dp_max: float | None = None if dp_raw == 0.0 else float(dp_raw)
+    dp_raw = entry.get("dp")
+    if dp_raw is None:
+        dp_max: float | None = None
+    else:
+        dp_max_val = dp_raw[1] if isinstance(dp_raw, list) else dp_raw
+        dp_max = None if dp_max_val == 0.0 else float(dp_max_val)
 
-    vel_raw = entry["vel"][1]
-    vel_max: float | None = None if vel_raw == 0.0 else float(vel_raw)
-
-    vel_min = entry["vel"][0]
+    vel_raw = entry.get("vel")
+    if vel_raw is None:
+        vel_min = 0.0
+        vel_max: float | None = None
+    else:
+        vel_max_val = vel_raw[1] if isinstance(vel_raw, list) else vel_raw
+        vel_max = None if vel_max_val == 0.0 else float(vel_max_val)
+        vel_min = float(vel_raw[0]) if isinstance(vel_raw, list) else 0.0
 
     raw = entry.get("rho_v2")
     if raw is None:
