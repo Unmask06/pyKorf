@@ -853,6 +853,7 @@ class Pipe(BaseElement):
                 "Pipe Name": self.name,
                 "Criteria Code": self.criteria_code,
                 "Line Number": parsed_line.raw_line_number if parsed_line else "",
+                "Line Size": self.diameter_inch or "",
                 self.format_export_header("Line Length", line_length_unit): line_length,
                 self.format_export_header("dP max Criteria", dp_crit_unit): dp_crit_val,
                 self.format_export_header("v min Criteria", vel_min_crit_unit): vel_min_crit_val,

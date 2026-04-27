@@ -238,6 +238,7 @@ class KorfReporter(_BaseReporter):
                 "Pipe Name": pd_pipe.name,
                 "Criteria Code": criteria_code,
                 "Line Number": line_number,
+                "Line Size": pd_pipe.size or "",
                 f"Line Length [{length_unit}]": pd_pipe.length,
                 f"dP max Criteria [{dp_crit_unit}]": pd_pipe.dp_length_criteria_max,
                 f"v min Criteria [{vel_min_unit}]": pd_pipe.velocity_criteria_min,
