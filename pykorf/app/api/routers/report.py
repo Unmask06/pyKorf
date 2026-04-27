@@ -81,10 +81,10 @@ async def korf_excel_status() -> KorfExcelStatusResponse:
 async def generate_report(req: GenerateReportRequest) -> ReportResponse:
     """Generate a single-model Excel report.
 
-    When a KORF Excel file is found alongside the KDF (or explicitly provided
-    via ``korf_excel_path``), uses KorfReporter to produce a multi-case report
-    with per-case sheets and a worst-case summary envelope. Otherwise falls
-    back to PykorfReporter (KDF-only, single-case).
+    Uses ``mode`` to select the reporter:
+    - ``"single"`` (default): PykorfReporter via KDF data only.
+    - ``"multi"``: KorfReporter via auto-detected KORF Excel alongside the KDF.
+      Requires the KORF Excel file to exist and be up-to-date.
     """
     model = await require_model()
     kdf_path = await _sess.get_kdf_path()
@@ -124,34 +124,42 @@ async def generate_report(req: GenerateReportRequest) -> ReportResponse:
                 else []
             )
 
-            korf_excel_path: Path | None = None
-            if req.korf_excel_path:
-                korf_excel_path = Path(req.korf_excel_path)
-            elif kdf_path:
-                korf_excel_path = _find_korf_excel(kdf_path)
+            is_multi = req.mode == "multi"
 
-            if korf_excel_path and korf_excel_path.is_file():
-                from pykorf.core.reports.korf_reporter import KorfReporter
+            if is_multi:
+                korf_excel_path = _find_korf_excel(kdf_path) if kdf_path else None
 
-                def _do_export():
-                    reporter = KorfReporter(
-                        excel_path=korf_excel_path,
-                        model=model,
-                        basis=basis,
-                        remarks=remarks,
-                        hold=hold,
-                        references=references,
+                if not korf_excel_path:
+                    errors.append(
+                        "Multi-case mode requires a KORF Excel report alongside the KDF "
+                        f"(expected: {kdf_path.stem}.xlsx in the same folder). "
+                        "Generate it from KORF first."
                     )
-                    exporter = ResultExporter(reporter=reporter)
-                    exporter.export_to_excel(str(report_file))
+                else:
+                    from pykorf.core.reports.korf_reporter import KorfReporter
 
-                await asyncio.to_thread(_do_export)
-                messages.append(
-                    StatusMessage(
-                        type="success",
-                        message=f"KORF report saved to: {report_file} (source: {korf_excel_path.name})",
+                    def _do_export():
+                        reporter = KorfReporter(
+                            excel_path=korf_excel_path,
+                            model=model,
+                            basis=basis,
+                            remarks=remarks,
+                            hold=hold,
+                            references=references,
+                        )
+                        exporter = ResultExporter(reporter=reporter)
+                        exporter.export_to_excel(str(report_file))
+
+                    await asyncio.to_thread(_do_export)
+                    messages.append(
+                        StatusMessage(
+                            type="success",
+                            message=(
+                                f"Multi-case report saved to: {report_file} "
+                                f"(source: {korf_excel_path.name})"
+                            ),
+                        )
                     )
-                )
             else:
                 from pykorf.app.operation.project.pykorf_file import get_justifications
 
@@ -172,7 +180,8 @@ async def generate_report(req: GenerateReportRequest) -> ReportResponse:
                     StatusMessage(type="success", message=f"Report saved to: {report_file}")
                 )
 
-            set_last_report_path(str(report_file))
+            if not errors:
+                set_last_report_path(str(report_file))
         except Exception as exc:
             errors.append(f"Error generating report: {exc}")
 
@@ -228,7 +237,15 @@ async def import_excel(req: ImportRequest) -> ReportResponse:
 
 @router.post("/batch", response_model=ReportResponse, operation_id="batchReport")
 async def batch_report(req: BatchReportRequest) -> ReportResponse:
-    """Generate batch report across multiple KDF files in a folder."""
+    """Generate batch report across multiple KDF files in a folder.
+
+    Uses ``mode`` to select the reporter:
+    - ``"single"`` (default): PykorfReporter per KDF.
+    - ``"multi"``: KorfReporter per KDF (auto-detects KORF Excel alongside each KDF).
+
+    When ``validate_only=True`` and ``mode="multi"``, scans for KORF Excel
+    files and returns which KDFs are missing/stale without generating.
+    """
     await require_model()
     kdf_path = await _sess.get_kdf_path()
     kdf_folder = str(kdf_path.parent) if kdf_path else ""
@@ -246,13 +263,47 @@ async def batch_report(req: BatchReportRequest) -> ReportResponse:
         errors.append(f"Batch folder not found: {batch_folder}")
     elif not batch_folder.is_dir():
         errors.append(f"Batch path is not a directory: {batch_folder}")
+    elif req.validate_only and req.mode == "multi":
+        # Validate-only: scan KDF files and check KORF Excel readiness
+        kdf_files = sorted(batch_folder.rglob("*.kdf"))
+        valid_count = 0
+        for kf in kdf_files:
+            status = _korf_excel_status(kf)
+            if status.korf_excel_path and not status.is_stale:
+                valid_count += 1
+            elif status.korf_excel_path and status.is_stale:
+                messages.append(
+                    StatusMessage(
+                        type="warning",
+                        message=f"{kf.name}: KORF Excel stale",
+                    )
+                )
+            else:
+                messages.append(
+                    StatusMessage(
+                        type="warning",
+                        message=f"{kf.name}: KORF Excel missing",
+                    )
+                )
+        messages.insert(
+            0,
+            StatusMessage(
+                type="info",
+                message=f"{valid_count} of {len(kdf_files)} KDF files have valid KORF Excel",
+            ),
+        )
     else:
         try:
             from pykorf.app.operation.processor.batch_report import BatchReportGenerator
 
+            is_multi = req.mode == "multi"
+
             def _do_batch():
                 generator = BatchReportGenerator(batch_folder)
-                output_path = generator.generate_report(single_report=req.single_report)
+                output_path = generator.generate_report(
+                    single_report=req.single_report,
+                    multi_case=is_multi,
+                )
                 return generator, output_path
 
             generator, output_path = await asyncio.to_thread(_do_batch)

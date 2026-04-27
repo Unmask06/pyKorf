@@ -16,12 +16,12 @@ from pykorf.core.reports.korf_parser import (
     PipeData,
     parse_korf_excel,
 )
-from pykorf.core.reports.reporter import _classify_issue
+from pykorf.core.reports.reporter import _BaseReporter, _classify_issue
 
 _logger = logging.getLogger(__name__)
 
 
-class KorfReporter:
+class KorfReporter(_BaseReporter):
     """Extracts element data from a KORF Excel report + KDF Model for report generation.
 
     This reporter reads multi-case result data from a KORF-generated Excel file,
@@ -42,57 +42,15 @@ class KorfReporter:
         hold: str = "",
         references: list[dict] | None = None,
     ):
+        super().__init__(model, basis=basis, remarks=remarks, hold=hold, references=references)
         self._excel_path = Path(excel_path)
-        self.model = model
-        self._basis = basis
-        self._remarks = remarks
-        self._hold = hold
-        self._references = references or []
 
         self._case_data: dict[CaseInfo, KorfCaseData] | None = None
-
-    @property
-    def basis(self) -> str:
-        return self._basis
-
-    @property
-    def remarks(self) -> str:
-        return self._remarks
-
-    @property
-    def hold(self) -> str:
-        return self._hold
-
-    @property
-    def references(self) -> list[dict]:
-        return self._references
 
     def _get_case_data(self) -> dict[CaseInfo, KorfCaseData]:
         if self._case_data is None:
             self._case_data = parse_korf_excel(self._excel_path)
         return self._case_data
-
-    def get_model_title(self) -> str:
-        """Return model title from KDF SYMBOL records."""
-        from pykorf.core.elements import Symbol
-
-        symbol_indices = {
-            rec.index
-            for rec in self.model._parser.records
-            if rec.element_type == "SYMBOL" and rec.index is not None
-        }
-        for idx in symbol_indices:
-            type_rec = self.model._parser.get("SYMBOL", idx, Symbol.TYPE)
-            fsiz_rec = self.model._parser.get("SYMBOL", idx, Symbol.FSIZ)
-            text_rec = self.model._parser.get("SYMBOL", idx, Symbol.TEXT)
-            if not (type_rec and fsiz_rec and text_rec):
-                continue
-            try:
-                if type_rec.values[0] == "Text" and int(fsiz_rec.values[0]) == 2:
-                    return str(text_rec.values[0]) if text_rec.values else ""
-            except (ValueError, TypeError, IndexError):
-                continue
-        return ""
 
     def get_source_name(self) -> str:
         """Return the KORF Excel file name."""

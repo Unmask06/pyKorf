@@ -729,7 +729,7 @@
           "report"
         ],
         "summary": "Generate Report",
-        "description": "Generate a single-model Excel report.\n\nWhen a KORF Excel file is found alongside the KDF (or explicitly provided\nvia ``korf_excel_path``), uses KorfReporter to produce a multi-case report\nwith per-case sheets and a worst-case summary envelope. Otherwise falls\nback to PykorfReporter (KDF-only, single-case).",
+        "description": "Generate a single-model Excel report.\n\nUses ``mode`` to select the reporter:\n- ``\"single\"`` (default): PykorfReporter via KDF data only.\n- ``\"multi\"``: KorfReporter via auto-detected KORF Excel alongside the KDF.\n  Requires the KORF Excel file to exist and be up-to-date.",
         "operationId": "generateReport",
         "requestBody": {
           "content": {
@@ -855,7 +855,7 @@
           "report"
         ],
         "summary": "Batch Report",
-        "description": "Generate batch report across multiple KDF files in a folder.",
+        "description": "Generate batch report across multiple KDF files in a folder.\n\nUses ``mode`` to select the reporter:\n- ``\"single\"`` (default): PykorfReporter per KDF.\n- ``\"multi\"``: KorfReporter per KDF (auto-detects KORF Excel alongside each KDF).\n\nWhen ``validate_only=True`` and ``mode=\"multi\"``, scans for KORF Excel\nfiles and returns which KDFs are missing/stale without generating.",
         "operationId": "batchReport",
         "requestBody": {
           "content": {
@@ -2012,6 +2012,16 @@
             "type": "boolean",
             "title": "Single Report",
             "default": false
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode",
+            "default": "single"
+          },
+          "validate_only": {
+            "type": "boolean",
+            "title": "Validate Only",
+            "default": false
           }
         },
         "type": "object",
@@ -2550,16 +2560,10 @@
             ],
             "title": "Report Path"
           },
-          "korf_excel_path": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Korf Excel Path"
+          "mode": {
+            "type": "string",
+            "title": "Mode",
+            "default": "single"
           }
         },
         "type": "object",

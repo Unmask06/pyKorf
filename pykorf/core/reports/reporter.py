@@ -100,12 +100,8 @@ def _classify_issue(msg: str) -> tuple[str, str, str]:
     return "Warning", category, elem_name
 
 
-class PykorfReporter:
-    """Extracts element data from a pyKorf Model (KDF file) for report generation.
-
-    This is the original data extraction logic, now cleanly separated from
-    the ReportExporter formatting/layout code.
-    """
+class _BaseReporter:
+    """Shared base for reporters providing metadata properties and model title extraction."""
 
     def __init__(
         self,
@@ -114,27 +110,12 @@ class PykorfReporter:
         remarks: str = "",
         hold: str = "",
         references: list[dict] | None = None,
-        justifications: dict[str, str] | None = None,
     ):
         self.model = model
         self._basis = basis
         self._remarks = remarks
         self._hold = hold
         self._references = references or []
-        self._justifications = justifications or {}
-        self._converter = UnitConverter()
-
-        self._extractors = {
-            "Feeds": self._extract_feeds,
-            "Products": self._extract_products,
-            "Pipes": self._extract_pipes,
-            "Pumps": self._extract_pumps,
-            "Compressors": self._extract_compressors,
-            "Valves": self._extract_valves,
-            "Heat Exchangers": self._extract_heat_exchangers,
-            "Junctions": self._extract_junctions,
-            "Misc Equipment": self._extract_misc,
-        }
 
     @property
     def basis(self) -> str:
@@ -173,6 +154,39 @@ class PykorfReporter:
             except (ValueError, TypeError, IndexError):
                 continue
         return ""
+
+
+class PykorfReporter(_BaseReporter):
+    """Extracts element data from a pyKorf Model (KDF file) for report generation.
+
+    This is the original data extraction logic, now cleanly separated from
+    the ReportExporter formatting/layout code.
+    """
+
+    def __init__(
+        self,
+        model: Model,
+        basis: str = "",
+        remarks: str = "",
+        hold: str = "",
+        references: list[dict] | None = None,
+        justifications: dict[str, str] | None = None,
+    ):
+        super().__init__(model, basis=basis, remarks=remarks, hold=hold, references=references)
+        self._justifications = justifications or {}
+        self._converter = UnitConverter()
+
+        self._extractors = {
+            "Feeds": self._extract_feeds,
+            "Products": self._extract_products,
+            "Pipes": self._extract_pipes,
+            "Pumps": self._extract_pumps,
+            "Compressors": self._extract_compressors,
+            "Valves": self._extract_valves,
+            "Heat Exchangers": self._extract_heat_exchangers,
+            "Junctions": self._extract_junctions,
+            "Misc Equipment": self._extract_misc,
+        }
 
     def get_source_name(self) -> str:
         """Return the KDF file name."""

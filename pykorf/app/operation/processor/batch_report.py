@@ -86,6 +86,7 @@ class BatchReportGenerator:
         include_line_numbers: bool = True,
         progress_callback: Callable[[int, int, str], None] | None = None,
         single_report: bool = False,
+        multi_case: bool = False,
     ) -> str:
         """Generate multi-sheet Excel report.
 
@@ -97,6 +98,8 @@ class BatchReportGenerator:
                 called before each file is processed.
             single_report: If True, also generate an individual Excel report
                 next to each KDF file.
+            multi_case: If True, use KorfReporter (auto-detects KORF Excel)
+                for individual per-KDF reports instead of PykorfReporter.
 
         Returns:
             Path to generated Excel file.
@@ -208,10 +211,52 @@ class BatchReportGenerator:
                             if ref_store
                             else []
                         )
-                        single_exporter = ResultExporter(
-                            model, basis=basis, remarks=remarks, hold=hold, references=references
-                        )
-                        single_path = kdf_file.parent / f"{kdf_file.stem}_report.xlsx"
+
+                        if multi_case:
+                            from pykorf.core.reports.korf_reporter import KorfReporter
+
+                            korf_excel = kdf_file.parent / f"{kdf_file.stem}.xlsx"
+                            if not korf_excel.is_file():
+                                logger.warning(
+                                    "batch_korf_excel_missing",
+                                    file=kdf_file.name,
+                                    expected=str(korf_excel),
+                                )
+                                self._errors.append(
+                                    f"{kdf_file.name}: KORF Excel missing (skipped)"
+                                )
+                                continue
+                            try:
+                                kdf_mtime = kdf_file.stat().st_mtime
+                                xlsx_mtime = korf_excel.stat().st_mtime
+                                if xlsx_mtime < kdf_mtime:
+                                    logger.warning(
+                                        "batch_korf_excel_stale",
+                                        file=kdf_file.name,
+                                    )
+                                    self._errors.append(
+                                        f"{kdf_file.name}: KORF Excel stale (skipped)"
+                                    )
+                                    continue
+                            except OSError:
+                                continue
+                            korf_reporter = KorfReporter(
+                                excel_path=korf_excel,
+                                model=model,
+                                basis=basis,
+                                remarks=remarks,
+                                hold=hold,
+                                references=references,
+                            )
+                            single_exporter = ResultExporter(reporter=korf_reporter)
+                            single_path = kdf_file.parent / f"{kdf_file.stem}_multi-case_report.xlsx"
+                        else:
+                            single_exporter = ResultExporter(
+                                model, basis=basis, remarks=remarks, hold=hold,
+                                references=references,
+                            )
+                            single_path = kdf_file.parent / f"{kdf_file.stem}_report.xlsx"
+
                         single_exporter.export_to_excel(str(single_path))
                         logger.info(
                             "batch_single_report_saved",

@@ -130,6 +130,14 @@ export type BatchReportRequest = {
      * Single Report
      */
     single_report?: boolean;
+    /**
+     * Mode
+     */
+    mode?: string;
+    /**
+     * Validate Only
+     */
+    validate_only?: boolean;
 };
 
 /**
@@ -484,9 +492,9 @@ export type GenerateReportRequest = {
      */
     report_path?: string | null;
     /**
-     * Korf Excel Path
+     * Mode
      */
-    korf_excel_path?: string | null;
+    mode?: string;
 };
 
 /**

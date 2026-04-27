@@ -2015,13 +2015,13 @@
           },
           "mode": {
             "type": "string",
-            "title": "Mode",
-            "default": "single"
+            "default": "single",
+            "title": "Mode"
           },
           "validate_only": {
             "type": "boolean",
-            "title": "Validate Only",
-            "default": false
+            "default": false,
+            "title": "Validate Only"
           }
         },
         "type": "object",
@@ -2562,8 +2562,8 @@
           },
           "mode": {
             "type": "string",
-            "title": "Mode",
-            "default": "single"
+            "default": "single",
+            "title": "Mode"
           }
         },
         "type": "object",
@@ -3079,7 +3079,7 @@
         "properties": {},
         "type": "object",
         "title": "PredictCriteriaRequest",
-        "description": "Empty — predicts for all pipes in current model."
+        "description": "Empty \u00e2\u20ac\u201d predicts for all pipes in current model."
       },
       "PredictCriteriaResponse": {
         "properties": {

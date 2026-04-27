@@ -5,14 +5,12 @@ import {
   ArrowUpRight,
   CheckCircle2,
   Clipboard,
-  FileSpreadsheet,
   FileText,
   Folder,
   FolderOpen,
   Layers,
-  X,
 } from "lucide-vue-next";
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import {
   generateReport,
   batchReport,
@@ -21,6 +19,7 @@ import {
   korfExcelStatus,
 } from "../api/client";
 import PathBrowser from "../components/PathBrowser.vue";
+import ReportModeToggle from "../components/ReportModeToggle.vue";
 import { useLoading } from "../composables/useLoading";
 import { useToastStore } from "../composables/useToast";
 import { useSessionStore } from "../stores/session";
@@ -34,10 +33,9 @@ const toast = useToastStore();
 
 // Report mode toggle
 const isMultiCase = ref(false);
+const isBatchMultiCase = ref(false);
 
-// KORF Excel source (only for multi-case)
-const korfExcelPath = ref("");
-const reportSource = ref<"korf" | "pykorf" | null>(null);
+// Multi-case status (auto-detected via backend)
 const korfIsStale = ref(false);
 const korfExists = ref(false);
 
@@ -45,6 +43,12 @@ const korfExists = ref(false);
 const batchFolder = ref("");
 const singleReport = ref(false);
 const showBatchBrowser = ref(false);
+
+// Batch multi-case validation
+const batchValidCount = ref(0);
+const batchTotalCount = ref(0);
+const batchProblems = ref<string[]>([]);
+const batchValidating = ref(false);
 
 const reportPath = computed(() => {
   if (!session.kdfPath) return "";
@@ -69,9 +73,25 @@ const canGenerate = computed(() => {
   return true;
 });
 
+const canBatchGenerate = computed(() => {
+  if (batchLoading.isLoading.value) return false;
+  if (batchValidating.value) return false;
+  if (!batchFolder.value) return false;
+  if (isBatchMultiCase.value && batchValidCount.value === 0) return false;
+  return true;
+});
+
+const batchTooltip = computed(() => {
+  if (!batchFolder.value) return "";
+  if (isBatchMultiCase.value && batchValidCount.value === 0) {
+    return "No KDF files have valid KORF Excel reports";
+  }
+  return "";
+});
+
 const generateTooltip = computed(() => {
   if (isMultiCase.value) {
-    if (!korfExists.value) return "Multi-case requires KORF Excel report";
+    if (!korfExists.value) return "Multi-case requires a KORF Excel report. Generate it from KORF first.";
     if (korfIsStale.value) return "KORF Excel is stale — regenerate from KORF first";
   }
   return "";
@@ -80,15 +100,12 @@ const generateTooltip = computed(() => {
 const genLoading = useLoading(async () => {
   const req: GenerateReportRequest = {
     report_path: reportPath.value || null,
-    korf_excel_path: isMultiCase.value ? (korfExcelPath.value || null) : null,
+    mode: isMultiCase.value ? "multi" : "single",
   };
   const res = await generateReport({ body: req });
   if (!res.data?.success) {
     throw new Error(res.data?.errors?.[0] || 'Report generation failed');
   }
-  // Detect source from response message
-  const msg = res.data.messages?.[0]?.message || "";
-  reportSource.value = msg.includes("KORF report") ? "korf" : "pykorf";
   return res.data;
 });
 
@@ -96,6 +113,7 @@ const batchLoading = useLoading(async () => {
   const req: BatchReportRequest = {
     batch_folder: batchFolder.value || null,
     single_report: singleReport.value,
+    mode: isBatchMultiCase.value ? "multi" : "single",
   };
   const res = await batchReport({ body: req });
   if (!res.data?.success) {
@@ -119,12 +137,73 @@ async function generate() {
 
 async function doBatch() {
   try {
-    await batchLoading.execute();
-    toast.success("Batch report generated.");
+    const result = await batchLoading.execute();
+    const skipCount = result?.messages?.filter(m => m.type === "warning" && (m.message?.includes("skipped") || m.message?.includes("missing") || m.message?.includes("stale"))).length || 0;
+    if (skipCount > 0) {
+      toast.warning(`Batch report generated. ${skipCount} KDF(s) skipped (KORF Excel missing/stale).`);
+    } else {
+      toast.success("Batch report generated.");
+    }
   } catch (err: unknown) {
     toast.error(getErrorMessage(err, "An unexpected error occurred."));
   }
 }
+
+async function runBatchValidation() {
+  if (!batchFolder.value || !isBatchMultiCase.value) return;
+  batchValidating.value = true;
+  try {
+    const req: BatchReportRequest = {
+      batch_folder: batchFolder.value || null,
+      single_report: false,
+      mode: "multi",
+      validate_only: true,
+    };
+    const res = await batchReport({ body: req });
+    if (res.data) {
+      const problems: string[] = [];
+      let validCount = 0;
+      let totalCount = 0;
+      for (const msg of res.data.messages || []) {
+        if (msg.type === "info" && msg.message) {
+          // Parse "X of Y KDF files have valid KORF Excel"
+          const match = msg.message.match(/(\d+)\s+of\s+(\d+)/);
+          if (match) {
+            validCount = parseInt(match[1]);
+            totalCount = parseInt(match[2]);
+          }
+        } else if (msg.type === "warning" && msg.message) {
+          problems.push(msg.message);
+        }
+      }
+      batchValidCount.value = validCount;
+      batchTotalCount.value = totalCount;
+      batchProblems.value = problems;
+    }
+  } catch {
+    batchValidCount.value = 0;
+    batchTotalCount.value = 0;
+    batchProblems.value = [];
+  } finally {
+    batchValidating.value = false;
+  }
+}
+
+watch(isBatchMultiCase, (val) => {
+  if (val && batchFolder.value) {
+    runBatchValidation();
+  } else {
+    batchProblems.value = [];
+  }
+});
+
+watch(batchFolder, (val) => {
+  if (val && isBatchMultiCase.value) {
+    runBatchValidation();
+  } else {
+    batchProblems.value = [];
+  }
+});
 
 function copyToClipboard(text: string) {
   navigator.clipboard.writeText(text);
@@ -133,17 +212,6 @@ function copyToClipboard(text: string) {
 
 onMounted(async () => {
   if (!session.isLoaded) return;
-  const kdf = session.kdfPath;
-  if (kdf) {
-    const sep = kdf.includes("\\") ? "\\" : "/";
-    const lastSep = Math.max(kdf.lastIndexOf("\\"), kdf.lastIndexOf("/"));
-    const folder = kdf.substring(0, lastSep);
-    const filename = kdf.substring(lastSep + 1);
-    const stem = filename.includes(".")
-      ? filename.substring(0, filename.lastIndexOf("."))
-      : filename;
-    korfExcelPath.value = `${folder}${sep}${stem}.xlsx`;
-  }
   try {
     const response = await getPreferences();
     if (response.data!.last_batch_folder_path) {
@@ -168,9 +236,9 @@ async function checkKorfExcelStatus() {
   }
 }
 
-function toggleMode() {
-  isMultiCase.value = !isMultiCase.value;
-  if (isMultiCase.value) {
+function onToggleMultiCase(value: boolean) {
+  isMultiCase.value = value;
+  if (value) {
     checkKorfExcelStatus();
   }
 }
@@ -219,100 +287,45 @@ function toggleMode() {
           </div>
 
           <!-- Report Mode Toggle -->
-          <div class="flex items-center justify-between py-2">
-            <span class="text-sm text-gray-600">Report Mode</span>
-            <div class="flex items-center gap-3">
-              <span
-                :class="isMultiCase ? 'text-gray-400' : 'text-gray-700 font-medium'"
-                class="text-sm"
-              >Single Case</span>
-              <button
-                type="button"
-                @click="toggleMode"
-                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-                :class="isMultiCase ? 'bg-green-600' : 'bg-gray-200'"
-                role="switch"
-                :aria-checked="isMultiCase"
-              >
-                <span
-                  class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
-                  :class="isMultiCase ? 'translate-x-6' : 'translate-x-1'"
-                />
-              </button>
-              <span
-                :class="isMultiCase ? 'text-gray-700 font-medium' : 'text-gray-400'"
-                class="text-sm"
-              >Multi Case</span>
-            </div>
-          </div>
+          <ReportModeToggle v-model="isMultiCase" @update:model-value="onToggleMultiCase" />
 
-          <!-- KORF Excel File (only for multi-case) -->
-          <div v-if="isMultiCase">
-            <label class="pk-label flex items-center gap-2">
-              KORF Excel File
-              <span class="text-xs text-red-500 font-normal">(required)</span>
-            </label>
-            <div class="flex">
-              <span
-                class="flex items-center justify-center px-3 py-1.5 text-sm bg-gray-100 border border-r-0 border-gray-300 rounded-l-md"
-              >
-                <FileSpreadsheet class="w-4 h-4 text-gray-500" />
-              </span>
-              <textarea
-                v-model="korfExcelPath"
-                class="pk-input-mono resize-none rounded-none w-full"
-                rows="2"
-                placeholder="Auto-detected from KDF folder"
-                style="font-size: 0.82rem"
+          <!-- Multi-case status & instructions -->
+          <div v-if="isMultiCase" class="bg-blue-50 border border-blue-200 rounded p-3">
+            <div class="flex items-center gap-2">
+              <CheckCircle2
+                v-if="korfExists && !korfIsStale"
+                class="w-4 h-4 text-green-600 shrink-0"
               />
-              <button
-                v-if="korfExcelPath"
-                type="button"
-                @click="korfExcelPath = ''"
-                class="flex items-center justify-center px-2 py-1.5 text-sm border border-l-0 border-gray-300 rounded-r-md bg-gray-100 hover:bg-gray-50 text-gray-500"
-                title="Clear"
+              <AlertTriangle
+                v-else
+                class="w-4 h-4 shrink-0"
+                :class="korfExists && korfIsStale ? 'text-amber-600' : 'text-red-600'"
+              />
+              <span
+                class="text-xs font-medium"
+                :class="
+                  korfExists && !korfIsStale
+                    ? 'text-green-700'
+                    : korfExists && korfIsStale
+                      ? 'text-amber-700'
+                      : 'text-red-700'
+                "
               >
-                <X class="w-3.5 h-3.5" />
-              </button>
+                {{
+                  korfExists && !korfIsStale
+                    ? 'KORF Excel detected and ready'
+                    : korfExists && korfIsStale
+                      ? 'KORF Excel is stale — regenerate from KORF'
+                      : 'KORF Excel not found in KDF folder'
+                }}
+              </span>
             </div>
-            <div class="pk-hint">
+            <div class="pk-hint mt-1">
               To export from KORF: <strong>Hydraulics &gt; Results &gt; View
-              Excel Report</strong>, then save the <strong>XML</strong> as
-              <strong>XLSX</strong> with the same name as the KDF file. Enables
-              multi-case reports with per-case sheets.
+              Excel Report</strong>, save the <strong>XML</strong> as
+              <strong>XLSX</strong> with the same name as the KDF file.
             </div>
           </div>
-        </div>
-
-        <!-- Status indicators (only for multi-case) -->
-        <div v-if="isMultiCase" class="mt-3 flex items-center gap-2 flex-wrap">
-          <template v-if="korfExists && korfIsStale">
-            <AlertTriangle class="w-4 h-4 text-amber-600 shrink-0" />
-            <span
-              class="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-0.5"
-              >Stale KORF Excel Report</span
-            >
-          </template>
-          <template v-else-if="korfExists">
-            <CheckCircle2 class="w-4 h-4 text-green-600 shrink-0" />
-            <span
-              class="text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded px-2 py-0.5"
-              >KORF Excel ready</span
-            >
-          </template>
-          <template v-else>
-            <AlertTriangle class="w-4 h-4 text-red-600 shrink-0" />
-            <span
-              class="text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded px-2 py-0.5"
-              >KORF Excel not found</span
-            >
-          </template>
-        </div>
-        <div v-if="isMultiCase && korfExists && korfIsStale" class="mt-2 text-xs text-amber-600">
-          KORF file has been updated after report generation. Regenerate the report from KORF again.
-        </div>
-        <div v-if="isMultiCase && !korfExists" class="mt-2 text-xs text-red-600">
-          Multi-case report requires a KORF Excel report file. Generate it from KORF first.
         </div>
 
         <button
@@ -364,6 +377,45 @@ function toggleMode() {
               this folder will be processed into a combined report.
             </div>
           </div>
+
+          <!-- Batch Report Mode Toggle -->
+          <ReportModeToggle v-model="isBatchMultiCase" />
+
+          <!-- Batch multi-case validation results -->
+          <div v-if="isBatchMultiCase && batchTotalCount > 0" class="mb-3">
+            <div class="flex items-center gap-2 mb-1">
+              <span v-if="batchValidating" class="pk-spinner" />
+              <CheckCircle2
+                v-else-if="batchValidCount === batchTotalCount"
+                class="w-4 h-4 text-green-600 shrink-0"
+              />
+              <AlertTriangle
+                v-else
+                class="w-4 h-4 shrink-0"
+                :class="batchValidCount === 0 ? 'text-red-600' : 'text-amber-600'"
+              />
+              <span
+                class="text-xs font-medium"
+                :class="
+                  batchValidCount === batchTotalCount ? 'text-green-700' :
+                  batchValidCount === 0 ? 'text-red-700' : 'text-amber-700'
+                "
+              >
+                {{ batchValidCount }} of {{ batchTotalCount }} KDF files have valid KORF Excel
+              </span>
+            </div>
+            <textarea
+              v-if="batchProblems.length > 0"
+              class="pk-input-mono resize-none rounded w-full mt-2 p-2 text-xs bg-gray-50 border border-gray-200"
+              :value="batchProblems.join('\n')"
+              rows="4"
+              readonly
+            />
+            <div v-if="!batchValidating && batchValidCount === 0" class="mt-1 text-xs text-red-600">
+              No KDF files have valid KORF Excel reports. Generate them from KORF first.
+            </div>
+          </div>
+
           <div class="mb-3 flex items-center gap-2 text-sm text-gray-700">
             <input
               id="singleReport"
@@ -377,8 +429,9 @@ function toggleMode() {
           </div>
           <button
             @click="doBatch"
-            class="w-full bg-gray-500 text-white rounded py-1.5 text-sm hover:bg-gray-600 flex items-center justify-center gap-1 disabled:opacity-50"
-            :disabled="batchLoading.isLoading.value"
+            class="w-full bg-gray-500 text-white rounded py-1.5 text-sm hover:bg-gray-600 flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="!canBatchGenerate"
+            :title="batchTooltip"
           >
             <span v-if="batchLoading.isLoading.value" class="pk-spinner" />
             <Layers class="w-4 h-4" /> Generate Batch Report
