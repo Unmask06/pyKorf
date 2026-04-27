@@ -721,6 +721,10 @@ export type PipeCalcInfo = {
      * Length M
      */
     length_m?: number | null;
+    /**
+     * Line Size
+     */
+    line_size?: string | null;
 };
 
 /**
