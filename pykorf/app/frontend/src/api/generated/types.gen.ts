@@ -130,6 +130,14 @@ export type BatchReportRequest = {
      * Single Report
      */
     single_report?: boolean;
+    /**
+     * Mode
+     */
+    mode?: string;
+    /**
+     * Validate Only
+     */
+    validate_only?: boolean;
 };
 
 /**
@@ -483,6 +491,10 @@ export type GenerateReportRequest = {
      * Report Path
      */
     report_path?: string | null;
+    /**
+     * Mode
+     */
+    mode?: string;
 };
 
 /**
@@ -551,6 +563,22 @@ export type JustificationSaveResponse = {
      * Saved
      */
     saved?: boolean;
+};
+
+/**
+ * KorfExcelStatusResponse
+ *
+ * KORF Excel source status for the report generator.
+ */
+export type KorfExcelStatusResponse = {
+    /**
+     * Korf Excel Path
+     */
+    korf_excel_path?: string | null;
+    /**
+     * Is Stale
+     */
+    is_stale?: boolean;
 };
 
 /**
@@ -1986,6 +2014,22 @@ export type SnapOrthogonalResponses = {
 };
 
 export type SnapOrthogonalResponse = SnapOrthogonalResponses[keyof SnapOrthogonalResponses];
+
+export type KorfExcelStatusData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/report/korf-status';
+};
+
+export type KorfExcelStatusResponses = {
+    /**
+     * Successful Response
+     */
+    200: KorfExcelStatusResponse;
+};
+
+export type KorfExcelStatusResponse2 = KorfExcelStatusResponses[keyof KorfExcelStatusResponses];
 
 export type GenerateReportData = {
     body: GenerateReportRequest;

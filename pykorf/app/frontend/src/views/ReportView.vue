@@ -3,52 +3,104 @@ import {
   AlertTriangle,
   ArrowDownRight,
   ArrowUpRight,
+  CheckCircle2,
   Clipboard,
-  FileSpreadsheet,
   FileText,
   Folder,
   FolderOpen,
   Layers,
 } from "lucide-vue-next";
-import { onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
+import { computed, onMounted, ref, watch } from "vue";
 import {
   generateReport,
-  exportReport,
-  importReport,
   batchReport,
   getPreferences,
   getErrorMessage,
+  korfExcelStatus,
 } from "../api/client";
 import PathBrowser from "../components/PathBrowser.vue";
+import ReportModeToggle from "../components/ReportModeToggle.vue";
 import { useLoading } from "../composables/useLoading";
 import { useToastStore } from "../composables/useToast";
-import { useModelStore } from "../stores/model";
 import { useSessionStore } from "../stores/session";
 import type {
   BatchReportRequest,
-  ExportRequest,
   GenerateReportRequest,
-  ImportRequest,
 } from "../api/generated/types.gen";
 
-const router = useRouter();
 const session = useSessionStore();
-const model = useModelStore();
 const toast = useToastStore();
 
-const reportPath = ref("");
-const exportPath = ref("");
-const importPath = ref("");
+// Report mode toggle
+const isMultiCase = ref(false);
+const isBatchMultiCase = ref(false);
+
+// Multi-case status (auto-detected via backend)
+const korfIsStale = ref(false);
+const korfExists = ref(false);
+
+// Batch report
 const batchFolder = ref("");
 const singleReport = ref(false);
-const showExportBrowser = ref(false);
-const showImportBrowser = ref(false);
 const showBatchBrowser = ref(false);
+
+// Batch multi-case validation
+const batchValidCount = ref(0);
+const batchTotalCount = ref(0);
+const batchProblems = ref<string[]>([]);
+const batchValidating = ref(false);
+
+const reportPath = computed(() => {
+  if (!session.kdfPath) return "";
+  const kdf = session.kdfPath;
+  const sep = kdf.includes("\\") ? "\\" : "/";
+  const lastSep = Math.max(kdf.lastIndexOf("\\"), kdf.lastIndexOf("/"));
+  const folder = kdf.substring(0, lastSep);
+  const filename = kdf.substring(lastSep + 1);
+  const stem = filename.includes(".")
+    ? filename.substring(0, filename.lastIndexOf("."))
+    : filename;
+  const suffix = isMultiCase.value ? "_multi-case_report.xlsx" : "_report.xlsx";
+  return `${folder}${sep}${stem}${suffix}`;
+});
+
+const canGenerate = computed(() => {
+  if (genLoading.isLoading.value) return false;
+  if (isMultiCase.value) {
+    if (!korfExists.value) return false;
+    if (korfIsStale.value) return false;
+  }
+  return true;
+});
+
+const canBatchGenerate = computed(() => {
+  if (batchLoading.isLoading.value) return false;
+  if (batchValidating.value) return false;
+  if (!batchFolder.value) return false;
+  if (isBatchMultiCase.value && batchValidCount.value === 0) return false;
+  return true;
+});
+
+const batchTooltip = computed(() => {
+  if (!batchFolder.value) return "";
+  if (isBatchMultiCase.value && batchValidCount.value === 0) {
+    return "No KDF files have valid KORF Excel reports";
+  }
+  return "";
+});
+
+const generateTooltip = computed(() => {
+  if (isMultiCase.value) {
+    if (!korfExists.value) return "Multi-case requires a KORF Excel report. Generate it from KORF first.";
+    if (korfIsStale.value) return "KORF Excel is stale — regenerate from KORF first";
+  }
+  return "";
+});
 
 const genLoading = useLoading(async () => {
   const req: GenerateReportRequest = {
     report_path: reportPath.value || null,
+    mode: isMultiCase.value ? "multi" : "single",
   };
   const res = await generateReport({ body: req });
   if (!res.data?.success) {
@@ -57,34 +109,11 @@ const genLoading = useLoading(async () => {
   return res.data;
 });
 
-const exportLoading = useLoading(async () => {
-  const req: ExportRequest = {
-    file_path: exportPath.value || null,
-  };
-  const res = await exportReport({ body: req });
-  if (!res.data?.success) {
-    throw new Error(res.data?.errors?.[0] || 'Export failed');
-  }
-  return res.data;
-});
-
-const importLoading = useLoading(async () => {
-  const req: ImportRequest = {
-    file_path: importPath.value || null,
-  };
-  const res = await importReport({ body: req });
-  if (!res.data?.success) {
-    throw new Error(res.data?.errors?.[0] || 'Import failed');
-  }
-  await session.fetchStatus();
-  await model.fetchSummary();
-  return res.data;
-});
-
 const batchLoading = useLoading(async () => {
   const req: BatchReportRequest = {
     batch_folder: batchFolder.value || null,
     single_report: singleReport.value,
+    mode: isBatchMultiCase.value ? "multi" : "single",
   };
   const res = await batchReport({ body: req });
   if (!res.data?.success) {
@@ -96,25 +125,11 @@ const batchLoading = useLoading(async () => {
 async function generate() {
   try {
     await genLoading.execute();
-    toast.success("Report generated successfully.");
-  } catch (err: unknown) {
-    toast.error(getErrorMessage(err, "An unexpected error occurred."));
-  }
-}
-
-async function doExport() {
-  try {
-    await exportLoading.execute();
-    toast.success("Model exported to Excel.");
-  } catch (err: unknown) {
-    toast.error(getErrorMessage(err, "An unexpected error occurred."));
-  }
-}
-
-async function doImport() {
-  try {
-    await importLoading.execute();
-    toast.success("Parameters imported from Excel.");
+    if (isMultiCase.value) {
+      toast.success("Multi-case report generated from KORF Excel.");
+    } else {
+      toast.success("Single-case report generated from KDF.");
+    }
   } catch (err: unknown) {
     toast.error(getErrorMessage(err, "An unexpected error occurred."));
   }
@@ -122,12 +137,73 @@ async function doImport() {
 
 async function doBatch() {
   try {
-    await batchLoading.execute();
-    toast.success("Batch report generated.");
+    const result = await batchLoading.execute();
+    const skipCount = result?.messages?.filter(m => m.type === "warning" && (m.message?.includes("skipped") || m.message?.includes("missing") || m.message?.includes("stale"))).length || 0;
+    if (skipCount > 0) {
+      toast.warning(`Batch report generated. ${skipCount} KDF(s) skipped (KORF Excel missing/stale).`);
+    } else {
+      toast.success("Batch report generated.");
+    }
   } catch (err: unknown) {
     toast.error(getErrorMessage(err, "An unexpected error occurred."));
   }
 }
+
+async function runBatchValidation() {
+  if (!batchFolder.value || !isBatchMultiCase.value) return;
+  batchValidating.value = true;
+  try {
+    const req: BatchReportRequest = {
+      batch_folder: batchFolder.value || null,
+      single_report: false,
+      mode: "multi",
+      validate_only: true,
+    };
+    const res = await batchReport({ body: req });
+    if (res.data) {
+      const problems: string[] = [];
+      let validCount = 0;
+      let totalCount = 0;
+      for (const msg of res.data.messages || []) {
+        if (msg.type === "info" && msg.message) {
+          // Parse "X of Y KDF files have valid KORF Excel"
+          const match = msg.message.match(/(\d+)\s+of\s+(\d+)/);
+          if (match) {
+            validCount = parseInt(match[1]);
+            totalCount = parseInt(match[2]);
+          }
+        } else if (msg.type === "warning" && msg.message) {
+          problems.push(msg.message);
+        }
+      }
+      batchValidCount.value = validCount;
+      batchTotalCount.value = totalCount;
+      batchProblems.value = problems;
+    }
+  } catch {
+    batchValidCount.value = 0;
+    batchTotalCount.value = 0;
+    batchProblems.value = [];
+  } finally {
+    batchValidating.value = false;
+  }
+}
+
+watch(isBatchMultiCase, (val) => {
+  if (val && batchFolder.value) {
+    runBatchValidation();
+  } else {
+    batchProblems.value = [];
+  }
+});
+
+watch(batchFolder, (val) => {
+  if (val && isBatchMultiCase.value) {
+    runBatchValidation();
+  } else {
+    batchProblems.value = [];
+  }
+});
 
 function copyToClipboard(text: string) {
   navigator.clipboard.writeText(text);
@@ -135,19 +211,7 @@ function copyToClipboard(text: string) {
 }
 
 onMounted(async () => {
-  if (!session.isLoaded) router.push("/");
-  const kdf = session.kdfPath;
-  if (kdf) {
-    const sep = kdf.includes("\\") ? "\\" : "/";
-    const lastSep = Math.max(kdf.lastIndexOf("\\"), kdf.lastIndexOf("/"));
-    const folder = kdf.substring(0, lastSep);
-    const filename = kdf.substring(lastSep + 1);
-    const stem = filename.includes(".")
-      ? filename.substring(0, filename.lastIndexOf("."))
-      : filename;
-    reportPath.value = `${folder}${sep}${stem}_report.xlsx`;
-    exportPath.value = `${folder}${sep}${stem}_export.xlsx`;
-  }
+  if (!session.isLoaded) return;
   try {
     const response = await getPreferences();
     if (response.data!.last_batch_folder_path) {
@@ -156,20 +220,40 @@ onMounted(async () => {
   } catch {
     // ignore — prefill is best-effort
   }
+  // Check KORF Excel status (for multi-case mode)
+  await checkKorfExcelStatus();
 });
+
+async function checkKorfExcelStatus() {
+  try {
+    const status = await korfExcelStatus();
+    if (status.data) {
+      korfExists.value = !!status.data.korf_excel_path;
+      korfIsStale.value = status.data.is_stale || false;
+    }
+  } catch {
+    // ignore — staleness check is best-effort
+  }
+}
+
+function onToggleMultiCase(value: boolean) {
+  isMultiCase.value = value;
+  if (value) {
+    checkKorfExcelStatus();
+  }
+}
 </script>
 
 <template>
-  <div class="space-y-4">
-    <!-- Top row: Generate Report + Batch Report -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-      <!-- Generate Report -->
-      <div class="pk-card h-full flex flex-col">
-        <div class="pk-card-header flex items-center gap-1">
-          <FileText class="w-4 h-4 text-green-600" /> Generate Report
-        </div>
-        <div class="p-4 flex flex-col flex-1">
-          <div class="mb-3 flex-1">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <!-- Column 1: Generate Report -->
+    <div class="pk-card">
+      <div class="pk-card-header flex items-center gap-1">
+        <FileText class="w-4 h-4 text-green-600" /> Generate Report
+      </div>
+      <div class="p-4 flex flex-col">
+        <div class="space-y-3">
+          <div>
             <label class="pk-label">Output File</label>
             <div class="flex">
               <span
@@ -178,9 +262,9 @@ onMounted(async () => {
                 <FileText class="w-4 h-4 text-gray-500" />
               </span>
               <textarea
-                v-model="reportPath"
-                class="pk-input-mono resize-none rounded-none"
-                rows="3"
+                :value="reportPath"
+                class="pk-input-mono resize-none rounded-none w-full"
+                rows="2"
                 style="font-size: 0.82rem"
                 readonly
               />
@@ -193,26 +277,78 @@ onMounted(async () => {
                 <Clipboard class="w-4 h-4" />
               </button>
             </div>
-            <div class="pk-hint">Auto-derived from the open KDF file.</div>
+            <div class="pk-hint flex items-center gap-1">
+              Auto-derived from KDF file.
+              <span
+                v-if="isMultiCase"
+                class="text-xs text-gray-500"
+              >(multi-case)</span>
+            </div>
           </div>
-          <button
-            @click="generate"
-            class="w-full bg-green-600 text-white rounded py-1.5 text-sm hover:bg-green-700 flex items-center justify-center gap-1 disabled:opacity-50"
-            :disabled="genLoading.isLoading.value"
-          >
-            <span v-if="genLoading.isLoading.value" class="pk-spinner" />
-            <ArrowDownRight class="w-4 h-4" /> Generate Report
-          </button>
-        </div>
-      </div>
 
+          <!-- Report Mode Toggle -->
+          <ReportModeToggle v-model="isMultiCase" @update:model-value="onToggleMultiCase" />
+
+          <!-- Multi-case status & instructions -->
+          <div v-if="isMultiCase" class="bg-blue-50 border border-blue-200 rounded p-3">
+            <div class="flex items-center gap-2">
+              <CheckCircle2
+                v-if="korfExists && !korfIsStale"
+                class="w-4 h-4 text-green-600 shrink-0"
+              />
+              <AlertTriangle
+                v-else
+                class="w-4 h-4 shrink-0"
+                :class="korfExists && korfIsStale ? 'text-amber-600' : 'text-red-600'"
+              />
+              <span
+                class="text-xs font-medium"
+                :class="
+                  korfExists && !korfIsStale
+                    ? 'text-green-700'
+                    : korfExists && korfIsStale
+                      ? 'text-amber-700'
+                      : 'text-red-700'
+                "
+              >
+                {{
+                  korfExists && !korfIsStale
+                    ? 'KORF Excel detected and ready'
+                    : korfExists && korfIsStale
+                      ? 'KORF Excel is stale — regenerate from KORF'
+                      : 'KORF Excel not found in KDF folder'
+                }}
+              </span>
+            </div>
+            <div class="pk-hint mt-1">
+              To export from KORF: <strong>Hydraulics &gt; Results &gt; View
+              Excel Report</strong>, save the <strong>XML</strong> as
+              <strong>XLSX</strong> with the same name as the KDF file.
+            </div>
+          </div>
+        </div>
+
+        <button
+          @click="generate"
+          class="mt-3 w-full bg-green-600 text-white rounded py-1.5 text-sm hover:bg-green-700 flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+          :disabled="!canGenerate"
+          :title="generateTooltip"
+        >
+          <span v-if="genLoading.isLoading.value" class="pk-spinner" />
+          <ArrowDownRight class="w-4 h-4" /> Generate Report
+        </button>
+      </div>
+    </div>
+
+    <!-- Column 2: Batch Report + Export/Import (coming soon) -->
+    <div class="space-y-4">
       <!-- Batch Report -->
-      <div class="pk-card h-full flex flex-col">
+      <div class="pk-card">
         <div class="pk-card-header flex items-center gap-1">
           <Layers class="w-4 h-4 text-gray-500" /> Batch Report
         </div>
-        <div class="p-4 flex flex-col flex-1">
-          <div class="mb-3 flex-1">
+        <div class="p-4 flex flex-col">
+          <div class="mb-3">
             <label class="pk-label">KDF Folder</label>
             <div class="flex">
               <span
@@ -222,8 +358,8 @@ onMounted(async () => {
               </span>
               <textarea
                 v-model="batchFolder"
-                class="pk-input-mono resize-none rounded-none"
-                rows="3"
+                class="pk-input-mono resize-none rounded-none w-full"
+                rows="2"
                 placeholder="Folder containing .kdf files"
                 style="font-size: 0.82rem"
               />
@@ -241,6 +377,45 @@ onMounted(async () => {
               this folder will be processed into a combined report.
             </div>
           </div>
+
+          <!-- Batch Report Mode Toggle -->
+          <ReportModeToggle v-model="isBatchMultiCase" />
+
+          <!-- Batch multi-case validation results -->
+          <div v-if="isBatchMultiCase && batchTotalCount > 0" class="mb-3">
+            <div class="flex items-center gap-2 mb-1">
+              <span v-if="batchValidating" class="pk-spinner" />
+              <CheckCircle2
+                v-else-if="batchValidCount === batchTotalCount"
+                class="w-4 h-4 text-green-600 shrink-0"
+              />
+              <AlertTriangle
+                v-else
+                class="w-4 h-4 shrink-0"
+                :class="batchValidCount === 0 ? 'text-red-600' : 'text-amber-600'"
+              />
+              <span
+                class="text-xs font-medium"
+                :class="
+                  batchValidCount === batchTotalCount ? 'text-green-700' :
+                  batchValidCount === 0 ? 'text-red-700' : 'text-amber-700'
+                "
+              >
+                {{ batchValidCount }} of {{ batchTotalCount }} KDF files have valid KORF Excel
+              </span>
+            </div>
+            <textarea
+              v-if="batchProblems.length > 0"
+              class="pk-input-mono resize-none rounded w-full mt-2 p-2 text-xs bg-gray-50 border border-gray-200"
+              :value="batchProblems.join('\n')"
+              rows="4"
+              readonly
+            />
+            <div v-if="!batchValidating && batchValidCount === 0" class="mt-1 text-xs text-red-600">
+              No KDF files have valid KORF Excel reports. Generate them from KORF first.
+            </div>
+          </div>
+
           <div class="mb-3 flex items-center gap-2 text-sm text-gray-700">
             <input
               id="singleReport"
@@ -254,141 +429,48 @@ onMounted(async () => {
           </div>
           <button
             @click="doBatch"
-            class="w-full bg-gray-500 text-white rounded py-1.5 text-sm hover:bg-gray-600 flex items-center justify-center gap-1 disabled:opacity-50"
-            :disabled="batchLoading.isLoading.value"
+            class="w-full bg-gray-500 text-white rounded py-1.5 text-sm hover:bg-gray-600 flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="!canBatchGenerate"
+            :title="batchTooltip"
           >
             <span v-if="batchLoading.isLoading.value" class="pk-spinner" />
             <Layers class="w-4 h-4" /> Generate Batch Report
           </button>
         </div>
       </div>
-    </div>
 
-    <!-- Bottom row: Export + Import -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <!-- Export to Excel -->
-      <div class="pk-card h-full flex flex-col">
+      <!-- Export to Excel (Coming Soon) -->
+      <div class="pk-card opacity-60">
         <div class="pk-card-header flex items-center gap-1">
           <ArrowUpRight class="w-4 h-4 text-blue-600" /> Export to Excel
-        </div>
-        <div class="p-4 flex flex-col flex-1">
-          <div class="mb-3 flex-1">
-            <label class="pk-label">Output Excel File</label>
-            <div class="flex">
-              <span
-                class="flex items-center justify-center px-3 py-1.5 text-sm bg-gray-100 border border-r-0 border-gray-300 rounded-l-md"
-              >
-                <FileSpreadsheet class="w-4 h-4 text-gray-500" />
-              </span>
-              <textarea
-                v-model="exportPath"
-                class="pk-input-mono resize-none rounded-none"
-                rows="3"
-                style="font-size: 0.82rem"
-                readonly
-              />
-              <button
-                type="button"
-                @click="copyToClipboard(exportPath)"
-                class="flex items-center justify-center px-3 py-1.5 text-sm border border-l-0 border-gray-300 rounded-r-md bg-gray-100 hover:bg-gray-50"
-                title="Copy path"
-              >
-                <Clipboard class="w-4 h-4" />
-              </button>
-            </div>
-            <div class="pk-hint">Auto-derived from the open KDF file.</div>
-          </div>
-          <button
-            @click="doExport"
-            class="w-full bg-blue-600 text-white rounded py-1.5 text-sm hover:bg-blue-700 flex items-center justify-center gap-1 disabled:opacity-50"
-            :disabled="exportLoading.isLoading.value"
+          <span
+            class="ml-auto text-[10px] font-semibold uppercase tracking-wider text-gray-400 bg-gray-100 border border-gray-200 rounded px-1.5 py-0.5"
+            >Coming Soon</span
           >
-            <span v-if="exportLoading.isLoading.value" class="pk-spinner" />
-            <ArrowDownRight class="w-4 h-4" /> Export to Excel
-          </button>
+        </div>
+        <div class="p-4 flex flex-col items-center justify-center text-gray-400 text-sm py-8">
+          <ArrowUpRight class="w-8 h-8 mb-2 opacity-30" />
+          <span>Export model to Excel — coming soon</span>
         </div>
       </div>
 
-      <!-- Import from Excel -->
-      <div class="pk-card h-full flex flex-col">
+      <!-- Import from Excel (Coming Soon) -->
+      <div class="pk-card opacity-60">
         <div class="pk-card-header flex items-center gap-1">
           <ArrowDownRight class="w-4 h-4 text-yellow-500" /> Import from Excel
-        </div>
-        <div class="p-4 flex flex-col flex-1">
-          <div class="mb-3 flex-1">
-            <label class="pk-label">Source Excel File</label>
-            <div class="flex">
-              <span
-                class="flex items-center justify-center px-3 py-1.5 text-sm bg-gray-100 border border-r-0 border-gray-300 rounded-l-md"
-              >
-                <FileSpreadsheet class="w-4 h-4 text-gray-500" />
-              </span>
-              <textarea
-                v-model="importPath"
-                class="pk-input-mono resize-none rounded-none"
-                rows="3"
-                placeholder="Paste path to exported Excel file"
-                style="font-size: 0.82rem"
-              />
-              <button
-                type="button"
-                @click="showImportBrowser = true"
-                class="flex items-center justify-center px-3 py-1.5 text-sm border border-l-0 border-gray-300 rounded-r-md bg-gray-100 hover:bg-gray-50"
-                title="Browse"
-              >
-                <FolderOpen class="w-4 h-4" />
-              </button>
-            </div>
-            <div class="pk-hint">
-              Export the model first, then paste or type the path here.
-            </div>
-          </div>
-          <div
-            class="bg-yellow-50 border border-yellow-200 rounded px-3 py-2 mb-3 flex items-center gap-2 text-xs text-yellow-700"
+          <span
+            class="ml-auto text-[10px] font-semibold uppercase tracking-wider text-gray-400 bg-gray-100 border border-gray-200 rounded px-1.5 py-0.5"
+            >Coming Soon</span
           >
-            <AlertTriangle class="w-4 h-4 shrink-0" />
-            Import overwrites the in-memory model. Save a backup first.
-          </div>
-          <div class="flex gap-2">
-            <button
-              @click="doImport"
-              class="flex-1 bg-yellow-500 text-white rounded py-1.5 text-sm hover:bg-yellow-600 flex items-center justify-center gap-1 disabled:opacity-50"
-              :disabled="importLoading.isLoading.value"
-            >
-              <span v-if="importLoading.isLoading.value" class="pk-spinner" />
-              <ArrowDownRight class="w-4 h-4" /> Import from Excel
-            </button>
-            <button @click="router.push('/model')" class="pk-btn-secondary">
-              Cancel
-            </button>
-          </div>
+        </div>
+        <div class="p-4 flex flex-col items-center justify-center text-gray-400 text-sm py-8">
+          <ArrowDownRight class="w-8 h-8 mb-2 opacity-30" />
+          <span>Import model from Excel — coming soon</span>
         </div>
       </div>
     </div>
   </div>
 
-  <PathBrowser
-    v-if="showExportBrowser"
-    filter="excel"
-    @close="showExportBrowser = false"
-    @select="
-      (p: string) => {
-        exportPath = p;
-        showExportBrowser = false;
-      }
-    "
-  />
-  <PathBrowser
-    v-if="showImportBrowser"
-    filter="excel"
-    @close="showImportBrowser = false"
-    @select="
-      (p: string) => {
-        importPath = p;
-        showImportBrowser = false;
-      }
-    "
-  />
   <PathBrowser
     v-if="showBatchBrowser"
     filter="folder"
