@@ -90,12 +90,12 @@ def parse_header_unit(col_name: str) -> tuple[str, str] | None:
 # Generic rules first, specific overrides after.
 NUMBER_FORMAT_RULES: list[tuple[tuple[str, ...], str]] = [
     # ── Generic rules (applied to all matching columns) ──────────────
-    (("dP", "Differential Pressure"), "#0.000"),
     (("\u03c1V\u00b2",), "#,##0"),
-    (("Differential Head",), "#,##0"),
-    (("Flow Rate",), "#,##0.0"),
-    (("Velocity",), "#0.00"),
-    (("Pressure",), "#0.00"),
+    (("Differential Head", "Temperature","Flow Rate"), "#,##0"),
+    (("Velocity", "Pressure"), "#0.00"),
+    (("dP", "Differential Pressure"), "#0.000"),
+    (("Raise","Shut-Off"), "#0.0"),
+
     # ── Specific overrides (applied after generic rules) ─────────────
     # Add rules here to supersede generic matches above.
     # e.g. (("Discharge Shut-Off Pressure",), "#0.0"),
@@ -131,6 +131,7 @@ def apply_column_widths(ws: Any, num_cols: int, start_col: int = 1) -> None:
 
 
 # ---- Borders -----------------------------------------------------------------
+
 
 def apply_table_borders(
     ws: Any, start_row: int, end_row: int, num_cols: int, start_col: int = 1
@@ -204,9 +205,7 @@ def write_two_level_headers(
         cell_unit.alignment = Alignment(horizontal="center")
 
 
-def write_transposed_header(
-    ws: Any, row: int, start_col: int, header_names: list[str]
-) -> None:
+def write_transposed_header(ws: Any, row: int, start_col: int, header_names: list[str]) -> None:
     """Write a single-row transposed table header."""
     ws.row_dimensions[row].height = 30
     for c_idx, val in enumerate(header_names, start=start_col):

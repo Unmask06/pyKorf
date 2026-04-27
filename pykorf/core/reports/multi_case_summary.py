@@ -16,8 +16,8 @@ from pykorf.core.reports.formatting import (
     apply_fail_format,
     apply_number_format,
     apply_table_borders,
-    parse_headers,
     parse_header_unit,
+    parse_headers,
     write_section_marker,
     write_transposed_header,
     write_two_level_headers,
@@ -89,9 +89,9 @@ class MultiCaseSummaryBuilder:
         """
         current_row = 2
 
-        ws.cell(row=current_row, column=1, value=f"Source File: {source_name}").font = (
-            _STYLES.header
-        )
+        ws.cell(
+            row=current_row, column=1, value=f"Source File: {source_name}"
+        ).font = _STYLES.header
         current_row += 1
 
         case_label = f"Cases: {'; '.join(self._get_full_case_names())}"
@@ -118,9 +118,9 @@ class MultiCaseSummaryBuilder:
         valve_data = self.build_valve_per_element_data()
         if valve_data:
             for valve_info in valve_data:
-                ws.cell(row=current_row, column=1, value=valve_info["valve_name"]).font = (
-                    _STYLES.title
-                )
+                ws.cell(
+                    row=current_row, column=1, value=valve_info["valve_name"]
+                ).font = _STYLES.title
                 current_row += 2
                 end_row = self._write_valve_table(ws, valve_info, current_row)
                 current_row = end_row + 3
@@ -137,9 +137,9 @@ class MultiCaseSummaryBuilder:
         for element_name, builder_func in placeholder_elements:
             df = builder_func()
             if not df.empty:
-                ws.cell(row=current_row, column=1, value=f"{element_name} Summary").font = (
-                    _STYLES.title
-                )
+                ws.cell(
+                    row=current_row, column=1, value=f"{element_name} Summary"
+                ).font = _STYLES.title
                 current_row += 2
                 end_row = self._write_placeholder_table(ws, df, current_row, element_name)
                 current_row = end_row + 3
@@ -204,7 +204,9 @@ class MultiCaseSummaryBuilder:
                 idx = cols.index("Pipe Name")
                 cols.insert(idx + 1, "Governing Case")
                 cols.remove("Governing Case")
-                cols = ["Pipe Name", "Governing Case"] + [c for c in row.keys() if c not in ("Pipe Name", "Governing Case")]
+                cols = ["Pipe Name", "Governing Case"] + [
+                    c for c in row.keys() if c not in ("Pipe Name", "Governing Case")
+                ]
                 row = {k: row.get(k) for k in cols}
 
             pipe_rows.append(row)
@@ -215,7 +217,9 @@ class MultiCaseSummaryBuilder:
         df = pd.DataFrame(pipe_rows)
         cols = list(df.columns)
         if "Pipe Name" in cols and "Governing Case" in cols:
-            new_order = ["Pipe Name", "Governing Case"] + [c for c in cols if c not in ("Pipe Name", "Governing Case")]
+            new_order = ["Pipe Name", "Governing Case"] + [
+                c for c in cols if c not in ("Pipe Name", "Governing Case")
+            ]
             df = df[new_order]
 
         return df
@@ -241,7 +245,9 @@ class MultiCaseSummaryBuilder:
 
             cols = list(row.keys())
             if "Pump Name" in cols:
-                cols = ["Pump Name", "Governing Case"] + [c for c in row.keys() if c not in ("Pump Name", "Governing Case")]
+                cols = ["Pump Name", "Governing Case"] + [
+                    c for c in row.keys() if c not in ("Pump Name", "Governing Case")
+                ]
                 row = {k: row.get(k) for k in cols}
 
             pump_rows.append(row)
@@ -252,7 +258,9 @@ class MultiCaseSummaryBuilder:
         df = pd.DataFrame(pump_rows)
         cols = list(df.columns)
         if "Pump Name" in cols and "Governing Case" in cols:
-            new_order = ["Pump Name", "Governing Case"] + [c for c in cols if c not in ("Pump Name", "Governing Case")]
+            new_order = ["Pump Name", "Governing Case"] + [
+                c for c in cols if c not in ("Pump Name", "Governing Case")
+            ]
             df = df[new_order]
 
         return df
@@ -283,9 +291,7 @@ class MultiCaseSummaryBuilder:
                 if state:
                     try:
                         size_inch = (
-                            float(pipe_model.diameter_inch)
-                            if pipe_model.diameter_inch
-                            else None
+                            float(pipe_model.diameter_inch) if pipe_model.diameter_inch else None
                         )
                     except (ValueError, TypeError):
                         size_inch = None
@@ -297,9 +303,7 @@ class MultiCaseSummaryBuilder:
                     crit = lookup_criteria(state, criteria_code, size_inch, pressure_barg)
                     if crit:
                         rho_v2_min = round(crit.rho_v2_min) if crit.rho_v2_min else None
-                        rho_v2_max = (
-                            round(crit.rho_v2_max) if crit.rho_v2_max is not None else None
-                        )
+                        rho_v2_max = round(crit.rho_v2_max) if crit.rho_v2_max is not None else None
 
         units = pd_pipe.units
         length_unit = units.get("length", "m")
@@ -556,6 +560,7 @@ class MultiCaseSummaryBuilder:
                 cell_v = ws.cell(row=current_row, column=start_col + 2 + case_idx, value=val)
                 cell_v.font = _STYLES.data
                 cell_v.alignment = Alignment(horizontal="center")
+                apply_number_format(cell_v, param)
 
             current_row += 1
 
@@ -570,13 +575,19 @@ class MultiCaseSummaryBuilder:
     ) -> int:
         """Write placeholder table for elements yet to be implemented."""
         if df.empty:
-            ws.cell(row=start_row, column=start_col, value=f"{element_name}: TODO - Implementation pending")
+            ws.cell(
+                row=start_row,
+                column=start_col,
+                value=f"{element_name}: TODO - Implementation pending",
+            )
             return start_row
 
         descriptions, units = parse_headers(df.columns)
 
         ws.row_dimensions[start_row].height = 30
-        for c_idx, (desc, unit) in enumerate(zip(descriptions, units, strict=True), start=start_col):
+        for c_idx, (desc, unit) in enumerate(
+            zip(descriptions, units, strict=True), start=start_col
+        ):
             cell_desc = ws.cell(row=start_row, column=c_idx, value=desc)
             cell_desc.font = _STYLES.header
             cell_desc.fill = _STYLES.header_fill
@@ -594,6 +605,8 @@ class MultiCaseSummaryBuilder:
                 cell.font = _STYLES.data
                 if c_idx != start_col:
                     cell.alignment = Alignment(horizontal="center")
+                if c_idx > start_col:
+                    apply_number_format(cell, df.columns[c_idx - start_col])
 
         last_row = data_start_row + len(df) - 1
         apply_table_borders(ws, start_row, last_row, len(descriptions), start_col)
