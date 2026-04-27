@@ -84,21 +84,30 @@ def parse_header_unit(col_name: str) -> tuple[str, str] | None:
 
 # ---- Number Formatting -------------------------------------------------------
 
-# Map of column name substring to Excel number_format.
-# Rules are applied in order; first match wins.
-NUMBER_FORMAT_RULES: list[tuple[str, str]] = [
-    # rho-V2 columns (rho-V2 min Criteria, rho-V2 calc, etc.)
-    ("\u03c1V\u00b2", "#,##0"),
+# Map of column name keywords to Excel number_format.
+# Each entry is (tuple_of_keywords, format). First match wins.
+NUMBER_FORMAT_RULES: list[tuple[tuple[str, ...], str]] = [
+    # dP / Differential Pressure columns
+    (("dP", "Differential Pressure"), "#0.000"),
+    # rho-V2 columns
+    (("\u03c1V\u00b2",), "#,##0"),
     # Transposed table pump values
-    ("Differential Head", "#,##0"),
-    ("Discharge Shut-Off Pressure", "#0.0"),
+    (("Differential Head",), "#,##0"),
+    (("Discharge Shut-Off Pressure",), "#0.0"),
+    (("NPSH Available",), "#0.0"),
+    (("Flow Rate",), "#,##0.0"),
+    (("Velocity","Pressure"), "#0.00"),
 ]
 
 
 def apply_number_format(cell: Any, header_name: str) -> None:
-    """Apply the registered number format to *cell* if *header_name* matches a rule."""
-    for pattern, fmt in NUMBER_FORMAT_RULES:
-        if pattern in header_name:
+    """Apply the registered number format to *cell* if *header_name* matches any keyword.
+
+    Matching is case-insensitive.
+    """
+    lower = header_name.lower()
+    for keywords, fmt in NUMBER_FORMAT_RULES:
+        if any(kw.lower() in lower for kw in keywords):
             cell.number_format = fmt
             return
 
