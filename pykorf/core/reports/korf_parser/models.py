@@ -120,6 +120,30 @@ class PumpData:
     vessel_max_level: float | None = None
     raise_to_shutoff_dp: float | None = None
     vapour_pressure: float | None = None
+    pressure_in_unit: str = ""
+    vapour_pressure_unit: str = ""
+    density_unit: str = ""
+
+    @property
+    def npsha_calc(self) -> float | None:
+        """Computed NPSH available [m].
+
+        Uses the same formula as pykorf.core.elements.pump.npsha_calc.
+        Inputs are assumed to be in kPag (suction pressure), kPa (vapour pressure),
+        and kg/m3 (density).
+        """
+        from pykorf.core.elements.pump import npsha_calc
+
+        if (
+            self.pressure_in is None
+            or self.vapour_pressure is None
+            or self.density is None
+        ):
+            return None
+        try:
+            return npsha_calc(self.pressure_in*100, self.vapour_pressure*100, self.density)
+        except (ZeroDivisionError, ValueError):
+            return None
 
 
 @dataclass

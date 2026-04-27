@@ -302,7 +302,7 @@ class KorfReporter(_BaseReporter):
                 "Suction Pressure [barg]": pump.pressure_in,
                 "Differential Pressure [bar]": pump.dp,
                 "Differential Head [m]": pump.head,
-                "NPSH Available [m]": pump.npsha,
+                "NPSH Available [m]": pump.npsha_calc,
                 "Hydraulic Power [kW]": pump.power,
                 "Section_Performance Characteristics": "Performance Characteristics",
                 "Raise to Shutoff DP []": pump.raise_to_shutoff_dp,

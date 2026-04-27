@@ -102,7 +102,7 @@ _PUMP_COL_MAP: dict[str, int] = {
 
 _NPSH_COL_MAP: dict[str, int] = {
     "name": 1,
-    "npsha": 14,
+    "npsha": 15,
     "npshr": 18,
     "vapour_pressure": 6,
 }
@@ -615,10 +615,18 @@ def _parse_valves_section(ws: Worksheet, start_row: int) -> tuple[list[ValveData
 def _parse_pumps_section(ws: Worksheet, start_row: int) -> tuple[list[PumpData], int]:
     """Parse PUMPS section including NPSH and SHUT OFF PRESSURE subsections."""
     pumps: list[PumpData] = []
-    row = start_row + 4
+    unit_row = start_row + 2
+    data_row = start_row + 4
 
-    while row <= ws.max_row:
-        cell_a = ws.cell(row=row, column=1).value
+    pump_units: dict[str, str] = {}
+    if unit_row <= ws.max_row:
+        for field_name, col_idx in _PUMP_COL_MAP.items():
+            cell_val = ws.cell(row=unit_row, column=col_idx).value
+            if cell_val:
+                pump_units[field_name] = _safe_str(cell_val)
+
+    while data_row <= ws.max_row:
+        cell_a = ws.cell(row=data_row, column=1).value
         cell_a_str = _safe_str(cell_a)
         if (
             cell_a_str in ("NPSH", "SHUT OFF PRESSURE", "CURVES")
@@ -626,10 +634,10 @@ def _parse_pumps_section(ws: Worksheet, start_row: int) -> tuple[list[PumpData],
         ):
             break
         if not cell_a_str:
-            row += 1
+            data_row += 1
             continue
 
-        data = _extract_row_data_direct(ws, row, _PUMP_COL_MAP)
+        data = _extract_row_data_direct(ws, data_row, _PUMP_COL_MAP)
         pumps.append(
             PumpData(
                 name=_safe_str(data.get("name")),
@@ -646,15 +654,24 @@ def _parse_pumps_section(ws: Worksheet, start_row: int) -> tuple[list[PumpData],
                 pressure_out=_safe_float(data.get("pressure_out")),
                 pipe_inlet=_safe_str(data.get("pipe_inlet")),
                 pipe_outlet=_safe_str(data.get("pipe_outlet")),
+                pressure_in_unit=pump_units.get("pressure_in", ""),
+                density_unit=pump_units.get("density", ""),
             )
         )
-        row += 1
+        data_row += 1
 
     # Parse NPSH subsection
-    while row <= ws.max_row:
-        cell_a = _safe_str(ws.cell(row=row, column=1).value)
+    while data_row <= ws.max_row:
+        cell_a = _safe_str(ws.cell(row=data_row, column=1).value)
         if cell_a == "NPSH":
-            npsh_data_row = row + 4
+            npsh_unit_row = data_row + 2
+            npsh_data_row = data_row + 4
+            npsh_units: dict[str, str] = {}
+            if npsh_unit_row <= ws.max_row:
+                for field_name, col_idx in _NPSH_COL_MAP.items():
+                    cell_val = ws.cell(row=npsh_unit_row, column=col_idx).value
+                    if cell_val:
+                        npsh_units[field_name] = _safe_str(cell_val)
             if npsh_data_row <= ws.max_row:
                 for pump in pumps:
                     data = _extract_row_data_direct(ws, npsh_data_row, _NPSH_COL_MAP)
@@ -662,17 +679,18 @@ def _parse_pumps_section(ws: Worksheet, start_row: int) -> tuple[list[PumpData],
                         pump.npsha = _safe_float(data.get("npsha"))
                         pump.npshr = _safe_float(data.get("npshr"))
                         pump.vapour_pressure = _safe_float(data.get("vapour_pressure"))
-            row += 1
+                        pump.vapour_pressure_unit = npsh_units.get("vapour_pressure", "")
+            data_row += 1
             continue
         if cell_a in ("SHUT OFF PRESSURE", "CURVES") or cell_a in _SECTION_MARKERS_EQUIPMENT:
             break
-        row += 1
+        data_row += 1
 
     # Parse SHUT OFF PRESSURE subsection
-    while row <= ws.max_row:
-        cell_a = _safe_str(ws.cell(row=row, column=1).value)
+    while data_row <= ws.max_row:
+        cell_a = _safe_str(ws.cell(row=data_row, column=1).value)
         if cell_a == "SHUT OFF PRESSURE":
-            shutoff_data_row = row + 4
+            shutoff_data_row = data_row + 4
             if shutoff_data_row <= ws.max_row:
                 for pump in pumps:
                     data = _extract_row_data_direct(ws, shutoff_data_row, _SHUTOFF_COL_MAP)
@@ -683,15 +701,13 @@ def _parse_pumps_section(ws: Worksheet, start_row: int) -> tuple[list[PumpData],
                         pump.shutoff_dp = _safe_float(data.get("shutoff_dp"))
                         pump.shutoff_pressure = _safe_float(data.get("shutoff_pressure"))
                         pump.raise_to_shutoff_dp = _safe_float(data.get("raise_to_shutoff_dp"))
-            row += 1
+            data_row += 1
             continue
-        if cell_a in ("CURVES",) or (
-            cell_a in _SECTION_MARKERS_EQUIPMENT and cell_a != "SHUT OFF PRESSURE"
-        ):
+        if cell_a in ("CURVES",) or cell_a in _SECTION_MARKERS_EQUIPMENT:
             break
-        row += 1
+        data_row += 1
 
-    return pumps, row
+    return pumps, data_row
 
 
 def _parse_compressors_section(ws: Worksheet, start_row: int) -> tuple[list[CompressorData], int]:

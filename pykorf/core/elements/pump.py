@@ -10,6 +10,19 @@ if TYPE_CHECKING:
     from pykorf.core.model import Model
 
 
+def npsha_calc(suc_press: float, vap_press: float, density: float) -> float:
+    """Calculate NPSH available [m].
+
+    Parameters
+    ----------
+    suc_press: Suction pressure in kPag.
+    vap_press: Vapour pressure in kPa abs.
+    density: Density in kg/m3.
+    """
+    g = 9.8066
+    return ((suc_press + 101.325) - vap_press) * 1000 / (density * g)
+
+
 class Pump(BaseElement):
     """Represents a centrifugal / positive-displacement pump.
 
@@ -442,20 +455,16 @@ class Pump(BaseElement):
             #     Pump.NPSH_AVAILABLE, val_index=1, unit_index=-1
             # )
 
-            # calculate npsha manually
-            def calculate_npsha() -> float | None:
-                g = 9.8066  # m/s²
+            npsha_val: float | None = None
+            try:
                 p_suc = float(suc_press) if suc_press is not None else None
                 p_vap_raw = self._scalar(Pump.PUMP_VAP_PRESS, 0)
                 p_vap = float(p_vap_raw) if p_vap_raw is not None else None
-                rho = density_in  # kg/m³
-                if p_suc is None or p_vap is None or rho is None:
-                    return None
-                npsha_m = ((p_suc - p_vap + 101.325) * 10**3 / (rho * g))
-                return npsha_m
-
-            npsha_val: float | None
-            npsha_val, npsh_unit = calculate_npsha(), "m"
+                if p_suc is not None and p_vap is not None and density_in is not None:
+                    npsha_val = npsha_calc(p_suc, p_vap, density_in)
+            except (TypeError, ValueError):
+                pass
+            npsh_unit = "m"
 
             pow_val, pow_unit = self.get_value_and_unit(Pump.POW, val_index=0, unit_index=-1)
 

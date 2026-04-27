@@ -302,10 +302,10 @@ export const korfExcelStatus = <ThrowOnError extends boolean = false>(options?: 
  *
  * Generate a single-model Excel report.
  *
- * When a KORF Excel file is found alongside the KDF (or explicitly provided
- * via ``korf_excel_path``), uses KorfReporter to produce a multi-case report
- * with per-case sheets and a worst-case summary envelope. Otherwise falls
- * back to PykorfReporter (KDF-only, single-case).
+ * Uses ``mode`` to select the reporter:
+ * - ``"single"`` (default): PykorfReporter via KDF data only.
+ * - ``"multi"``: KorfReporter via auto-detected KORF Excel alongside the KDF.
+ * Requires the KORF Excel file to exist and be up-to-date.
  */
 export const generateReport = <ThrowOnError extends boolean = false>(options: Options<GenerateReportData, ThrowOnError>) => (options.client ?? client).post<GenerateReportResponses, GenerateReportErrors, ThrowOnError>({
     responseType: 'json',
@@ -351,6 +351,13 @@ export const importReport = <ThrowOnError extends boolean = false>(options: Opti
  * Batch Report
  *
  * Generate batch report across multiple KDF files in a folder.
+ *
+ * Uses ``mode`` to select the reporter:
+ * - ``"single"`` (default): PykorfReporter per KDF.
+ * - ``"multi"``: KorfReporter per KDF (auto-detects KORF Excel alongside each KDF).
+ *
+ * When ``validate_only=True`` and ``mode="multi"``, scans for KORF Excel
+ * files and returns which KDFs are missing/stale without generating.
  */
 export const batchReport = <ThrowOnError extends boolean = false>(options: Options<BatchReportData, ThrowOnError>) => (options.client ?? client).post<BatchReportResponses, BatchReportErrors, ThrowOnError>({
     responseType: 'json',
