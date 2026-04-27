@@ -57,8 +57,6 @@ code      = "GAS-GEN"
 service   = "Gases, General"
 notes     = "Note 1, 2, 8 — velocity from rho_v2"
 pressure  = 50       # 20 < P ≤ 50 barg
-vel    = [0.0, 0.0]
-dp     = [0.0, 0.0]
 rho_v2 = 15000
 
 [[criteria]]
@@ -66,8 +64,6 @@ code      = "GAS-GEN"
 service   = "Gases, General"
 notes     = "Note 1, 2, 8 — velocity from rho_v2"
 pressure  = 80       # 50 < P ≤ 80 barg
-vel    = [0.0, 0.0]
-dp     = [0.0, 0.0]
 rho_v2 = 15000
 
 [[criteria]]
@@ -75,8 +71,6 @@ code      = "GAS-GEN"
 service   = "Gases, General"
 notes     = "Note 1, 2, 8 — velocity from rho_v2"
 # no pressure → catch-all (P > 80 barg)
-vel    = [0.0, 0.0]
-dp     = [0.0, 0.0]
 rho_v2 = 15000
 
 # ---------------------------------------------------------------------------
@@ -87,7 +81,6 @@ rho_v2 = 15000
 code      = "CMP-SUC-REC"
 service   = "Compressor Suction — Reciprocating"
 notes     = "Note 2 — velocity from rho_v2"
-vel    = [0.0, 0.0]
 dp     = [2.0, 7.0]  # 0.02 / 0.07 bar/100m
 rho_v2 = 3000
 
@@ -95,7 +88,6 @@ rho_v2 = 3000
 code      = "CMP-SUC-CEN"
 service   = "Compressor Suction — Centrifugal"
 notes     = "Note 2 — velocity from rho_v2"
-vel    = [0.0, 0.0]
 dp     = [2.0, 7.0]  # 0.02 / 0.07 bar/100m
 rho_v2 = 6000
 
@@ -107,15 +99,13 @@ rho_v2 = 6000
 code      = "CMP-DIS"
 service   = "Compressor Discharge"
 notes     = ""
-vel    = [0.0, 0.0]
 dp     = [0.0, 22.0]  # only max dP specified: 0.22 bar/100m
 
 [[criteria]]
 code      = "CMP-ASL"
 service   = "Compressor Anti Surge Line"
 notes     = "Note 3 — max velocity < 1/3 sonic velocity"
-vel    = [0.0, 0.0]   # governed by Note 3 (1/3 sonic)
-dp     = [0.0, 0.0]
+ # TOOD: velocity governed by Note 3 (1/3 sonic)
 rho_v2 = 25000
 
 # ---------------------------------------------------------------------------
@@ -126,14 +116,12 @@ rho_v2 = 25000
 code      = "TWR-OH"
 service   = "Tower Overhead"
 notes     = "Note 4 — sized for available pressure drop"
-vel    = [0.0, 0.0]
 dp     = [2.3, 11.0]  # 0.023 / 0.11 bar/100m
 
 [[criteria]]
 code      = "VAC-SVC"
 service   = "Vacuum Service"
 notes     = ""
-vel    = [0.0, 0.0]
 dp     = [0.5, 6.8]   # 0.005 / 0.068 bar/100m
 
 # ---------------------------------------------------------------------------
@@ -143,9 +131,6 @@ dp     = [0.5, 6.8]   # 0.005 / 0.068 bar/100m
 [[criteria]]
 code      = "STM-SUP"
 service   = "Steam Supply — Drivers, Heat Exchangers, Heating Coil"
-notes     = ""
-vel    = [0.0, 0.0]
-dp     = [0.0, 0.0]   # no criterion listed; size per available dP
 
 # ---------------------------------------------------------------------------
 # Steam Mains
@@ -157,15 +142,12 @@ code      = "STM-MAIN"
 service   = "Steam Mains"
 notes     = ""
 pressure  = 34        # < 34.5 barg  (conservative integer boundary)
-vel    = [0.0, 0.0]
 dp     = [11.0, 34.0]  # 0.11 / 0.34 bar/100m
 
 [[criteria]]
 code      = "STM-MAIN"
 service   = "Steam Mains"
-notes     = ""
 # no pressure → catch-all (≥ 34.5 barg)
-vel    = [0.0, 0.0]
 dp     = [23.0, 45.0]  # 0.23 / 0.45 bar/100m
 
 # ---------------------------------------------------------------------------
@@ -178,7 +160,6 @@ code      = "STM-LET"
 service   = "Steam Distribution Let Down Lines"
 notes     = ""
 pressure  = 34        # < 34.5 barg
-vel    = [0.0, 0.0]
 dp     = [23.0, 45.0]  # 0.23 / 0.45 bar/100m
 
 [[criteria]]
@@ -186,7 +167,6 @@ code      = "STM-LET"
 service   = "Steam Distribution Let Down Lines"
 notes     = ""
 # no pressure → catch-all (≥ 34.5 barg)
-vel    = [0.0, 0.0]
 dp     = [34.0, 68.0]  # 0.34 / 0.68 bar/100m
 
 # ---------------------------------------------------------------------------
@@ -197,8 +177,6 @@ dp     = [34.0, 68.0]  # 0.34 / 0.68 bar/100m
 code      = "STM-DIST"
 service   = "Steam Distribution Lines — Stripping, Aeration, etc."
 notes     = "Note 5 — size for available dP; max velocity < 1/3 sonic velocity"
-vel    = [0.0, 0.0]   # per Note 5 (1/3 sonic)
-dp     = [0.0, 0.0]   # per Note 5 (available dP)
 
 # ---------------------------------------------------------------------------
 # Exhaust Steam (excluding vacuum exhaust)
@@ -208,7 +186,6 @@ dp     = [0.0, 0.0]   # per Note 5 (available dP)
 code      = "STM-EXH"
 service   = "Exhaust Steam Lines — Excluding Vacuum Exhaust"
 notes     = "Note 6 — vacuum exhaust: ~0.017 bar total loss, max 140 m/s"
-vel    = [0.0, 0.0]
 dp     = [4.5, 11.0]  # 0.045 / 0.11 bar/100m
 
 # ---------------------------------------------------------------------------
@@ -220,7 +197,6 @@ code      = "N2-IA"
 service   = "Nitrogen / Instrument Air Header"
 notes     = "Note 7 — dP based on user requirements and distance from source"
 # no line_size → catch-all (≥ 2" per source table)
-vel    = [0.0, 0.0]
 dp     = [2.3, 23.0]  # 0.023 / 0.23 bar/100m
 
 # ---------------------------------------------------------------------------
@@ -231,5 +207,4 @@ dp     = [2.3, 23.0]  # 0.023 / 0.23 bar/100m
 code      = "FUEL-GAS"
 service   = "Fuel Gas"
 notes     = "Note 7 — dP based on user requirements and distance from source"
-vel    = [0.0, 0.0]
 dp     = [2.3, 23.0]  # 0.023 / 0.23 bar/100m

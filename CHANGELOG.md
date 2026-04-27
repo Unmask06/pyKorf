@@ -5,6 +5,13 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.1] - 2026-04-27
+
+### Fixed
+
+- Sizing criteria lookup no longer crashes when velocity or dP criteria are not defined for a criteria code
+- Pipe criteria check now correctly skips velocity and dP checks when the maximum value is zero
+
 ## [0.29.0] - 2026-04-27
 
 ### What's New
