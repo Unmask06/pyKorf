@@ -5,6 +5,25 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.0] - 2026-04-27
+
+### What's New
+
+- Multi-case KORF Excel report generation with single/multi-case mode toggle
+- Auto-detect KORF Excel alongside KDF files (no manual path input needed)
+- Line Size column added to pipe reports between Line Number and Line Length
+- Orifice report now shows only relevant columns (removed Bore and DP Flange Tap)
+
+### Improved
+
+- Report formatting rules centralized for consistent number formatting across all report types
+- Number format rules support multiple keywords and case-insensitive matching
+
+### Fixed
+
+- Auto-detect KORF Excel only when the Excel file is newer than the KDF file
+- Auto-detect KORF Excel uses exact stem match to avoid false positives
+
 ## [0.28.0] - 2026-04-23
 
 ### What's New
