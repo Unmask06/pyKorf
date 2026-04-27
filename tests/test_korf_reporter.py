@@ -914,3 +914,88 @@ class TestDataClasses:
         )
         assert orif.bore == 140.5
         assert orif.dp_flange_tap == 0.189
+
+
+# ── MultiCaseSummaryBuilder Tests ───────────────────────────────────────────
+
+
+class TestMultiCaseSummaryBuilder:
+    """Tests for MultiCaseSummaryBuilder governing case logic."""
+
+    @pytest.fixture
+    def model(self):
+        return Model.load(PUMP_KDF)
+
+    @pytest.fixture
+    def korf_excel(self, tmp_path):
+        return _create_korf_excel(tmp_path, num_cases=2)
+
+    def test_pipe_governing_case_based_on_velocity(self, model, korf_excel):
+        """Pipe governing case is determined by max velocity."""
+        from pykorf.core.reports.korf_reporter import KorfReporter
+        from pykorf.core.reports.multi_case_summary import MultiCaseSummaryBuilder
+
+        reporter = KorfReporter(excel_path=korf_excel, model=model)
+        case_data = reporter._get_case_data()
+        builder = MultiCaseSummaryBuilder(case_data, model, reporter)
+
+        pipe_df = builder.build_pipe_summary_df()
+        assert not pipe_df.empty
+        assert "Governing Case" in pipe_df.columns
+        assert "Pipe Name" in pipe_df.columns
+
+        for row_idx, row in pipe_df.iterrows():
+            governing_case = row.get("Governing Case")
+            assert governing_case in ["Rated", "Case2"]
+
+    def test_pump_governing_case_is_first_case(self, model, korf_excel):
+        """Pump governing case is always the first case."""
+        from pykorf.core.reports.korf_reporter import KorfReporter
+        from pykorf.core.reports.multi_case_summary import MultiCaseSummaryBuilder
+
+        reporter = KorfReporter(excel_path=korf_excel, model=model)
+        case_data = reporter._get_case_data()
+        builder = MultiCaseSummaryBuilder(case_data, model, reporter)
+
+        pump_df = builder.build_pump_summary_df()
+        assert not pump_df.empty
+        assert "Governing Case" in pump_df.columns
+
+        for row_idx, row in pump_df.iterrows():
+            assert row.get("Governing Case") == "Rated"
+
+    def test_valve_per_element_tables(self, model, korf_excel):
+        """Valve data is structured as per-element tables with case columns."""
+        from pykorf.core.reports.korf_reporter import KorfReporter
+        from pykorf.core.reports.multi_case_summary import MultiCaseSummaryBuilder
+
+        reporter = KorfReporter(excel_path=korf_excel, model=model)
+        case_data = reporter._get_case_data()
+        builder = MultiCaseSummaryBuilder(case_data, model, reporter)
+
+        valve_data = builder.build_valve_per_element_data()
+        assert len(valve_data) >= 1
+
+        for valve_info in valve_data:
+            assert "valve_name" in valve_info
+            assert "parameters" in valve_info
+            assert "case_values" in valve_info
+            assert valve_info["parameters"] == ["Flow Rate", "Inlet Pressure", "Differential Pressure", "Opening"]
+            assert "Rated" in valve_info["case_values"]
+            assert "Case2" in valve_info["case_values"]
+
+    def test_placeholder_methods_return_empty_df(self, model, korf_excel):
+        """Placeholder methods for other elements return empty DataFrames."""
+        from pykorf.core.reports.korf_reporter import KorfReporter
+        from pykorf.core.reports.multi_case_summary import MultiCaseSummaryBuilder
+
+        reporter = KorfReporter(excel_path=korf_excel, model=model)
+        case_data = reporter._get_case_data()
+        builder = MultiCaseSummaryBuilder(case_data, model, reporter)
+
+        assert builder.build_compressor_summary_df().empty
+        assert builder.build_exchanger_summary_df().empty
+        assert builder.build_misc_summary_df().empty
+        assert builder.build_feed_summary_df().empty
+        assert builder.build_product_summary_df().empty
+        assert builder.build_orifice_summary_df().empty
