@@ -11,6 +11,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.utils.dataframe import dataframe_to_rows
 
 from pykorf import Model
+from pykorf.core.reports.multi_case_summary import MultiCaseSummaryBuilder
 from pykorf.core.reports.reporter import PykorfReporter, Reporter
 
 _logger = logging.getLogger(__name__)
@@ -256,15 +257,19 @@ class ResultExporter:
         elements: list[str] | None,
     ) -> None:
         """Write per-case sheets plus a Summary envelope sheet for multi-case reports."""
+        from pykorf.core.reports.korf_reporter import KorfReporter
+
         case_names = list(all_cases.keys())
 
         first_case_dfs = list(all_cases.values())[0]
         element_keys = elements if elements is not None else list(first_case_dfs.keys())
 
-        envelope_dfs = self._build_envelope_dataframes(all_cases, element_keys)
-        summary_ws = self._write_case_sheet(
-            workbook, "Summary", envelope_dfs, source_name, element_keys
-        )
+        summary_ws = workbook.create_sheet("Summary")
+        summary_ws.page_setup.paperSize = summary_ws.PAPERSIZE_A3
+        summary_ws.page_setup.orientation = summary_ws.ORIENTATION_LANDSCAPE
+        summary_ws.page_setup.fitToPage = True
+        summary_ws.page_setup.fitToWidth = 1
+        summary_ws.page_setup.fitToHeight = 1
 
         model_title = self.reporter.get_model_title()
         if model_title:
@@ -272,13 +277,97 @@ class ResultExporter:
             title_cell.font = self._styles["model_title"]
             summary_ws.row_dimensions[1].height = 28
 
-        case_label = f"Cases: {'; '.join(case_names)}"
-        summary_ws.cell(row=3, column=1, value=case_label).font = self._styles["header"]
+        if isinstance(self.reporter, KorfReporter):
+            case_data = self.reporter._get_case_data()
+            builder = MultiCaseSummaryBuilder(
+                case_data=case_data,
+                model=self.reporter.model,
+                reporter=self.reporter,
+            )
+            builder.write_summary_sheet(
+                summary_ws,
+                source_name,
+                pipe_stats_handler=self._write_pipe_stats,
+            )
+        else:
+            envelope_dfs = self._build_envelope_dataframes(all_cases, element_keys)
+            self._write_case_sheet_content(summary_ws, envelope_dfs, source_name, element_keys)
+            case_label = f"Cases: {'; '.join(case_names)}"
+            summary_ws.cell(row=3, column=1, value=case_label).font = self._styles["header"]
 
         for case_name in case_names:
             case_dfs = all_cases[case_name]
             ws = self._write_case_sheet(workbook, case_name, case_dfs, source_name, element_keys)
             ws.cell(row=2, column=1, value=f"Case: {case_name}").font = self._styles["header"]
+
+    def _write_case_sheet_content(
+        self,
+        ws: Any,
+        dfs: dict[str, pd.DataFrame],
+        source_name: str,
+        elements: list[str] | None,
+    ) -> None:
+        """Write element tables content to a worksheet (without header/footer setup)."""
+        element_keys = elements if elements is not None else list(dfs.keys())
+
+        current_row_left = 5
+        current_row_right = 5
+        max_left_col = 1
+
+        for element_type in element_keys:
+            if element_type not in dfs or dfs[element_type].empty:
+                continue
+            if element_type in _TRANSPOSED_ELEMENTS:
+                continue
+            if element_type in _RIGHT_SIDE_ELEMENTS:
+                continue
+            df = dfs[element_type]
+            num_cols = len(df.columns)
+            end_col = 1 + num_cols - 1
+            if end_col > max_left_col:
+                max_left_col = end_col
+
+        for element_type in element_keys:
+            if element_type not in dfs or dfs[element_type].empty:
+                continue
+
+            df = dfs[element_type]
+            is_right_side = element_type in _RIGHT_SIDE_ELEMENTS
+            current_row = current_row_right if is_right_side else current_row_left
+            start_col = max_left_col + 2 if is_right_side else 1
+
+            start_table_row = current_row
+
+            self._write_cell(ws, current_row, start_col, f"{element_type} Summary", style="title")
+            current_row += 2
+
+            if element_type in _TRANSPOSED_ELEMENTS:
+                end_row, num_cols = self._write_transposed_table(ws, df, current_row, start_col)
+            else:
+                end_row, num_cols = self._write_standard_table(ws, df, current_row, start_col)
+
+            self._apply_table_formatting(ws, start_table_row + 2, end_row, num_cols, start_col)
+
+            if element_type == "Pipes":
+                current_row = self._write_pipe_stats(ws, df, end_row + 2, start_col)
+            else:
+                current_row = end_row + 3
+
+            if is_right_side:
+                current_row_right = current_row
+            else:
+                current_row_left = current_row
+
+        footer_row = max(current_row_left, current_row_right) + 1
+        footer_text = (
+            "This report is auto-generated from the KORF hydraulic model. "
+            "Do not edit this document directly — any changes must be made in the source model "
+            f"({source_name}) and the report regenerated."
+        )
+        footer_cell = ws.cell(row=footer_row, column=1, value=footer_text)
+        footer_cell.font = self._styles["footer"]
+        footer_cell.alignment = Alignment(wrap_text=False)
+        ws.row_dimensions[footer_row].height = 30
 
     def _write_case_sheet(
         self,
