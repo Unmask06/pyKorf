@@ -85,31 +85,36 @@ def parse_header_unit(col_name: str) -> tuple[str, str] | None:
 # ---- Number Formatting -------------------------------------------------------
 
 # Map of column name keywords to Excel number_format.
-# Each entry is (tuple_of_keywords, format). First match wins.
+# Each entry is (tuple_of_keywords, format).
+# Rules are applied in order; LAST match wins.
+# Generic rules first, specific overrides after.
 NUMBER_FORMAT_RULES: list[tuple[tuple[str, ...], str]] = [
-    # dP / Differential Pressure columns
+    # ── Generic rules (applied to all matching columns) ──────────────
     (("dP", "Differential Pressure"), "#0.000"),
-    # rho-V2 columns
     (("\u03c1V\u00b2",), "#,##0"),
-    # Transposed table pump values
     (("Differential Head",), "#,##0"),
-    (("Discharge Shut-Off Pressure",), "#0.0"),
-    (("NPSH Available",), "#0.0"),
     (("Flow Rate",), "#,##0.0"),
-    (("Velocity","Pressure"), "#0.00"),
+    (("Velocity",), "#0.00"),
+    (("Pressure",), "#0.00"),
+    # ── Specific overrides (applied after generic rules) ─────────────
+    # Add rules here to supersede generic matches above.
+    # e.g. (("Discharge Shut-Off Pressure",), "#0.0"),
 ]
 
 
 def apply_number_format(cell: Any, header_name: str) -> None:
     """Apply the registered number format to *cell* if *header_name* matches any keyword.
 
-    Matching is case-insensitive.
+    Matching is case-insensitive. LAST matching rule wins so that
+    specific overrides placed below supersede generic rules.
     """
     lower = header_name.lower()
+    matched_fmt: str | None = None
     for keywords, fmt in NUMBER_FORMAT_RULES:
         if any(kw.lower() in lower for kw in keywords):
-            cell.number_format = fmt
-            return
+            matched_fmt = fmt
+    if matched_fmt is not None:
+        cell.number_format = matched_fmt
 
 
 # ---- Column Widths -----------------------------------------------------------
