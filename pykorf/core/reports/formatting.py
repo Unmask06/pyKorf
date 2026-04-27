@@ -91,14 +91,10 @@ def parse_header_unit(col_name: str) -> tuple[str, str] | None:
 NUMBER_FORMAT_RULES: list[tuple[tuple[str, ...], str]] = [
     # ── Generic rules (applied to all matching columns) ──────────────
     (("\u03c1V\u00b2",), "#,##0"),
-    (("Differential Head", "Temperature","Flow Rate"), "#,##0"),
+    (("Differential Head", "Temperature", "Flow Rate"), "#,##0"),
     (("Velocity", "Pressure"), "#0.00"),
     (("dP", "Differential Pressure"), "#0.000"),
-    (("Raise","Shut-Off"), "#0.0"),
-
-    # ── Specific overrides (applied after generic rules) ─────────────
-    # Add rules here to supersede generic matches above.
-    # e.g. (("Discharge Shut-Off Pressure",), "#0.0"),
+    (("Raise", "Shut-Off", "NPSH", "Power", "Volumetric Flow"), "#0.0"),
 ]
 
 
