@@ -165,7 +165,7 @@ class FlowOrifice(BaseElement):
             return {
                 "Orifice Name": self.name,
                 "Type": self.orifice_type,
-                self.format_export_header("DP Flange Tap", dp_unit): dp_val,
+                self.format_export_header("DP Pipe Tap", dp_unit): dp_val,
                 self.format_export_header("Inlet Pressure", pin_unit): pin_val,
                 self.format_export_header("Outlet Pressure", pout_unit): pout_val,
             }

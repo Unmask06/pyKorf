@@ -337,9 +337,7 @@ class KorfReporter(_BaseReporter):
     # ── ORIFICES ──────────────────────────────────────────────────────
 
     def _extract_orifices(self, cd: KorfCaseData) -> list[dict]:
-        # Aligns with FlowOrifice.summary(export=True) pattern:
-        # Orifice Name, Type, Bore, DP Flange Tap, DP Pipe Tap,
-        # Inlet Pressure, Outlet Pressure
+        # Orifice Name, Type, DP Pipe Tap, Inlet Pressure, Outlet Pressure
         results = []
         for orif in cd.orifices:
             row = {
@@ -347,8 +345,6 @@ class KorfReporter(_BaseReporter):
                 if orif.description
                 else orif.name,
                 "Type": orif.type,
-                "Bore [mm]": orif.bore,
-                "DP Flange Tap [bar]": orif.dp_flange_tap,
                 "DP Pipe Tap [bar]": orif.dp_pipe_tap,
                 "Inlet Pressure [barg]": orif.pressure_in,
                 "Outlet Pressure [barg]": orif.pressure_out,
