@@ -6,15 +6,28 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 import pandas as pd
-from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
-from openpyxl.utils import get_column_letter
+from openpyxl.styles import Alignment
 from openpyxl.worksheet.worksheet import Worksheet
 
 from pykorf import Model
+from pykorf.core.reports.formatting import (
+    ReportStyles,
+    apply_column_widths,
+    apply_fail_format,
+    apply_number_format,
+    apply_table_borders,
+    parse_headers,
+    parse_header_unit,
+    write_section_marker,
+    write_transposed_header,
+    write_two_level_headers,
+)
 from pykorf.core.reports.korf_parser import CaseInfo, KorfCaseData, PipeData, PumpData
 
 if TYPE_CHECKING:
     from pykorf.core.reports.korf_reporter import KorfReporter
+
+_STYLES = ReportStyles()
 
 _logger = logging.getLogger(__name__)
 
@@ -51,20 +64,6 @@ class MultiCaseSummaryBuilder:
         self._reporter = reporter
         self._case_names = self._get_case_names()
 
-        self._styles = {
-            "model_title": Font(bold=True, size=18, color="003366"),
-            "title": Font(bold=True, size=14, color="003366"),
-            "header": Font(bold=True, size=10),
-            "unit": Font(italic=True, color="555555", size=10),
-            "data": Font(size=10),
-            "footer": Font(italic=True, size=9, color="888888"),
-            "fill": PatternFill(start_color="F2F2F2", end_color="F2F2F2", fill_type="solid"),
-            "thin_side": Side(style="thin"),
-            "thick_side": Side(style="medium"),
-            "fail_font": Font(bold=True, size=10, color="9C0006"),
-            "fail_fill": PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid"),
-        }
-
     def _get_case_names(self) -> list[str]:
         """Get case names in order (e.g., ['Rated', 'Case2'])."""
         sorted_cases = sorted(self._case_data.keys(), key=lambda c: int(c.number))
@@ -90,18 +89,18 @@ class MultiCaseSummaryBuilder:
         """
         current_row = 2
 
-        ws.cell(row=current_row, column=1, value=f"Source File: {source_name}").font = self._styles[
-            "header"
-        ]
+        ws.cell(row=current_row, column=1, value=f"Source File: {source_name}").font = (
+            _STYLES.header
+        )
         current_row += 1
 
         case_label = f"Cases: {'; '.join(self._get_full_case_names())}"
-        ws.cell(row=current_row, column=1, value=case_label).font = self._styles["header"]
+        ws.cell(row=current_row, column=1, value=case_label).font = _STYLES.header
         current_row += 2
 
         pipe_df = self.build_pipe_summary_df()
         if not pipe_df.empty:
-            ws.cell(row=current_row, column=1, value="Pipes Summary").font = self._styles["title"]
+            ws.cell(row=current_row, column=1, value="Pipes Summary").font = _STYLES.title
             current_row += 2
             end_row = self._write_pipe_table(ws, pipe_df, current_row)
             if pipe_stats_handler:
@@ -111,7 +110,7 @@ class MultiCaseSummaryBuilder:
 
         pump_df = self.build_pump_summary_df()
         if not pump_df.empty:
-            ws.cell(row=current_row, column=1, value="Pumps Summary").font = self._styles["title"]
+            ws.cell(row=current_row, column=1, value="Pumps Summary").font = _STYLES.title
             current_row += 2
             end_row = self._write_pump_table(ws, pump_df, current_row)
             current_row = end_row + 3
@@ -119,9 +118,9 @@ class MultiCaseSummaryBuilder:
         valve_data = self.build_valve_per_element_data()
         if valve_data:
             for valve_info in valve_data:
-                ws.cell(row=current_row, column=1, value=valve_info["valve_name"]).font = self._styles[
-                    "title"
-                ]
+                ws.cell(row=current_row, column=1, value=valve_info["valve_name"]).font = (
+                    _STYLES.title
+                )
                 current_row += 2
                 end_row = self._write_valve_table(ws, valve_info, current_row)
                 current_row = end_row + 3
@@ -138,9 +137,9 @@ class MultiCaseSummaryBuilder:
         for element_name, builder_func in placeholder_elements:
             df = builder_func()
             if not df.empty:
-                ws.cell(row=current_row, column=1, value=f"{element_name} Summary").font = self._styles[
-                    "title"
-                ]
+                ws.cell(row=current_row, column=1, value=f"{element_name} Summary").font = (
+                    _STYLES.title
+                )
                 current_row += 2
                 end_row = self._write_placeholder_table(ws, df, current_row, element_name)
                 current_row = end_row + 3
@@ -151,7 +150,7 @@ class MultiCaseSummaryBuilder:
             f"({source_name}) and the report regenerated."
         )
         footer_cell = ws.cell(row=current_row, column=1, value=footer_text)
-        footer_cell.font = self._styles["footer"]
+        footer_cell.font = _STYLES.footer
         footer_cell.alignment = Alignment(wrap_text=False)
         ws.row_dimensions[current_row].height = 30
 
@@ -437,19 +436,9 @@ class MultiCaseSummaryBuilder:
         self, ws: Worksheet, df: pd.DataFrame, start_row: int, start_col: int = 1
     ) -> int:
         """Write pipe summary table to worksheet."""
-        descriptions, units = self._parse_headers(df.columns)
+        descriptions, units = parse_headers(df.columns)
 
-        ws.row_dimensions[start_row].height = 30
-        for c_idx, (desc, unit) in enumerate(zip(descriptions, units, strict=True), start=start_col):
-            cell_desc = ws.cell(row=start_row, column=c_idx, value=desc)
-            cell_desc.font = self._styles["header"]
-            cell_desc.fill = self._styles["fill"]
-            cell_desc.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
-
-            cell_unit = ws.cell(row=start_row + 1, column=c_idx, value=unit)
-            cell_unit.font = self._styles["unit"]
-            cell_unit.fill = self._styles["fill"]
-            cell_unit.alignment = Alignment(horizontal="center")
+        write_two_level_headers(ws, start_row, start_col, descriptions, units)
 
         data_start_row = start_row + 2
         criteria_col_idx = None
@@ -458,25 +447,22 @@ class MultiCaseSummaryBuilder:
                 criteria_col_idx = start_col + i
                 break
 
-        rhov2_col_indices = {
-            start_col + i for i, col in enumerate(df.columns) if "ρV²" in col  # noqa: RUF001
-        }
-
         for r_idx, row_data in enumerate(df.values, start=data_start_row):
             for c_idx, val in enumerate(row_data, start=start_col):
                 cell = ws.cell(row=r_idx, column=c_idx, value=val)
-                cell.font = self._styles["data"]
+                cell.font = _STYLES.data
                 if c_idx != start_col:
-                    cell.alignment = Alignment(horizontal="center")
-                if c_idx in rhov2_col_indices:
-                    cell.number_format = "#,##0"
+                    cell.alignment = _STYLES.data_center_align
+                if c_idx > start_col:
+                    col_name = df.columns[c_idx - start_col]
+                    apply_number_format(cell, col_name)
                 if criteria_col_idx is not None and c_idx == criteria_col_idx and val == "FAIL":
-                    cell.font = self._styles["fail_font"]
-                    cell.fill = self._styles["fail_fill"]
+                    apply_fail_format(cell)
+                    cell.fill = _STYLES.fail_fill
 
         last_row = data_start_row + len(df) - 1
-        self._apply_table_formatting(ws, start_row, last_row, len(descriptions), start_col)
-        self._apply_column_widths(ws, len(descriptions), start_col)
+        apply_table_borders(ws, start_row, last_row, len(descriptions), start_col)
+        apply_column_widths(ws, len(descriptions), start_col)
 
         return last_row
 
@@ -489,13 +475,7 @@ class MultiCaseSummaryBuilder:
 
         num_cols = 2 + len(pump_names)
 
-        ws.row_dimensions[start_row].height = 30
-        headers = ["Parameter", "Unit", *pump_names]
-        for c_idx, val in enumerate(headers, start=start_col):
-            cell = ws.cell(row=start_row, column=c_idx, value=val)
-            cell.font = self._styles["header"]
-            cell.fill = self._styles["fill"]
-            cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        write_transposed_header(ws, start_row, start_col, ["Parameter", "Unit", *pump_names])
 
         current_row = start_row + 1
         units_row_idx = None
@@ -520,47 +500,30 @@ class MultiCaseSummaryBuilder:
 
             if is_section_marker:
                 section_name = param_name[8:]
-                merged_cell = ws.cell(row=current_row, column=start_col, value=section_name)
-                merged_cell.font = Font(bold=True, italic=True, size=11, color="003366")
-                merged_cell.fill = PatternFill(
-                    start_color="D6EAF8", end_color="D6EAF8", fill_type="solid"
-                )
-                merged_cell.alignment = Alignment(horizontal="left", vertical="center")
-
-                end_col = start_col + num_cols - 1
-                ws.merge_cells(
-                    start_row=current_row,
-                    start_column=start_col,
-                    end_row=current_row,
-                    end_column=end_col,
-                )
-                ws.row_dimensions[current_row].height = 25
+                write_section_marker(ws, current_row, start_col, num_cols, section_name)
             else:
-                unit_match = self._parse_header_unit(param_name)
+                unit_match = parse_header_unit(param_name)
                 param_display = unit_match[0] if unit_match else param_name
                 unit_display = f"[{unit_match[1]}]" if unit_match else ""
 
                 cell_p = ws.cell(row=current_row, column=start_col, value=param_display)
-                cell_p.font = self._styles["header"]
-                cell_p.fill = self._styles["fill"]
+                cell_p.font = _STYLES.header
+                cell_p.fill = _STYLES.header_fill
 
                 cell_u = ws.cell(row=current_row, column=start_col + 1, value=unit_display)
-                cell_u.font = self._styles["unit"]
+                cell_u.font = _STYLES.unit
 
                 for v_idx, val in enumerate(row_values, start=start_col + 2):
                     cell_v = ws.cell(row=current_row, column=v_idx, value=val)
-                    cell_v.font = self._styles["data"]
-                    cell_v.alignment = Alignment(horizontal="center")
-                    if "Differential Head" in param_display:
-                        cell_v.number_format = "#,##0"
-                    if "Discharge Shut-Off Pressure" in param_display:
-                        cell_v.number_format = "#0.0"
+                    cell_v.font = _STYLES.data
+                    cell_v.alignment = _STYLES.data_center_align
+                    apply_number_format(cell_v, param_display)
 
             current_row += 1
 
         last_row = current_row - 1
-        self._apply_table_formatting(ws, start_row, last_row, num_cols, start_col)
-        self._apply_column_widths(ws, num_cols, start_col)
+        apply_table_borders(ws, start_row, last_row, num_cols, start_col)
+        apply_column_widths(ws, num_cols, start_col)
 
         return last_row
 
@@ -575,30 +538,30 @@ class MultiCaseSummaryBuilder:
         headers = ["Parameter", "Unit", *case_names]
         for c_idx, val in enumerate(headers, start=start_col):
             cell = ws.cell(row=start_row, column=c_idx, value=val)
-            cell.font = self._styles["header"]
-            cell.fill = self._styles["fill"]
+            cell.font = _STYLES.header
+            cell.fill = _STYLES.header_fill
             cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
 
         current_row = start_row + 1
         for i, (param, unit) in enumerate(_VALVE_PARAMETERS):
             cell_p = ws.cell(row=current_row, column=start_col, value=param)
-            cell_p.font = self._styles["header"]
-            cell_p.fill = self._styles["fill"]
+            cell_p.font = _STYLES.header
+            cell_p.fill = _STYLES.header_fill
 
             cell_u = ws.cell(row=current_row, column=start_col + 1, value=f"[{unit}]")
-            cell_u.font = self._styles["unit"]
+            cell_u.font = _STYLES.unit
 
             for case_idx, case_name in enumerate(case_names):
                 val = valve_info["case_values"][case_name][i]
                 cell_v = ws.cell(row=current_row, column=start_col + 2 + case_idx, value=val)
-                cell_v.font = self._styles["data"]
+                cell_v.font = _STYLES.data
                 cell_v.alignment = Alignment(horizontal="center")
 
             current_row += 1
 
         last_row = current_row - 1
-        self._apply_table_formatting(ws, start_row, last_row, num_cols, start_col)
-        self._apply_column_widths(ws, num_cols, start_col)
+        apply_table_borders(ws, start_row, last_row, num_cols, start_col)
+        apply_column_widths(ws, num_cols, start_col)
 
         return last_row
 
@@ -610,82 +573,33 @@ class MultiCaseSummaryBuilder:
             ws.cell(row=start_row, column=start_col, value=f"{element_name}: TODO - Implementation pending")
             return start_row
 
-        descriptions, units = self._parse_headers(df.columns)
+        descriptions, units = parse_headers(df.columns)
 
         ws.row_dimensions[start_row].height = 30
         for c_idx, (desc, unit) in enumerate(zip(descriptions, units, strict=True), start=start_col):
             cell_desc = ws.cell(row=start_row, column=c_idx, value=desc)
-            cell_desc.font = self._styles["header"]
-            cell_desc.fill = self._styles["fill"]
+            cell_desc.font = _STYLES.header
+            cell_desc.fill = _STYLES.header_fill
             cell_desc.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
 
             cell_unit = ws.cell(row=start_row + 1, column=c_idx, value=unit)
-            cell_unit.font = self._styles["unit"]
-            cell_unit.fill = self._styles["fill"]
+            cell_unit.font = _STYLES.unit
+            cell_unit.fill = _STYLES.header_fill
             cell_unit.alignment = Alignment(horizontal="center")
 
         data_start_row = start_row + 2
         for r_idx, row_data in enumerate(df.values, start=data_start_row):
             for c_idx, val in enumerate(row_data, start=start_col):
                 cell = ws.cell(row=r_idx, column=c_idx, value=val)
-                cell.font = self._styles["data"]
+                cell.font = _STYLES.data
                 if c_idx != start_col:
                     cell.alignment = Alignment(horizontal="center")
 
         last_row = data_start_row + len(df) - 1
-        self._apply_table_formatting(ws, start_row, last_row, len(descriptions), start_col)
-        self._apply_column_widths(ws, len(descriptions), start_col)
+        apply_table_borders(ws, start_row, last_row, len(descriptions), start_col)
+        apply_column_widths(ws, len(descriptions), start_col)
 
         return last_row
-
-    def _parse_headers(self, columns: list[str]) -> tuple[list[str], list[str]]:
-        """Split column names into (description, unit) tuples."""
-        import re
-
-        pattern = re.compile(r"^(.*?) \[(.*?)\]$")
-        descriptions, units = [], []
-        for col in columns:
-            match = pattern.match(col)
-            if match:
-                descriptions.append(match.group(1))
-                units.append(f"[{match.group(2)}]")
-            else:
-                descriptions.append(col)
-                units.append("")
-        return descriptions, units
-
-    def _parse_header_unit(self, col_name: str) -> tuple[str, str] | None:
-        """Parse a column name into (description, unit) if it has [unit] format."""
-        import re
-
-        pattern = re.compile(r"^(.*?) \[(.*?)\]$")
-        match = pattern.match(col_name)
-        if match:
-            return match.group(1), match.group(2)
-        return None
-
-    def _apply_table_formatting(
-        self, ws: Worksheet, start_row: int, end_row: int, num_cols: int, start_col: int = 1
-    ) -> None:
-        """Apply borders to table block."""
-        thin_s = self._styles["thin_side"]
-        thick_s = self._styles["thick_side"]
-
-        end_col = start_col + num_cols - 1
-        for r in range(start_row, end_row + 1):
-            for c in range(start_col, end_col + 1):
-                cell = ws.cell(row=r, column=c)
-                left = thick_s if c == start_col else thin_s
-                right = thick_s if c == end_col else thin_s
-                top = thick_s if r == start_row else thin_s
-                bottom = thick_s if r == end_row else thin_s
-                cell.border = Border(left=left, right=right, top=top, bottom=bottom)
-
-    def _apply_column_widths(self, ws: Worksheet, num_cols: int, start_col: int = 1) -> None:
-        """Set fixed column widths."""
-        ws.column_dimensions[get_column_letter(start_col)].width = 25
-        for c in range(start_col + 1, start_col + num_cols):
-            ws.column_dimensions[get_column_letter(c)].width = 15
 
     def build_compressor_summary_df(self) -> pd.DataFrame:
         """TODO: Build compressor summary DataFrame."""

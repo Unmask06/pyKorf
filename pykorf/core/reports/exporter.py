@@ -1,18 +1,30 @@
 from __future__ import annotations
 
 import logging
-import re
 from typing import Any
 
 import openpyxl
 import pandas as pd
-from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.styles import Alignment, Border, Font, PatternFill
 from openpyxl.utils import get_column_letter
 from openpyxl.utils.dataframe import dataframe_to_rows
 
 from pykorf import Model
+from pykorf.core.reports.formatting import (
+    ReportStyles,
+    apply_column_widths,
+    apply_fail_format,
+    apply_number_format,
+    apply_table_borders,
+    parse_headers,
+    write_section_marker,
+    write_transposed_header,
+    write_two_level_headers,
+)
 from pykorf.core.reports.multi_case_summary import MultiCaseSummaryBuilder
 from pykorf.core.reports.reporter import PykorfReporter, Reporter
+
+_STYLES = ReportStyles()
 
 _logger = logging.getLogger(__name__)
 
@@ -58,20 +70,6 @@ class ResultExporter:
             )
         else:
             raise ValueError("Either model or reporter must be provided")
-
-        self._styles = {
-            "model_title": Font(bold=True, size=18, color="003366"),
-            "title": Font(bold=True, size=14, color="003366"),
-            "header": Font(bold=True, size=10),
-            "unit": Font(italic=True, color="555555", size=10),
-            "data": Font(size=10),
-            "footer": Font(italic=True, size=9, color="888888"),
-            "fill": PatternFill(start_color="F2F2F2", end_color="F2F2F2", fill_type="solid"),
-            "thin_side": Side(style="thin"),
-            "thick_side": Side(style="medium"),
-        }
-
-        self._header_pattern = re.compile(r"^(.*?) \[(.*?)\]$")
 
     def export_to_excel(
         self,
@@ -167,18 +165,18 @@ class ResultExporter:
         model_title = self.reporter.get_model_title()
         if model_title:
             title_cell = worksheet.cell(row=1, column=1, value=model_title)
-            title_cell.font = self._styles["model_title"]
+            title_cell.font = _STYLES.model_title
             worksheet.row_dimensions[1].height = 28
 
-        worksheet.cell(row=2, column=1, value=f"Source File: {source_name}").font = self._styles[
-            "header"
-        ]
+        worksheet.cell(row=2, column=1, value=f"Source File: {source_name}").font = (
+            _STYLES.header
+        )
 
         case_names = self.reporter.get_case_names()
         if case_names:
             worksheet.cell(
                 row=3, column=1, value=f"Cases: {'; '.join(case_names)}"
-            ).font = self._styles["header"]
+            ).font = _STYLES.header
 
         current_row_left = 5
         current_row_right = 5
@@ -224,7 +222,7 @@ class ResultExporter:
                     worksheet, df, current_row, start_col
                 )
 
-            self._apply_table_formatting(
+            apply_table_borders(
                 worksheet, start_table_row + 2, end_row, num_cols, start_col
             )
 
@@ -245,7 +243,7 @@ class ResultExporter:
             f"({source_name}) and the report regenerated."
         )
         footer_cell = worksheet.cell(row=footer_row, column=1, value=footer_text)
-        footer_cell.font = self._styles["footer"]
+        footer_cell.font = _STYLES.footer
         footer_cell.alignment = Alignment(wrap_text=False)
         worksheet.row_dimensions[footer_row].height = 30
 
@@ -274,7 +272,7 @@ class ResultExporter:
         model_title = self.reporter.get_model_title()
         if model_title:
             title_cell = summary_ws.cell(row=1, column=1, value=model_title)
-            title_cell.font = self._styles["model_title"]
+            title_cell.font = _STYLES.model_title
             summary_ws.row_dimensions[1].height = 28
 
         if isinstance(self.reporter, KorfReporter):
@@ -293,12 +291,12 @@ class ResultExporter:
             envelope_dfs = self._build_envelope_dataframes(all_cases, element_keys)
             self._write_case_sheet_content(summary_ws, envelope_dfs, source_name, element_keys)
             case_label = f"Cases: {'; '.join(case_names)}"
-            summary_ws.cell(row=3, column=1, value=case_label).font = self._styles["header"]
+            summary_ws.cell(row=3, column=1, value=case_label).font = _STYLES.header
 
         for case_name in case_names:
             case_dfs = all_cases[case_name]
             ws = self._write_case_sheet(workbook, case_name, case_dfs, source_name, element_keys)
-            ws.cell(row=2, column=1, value=f"Case: {case_name}").font = self._styles["header"]
+            ws.cell(row=2, column=1, value=f"Case: {case_name}").font = _STYLES.header
 
     def _write_case_sheet_content(
         self,
@@ -346,7 +344,7 @@ class ResultExporter:
             else:
                 end_row, num_cols = self._write_standard_table(ws, df, current_row, start_col)
 
-            self._apply_table_formatting(ws, start_table_row + 2, end_row, num_cols, start_col)
+            apply_table_borders(ws, start_table_row + 2, end_row, num_cols, start_col)
 
             if element_type == "Pipes":
                 current_row = self._write_pipe_stats(ws, df, end_row + 2, start_col)
@@ -365,7 +363,7 @@ class ResultExporter:
             f"({source_name}) and the report regenerated."
         )
         footer_cell = ws.cell(row=footer_row, column=1, value=footer_text)
-        footer_cell.font = self._styles["footer"]
+        footer_cell.font = _STYLES.footer
         footer_cell.alignment = Alignment(wrap_text=False)
         ws.row_dimensions[footer_row].height = 30
 
@@ -385,7 +383,7 @@ class ResultExporter:
         ws.page_setup.fitToWidth = 1
         ws.page_setup.fitToHeight = 1
 
-        ws.cell(row=2, column=1, value=f"Source File: {source_name}").font = self._styles["header"]
+        ws.cell(row=2, column=1, value=f"Source File: {source_name}").font = _STYLES.header
 
         element_keys = elements if elements is not None else list(dfs.keys())
 
@@ -425,7 +423,7 @@ class ResultExporter:
             else:
                 end_row, num_cols = self._write_standard_table(ws, df, current_row, start_col)
 
-            self._apply_table_formatting(ws, start_table_row + 2, end_row, num_cols, start_col)
+            apply_table_borders(ws, start_table_row + 2, end_row, num_cols, start_col)
 
             if element_type == "Pipes":
                 current_row = self._write_pipe_stats(ws, df, end_row + 2, start_col)
@@ -444,7 +442,7 @@ class ResultExporter:
             f"({source_name}) and the report regenerated."
         )
         footer_cell = ws.cell(row=footer_row, column=1, value=footer_text)
-        footer_cell.font = self._styles["footer"]
+        footer_cell.font = _STYLES.footer
         footer_cell.alignment = Alignment(wrap_text=False)
         ws.row_dimensions[footer_row].height = 30
 
@@ -555,51 +553,22 @@ class ResultExporter:
     ) -> None:
         """Helper to write a cell with an optional predefined style."""
         cell = ws.cell(row=row, column=col, value=value)
-        if style and style in self._styles:
-            cell.font = self._styles[style]
+        if style:
+            style_font = getattr(_STYLES, style, None)
+            if style_font is not None:
+                cell.font = style_font
         return cell
-
-    def _parse_headers(self, columns: list[str]) -> tuple[list[str], list[str]]:
-        """Splits flat column names into (description, unit) tuples."""
-        descriptions, units = [], []
-        for col in columns:
-            match = self._header_pattern.match(col)
-            if match:
-                descriptions.append(match.group(1))
-                units.append(f"[{match.group(2)}]")
-            else:
-                descriptions.append(col)
-                units.append("")
-        return descriptions, units
 
     def _write_standard_table(
         self, ws: Any, df: pd.DataFrame, row: int, start_col: int = 1
     ) -> tuple[int, int]:
         """Writes a standard vertical table (Pipes, Compressors)."""
-        descriptions, units = self._parse_headers(df.columns)
+        descriptions, units = parse_headers(df.columns)
 
-        # Write Two-Level Header
-        ws.row_dimensions[row].height = 30
-        for c_idx, (desc, unit) in enumerate(
-            zip(descriptions, units, strict=True), start=start_col
-        ):
-            cell_desc = ws.cell(row=row, column=c_idx, value=desc)
-            cell_desc.font = self._styles["header"]
-            cell_desc.fill = self._styles["fill"]
-            cell_desc.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
-
-            cell_unit = ws.cell(row=row + 1, column=c_idx, value=unit)
-            cell_unit.font = self._styles["unit"]
-            cell_unit.fill = self._styles["fill"]
-            cell_unit.alignment = Alignment(horizontal="center")
+        write_two_level_headers(ws, row, start_col, descriptions, units)
 
         # Write Data
         data_start_row = row + 2
-        rhov2_col_indices = {
-            start_col + i
-            for i, col in enumerate(df.columns)
-            if "ρV²" in col  # noqa: RUF001
-        }
         criteria_col_idx = (
             start_col + len(descriptions) - 1 if "Criteria Check" in descriptions else None
         )
@@ -608,19 +577,17 @@ class ResultExporter:
         ):
             for c_idx, val in enumerate(row_data, start=start_col):
                 cell = ws.cell(row=r_idx, column=c_idx, value=val)
-                cell.font = self._styles["data"]
+                cell.font = _STYLES.data
                 if c_idx != start_col:
-                    cell.alignment = Alignment(horizontal="center")
-                if c_idx in rhov2_col_indices:
-                    cell.number_format = "#,##0"
+                    cell.alignment = _STYLES.data_center_align
+                if c_idx > start_col:
+                    col_name = df.columns[c_idx - start_col]
+                    apply_number_format(cell, col_name)
                 if criteria_col_idx is not None and c_idx == criteria_col_idx and val == "FAIL":
-                    cell.font = Font(bold=True, size=10, color="9C0006")
-                    cell.fill = PatternFill(
-                        start_color="FFC7CE", end_color="FFC7CE", fill_type="solid"
-                    )
+                    apply_fail_format(cell)
 
         last_row = data_start_row + len(df) - 1
-        self._apply_column_widths(ws, len(descriptions), start_col)
+        apply_column_widths(ws, len(descriptions), start_col)
 
         # Auto-fit "Line Number" column if present
         line_num_idx = None
@@ -642,18 +609,11 @@ class ResultExporter:
         Detects section markers (rows where parameter name is empty and value is non-empty)
         and renders them as styled separator rows with section headings.
         """
-        descriptions, units = self._parse_headers(df.columns)
+        descriptions, units = parse_headers(df.columns)
         pump_names = df.iloc[:, 0].tolist()
         num_cols = 2 + len(pump_names)
 
-        # Top Header Row (Parameter, Unit, Pump Names...)
-        ws.row_dimensions[row].height = 30
-        headers = ["Parameter", "Unit", *pump_names]
-        for c_idx, val in enumerate(headers, start=start_col):
-            cell = ws.cell(row=row, column=c_idx, value=val)
-            cell.font = self._styles["header"]
-            cell.fill = self._styles["fill"]
-            cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        write_transposed_header(ws, row, start_col, ["Parameter", "Unit", *pump_names])
 
         # Data Rows (One row per parameter)
         current_row = row + 1
@@ -661,9 +621,6 @@ class ResultExporter:
             param_name = descriptions[p_idx]
             unit_text = units[p_idx]
 
-            # Check if this is a section marker row
-            # Section markers have empty unit and the column value matches the param name
-            # (accounting for "Section_" prefix in column names)
             row_values = df.iloc[:, p_idx].tolist()
             is_section_marker = (
                 param_name
@@ -676,77 +633,29 @@ class ResultExporter:
             )
 
             if is_section_marker:
-                # Write section separator row
                 section_name = param_name[8:] if param_name.startswith("Section_") else param_name
-                merged_cell = ws.cell(row=current_row, column=start_col, value=section_name)
-                merged_cell.font = Font(bold=True, italic=True, size=11, color="003366")
-                merged_cell.fill = PatternFill(
-                    start_color="D6EAF8", end_color="D6EAF8", fill_type="solid"
-                )
-                merged_cell.alignment = Alignment(horizontal="left", vertical="center")
-
-                # Merge cells across all columns for section header
-                end_col = start_col + num_cols - 1
-                ws.merge_cells(
-                    start_row=current_row,
-                    start_column=start_col,
-                    end_row=current_row,
-                    end_column=end_col,
-                )
-                ws.row_dimensions[current_row].height = 25
+                write_section_marker(ws, current_row, start_col, num_cols, section_name)
             else:
-                # Param Name
                 cell_p = ws.cell(row=current_row, column=start_col, value=param_name)
-                cell_p.font = self._styles["header"]
-                cell_p.fill = self._styles["fill"]
+                cell_p.font = _STYLES.header
+                cell_p.fill = _STYLES.header_fill
 
-                # Unit
                 cell_u = ws.cell(row=current_row, column=start_col + 1, value=unit_text)
-                cell_u.font = self._styles["unit"]
+                cell_u.font = _STYLES.unit
 
-                # Values across pumps
                 vals = df.iloc[:, p_idx].tolist()
                 for v_idx, val in enumerate(vals, start=start_col + 2):
                     cell_v = ws.cell(row=current_row, column=v_idx, value=val)
-                    cell_v.font = self._styles["data"]
-                    cell_v.alignment = Alignment(horizontal="center")
-                    if "Differential Head" in param_name:
-                        cell_v.number_format = "#,##0"
-                    if "Discharge Shut-Off Pressure" in param_name:
-                        cell_v.number_format = "#0.0"
+                    cell_v.font = _STYLES.data
+                    cell_v.alignment = _STYLES.data_center_align
+                    apply_number_format(cell_v, param_name)
 
             current_row += 1
 
         last_row = current_row - 1
-        self._apply_column_widths(ws, num_cols, start_col)
+        apply_column_widths(ws, num_cols, start_col)
 
         return last_row, num_cols
-
-    def _apply_table_formatting(
-        self, ws: Any, start_row: int, end_row: int, num_cols: int, start_col: int = 1
-    ) -> None:
-        """Applies internal borders and a thick outer border to a table block."""
-        thin_s = self._styles["thin_side"]
-        thick_s = self._styles["thick_side"]
-
-        end_col = start_col + num_cols - 1
-        for r in range(start_row, end_row + 1):
-            for c in range(start_col, end_col + 1):
-                cell = ws.cell(row=r, column=c)
-
-                # Determine borders
-                left = thick_s if c == start_col else thin_s
-                right = thick_s if c == end_col else thin_s
-                top = thick_s if r == start_row else thin_s
-                bottom = thick_s if r == end_row else thin_s
-
-                cell.border = Border(left=left, right=right, top=top, bottom=bottom)
-
-    def _apply_column_widths(self, ws: Any, num_cols: int, start_col: int = 1) -> None:
-        """Sets fixed column widths: Col 1 = 25, Others = 15."""
-        ws.column_dimensions[get_column_letter(start_col)].width = 25
-        for c in range(start_col + 1, start_col + num_cols):
-            ws.column_dimensions[get_column_letter(c)].width = 15
 
     def _write_references_sheet(self, workbook: Any) -> None:
         """Creates the 'References & Design Basis' sheet as the first sheet (A4 Landscape 80%)."""
@@ -764,14 +673,14 @@ class ResultExporter:
 
         # Sheet title
         title_cell = ref_ws.cell(row=row, column=1, value="References & Design Basis")
-        title_cell.font = self._styles["model_title"]
+        title_cell.font = _STYLES.model_title
         ref_ws.row_dimensions[row].height = 30
         row += 2
 
         # ── Design Basis section ──────────────────────────────────────
         if self.reporter.basis and self.reporter.basis.strip():
             section_cell = ref_ws.cell(row=row, column=1, value="Design Basis")
-            section_cell.font = self._styles["title"]
+            section_cell.font = _STYLES.title
             row += 1
 
             for line in self.reporter.basis.splitlines():
@@ -785,7 +694,7 @@ class ResultExporter:
         # ── Remarks section ───────────────────────────────────────────
         if self.reporter.remarks and self.reporter.remarks.strip():
             section_cell = ref_ws.cell(row=row, column=1, value="Remarks")
-            section_cell.font = self._styles["title"]
+            section_cell.font = _STYLES.title
             row += 1
 
             for line in self.reporter.remarks.splitlines():
@@ -799,7 +708,7 @@ class ResultExporter:
         # ── Hold Items section ────────────────────────────────────────
         if self.reporter.hold and self.reporter.hold.strip():
             section_cell = ref_ws.cell(row=row, column=1, value="Hold Items")
-            section_cell.font = self._styles["title"]
+            section_cell.font = _STYLES.title
             row += 1
 
             for line in self.reporter.hold.splitlines():
@@ -813,15 +722,15 @@ class ResultExporter:
         # ── References table section ──────────────────────────────────
         if self.reporter.references:
             section_cell = ref_ws.cell(row=row, column=1, value="Reference Documents")
-            section_cell.font = self._styles["title"]
+            section_cell.font = _STYLES.title
             row += 1
 
             # Table headers
             headers = ["Name", "Category", "Link", "Description"]
             for c_idx, header in enumerate(headers, start=1):
                 cell = ref_ws.cell(row=row, column=c_idx, value=header)
-                cell.font = self._styles["header"]
-                cell.fill = self._styles["fill"]
+                cell.font = _STYLES.header
+                cell.fill = _STYLES.header_fill
                 cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
             ref_ws.row_dimensions[row].height = 20
             header_row = row
@@ -853,7 +762,7 @@ class ResultExporter:
             ref_ws.column_dimensions[desc_col_letter].width = min(max(desc_max + 2, 10), 80)
 
             # Outer border around the table
-            self._apply_table_formatting(ref_ws, header_row, row - 1, len(headers), 1)
+            apply_table_borders(ref_ws, header_row, row - 1, len(headers), 1)
 
     def _write_validation_sheet(self, workbook: Any) -> None:
         """Create a 'Validation' sheet with model-level and connectivity issues.
@@ -877,7 +786,7 @@ class ResultExporter:
 
         # Sheet title
         title_cell = val_ws.cell(row=row, column=1, value="Validation Results")
-        title_cell.font = self._styles["model_title"]
+        title_cell.font = _STYLES.model_title
         val_ws.row_dimensions[row].height = 28
         row += 1
 
@@ -917,8 +826,8 @@ class ResultExporter:
         }
         for c_idx, header in enumerate(headers, start=1):
             cell = val_ws.cell(row=row, column=c_idx, value=header)
-            cell.font = self._styles["header"]
-            cell.fill = self._styles["fill"]
+            cell.font = _STYLES.header
+            cell.fill = _STYLES.header_fill
             cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
         val_ws.row_dimensions[row].height = 20
         header_row = row
@@ -949,7 +858,7 @@ class ResultExporter:
             row += 1
 
         # Outer border
-        self._apply_table_formatting(val_ws, header_row, row - 1, len(headers), 1)
+        apply_table_borders(val_ws, header_row, row - 1, len(headers), 1)
 
     def _write_pipe_stats(self, ws: Any, df: Any, row: int, start_col: int) -> int:
         """Writes a Min-Max summary row and an overall Criteria Check row below the pipe table."""
@@ -990,8 +899,8 @@ class ResultExporter:
         min_max_cols = [start_col, *data_col_indices]
         start_col_idx = min(min_max_cols)
         end_col_idx = max(min_max_cols)
-        thin_s = self._styles["thin_side"]
-        thick_s = self._styles["thick_side"]
+        thin_s = _STYLES.thin_side
+        thick_s = _STYLES.thick_side
 
         # -- Row 1: Min - Max ----------------------------------------------------
         lc = ws.cell(row=row, column=start_col, value="Min - Max")
@@ -1000,19 +909,19 @@ class ResultExporter:
         if dpdl_col:
             c_idx = start_col + col_names.index(dpdl_col)
             cell = ws.cell(row=row, column=c_idx, value=_fmt(dpdl_col))
-            cell.font = self._styles["data"]
+            cell.font = _STYLES.data
             cell.alignment = Alignment(horizontal="center")
 
         if vel_col:
             c_idx = start_col + col_names.index(vel_col)
             cell = ws.cell(row=row, column=c_idx, value=_fmt(vel_col))
-            cell.font = self._styles["data"]
+            cell.font = _STYLES.data
             cell.alignment = Alignment(horizontal="center")
 
         if rhov2_col:
             c_idx = start_col + col_names.index(rhov2_col)
             cell = ws.cell(row=row, column=c_idx, value=_fmt(rhov2_col, thousand_comma=True))
-            cell.font = self._styles["data"]
+            cell.font = _STYLES.data
             cell.alignment = Alignment(horizontal="center")
 
         # Apply borders to Min-Max row
