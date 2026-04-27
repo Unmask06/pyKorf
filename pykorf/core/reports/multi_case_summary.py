@@ -342,10 +342,18 @@ class MultiCaseSummaryBuilder:
 
     def _check_pipe_criteria(self, pd_pipe: PipeData) -> str:
         """Check pipe criteria and return PASS/FAIL status."""
-        if pd_pipe.dp_length_criteria_max is not None and pd_pipe.dp_length is not None:
+        if (
+            pd_pipe.dp_length_criteria_max is not None
+            and pd_pipe.dp_length is not None
+            and pd_pipe.dp_length_criteria_max > 0
+        ):
             if abs(pd_pipe.dp_length) > abs(pd_pipe.dp_length_criteria_max):
                 return "FAIL"
-        if pd_pipe.velocity_criteria_max is not None and pd_pipe.velocity_in is not None:
+        if (
+            pd_pipe.velocity_criteria_max is not None
+            and pd_pipe.velocity_in is not None
+            and pd_pipe.velocity_criteria_max > 0
+        ):
             if abs(pd_pipe.velocity_in) > abs(pd_pipe.velocity_criteria_max):
                 return "FAIL"
         if pd_pipe.velocity_criteria_min is not None and pd_pipe.velocity_in is not None:
