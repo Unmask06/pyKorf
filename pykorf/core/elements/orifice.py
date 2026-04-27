@@ -137,3 +137,42 @@ class FlowOrifice(BaseElement):
             return (int(vals[0]), int(vals[1]))
         except (IndexError, TypeError, ValueError):
             return (0, 0)
+
+    @property
+    def inlet_pressure_kPag(self) -> float:
+        try:
+            return float(self._scalar(FlowOrifice.PIN, 1))
+        except (TypeError, ValueError):
+            return 0.0
+
+    @property
+    def outlet_pressure_kPag(self) -> float:
+        try:
+            return float(self._scalar(FlowOrifice.POUT, 1))
+        except (TypeError, ValueError):
+            return 0.0
+
+    def summary(self, export: bool = False) -> dict:
+        if export:
+            dp_val, dp_unit = self.get_value_and_unit(FlowOrifice.DP, val_index=1, unit_index=-1)
+            pin_val, pin_unit = self.get_value_and_unit(
+                FlowOrifice.PIN, val_index=1, unit_index=-1
+            )
+            pout_val, pout_unit = self.get_value_and_unit(
+                FlowOrifice.POUT, val_index=1, unit_index=-1
+            )
+
+            return {
+                "Orifice Name": self.name,
+                "Type": self.orifice_type,
+                self.format_export_header("DP Pipe Tap", dp_unit): dp_val,
+                self.format_export_header("Inlet Pressure", pin_unit): pin_val,
+                self.format_export_header("Outlet Pressure", pout_unit): pout_val,
+            }
+
+        return {
+            "name": self.name,
+            "dp_kPag": self.dp_kPag,
+            "inlet_pressure_kPag": self.inlet_pressure_kPag,
+            "outlet_pressure_kPag": self.outlet_pressure_kPag,
+        }

@@ -207,6 +207,7 @@ class BulkCopyResponse(BaseModel):
 
 class GenerateReportRequest(BaseModel):
     report_path: str | None = None
+    mode: str = "single"  # "single" | "multi"
 
 
 class ExportRequest(BaseModel):
@@ -220,12 +221,21 @@ class ImportRequest(BaseModel):
 class BatchReportRequest(BaseModel):
     batch_folder: str | None = None
     single_report: bool = False
+    mode: str = "single"  # "single" | "multi"
+    validate_only: bool = False  # If True, only validate multi-case readiness
 
 
 class ReportResponse(BaseModel):
     success: bool
     messages: list[StatusMessage] = []
     errors: list[str] = []
+
+
+class KorfExcelStatusResponse(BaseModel):
+    """KORF Excel source status for the report generator."""
+
+    korf_excel_path: str | None = None
+    is_stale: bool = False
 
 
 # --- Pipe Criteria ---
@@ -269,6 +279,7 @@ class PipeCalcInfo(BaseModel):
     vel_calc: float | None = None
     rho_v2_calc: float | None = None
     length_m: float | None = None
+    line_size: str | None = None
 
 
 class CriteriaViolationsInfo(BaseModel):

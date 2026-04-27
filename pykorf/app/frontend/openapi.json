@@ -2015,13 +2015,13 @@
           },
           "mode": {
             "type": "string",
-            "title": "Mode",
-            "default": "single"
+            "default": "single",
+            "title": "Mode"
           },
           "validate_only": {
             "type": "boolean",
-            "title": "Validate Only",
-            "default": false
+            "default": false,
+            "title": "Validate Only"
           }
         },
         "type": "object",
@@ -2246,7 +2246,7 @@
           "min_vel": {
             "type": "number",
             "title": "Min Vel",
-            "default": 0.0
+            "default": 0
           },
           "rho_v2_min": {
             "anyOf": [
@@ -2562,8 +2562,8 @@
           },
           "mode": {
             "type": "string",
-            "title": "Mode",
-            "default": "single"
+            "default": "single",
+            "title": "Mode"
           }
         },
         "type": "object",
@@ -2908,17 +2908,6 @@
               }
             ],
             "title": "Length M"
-          },
-          "line_size": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Line Size"
           }
         },
         "type": "object",
@@ -3090,7 +3079,7 @@
         "properties": {},
         "type": "object",
         "title": "PredictCriteriaRequest",
-        "description": "Empty \u2014 predicts for all pipes in current model."
+        "description": "Empty \u00e2\u20ac\u201d predicts for all pipes in current model."
       },
       "PredictCriteriaResponse": {
         "properties": {
@@ -3970,12 +3959,12 @@
           "threshold_deg": {
             "type": "number",
             "title": "Threshold Deg",
-            "default": 10.0
+            "default": 10
           },
           "grid_size": {
             "type": "number",
             "title": "Grid Size",
-            "default": 500.0
+            "default": 500
           }
         },
         "type": "object",
@@ -4008,12 +3997,12 @@
           "multiplier": {
             "type": "number",
             "title": "Multiplier",
-            "default": 1.0
+            "default": 1
           },
           "offset": {
             "type": "number",
             "title": "Offset",
-            "default": 0.0
+            "default": 0
           },
           "factor": {
             "anyOf": [

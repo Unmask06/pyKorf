@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddReferenceData, AddReferenceErrors, AddReferenceResponses, AddSpOverrideData, AddSpOverrideErrors, AddSpOverrideResponses, ApplyHmbData, ApplyHmbErrors, ApplyHmbResponses, ApplyPmsData, ApplyPmsErrors, ApplyPmsResponses, ApplySettingsData, ApplySettingsErrors, ApplySettingsResponses, BatchReportData, BatchReportErrors, BatchReportResponses, BrowseFilesData, BrowseFilesErrors, BrowseFilesResponses, BulkCopyData, BulkCopyErrors, BulkCopyResponses, CenterLayoutData, CenterLayoutErrors, CenterLayoutResponses, CloseModelData, CloseModelErrors, CloseModelResponses, DeleteReferenceData, DeleteReferenceErrors, DeleteReferenceResponses, DeleteSpOverrideData, DeleteSpOverrideErrors, DeleteSpOverrideResponses, EditSpOverrideData, EditSpOverrideErrors, EditSpOverrideResponses, ExportReportData, ExportReportErrors, ExportReportResponses, GenerateReportData, GenerateReportErrors, GenerateReportResponses, GetAboutData, GetAboutResponses, GetDocRegisterStatusData, GetDocRegisterStatusResponses, GetModelSummaryData, GetModelSummaryResponses, GetPipeCriteriaData, GetPipeCriteriaResponses, GetPipesData, GetPipesResponses, GetPreferencesData, GetPreferencesResponses, GetReferencesData, GetReferenceShortcutsData, GetReferenceShortcutsErrors, GetReferenceShortcutsResponses, GetReferencesResponses, GetSessionStatusData, GetSessionStatusResponses, GetSettingsData, GetSettingsResponses, ImportReportData, ImportReportErrors, ImportReportResponses, OpenFileData, OpenFileErrors, OpenFileResponses, PinFolderData, PinFolderErrors, PinFolderResponses, PredictPipeCriteriaData, PredictPipeCriteriaErrors, PredictPipeCriteriaResponses, RebuildDocRegisterDbData, RebuildDocRegisterDbErrors, RebuildDocRegisterDbResponses, ReloadModelData, ReloadModelErrors, ReloadModelResponses, ResolveSpUrlData, ResolveSpUrlErrors, ResolveSpUrlResponses, SaveModelData, SaveModelErrors, SaveModelResponses, SavePipeJustificationData, SavePipeJustificationErrors, SavePipeJustificationResponses, SaveProjectInfoData, SaveProjectInfoErrors, SaveProjectInfoResponses, SaveReferencesData, SaveReferencesErrors, SaveReferencesResponses, SearchEddrData, SearchEddrErrors, SearchEddrResponses, SearchFilesData, SearchFilesErrors, SearchFilesResponses, SearchQueryData, SearchQueryErrors, SearchQueryResponses, SetDocRegisterConfigData, SetDocRegisterConfigErrors, SetDocRegisterConfigFromPreferencesData, SetDocRegisterConfigFromPreferencesErrors, SetDocRegisterConfigFromPreferencesResponses, SetDocRegisterConfigResponses, SetLicenseData, SetLicenseErrors, SetLicenseResponses, SetPipeCriteriaData, SetPipeCriteriaErrors, SetPipeCriteriaResponses, SetSkipSpData, SetSkipSpErrors, SetSkipSpResponses, SnapOrthogonalData, SnapOrthogonalErrors, SnapOrthogonalResponses, UnpinFolderData, UnpinFolderErrors, UnpinFolderResponses, UpdateReferenceData, UpdateReferenceErrors, UpdateReferenceResponses } from './types.gen';
+import type { AddReferenceData, AddReferenceErrors, AddReferenceResponses, AddSpOverrideData, AddSpOverrideErrors, AddSpOverrideResponses, ApplyHmbData, ApplyHmbErrors, ApplyHmbResponses, ApplyPmsData, ApplyPmsErrors, ApplyPmsResponses, ApplySettingsData, ApplySettingsErrors, ApplySettingsResponses, BatchReportData, BatchReportErrors, BatchReportResponses, BrowseFilesData, BrowseFilesErrors, BrowseFilesResponses, BulkCopyData, BulkCopyErrors, BulkCopyResponses, CenterLayoutData, CenterLayoutErrors, CenterLayoutResponses, CloseModelData, CloseModelErrors, CloseModelResponses, DeleteReferenceData, DeleteReferenceErrors, DeleteReferenceResponses, DeleteSpOverrideData, DeleteSpOverrideErrors, DeleteSpOverrideResponses, EditSpOverrideData, EditSpOverrideErrors, EditSpOverrideResponses, ExportReportData, ExportReportErrors, ExportReportResponses, GenerateReportData, GenerateReportErrors, GenerateReportResponses, GetAboutData, GetAboutResponses, GetDocRegisterStatusData, GetDocRegisterStatusResponses, GetModelSummaryData, GetModelSummaryResponses, GetPipeCriteriaData, GetPipeCriteriaResponses, GetPipesData, GetPipesResponses, GetPreferencesData, GetPreferencesResponses, GetReferencesData, GetReferenceShortcutsData, GetReferenceShortcutsErrors, GetReferenceShortcutsResponses, GetReferencesResponses, GetSessionStatusData, GetSessionStatusResponses, GetSettingsData, GetSettingsResponses, ImportReportData, ImportReportErrors, ImportReportResponses, KorfExcelStatusData, KorfExcelStatusResponses, OpenFileData, OpenFileErrors, OpenFileResponses, PinFolderData, PinFolderErrors, PinFolderResponses, PredictPipeCriteriaData, PredictPipeCriteriaErrors, PredictPipeCriteriaResponses, RebuildDocRegisterDbData, RebuildDocRegisterDbErrors, RebuildDocRegisterDbResponses, ReloadModelData, ReloadModelErrors, ReloadModelResponses, ResolveSpUrlData, ResolveSpUrlErrors, ResolveSpUrlResponses, SaveModelData, SaveModelErrors, SaveModelResponses, SavePipeJustificationData, SavePipeJustificationErrors, SavePipeJustificationResponses, SaveProjectInfoData, SaveProjectInfoErrors, SaveProjectInfoResponses, SaveReferencesData, SaveReferencesErrors, SaveReferencesResponses, SearchEddrData, SearchEddrErrors, SearchEddrResponses, SearchFilesData, SearchFilesErrors, SearchFilesResponses, SearchQueryData, SearchQueryErrors, SearchQueryResponses, SetDocRegisterConfigData, SetDocRegisterConfigErrors, SetDocRegisterConfigFromPreferencesData, SetDocRegisterConfigFromPreferencesErrors, SetDocRegisterConfigFromPreferencesResponses, SetDocRegisterConfigResponses, SetLicenseData, SetLicenseErrors, SetLicenseResponses, SetPipeCriteriaData, SetPipeCriteriaErrors, SetPipeCriteriaResponses, SetSkipSpData, SetSkipSpErrors, SetSkipSpResponses, SnapOrthogonalData, SnapOrthogonalErrors, SnapOrthogonalResponses, UnpinFolderData, UnpinFolderErrors, UnpinFolderResponses, UpdateReferenceData, UpdateReferenceErrors, UpdateReferenceResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -284,9 +284,28 @@ export const snapOrthogonal = <ThrowOnError extends boolean = false>(options: Op
 });
 
 /**
+ * Korf Excel Status
+ *
+ * Check KORF Excel source status (presence + staleness).
+ *
+ * Returns the detected KORF Excel path and whether it is stale
+ * (i.e., the KDF has been modified since the Excel was generated).
+ */
+export const korfExcelStatus = <ThrowOnError extends boolean = false>(options?: Options<KorfExcelStatusData, ThrowOnError>) => (options?.client ?? client).get<KorfExcelStatusResponses, unknown, ThrowOnError>({
+    responseType: 'json',
+    url: '/api/report/korf-status',
+    ...options
+});
+
+/**
  * Generate Report
  *
  * Generate a single-model Excel report.
+ *
+ * Uses ``mode`` to select the reporter:
+ * - ``"single"`` (default): PykorfReporter via KDF data only.
+ * - ``"multi"``: KorfReporter via auto-detected KORF Excel alongside the KDF.
+ * Requires the KORF Excel file to exist and be up-to-date.
  */
 export const generateReport = <ThrowOnError extends boolean = false>(options: Options<GenerateReportData, ThrowOnError>) => (options.client ?? client).post<GenerateReportResponses, GenerateReportErrors, ThrowOnError>({
     responseType: 'json',
@@ -332,6 +351,13 @@ export const importReport = <ThrowOnError extends boolean = false>(options: Opti
  * Batch Report
  *
  * Generate batch report across multiple KDF files in a folder.
+ *
+ * Uses ``mode`` to select the reporter:
+ * - ``"single"`` (default): PykorfReporter per KDF.
+ * - ``"multi"``: KorfReporter per KDF (auto-detects KORF Excel alongside each KDF).
+ *
+ * When ``validate_only=True`` and ``mode="multi"``, scans for KORF Excel
+ * files and returns which KDFs are missing/stale without generating.
  */
 export const batchReport = <ThrowOnError extends boolean = false>(options: Options<BatchReportData, ThrowOnError>) => (options.client ?? client).post<BatchReportResponses, BatchReportErrors, ThrowOnError>({
     responseType: 'json',

@@ -5,9 +5,10 @@ import {
   FileText,
   FolderOpen,
   Lightbulb,
+  Search,
   Shield,
 } from "lucide-vue-next";
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { getErrorMessage } from "../api/client";
 import PathBrowser from "../components/PathBrowser.vue";
@@ -21,6 +22,7 @@ const toast = useToastStore();
 
 const kdfPath = ref("");
 const showBrowser = ref(false);
+const searchQuery = ref("");
 
 const openLoading = useLoading(async (path: string) => {
   await session.openFile(path);
@@ -47,6 +49,16 @@ function selectRecent(path: string) {
   kdfPath.value = path;
   openFile();
 }
+
+const filteredRecentFiles = computed(() => {
+  const query = searchQuery.value.toLowerCase().trim();
+  if (!query) {
+    return session.recentFiles;
+  }
+  return session.recentFiles.filter((f) =>
+    f.toLowerCase().includes(query)
+  );
+});
 
 onMounted(async () => {
   await session.fetchStatus();
@@ -144,9 +156,21 @@ onMounted(async () => {
       <div v-if="session.recentFiles.length > 0" class="pk-card mt-3">
         <div class="pk-card-header flex items-center gap-1">
           <Clock class="w-4 h-4" /> Recent Files
+          <span class="ml-auto text-xs text-gray-500">{{ filteredRecentFiles.length }} / {{ session.recentFiles.length }}</span>
         </div>
-        <ul class="divide-y">
-          <li v-for="f in session.recentFiles" :key="f" class="p-0">
+        <div class="px-3 pb-2">
+          <div class="relative">
+            <input
+              v-model="searchQuery"
+              type="text"
+              class="pk-input pr-8"
+              placeholder="Search recent files..."
+            />
+            <Search class="w-4 h-4 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2" />
+          </div>
+        </div>
+        <ul class="divide-y overflow-auto" style="max-height: 280px;">
+          <li v-for="f in filteredRecentFiles" :key="f" class="p-0">
             <a
               href="#"
               class="flex items-center gap-2 py-2 px-3 no-underline hover:bg-gray-50"
@@ -167,6 +191,9 @@ onMounted(async () => {
               >
               <ArrowRight class="w-3 h-3 text-blue-600 shrink-0" />
             </a>
+          </li>
+          <li v-if="filteredRecentFiles.length === 0" class="px-3 py-4 text-center text-gray-500 text-sm">
+            No matching files found
           </li>
         </ul>
       </div>
