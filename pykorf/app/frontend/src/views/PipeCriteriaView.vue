@@ -429,6 +429,7 @@ onMounted(() => {
               </th>
               <th style="width: 60px;" class="pk-table-head-cell">#</th>
               <th style="width: 180px;" class="pk-table-head-cell">Pipe</th>
+              <th style="width: 70px;" class="pk-table-head-cell-center">NPS<br /><small class="font-normal text-gray-400">inch</small></th>
               <th style="width: 60px;" class="pk-table-head-cell-center">Length<br /><small class="font-normal text-gray-400">m</small></th>
               <th style="width: 130px;" class="pk-table-head-cell">State</th>
               <th style="min-width: 180px;" class="pk-table-head-cell">Criteria</th>
@@ -451,6 +452,9 @@ onMounted(() => {
               </td>
               <td class="px-3 py-1.5 text-gray-400 font-mono text-xs">{{ idx }}</td>
               <td class="px-3 py-1.5 font-mono text-sm">{{ name }}</td>
+              <td class="pk-text-center-mono-muted">
+                {{ pipeCalcs[name]?.line_size || '—' }}
+              </td>
               <td class="pk-text-center-mono-muted">
                 {{ pipeCalcs[name]?.length_m !== null && pipeCalcs[name]?.length_m !== undefined ? Math.round(pipeCalcs[name]?.length_m) : '—' }}
               </td>

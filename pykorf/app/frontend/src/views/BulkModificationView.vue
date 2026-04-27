@@ -332,7 +332,7 @@ onMounted(async () => {
               </button>
             </div>
             <!-- HMB -->
-            <div class="p-4 rounded-lg bg-gray-50">
+            <div class="p-4 rounded-lg bg-gray-50 opacity-50 pointer-events-none select-none" title="Not yet configured">
               <div class="mb-3">
                 <label class="pk-label">HMB Excel File</label>
                 <div class="flex">
@@ -340,16 +340,16 @@ onMounted(async () => {
                     <FileSpreadsheet class="w-4 h-4 text-gray-500" />
                   </span>
                   <textarea v-model="hmbSource" class="pk-input-mono resize-none rounded-none"
-                    rows="2" placeholder="C:/config/stream_data.xlsx" />
-                  <button type="button" @click="showHmbBrowser = true"
-                    class="flex items-center justify-center px-3 py-1.5 text-sm border border-l-0 border-gray-300 rounded-r-md bg-gray-100 hover:bg-gray-200"
+                    rows="2" placeholder="C:/config/stream_data.xlsx" disabled />
+                  <button type="button" disabled
+                    class="flex items-center justify-center px-3 py-1.5 text-sm border border-l-0 border-gray-300 rounded-r-md bg-gray-100 hover:bg-gray-200 cursor-not-allowed"
                     title="Browse for HMB Excel file">
                     <FolderOpen class="w-4 h-4" />
                   </button>
                 </div>
-                <div class="pk-hint">Path to the HMB/Stream Excel file.</div>
+                <div class="pk-hint">Path to the HMB/Stream Excel file. (Not yet configured)</div>
               </div>
-              <button @click="applyHmb" class="pk-btn-primary" :disabled="hmbLoading.isLoading.value">
+              <button @click="applyHmb" class="pk-btn-primary opacity-50 cursor-not-allowed" disabled>
                 <span v-if="hmbLoading.isLoading.value" class="pk-spinner" />
                 Apply HMB
               </button>

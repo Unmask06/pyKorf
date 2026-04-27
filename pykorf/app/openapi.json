@@ -2908,6 +2908,17 @@
               }
             ],
             "title": "Length M"
+          },
+          "line_size": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line Size"
           }
         },
         "type": "object",

@@ -533,6 +533,16 @@ class ResultExporter:
         last_row = data_start_row + len(df) - 1
         self._apply_column_widths(ws, len(descriptions), start_col)
 
+        # Auto-fit "Line Number" column if present
+        line_num_idx = None
+        for i, col in enumerate(df.columns):
+            if col == "Line Number":
+                line_num_idx = start_col + i
+                break
+        if line_num_idx is not None:
+            max_len = max(len(str(v)) for v in df["Line Number"].fillna("")) if len(df) else 0
+            ws.column_dimensions[get_column_letter(line_num_idx)].width = min(max(max_len + 2, 8), 40)
+
         return last_row, len(descriptions)
 
     def _write_transposed_table(
@@ -657,8 +667,8 @@ class ResultExporter:
         ref_ws.page_setup.orientation = ref_ws.ORIENTATION_LANDSCAPE
         ref_ws.page_setup.scale = 75
 
-        # Fixed column widths for all four content columns
-        for col_idx, width in enumerate([50, 15, 15, 50], start=1):
+        # Fixed column widths for Name, Category, Link; Description auto-fits below
+        for col_idx, width in enumerate([50, 15, 15], start=1):
             ref_ws.column_dimensions[get_column_letter(col_idx)].width = width
 
         row = 1
@@ -744,6 +754,14 @@ class ResultExporter:
                     italic=True, size=10, color="555555"
                 )
                 row += 1
+
+            # Auto-fit Description column (column 4)
+            desc_col_letter = get_column_letter(4)
+            desc_max = max(
+                (len(str(ref.get("description", ""))) for ref in self.reporter.references),
+                default=0,
+            )
+            ref_ws.column_dimensions[desc_col_letter].width = min(max(desc_max + 2, 10), 80)
 
             # Outer border around the table
             self._apply_table_formatting(ref_ws, header_row, row - 1, len(headers), 1)
