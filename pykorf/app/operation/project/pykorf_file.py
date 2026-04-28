@@ -8,9 +8,9 @@ Current schema::
 
     {
       "version": 1,
-      "pipe_criteria": {
-        "L1": {"state": "liquid", "criteria": "P-SUC-BUB"},
-        "L2": {"state": "gas",    "criteria": "GAS-GEN"},
+      "justifications": {
+        "L1": "Approved by engineering lead",
+        "L2": "Temporary design exception",
         ...
       }
     }
@@ -57,33 +57,6 @@ def _save(kdf_path: Path, data: dict) -> None:
             json.dump(data, f, indent=2)
     except OSError as e:
         raise UseCaseError(f"Failed to save {path.name}: {e}") from e
-
-
-def get_pipe_criteria(kdf_path: Path) -> dict[str, dict]:
-    """Load pipe → {state, criteria} mapping from the .pykorf sidecar.
-
-    Args:
-        kdf_path: Path to the .kdf model file.
-
-    Returns:
-        Dict mapping pipe name to {"state": str, "criteria": str}.
-        Empty dict if no sidecar exists yet.
-    """
-    return _load(kdf_path).get("pipe_criteria", {})
-
-
-def set_pipe_criteria(kdf_path: Path, criteria: dict[str, dict]) -> None:
-    """Save pipe → {state, criteria} mapping to the .pykorf sidecar.
-
-    Merges into any existing .pykorf data so other sections are preserved.
-
-    Args:
-        kdf_path: Path to the .kdf model file.
-        criteria: Dict mapping pipe name to {"state": str, "criteria": str}.
-    """
-    data = _load(kdf_path)
-    data["pipe_criteria"] = criteria
-    _save(kdf_path, data)
 
 
 def get_justifications(kdf_path: Path) -> dict[str, str]:

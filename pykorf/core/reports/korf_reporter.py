@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from pathlib import Path
 
 import pandas as pd
@@ -16,9 +17,11 @@ from pykorf.core.reports.korf_parser import (
     PipeData,
     parse_korf_excel,
 )
-from pykorf.core.reports.reporter import _BaseReporter, _classify_issue
+from pykorf.core.reports.reporter import _BaseReporter
 
 _logger = logging.getLogger(__name__)
+
+DUMMY_LINE_RE = re.compile(r"\bLine d")  # exclude dummy lines from validation
 
 
 class KorfReporter(_BaseReporter):
@@ -69,11 +72,29 @@ class KorfReporter(_BaseReporter):
         all_issues: list[dict[str, str]] = []
         case_data = self._get_case_data()
 
+        excluded_names: set[str] = set()
+        for cd in case_data.values():
+            for p in cd.pipes:
+                if p.name.startswith("d"):
+                    excluded_names.add(p.name)
+                elif p.length is not None and p.length < 5.0:
+                    dp = (
+                        abs(p.pressure_in - p.pressure_out)
+                        if p.pressure_in is not None and p.pressure_out is not None
+                        else None
+                    )
+                    if dp is None or dp <= 0.5:
+                        excluded_names.add(p.name)
+
         for case_info in sorted(case_data.keys(), key=lambda c: int(c.number)):
             cd = case_data[case_info]
             for entry in cd.validations:
                 msg = entry.message
-                severity, category, elem = _classify_issue(msg)
+                if DUMMY_LINE_RE.search(msg):
+                    continue
+                severity, category, elem = self.classify_issue(msg)
+                if elem and elem in excluded_names:
+                    continue
                 all_issues.append(
                     {
                         "Severity": severity,
@@ -187,6 +208,14 @@ class KorfReporter(_BaseReporter):
         for pd_pipe in cd.pipes:
             if pd_pipe.name.startswith("d"):
                 continue
+            if pd_pipe.length is not None and pd_pipe.length < 5.0:
+                dp = (
+                    abs(pd_pipe.pressure_in - pd_pipe.pressure_out)
+                    if pd_pipe.pressure_in is not None and pd_pipe.pressure_out is not None
+                    else None
+                )
+                if dp is None or dp <= 0.5:
+                    continue
 
             pipe_model = self._find_pipe_in_model(pd_pipe.name)
 

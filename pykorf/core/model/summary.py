@@ -113,6 +113,10 @@ class SummaryService:
             name = pipe.name
             if not name or name.startswith("d"):
                 continue
+            if pipe.length_m < 5.0:
+                p = pipe.pressure
+                if len(p) < 2 or abs(p[0] - p[1]) <= 50.0:
+                    continue
 
             if not hasattr(pipe, "check_criteria"):
                 continue
@@ -140,8 +144,12 @@ class SummaryService:
                 continue
 
             name = pipe.name
-            if not name or name.lower().startswith("d"):
+            if not name or name.startswith("d"):
                 continue
+            if pipe.length_m < 5.0:
+                p = pipe.pressure
+                if len(p) < 2 or abs(p[0] - p[1]) <= 50.0:
+                    continue
 
             if not hasattr(pipe, "criteria_code"):
                 continue
@@ -280,8 +288,12 @@ class SummaryService:
             if pipe.index == 0:
                 continue
 
-            if pipe.name.lower().startswith("d"):
+            if pipe.name.startswith("d"):
                 continue
+            if pipe.length_m < 5.0:
+                p = pipe.pressure
+                if len(p) < 2 or abs(p[0] - p[1]) <= 50.0:
+                    continue
 
             notes_rec = pipe.get_param("NOTES")
             if notes_rec is None or not notes_rec.values or not notes_rec.values[0]:

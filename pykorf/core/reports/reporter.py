@@ -76,28 +76,13 @@ _SEVERITY_RULES: list[tuple[re.Pattern, str]] = [
 ]
 
 
-def _classify_issue(msg: str) -> tuple[str, str, str]:
-    """Classify a validation message into (severity, category, element_name)."""
-    from pykorf.app.validation import classify_issue
-
-    elem_name = ""
-    for pat in [
-        re.compile(r"Pipe ['\"]?(\S+?)['\"]?[:\s]"),
-        re.compile(r"PIPE (\S+?) \("),
-        re.compile(r"^(\S+?) \((?:VALVE|PUMP|FEED|PRODUCT|COMPRESSOR|TEE|JUNC|VESSEL)\)"),
-    ]:
-        m = pat.search(msg)
-        if m:
-            elem_name = m.group(1)
-            break
-
-    category = classify_issue(msg)
-
-    for pattern, severity in _SEVERITY_RULES:
-        if pattern.search(msg):
-            return severity, category, elem_name
-
-    return "Warning", category, elem_name
+_ELEM_PATTERNS: list[re.Pattern] = [
+    re.compile(r"\bLine\s+([A-Za-z0-9_\-]+)"),
+    re.compile(r"\bFlow\s+orifice\s+([A-Za-z0-9_\-]+)"),
+    re.compile(r"Pipe ['\"]?(\S+?)['\"]?[:\s]"),
+    re.compile(r"PIPE (\S+?) \("),
+    re.compile(r"^(\S+?) \((?:VALVE|PUMP|FEED|PRODUCT|COMPRESSOR|TEE|JUNC|VESSEL)\)"),
+]
 
 
 class _BaseReporter:
@@ -154,6 +139,29 @@ class _BaseReporter:
             except (ValueError, TypeError, IndexError):
                 continue
         return ""
+
+    @staticmethod
+    def classify_issue(msg: str) -> tuple[str, str, str]:
+        """Classify a validation message into (severity, category, element_name)."""
+        from pykorf.app.validation import categorize_issue
+
+        elem_name = ""
+        for pat in _ELEM_PATTERNS:
+            m = pat.search(msg)
+            if m:
+                elem_name = m.group(1)
+                break
+
+        category = categorize_issue(msg)
+
+        for pattern, severity in _SEVERITY_RULES:
+            if pattern.search(msg):
+                return severity, category, elem_name
+
+        return "Warning", category, elem_name
+
+
+_classify_issue = _BaseReporter.classify_issue
 
 
 class PykorfReporter(_BaseReporter):
@@ -220,7 +228,7 @@ class PykorfReporter(_BaseReporter):
 
         try:
             for msg in self.model.validate():
-                severity, category, elem = _classify_issue(msg)
+                severity, category, elem = self.classify_issue(msg)
                 issues.append(
                     {
                         "Severity": severity,
@@ -252,11 +260,16 @@ class PykorfReporter(_BaseReporter):
     # =========================================================
 
     def _extract_pipes(self) -> list[dict]:
-        return [
-            pipe.summary(export=True, justifications=self._justifications)
-            for idx, pipe in self.model.pipes.items()
-            if idx != 0 and not pipe.name.startswith("d")
-        ]
+        results = []
+        for idx, pipe in self.model.pipes.items():
+            if idx == 0 or pipe.name.startswith("d"):
+                continue
+            if pipe.length_m < 5.0:
+                p = pipe.pressure
+                if len(p) < 2 or abs(p[0] - p[1]) <= 50.0:
+                    continue
+            results.append(pipe.summary(export=True, justifications=self._justifications))
+        return results
 
     def _extract_pumps(self) -> list[dict]:
         return [
