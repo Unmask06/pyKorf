@@ -103,6 +103,10 @@ class AppValidationService:
                 continue
             if name.startswith("d"):
                 continue
+            if pipe.length_m < 5.0:
+                p = pipe.pressure
+                if len(p) < 2 or abs(p[0] - p[1]) <= 50.0:
+                    continue
             notes_rec = pipe.get_param("NOTES")
             notes_val = notes_rec.values[0] if notes_rec and notes_rec.values else ""
             if not notes_val:
@@ -208,8 +212,12 @@ class AppValidationService:
             if pipe_idx == 0:
                 continue
             name = pipe.name
-            if not name or name.lower().startswith("d"):
+            if not name or name.startswith("d"):
                 continue
+            if pipe.length_m < 5.0:
+                p = pipe.pressure
+                if len(p) < 2 or abs(p[0] - p[1]) <= 50.0:
+                    continue
             notes_rec = pipe.get_param("NOTES")
             notes_val = notes_rec.values[0] if notes_rec and notes_rec.values else ""
             if not notes_val:
@@ -341,8 +349,8 @@ _SEVERITY_RULES: list[tuple[re.Pattern, str]] = [
 ]
 
 
-def classify_issue(msg: str) -> str:
-    """Classify a validation message into a category.
+def categorize_issue(msg: str) -> str:
+    """Categorize a validation issue message into a predefined category based on keywords.
 
     Args:
         msg: Human-readable validation issue string.

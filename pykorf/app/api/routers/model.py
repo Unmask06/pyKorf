@@ -200,19 +200,19 @@ async def get_pipe_criteria() -> PipeCriteriaResponse:
     """Get pipe criteria data for the criteria table."""
     model = await require_model()
     from pykorf.app.operation.integration.sizing_criteria import FLUID_LABELS, all_codes_by_type
-    from pykorf.app.operation.project.pykorf_file import get_pipe_criteria
 
     kdf_path = await _sess.get_kdf_path()
     pipes = _get_pipes_list(model)
     codes = all_codes_by_type()
-    existing = get_pipe_criteria(kdf_path) if kdf_path else {}
-    existing = _seed_from_kdf(model, pipes, existing)
+    existing = _map_pipecriteria_entry(model, pipes)
     pipe_criteria_values = _precompute_criteria_values(model, pipes, codes)
     pipe_calcs = _compute_pipe_calcs(model, pipes)
     pipe_criteria_violations = _compute_criteria_violations(pipe_calcs, pipe_criteria_values)
 
     justifications = get_justifications(kdf_path) if kdf_path else {}
-    violation_summary = _compute_violation_summary(pipe_criteria_violations, justifications, existing)
+    violation_summary = _compute_violation_summary(
+        pipe_criteria_violations, justifications, existing
+    )
 
     return PipeCriteriaResponse(
         kdf_path=str(kdf_path or ""),
@@ -233,16 +233,11 @@ async def get_pipe_criteria() -> PipeCriteriaResponse:
 async def set_pipe_criteria(req: SetPipeCriteriaRequest) -> SetCriteriaResponse:
     """Apply criteria to pipe SIZ parameters."""
     model = await require_model()
-    from pykorf.app.operation.project.pykorf_file import set_pipe_criteria as save_criteria
 
-    kdf_path = await _sess.get_kdf_path()
     pipes = _get_pipes_list(model)
 
     # Convert Pydantic entries to plain dict
     criteria_dict = {k: {"state": v.state, "criteria": v.criteria} for k, v in req.criteria.items()}
-
-    if kdf_path:
-        save_criteria(kdf_path, criteria_dict)
 
     result = _handle_set_criteria(model, pipes, criteria_dict)
     if await _sess.has_model():
@@ -260,12 +255,9 @@ async def set_pipe_criteria(req: SetPipeCriteriaRequest) -> SetCriteriaResponse:
 async def predict_criteria(_req: PredictCriteriaRequest) -> PredictCriteriaResponse:
     """Auto-predict state and criteria for all pipes."""
     model = await require_model()
-    from pykorf.app.operation.project.pykorf_file import get_pipe_criteria
 
-    kdf_path = await _sess.get_kdf_path()
     pipes = _get_pipes_list(model)
-    existing = get_pipe_criteria(kdf_path) if kdf_path else {}
-    existing = _seed_from_kdf(model, pipes, existing)
+    existing = _map_pipecriteria_entry(model, pipes)
 
     predicted, predict_result = _handle_predict_action(model, pipes, existing)
     _ = predicted
@@ -317,13 +309,15 @@ def _compute_violation_summary(
     }
 
     def _flag_count(info: CriteriaViolationsInfo) -> int:
-        return sum([
-            info.dp_exceeds,
-            info.vel_below_min,
-            info.vel_above_max,
-            info.rho_v2_below_min,
-            info.rho_v2_above_max,
-        ])
+        return sum(
+            [
+                info.dp_exceeds,
+                info.vel_below_min,
+                info.vel_above_max,
+                info.rho_v2_below_min,
+                info.rho_v2_above_max,
+            ]
+        )
 
     failing_pipes = {name for name, v in selected.items() if v is not None and v.overall == "FAIL"}
     justified = {p for p in failing_pipes if p in justifications}
@@ -351,18 +345,21 @@ def _get_pipes_list(model) -> list[tuple[int, str]]:
 
 
 def _build_prereqs(model: Model, kdf_path: Path) -> PrereqsResponse:
+    from pykorf.app.api.schemas import ValidationIssue
     from pykorf.app.operation.config.config import (
         get_pms_excel_path,
         get_skip_sp_override,
         get_sp_overrides,
     )
-    from pykorf.app.validation import classify_issue
-    from pykorf.app.api.schemas import ValidationIssue
+    from pykorf.app.validation import categorize_issue
 
     raw_issues = model.validate()
-    issues = [ValidationIssue(message=msg, category=classify_issue(msg)) for msg in raw_issues]
+    issues = [ValidationIssue(message=msg, category=categorize_issue(msg)) for msg in raw_issues]
     notes_ok = not any(
-        "NOTES" in i.message or "missing line number" in i.message or "line number" in i.message.lower() for i in issues
+        "NOTES" in i.message
+        or "missing line number" in i.message
+        or "line number" in i.message.lower()
+        for i in issues
     )
     validation_ok = len(issues) == 0
     pms_raw = get_pms_excel_path()
@@ -408,17 +405,22 @@ def _build_project_info(
     return ProjectInfoResponse(**project_info)
 
 
-def _seed_from_kdf(
-    model, pipes, existing: dict[str, dict[str, str]]
-) -> dict[str, PipeCriteriaEntry]:
+def _map_pipecriteria_entry(model, pipes) -> dict[str, PipeCriteriaEntry]:
+    """Map existing pipe criteria from the model to a dict of PipeCriteriaEntry for the given pipes.
+
+    Args:
+        model: The Model instance containing pipes.
+        pipes: List of (index, pipe_name) tuples.
+
+    Returns:
+        Dict mapping pipe name to PipeCriteriaEntry(state, criteria).
+        Pipes without a criteria_code in SIZ[0] are omitted.
+    """
     from pykorf.app.operation.integration.sizing_criteria import code_to_state
 
     pipe_by_name = _build_pipe_lookup(model)
-    merged = {k: PipeCriteriaEntry(**v) for k, v in existing.items()}
+    result: dict[str, PipeCriteriaEntry] = {}
     for _, pipe_name in pipes:
-        saved = merged.get(pipe_name, PipeCriteriaEntry())
-        if saved.state or saved.criteria:
-            continue
         pipe = pipe_by_name.get(pipe_name)
         if pipe is None:
             continue
@@ -427,8 +429,8 @@ def _seed_from_kdf(
             continue
         state = code_to_state(code)
         if state:
-            merged[pipe_name] = PipeCriteriaEntry(state=state, criteria=code)
-    return merged
+            result[pipe_name] = PipeCriteriaEntry(state=state, criteria=code)
+    return result
 
 
 def _build_pipe_lookup(model):

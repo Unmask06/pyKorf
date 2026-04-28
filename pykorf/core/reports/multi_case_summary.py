@@ -170,8 +170,17 @@ class MultiCaseSummaryBuilder:
         for case_info in sorted_cases:
             case_data = self._case_data[case_info]
             for pipe in case_data.pipes:
-                if not pipe.name.startswith("d"):
-                    pipe_names.add(pipe.name)
+                if pipe.name.startswith("d"):
+                    continue
+                if pipe.length is not None and pipe.length < 5.0:
+                    dp = (
+                        abs(pipe.pressure_in - pipe.pressure_out)
+                        if pipe.pressure_in is not None and pipe.pressure_out is not None
+                        else None
+                    )
+                    if dp is None or dp <= 0.5:
+                        continue
+                pipe_names.add(pipe.name)
 
         for pipe_name in sorted(pipe_names):
             best_case_name = ""
