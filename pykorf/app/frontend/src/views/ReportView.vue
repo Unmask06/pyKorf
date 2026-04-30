@@ -9,7 +9,6 @@ import {
   Folder,
   FolderOpen,
   Layers,
-  PenSquare,
   Settings,
   X,
 } from "lucide-vue-next";
@@ -121,8 +120,10 @@ const batchTooltip = computed(() => {
 
 const generateTooltip = computed(() => {
   if (isMultiCase.value) {
-    if (!korfExists.value) return "Multi-case requires a KORF Excel report. Generate it from KORF first.";
-    if (korfIsStale.value) return "KORF Excel is stale — regenerate from KORF first";
+    if (!korfExists.value)
+      return "Multi-case requires a KORF Excel report. Generate it from KORF first.";
+    if (korfIsStale.value)
+      return "KORF Excel is stale — regenerate from KORF first";
   }
   return "";
 });
@@ -135,10 +136,10 @@ const genLoading = useLoading(async () => {
   };
   const res = await generateReport({ body: req });
   if (!res.data) {
-    throw new Error('Report generation failed');
+    throw new Error("Report generation failed");
   }
   // Check if project info is required
-  if ('project_info_required' in res.data && res.data.project_info_required) {
+  if ("project_info_required" in res.data && res.data.project_info_required) {
     const projResp = res.data as ProjectInfoRequiredResponse;
     projectInfoRequired.value = projResp;
     editInfo.value = { ...(projResp.project_info || {}) };
@@ -147,8 +148,8 @@ const genLoading = useLoading(async () => {
     showProjectInfoModal.value = true;
     return null;
   }
-  if (!res.data.success) {
-    throw new Error(res.data.errors?.[0] || 'Report generation failed');
+  if ("success" in res.data && !res.data.success) {
+    throw new Error(res.data.errors?.[0] || "Report generation failed");
   }
   return res.data;
 });
@@ -162,7 +163,7 @@ const batchLoading = useLoading(async () => {
   };
   const res = await batchReport({ body: req });
   if (!res.data?.success) {
-    throw new Error(res.data?.errors?.[0] || 'Batch report failed');
+    throw new Error(res.data?.errors?.[0] || "Batch report failed");
   }
   return res.data;
 });
@@ -189,14 +190,16 @@ async function saveProjectAndRetry() {
     toast.success("Project info saved. Generating report...");
     if (pendingReportReq.value) {
       const res = await generateReport({ body: pendingReportReq.value });
-      if (res.data && 'success' in res.data && res.data.success) {
+      if (res.data && "success" in res.data && res.data.success) {
         toast.success("Report generated successfully.");
-      } else if (res.data && 'errors' in res.data) {
-        throw new Error(res.data.errors?.[0] || 'Report generation failed');
+      } else if (res.data && "errors" in res.data) {
+        throw new Error(res.data.errors?.[0] || "Report generation failed");
       }
     }
   } catch (err: unknown) {
-    toast.error(getErrorMessage(err, "Failed to save project info or generate report."));
+    toast.error(
+      getErrorMessage(err, "Failed to save project info or generate report."),
+    );
   } finally {
     saveProjectLoading.value = false;
   }
@@ -205,9 +208,18 @@ async function saveProjectAndRetry() {
 async function doBatch() {
   try {
     const result = await batchLoading.execute();
-    const skipCount = result?.messages?.filter(m => m.type === "warning" && (m.message?.includes("skipped") || m.message?.includes("missing") || m.message?.includes("stale"))).length || 0;
+    const skipCount =
+      result?.messages?.filter(
+        (m) =>
+          m.type === "warning" &&
+          (m.message?.includes("skipped") ||
+            m.message?.includes("missing") ||
+            m.message?.includes("stale")),
+      ).length || 0;
     if (skipCount > 0) {
-      toast.warning(`Batch report generated. ${skipCount} KDF(s) skipped (KORF Excel missing/stale).`);
+      toast.warning(
+        `Batch report generated. ${skipCount} KDF(s) skipped (KORF Excel missing/stale).`,
+      );
     } else {
       toast.success("Batch report generated.");
     }
@@ -346,18 +358,23 @@ function onToggleMultiCase(value: boolean) {
             </div>
             <div class="pk-hint flex items-center gap-1">
               Auto-derived from KDF file.
-              <span
-                v-if="isMultiCase"
-                class="text-xs text-gray-500"
-              >(multi-case)</span>
+              <span v-if="isMultiCase" class="text-xs text-gray-500"
+                >(multi-case)</span
+              >
             </div>
           </div>
 
           <!-- Report Mode Toggle -->
-          <ReportModeToggle v-model="isMultiCase" @update:model-value="onToggleMultiCase" />
+          <ReportModeToggle
+            v-model="isMultiCase"
+            @update:model-value="onToggleMultiCase"
+          />
 
           <!-- Multi-case status & instructions -->
-          <div v-if="isMultiCase" class="bg-blue-50 border border-blue-200 rounded p-3">
+          <div
+            v-if="isMultiCase"
+            class="bg-blue-50 border border-blue-200 rounded p-3"
+          >
             <div class="flex items-center gap-2">
               <CheckCircle2
                 v-if="korfExists && !korfIsStale"
@@ -366,7 +383,9 @@ function onToggleMultiCase(value: boolean) {
               <AlertTriangle
                 v-else
                 class="w-4 h-4 shrink-0"
-                :class="korfExists && korfIsStale ? 'text-amber-600' : 'text-red-600'"
+                :class="
+                  korfExists && korfIsStale ? 'text-amber-600' : 'text-red-600'
+                "
               />
               <span
                 class="text-xs font-medium"
@@ -380,17 +399,18 @@ function onToggleMultiCase(value: boolean) {
               >
                 {{
                   korfExists && !korfIsStale
-                    ? 'KORF Excel detected and ready'
+                    ? "KORF Excel detected and ready"
                     : korfExists && korfIsStale
-                      ? 'KORF Excel is stale — regenerate from KORF'
-                      : 'KORF Excel not found in KDF folder'
+                      ? "KORF Excel is stale — regenerate from KORF"
+                      : "KORF Excel not found in KDF folder"
                 }}
               </span>
             </div>
             <div class="pk-hint mt-1">
-              To export from KORF: <strong>Hydraulics &gt; Results &gt; View
-              Excel Report</strong>, save the <strong>XML</strong> as
-              <strong>XLSX</strong> with the same name as the KDF file.
+              To export from KORF:
+              <strong>Hydraulics &gt; Results &gt; View Excel Report</strong>,
+              save the <strong>XML</strong> as <strong>XLSX</strong> with the
+              same name as the KDF file.
             </div>
           </div>
         </div>
@@ -468,16 +488,22 @@ function onToggleMultiCase(value: boolean) {
               <AlertTriangle
                 v-else
                 class="w-4 h-4 shrink-0"
-                :class="batchValidCount === 0 ? 'text-red-600' : 'text-amber-600'"
+                :class="
+                  batchValidCount === 0 ? 'text-red-600' : 'text-amber-600'
+                "
               />
               <span
                 class="text-xs font-medium"
                 :class="
-                  batchValidCount === batchTotalCount ? 'text-green-700' :
-                  batchValidCount === 0 ? 'text-red-700' : 'text-amber-700'
+                  batchValidCount === batchTotalCount
+                    ? 'text-green-700'
+                    : batchValidCount === 0
+                      ? 'text-red-700'
+                      : 'text-amber-700'
                 "
               >
-                {{ batchValidCount }} of {{ batchTotalCount }} KDF files have valid KORF Excel
+                {{ batchValidCount }} of {{ batchTotalCount }} KDF files have
+                valid KORF Excel
               </span>
             </div>
             <textarea
@@ -487,8 +513,12 @@ function onToggleMultiCase(value: boolean) {
               rows="4"
               readonly
             />
-            <div v-if="!batchValidating && batchValidCount === 0" class="mt-1 text-xs text-red-600">
-              No KDF files have valid KORF Excel reports. Generate them from KORF first.
+            <div
+              v-if="!batchValidating && batchValidCount === 0"
+              class="mt-1 text-xs text-red-600"
+            >
+              No KDF files have valid KORF Excel reports. Generate them from
+              KORF first.
             </div>
           </div>
 
@@ -524,7 +554,9 @@ function onToggleMultiCase(value: boolean) {
             >Coming Soon</span
           >
         </div>
-        <div class="p-4 flex flex-col items-center justify-center text-gray-400 text-sm py-8">
+        <div
+          class="p-4 flex flex-col items-center justify-center text-gray-400 text-sm py-8"
+        >
           <ArrowUpRight class="w-8 h-8 mb-2 opacity-30" />
           <span>Export model to Excel — coming soon</span>
         </div>
@@ -539,7 +571,9 @@ function onToggleMultiCase(value: boolean) {
             >Coming Soon</span
           >
         </div>
-        <div class="p-4 flex flex-col items-center justify-center text-gray-400 text-sm py-8">
+        <div
+          class="p-4 flex flex-col items-center justify-center text-gray-400 text-sm py-8"
+        >
           <ArrowDownRight class="w-8 h-8 mb-2 opacity-30" />
           <span>Import model from Excel — coming soon</span>
         </div>
@@ -561,12 +595,15 @@ function onToggleMultiCase(value: boolean) {
 
   <!-- Project Info Modal (shown when report requires project info) -->
   <div v-if="showProjectInfoModal" class="pk-modal-backdrop">
-    <div class="pk-modal" style="max-width: 520px;">
+    <div class="pk-modal" style="max-width: 520px">
       <div class="pk-modal-header">
         <h6 class="font-semibold flex items-center gap-1 text-amber-600">
           <AlertTriangle class="w-4 h-4" /> Project Info Required
         </h6>
-        <button @click="showProjectInfoModal = false" class="text-gray-400 hover:text-gray-600">
+        <button
+          @click="showProjectInfoModal = false"
+          class="text-gray-400 hover:text-gray-600"
+        >
           <X class="w-4 h-4" />
         </button>
       </div>
@@ -576,79 +613,152 @@ function onToggleMultiCase(value: boolean) {
         </p>
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="pk-label-sm">Company <span v-if="isRequired('company1')" class="text-red-500">*</span></label>
-            <input v-model="editInfo.company1" type="text" class="pk-input"
-              :placeholder="smartDefaults?.company1 || ''" />
+            <label class="pk-label-sm"
+              >Company
+              <span v-if="isRequired('company1')" class="text-red-500"
+                >*</span
+              ></label
+            >
+            <input
+              v-model="editInfo.company1"
+              type="text"
+              class="pk-input"
+              :placeholder="smartDefaults?.company1 || ''"
+            />
           </div>
           <div>
-            <label class="pk-label-sm">Company 2 <span v-if="isRequired('company2')" class="text-red-500">*</span></label>
-            <input v-model="editInfo.company2" type="text" class="pk-input"
-              :placeholder="smartDefaults?.company2 || ''" />
+            <label class="pk-label-sm"
+              >Company 2
+              <span v-if="isRequired('company2')" class="text-red-500"
+                >*</span
+              ></label
+            >
+            <input
+              v-model="editInfo.company2"
+              type="text"
+              class="pk-input"
+              :placeholder="smartDefaults?.company2 || ''"
+            />
           </div>
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="pk-label-sm">Project Name <span v-if="isRequired('project_name1')" class="text-red-500">*</span></label>
-            <input v-model="editInfo.project_name1" type="text" class="pk-input"
-              :placeholder="smartDefaults?.project_name1 || ''" />
+            <label class="pk-label-sm"
+              >Project Name
+              <span v-if="isRequired('project_name1')" class="text-red-500"
+                >*</span
+              ></label
+            >
+            <input
+              v-model="editInfo.project_name1"
+              type="text"
+              class="pk-input"
+              :placeholder="smartDefaults?.project_name1 || ''"
+            />
           </div>
           <div>
             <label class="pk-label-sm">Project Name 2</label>
-            <input v-model="editInfo.project_name2" type="text" class="pk-input"
-              :placeholder="smartDefaults?.project_name2 || ''" />
+            <input
+              v-model="editInfo.project_name2"
+              type="text"
+              class="pk-input"
+              :placeholder="smartDefaults?.project_name2 || ''"
+            />
           </div>
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label class="pk-label-sm">Document No</label>
-            <input v-model="editInfo.item_name1" type="text" class="pk-input"
-              :placeholder="smartDefaults?.item_name1 || ''" />
+            <input
+              v-model="editInfo.item_name1"
+              type="text"
+              class="pk-input"
+              :placeholder="smartDefaults?.item_name1 || ''"
+            />
           </div>
           <div>
             <label class="pk-label-sm">Item / Tag</label>
-            <input v-model="editInfo.item_name2" type="text" class="pk-input"
-              :placeholder="smartDefaults?.item_name2 || ''" />
+            <input
+              v-model="editInfo.item_name2"
+              type="text"
+              class="pk-input"
+              :placeholder="smartDefaults?.item_name2 || ''"
+            />
           </div>
         </div>
         <div class="grid grid-cols-3 gap-2">
           <div>
-            <label class="pk-label-sm">Prepared <span v-if="isRequired('prepared_by')" class="text-red-500">*</span></label>
-            <input v-model="editInfo.prepared_by" type="text" class="pk-input"
-              :placeholder="smartDefaults?.prepared_by || ''" />
+            <label class="pk-label-sm"
+              >Prepared
+              <span v-if="isRequired('prepared_by')" class="text-red-500"
+                >*</span
+              ></label
+            >
+            <input
+              v-model="editInfo.prepared_by"
+              type="text"
+              class="pk-input"
+              :placeholder="smartDefaults?.prepared_by || ''"
+            />
           </div>
           <div>
             <label class="pk-label-sm">Checked</label>
-            <input v-model="editInfo.checked_by" type="text" class="pk-input"
-              :placeholder="smartDefaults?.checked_by || ''" />
+            <input
+              v-model="editInfo.checked_by"
+              type="text"
+              class="pk-input"
+              :placeholder="smartDefaults?.checked_by || ''"
+            />
           </div>
           <div>
             <label class="pk-label-sm">Approved</label>
-            <input v-model="editInfo.approved_by" type="text" class="pk-input"
-              :placeholder="smartDefaults?.approved_by || ''" />
+            <input
+              v-model="editInfo.approved_by"
+              type="text"
+              class="pk-input"
+              :placeholder="smartDefaults?.approved_by || ''"
+            />
           </div>
         </div>
         <div class="grid grid-cols-3 gap-2">
           <div>
             <label class="pk-label-sm">Date</label>
-            <input v-model="editInfo.date" type="text" class="pk-input"
-              :placeholder="smartDefaults?.date || ''" />
+            <input
+              v-model="editInfo.date"
+              type="text"
+              class="pk-input"
+              :placeholder="smartDefaults?.date || ''"
+            />
           </div>
           <div>
             <label class="pk-label-sm">Project No</label>
-            <input v-model="editInfo.project_no" type="text" class="pk-input"
-              :placeholder="smartDefaults?.project_no || ''" />
+            <input
+              v-model="editInfo.project_no"
+              type="text"
+              class="pk-input"
+              :placeholder="smartDefaults?.project_no || ''"
+            />
           </div>
           <div>
             <label class="pk-label-sm">Rev</label>
-            <input v-model="editInfo.revision" type="text" class="pk-input"
-              :placeholder="smartDefaults?.revision || ''" />
+            <input
+              v-model="editInfo.revision"
+              type="text"
+              class="pk-input"
+              :placeholder="smartDefaults?.revision || ''"
+            />
           </div>
         </div>
       </div>
       <div class="px-4 py-2 border-t flex justify-end gap-2">
-        <button @click="showProjectInfoModal = false" class="pk-btn-secondary">Cancel</button>
-        <button @click="saveProjectAndRetry()"
-          class="pk-btn-primary" :disabled="saveProjectLoading">
+        <button @click="showProjectInfoModal = false" class="pk-btn-secondary">
+          Cancel
+        </button>
+        <button
+          @click="saveProjectAndRetry()"
+          class="pk-btn-primary"
+          :disabled="saveProjectLoading"
+        >
           <span v-if="saveProjectLoading" class="pk-spinner" />
           Save & Generate Report
         </button>
