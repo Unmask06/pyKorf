@@ -60,7 +60,7 @@ async def reload() -> None:
     Call this after any operation that writes the KDF to disk.
     Does nothing if no model is currently loaded.
     """
-    global _model, _model_mtime, _project_info_checked
+    global _model, _model_mtime
     async with _lock:
         if _kdf_path is None:
             return
@@ -68,7 +68,6 @@ async def reload() -> None:
 
         _model = Model(_kdf_path)
         _model_mtime = _kdf_path.stat().st_mtime if _kdf_path.exists() else None
-        _project_info_checked = False
 
 
 def flag_reload() -> None:
@@ -157,14 +156,13 @@ def reload_sync() -> None:
     (e.g. from a function passed to asyncio.to_thread that needs
     to update state after model.save()).
     """
-    global _model, _model_mtime, _project_info_checked
+    global _model, _model_mtime
     if _kdf_path is None:
         return
     from pykorf.core.model import Model
 
     _model = Model(_kdf_path)
     _model_mtime = _kdf_path.stat().st_mtime if _kdf_path.exists() else None
-    _project_info_checked = False
 
 
 def load_sync(model: Model, kdf_path: Path) -> None:
