@@ -104,10 +104,24 @@ class ModelFullResponse(BaseModel):
     prereqs: PrereqsResponse
     project_info: ProjectInfoResponse
     smart_defaults: SmartDefaultsResponse
+    required_fields: list[str] = ["company1", "company2", "project_name1", "prepared_by"]
 
 
 class SaveProjectInfoRequest(ProjectInfoBase):
     """Request to save project info to KDF."""
+
+
+class ProjectInfoRequiredResponse(BaseModel):
+    """Response when project info is incomplete and needs to be filled.
+
+    Returned by operations when project info check fails. Frontend should
+    prompt user with the provided smart_defaults and current project_info.
+    """
+
+    project_info_required: bool = True
+    project_info: ProjectInfoResponse
+    smart_defaults: SmartDefaultsResponse
+    required_fields: list[str] = ["company1", "project_name1", "prepared_by"]
 
 
 class SaveResponse(BaseModel):

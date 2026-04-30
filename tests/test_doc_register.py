@@ -350,9 +350,27 @@ class TestDBOps:
         try:
             session.query(QueryEntry).delete()
             test_entries = [
-                {"name": "PID-001", "modified": "2024-01-01", "modified_by": "user", "path": "docs", "item_type": "File"},
-                {"name": "Main-PID-001", "modified": "2024-01-01", "modified_by": "user", "path": "docs", "item_type": "File"},
-                {"name": "COPY_OF_PID", "modified": "2024-01-01", "modified_by": "user", "path": "docs", "item_type": "File"},
+                {
+                    "name": "PID-001",
+                    "modified": "2024-01-01",
+                    "modified_by": "user",
+                    "path": "docs",
+                    "item_type": "File",
+                },
+                {
+                    "name": "Main-PID-001",
+                    "modified": "2024-01-01",
+                    "modified_by": "user",
+                    "path": "docs",
+                    "item_type": "File",
+                },
+                {
+                    "name": "COPY_OF_PID",
+                    "modified": "2024-01-01",
+                    "modified_by": "user",
+                    "path": "docs",
+                    "item_type": "File",
+                },
             ]
             for entry in test_entries:
                 session.add(QueryEntry(**entry))

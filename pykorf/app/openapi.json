@@ -747,7 +747,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ReportResponse"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ProjectInfoRequiredResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ReportResponse"
+                    }
+                  ],
+                  "title": "Response Generatereport"
                 }
               }
             }
@@ -2729,6 +2737,19 @@
           },
           "smart_defaults": {
             "$ref": "#/components/schemas/SmartDefaultsResponse"
+          },
+          "required_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Required Fields",
+            "default": [
+              "company1",
+              "company2",
+              "project_name1",
+              "prepared_by"
+            ]
           }
         },
         "type": "object",
@@ -3260,6 +3281,40 @@
           "sharepoint_ok"
         ],
         "title": "PrereqsResponse"
+      },
+      "ProjectInfoRequiredResponse": {
+        "properties": {
+          "project_info_required": {
+            "type": "boolean",
+            "title": "Project Info Required",
+            "default": true
+          },
+          "project_info": {
+            "$ref": "#/components/schemas/ProjectInfoResponse"
+          },
+          "smart_defaults": {
+            "$ref": "#/components/schemas/SmartDefaultsResponse"
+          },
+          "required_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Required Fields",
+            "default": [
+              "company1",
+              "project_name1",
+              "prepared_by"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "project_info",
+          "smart_defaults"
+        ],
+        "title": "ProjectInfoRequiredResponse",
+        "description": "Response when project info is incomplete and needs to be filled.\n\nReturned by operations when project info check fails. Frontend should\nprompt user with the provided smart_defaults and current project_info."
       },
       "ProjectInfoResponse": {
         "properties": {

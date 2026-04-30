@@ -219,7 +219,6 @@ class QueryService:
 
             elem.set_param(param_key, val_list)
 
-
     def get_element(self, name: str, etype: str | None = None) -> BaseElement:
         """Get a single element by name.
 

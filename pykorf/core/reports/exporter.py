@@ -168,9 +168,7 @@ class ResultExporter:
             title_cell.font = _STYLES.model_title
             worksheet.row_dimensions[1].height = 28
 
-        worksheet.cell(row=2, column=1, value=f"Source File: {source_name}").font = (
-            _STYLES.header
-        )
+        worksheet.cell(row=2, column=1, value=f"Source File: {source_name}").font = _STYLES.header
 
         case_names = self.reporter.get_case_names()
         if case_names:
@@ -222,9 +220,7 @@ class ResultExporter:
                     worksheet, df, current_row, start_col
                 )
 
-            apply_table_borders(
-                worksheet, start_table_row + 2, end_row, num_cols, start_col
-            )
+            apply_table_borders(worksheet, start_table_row + 2, end_row, num_cols, start_col)
 
             if element_type == "Pipes":
                 current_row = self._write_pipe_stats(worksheet, df, end_row + 2, start_col)
@@ -597,7 +593,9 @@ class ResultExporter:
                 break
         if line_num_idx is not None:
             max_len = max(len(str(v)) for v in df["Line Number"].fillna("")) if len(df) else 0
-            ws.column_dimensions[get_column_letter(line_num_idx)].width = min(max(max_len + 2, 8), 40)
+            ws.column_dimensions[get_column_letter(line_num_idx)].width = min(
+                max(max_len + 2, 8), 40
+            )
 
         return last_row, len(descriptions)
 

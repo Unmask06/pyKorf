@@ -15,6 +15,7 @@ from pykorf.app.api.schemas import (
     GenerateReportRequest,
     ImportRequest,
     KorfExcelStatusResponse,
+    ProjectInfoRequiredResponse,
     ReportResponse,
     StatusMessage,
 )
@@ -77,8 +78,14 @@ async def korf_excel_status() -> KorfExcelStatusResponse:
     return _korf_excel_status(kdf_path)
 
 
-@router.post("/generate", response_model=ReportResponse, operation_id="generateReport")
-async def generate_report(req: GenerateReportRequest) -> ReportResponse:
+@router.post(
+    "/generate",
+    response_model=ProjectInfoRequiredResponse | ReportResponse,
+    operation_id="generateReport",
+)
+async def generate_report(
+    req: GenerateReportRequest,
+) -> ProjectInfoRequiredResponse | ReportResponse:
     """Generate a single-model Excel report.
 
     Uses ``mode`` to select the reporter:
@@ -88,6 +95,13 @@ async def generate_report(req: GenerateReportRequest) -> ReportResponse:
     """
     model = await require_model()
     kdf_path = await _sess.get_kdf_path()
+
+    from pykorf.app.api.routers.model import check_project_info_or_return
+
+    check_result = await check_project_info_or_return(model, kdf_path)
+    if check_result:
+        return check_result
+
     kdf_folder = str(kdf_path.parent) if kdf_path else ""
     kdf_stem = kdf_path.stem if kdf_path else "model"
     default_name = f"{kdf_stem}_report.xlsx"

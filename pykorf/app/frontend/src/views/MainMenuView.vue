@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSessionStore } from '../stores/session'
 import { useModelStore } from '../stores/model'
@@ -65,6 +65,21 @@ function issueBadge(category: string): { label: string; cls: string } {
   return categoryMap[category] || { label: category.toUpperCase(), cls: 'bg-gray-200 text-gray-700' }
 }
 
+const projectInfoIncomplete = computed(() => {
+  const info = model.projectInfo
+  const required = model.requiredFields
+  if (!info || !required.length) return true
+  for (const field of required) {
+    const val = (info as Record<string, string>)[field] || ''
+    if (!val.trim()) return true
+  }
+  return false
+})
+
+function isRequired(field: string): boolean {
+  return model.requiredFields.includes(field)
+}
+
 onMounted(async () => {
   if (!session.isLoaded) {
     router.push('/')
@@ -81,10 +96,11 @@ onMounted(async () => {
     <div class="w-full lg:w-1/4 space-y-3">
 
       <!-- Project Info Card -->
-      <div class="pk-card">
+      <div class="pk-card" :class="{ 'project-info-incomplete': projectInfoIncomplete }">
         <div class="px-3 py-2 border-b flex justify-between items-center" style="background: transparent;">
-          <span class="font-semibold text-xs flex items-center gap-1 text-blue-600">
+          <span class="font-semibold text-xs flex items-center gap-1" :class="projectInfoIncomplete ? 'text-amber-600' : 'text-blue-600'">
             <FolderOpen class="w-3.5 h-3.5" /> Project Info
+            <span v-if="projectInfoIncomplete" class="text-[10px] font-normal">(incomplete)</span>
           </span>
           <button type="button" @click="openProjectModal"
             class="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-0.5">
@@ -143,19 +159,19 @@ onMounted(async () => {
           <div class="p-4 space-y-2 overflow-auto">
             <div class="grid grid-cols-2 gap-2">
               <div>
-                <label class="pk-label-sm">Company</label>
+                <label class="pk-label-sm">Company <span v-if="isRequired('company1')" class="text-red-500">*</span></label>
                 <input v-model="editInfo.company1" type="text" class="pk-input"
                   :placeholder="model.smartDefaults?.company1 || ''" />
               </div>
               <div>
-                <label class="pk-label-sm">Company 2</label>
+                <label class="pk-label-sm">Company 2 <span v-if="isRequired('company2')" class="text-red-500">*</span></label>
                 <input v-model="editInfo.company2" type="text" class="pk-input"
                   :placeholder="model.smartDefaults?.company2 || ''" />
               </div>
             </div>
             <div class="grid grid-cols-2 gap-2">
               <div>
-                <label class="pk-label-sm">Project Name</label>
+                <label class="pk-label-sm">Project Name <span v-if="isRequired('project_name1')" class="text-red-500">*</span></label>
                 <input v-model="editInfo.project_name1" type="text" class="pk-input"
                   :placeholder="model.smartDefaults?.project_name1 || ''" />
               </div>
@@ -179,7 +195,7 @@ onMounted(async () => {
             </div>
             <div class="grid grid-cols-3 gap-2">
               <div>
-                <label class="pk-label-sm">Prepared</label>
+                <label class="pk-label-sm">Prepared <span v-if="isRequired('prepared_by')" class="text-red-500">*</span></label>
                 <input v-model="editInfo.prepared_by" type="text" class="pk-input"
                   :placeholder="model.smartDefaults?.prepared_by || ''" />
               </div>
@@ -389,5 +405,21 @@ onMounted(async () => {
 .no-underline {
   text-decoration: none;
   color: inherit;
+}
+
+/* Blinking animation for incomplete project info */
+.project-info-incomplete {
+  animation: project-info-blink 2s ease-in-out infinite;
+  border-color: theme('colors.amber.300', #fcd34d);
+}
+@keyframes project-info-blink {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
+    border-color: theme('colors.amber.300', #fcd34d);
+  }
+  50% {
+    box-shadow: 0 0 8px 2px rgba(245, 158, 11, 0.2);
+    border-color: theme('colors.amber.500', #f59e0b);
+  }
 }
 </style>

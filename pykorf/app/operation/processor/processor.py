@@ -209,7 +209,10 @@ class PipedataProcessor:
 
         # Apply PMS data if loaded
         if hasattr(self, "_all_materials") and self._all_materials:
-            from pykorf.app.operation.data_import.pms import get_pms_data, lookup_pms_across_materials
+            from pykorf.app.operation.data_import.pms import (
+                get_pms_data,
+                lookup_pms_across_materials,
+            )
 
             pms_code = line_number.pms_code
             nps = line_number.nominal_pipe_size

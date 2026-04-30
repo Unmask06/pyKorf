@@ -27,6 +27,7 @@ from pykorf.app.api.schemas import (
     PredictCriteriaRequest,
     PredictCriteriaResponse,
     PrereqsResponse,
+    ProjectInfoRequiredResponse,
     ProjectInfoResponse,
     SaveProjectInfoRequest,
     SaveResponse,
@@ -61,9 +62,64 @@ KORF_DEFAULTS: dict[str, list[str]] = {
     "revision": [""],
 }
 
+REQUIRED_PROJECT_INFO_FIELDS = ["company1", "company2", "project_name1", "prepared_by"]
+
 
 def _is_korf_default(field: str, value: str) -> bool:
     return value in KORF_DEFAULTS.get(field, [])
+
+
+def _is_project_info_complete_raw(model, smart_defaults: SmartDefaultsResponse) -> bool:
+    """Check if required project info fields are filled with real values.
+
+    Reads raw values directly from model.general and compares against
+    smart_defaults. Returns False if any required field is empty or
+    still matches the smart default (i.e., never manually set).
+    """
+    gen = model.general
+    for field in REQUIRED_PROJECT_INFO_FIELDS:
+        raw_value = getattr(gen, {
+            "company1": "company",
+            "company2": "company2",
+            "project_name1": "project",
+            "prepared_by": "prepared_by",
+        }.get(field, field), "") or ""
+        default_value = getattr(smart_defaults, field, "") or ""
+        if not raw_value or raw_value.strip() == default_value.strip():
+            return False
+    return True
+
+
+async def check_project_info_or_return(
+    model, kdf_path: Path | None
+) -> ProjectInfoRequiredResponse | None:
+    """Check if project info is complete. Returns None if OK, else returns response.
+
+    Returns ProjectInfoRequiredResponse if:
+    - Session hasn't confirmed project info yet
+    - Required fields are empty or still match smart defaults
+
+    Call this at the start of mutating operations. If it returns a response,
+    return that response instead of proceeding with the operation.
+    """
+    from pykorf.app.operation.project.project_info import build_smart_defaults
+
+    if _sess.is_project_info_checked():
+        return None
+
+    smart_defaults = SmartDefaultsResponse(**build_smart_defaults(kdf_path))
+    project_info = _build_project_info(model, kdf_path, smart_defaults)
+
+    if _is_project_info_complete_raw(model, smart_defaults):
+        _sess.set_project_info_checked(True)
+        return None
+
+    return ProjectInfoRequiredResponse(
+        project_info_required=True,
+        project_info=project_info,
+        smart_defaults=smart_defaults,
+        required_fields=REQUIRED_PROJECT_INFO_FIELDS,
+    )
 
 
 @router.get("/summary", response_model=ModelFullResponse, operation_id="getModelSummary")
@@ -105,6 +161,7 @@ async def get_summary() -> ModelFullResponse:
         prereqs=prereqs,
         project_info=project_info,
         smart_defaults=smart_defaults,
+        required_fields=REQUIRED_PROJECT_INFO_FIELDS,
     )
 
 
@@ -150,6 +207,7 @@ async def save_project_info(req: SaveProjectInfoRequest) -> SaveResponse:
             req.revision,
         )
         model.save()
+        _sess.set_project_info_checked(True)
         await _sess.reload()
     for alert_type, message in flash_list:
         logs.append(StatusMessage(type=alert_type, message=message))
@@ -236,7 +294,6 @@ async def set_pipe_criteria(req: SetPipeCriteriaRequest) -> SetCriteriaResponse:
 
     pipes = _get_pipes_list(model)
 
-    # Convert Pydantic entries to plain dict
     criteria_dict = {k: {"state": v.state, "criteria": v.criteria} for k, v in req.criteria.items()}
 
     result = _handle_set_criteria(model, pipes, criteria_dict)

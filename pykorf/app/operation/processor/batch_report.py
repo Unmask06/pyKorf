@@ -249,10 +249,15 @@ class BatchReportGenerator:
                                 references=references,
                             )
                             single_exporter = ResultExporter(reporter=korf_reporter)
-                            single_path = kdf_file.parent / f"{kdf_file.stem}_multi-case_report.xlsx"
+                            single_path = (
+                                kdf_file.parent / f"{kdf_file.stem}_multi-case_report.xlsx"
+                            )
                         else:
                             single_exporter = ResultExporter(
-                                model, basis=basis, remarks=remarks, hold=hold,
+                                model,
+                                basis=basis,
+                                remarks=remarks,
+                                hold=hold,
                                 references=references,
                             )
                             single_path = kdf_file.parent / f"{kdf_file.stem}_report.xlsx"
