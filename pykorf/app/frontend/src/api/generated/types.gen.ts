@@ -964,6 +964,10 @@ export type ProjectInfoRequiredResponse = {
      * Required Fields
      */
     required_fields?: Array<string>;
+    /**
+     * Incomplete Fields
+     */
+    incomplete_fields?: Array<string>;
 };
 
 /**

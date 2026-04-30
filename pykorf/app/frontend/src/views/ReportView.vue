@@ -39,6 +39,7 @@ interface ProjectInfoRequiredResponse {
   project_info: ProjectInfoResponse;
   smart_defaults: SmartDefaultsResponse;
   required_fields: string[];
+  incomplete_fields: string[];
 }
 
 const session = useSessionStore();
@@ -53,7 +54,7 @@ const pendingReportReq = ref<GenerateReportRequest | null>(null);
 const saveProjectLoading = ref(false);
 
 function isRequired(field: string): boolean {
-  return projectInfoRequired.value?.required_fields?.includes(field) ?? false;
+  return projectInfoRequired.value?.incomplete_fields?.includes(field) ?? false;
 }
 
 // Report mode toggle
