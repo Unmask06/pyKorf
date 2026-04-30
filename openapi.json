@@ -3334,6 +3334,14 @@
               "project_name1",
               "prepared_by"
             ]
+          },
+          "incomplete_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Incomplete Fields",
+            "default": []
           }
         },
         "type": "object",
