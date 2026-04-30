@@ -162,7 +162,7 @@ async def generate_report(
                             references=references,
                         )
                         exporter = ResultExporter(reporter=reporter)
-                        exporter.export_to_excel(str(report_file))
+                        exporter.export_to_excel(str(report_file), pipe_columns=req.pipe_columns)
 
                     await asyncio.to_thread(_do_export)
                     messages.append(
@@ -187,7 +187,7 @@ async def generate_report(
                         references=references,
                         justifications=justifications,
                     )
-                    exporter.export_to_excel(str(report_file))
+                    exporter.export_to_excel(str(report_file), pipe_columns=req.pipe_columns)
 
                 await asyncio.to_thread(_do_export)
                 messages.append(
@@ -317,6 +317,7 @@ async def batch_report(req: BatchReportRequest) -> ReportResponse:
                 output_path = generator.generate_report(
                     single_report=req.single_report,
                     multi_case=is_multi,
+                    pipe_columns=req.pipe_columns,
                 )
                 return generator, output_path
 

@@ -76,6 +76,7 @@ class ResultExporter:
         output_path: str,
         sheet_name: str = "Model Summary",
         elements: list[str] | None = None,
+        pipe_columns: list[str] | None = None,
         template_path: str | None = None,
     ) -> str:
         """Generate a formatted Excel report.
@@ -124,7 +125,7 @@ class ResultExporter:
         self._write_validation_sheet(workbook)
 
         if is_multi_case:
-            self._export_multi_case(workbook, all_cases, source_name, elements)
+            self._export_multi_case(workbook, all_cases, source_name, elements, pipe_columns)
         else:
             template_ws = None
             if template_path and Path(template_path).exists():
@@ -139,6 +140,7 @@ class ResultExporter:
                 sheet_name,
                 elements,
                 template_ws,
+                pipe_columns,
             )
 
         workbook.save(output_path)
@@ -153,6 +155,7 @@ class ResultExporter:
         sheet_name: str,
         elements: list[str] | None,
         template_ws: Any | None = None,
+        pipe_columns: list[str] | None = None,
     ) -> None:
         """Write a single-sheet report (original layout)."""
         worksheet = workbook.create_sheet(sheet_name)
@@ -175,6 +178,10 @@ class ResultExporter:
             worksheet.cell(
                 row=3, column=1, value=f"Cases: {'; '.join(case_names)}"
             ).font = _STYLES.header
+
+        if pipe_columns and "Pipes" in dfs_flat and not dfs_flat["Pipes"].empty:
+            dfs_flat = dict(dfs_flat)
+            dfs_flat["Pipes"] = self._filter_pipe_columns(dfs_flat["Pipes"], pipe_columns)
 
         current_row_left = 5
         current_row_right = 5
@@ -249,10 +256,9 @@ class ResultExporter:
         all_cases: dict[str, dict[str, pd.DataFrame]],
         source_name: str,
         elements: list[str] | None,
+        pipe_columns: list[str] | None = None,
     ) -> None:
         """Write per-case sheets plus a Summary envelope sheet for multi-case reports."""
-        from pykorf.core.reports.korf_reporter import KorfReporter
-
         case_names = list(all_cases.keys())
 
         first_case_dfs = list(all_cases.values())[0]
@@ -271,7 +277,10 @@ class ResultExporter:
             title_cell.font = _STYLES.model_title
             summary_ws.row_dimensions[1].height = 28
 
-        if isinstance(self.reporter, KorfReporter):
+        if isinstance(
+            self.reporter,
+            __import__("pykorf.core.reports.korf_reporter", fromlist=["KorfReporter"]).KorfReporter,
+        ):
             case_data = self.reporter._get_case_data()
             builder = MultiCaseSummaryBuilder(
                 case_data=case_data,
@@ -282,16 +291,24 @@ class ResultExporter:
                 summary_ws,
                 source_name,
                 pipe_stats_handler=self._write_pipe_stats,
+                pipe_columns=pipe_columns,
             )
         else:
             envelope_dfs = self._build_envelope_dataframes(all_cases, element_keys)
+            if pipe_columns and "Pipes" in envelope_dfs and not envelope_dfs["Pipes"].empty:
+                envelope_dfs = dict(envelope_dfs)
+                envelope_dfs["Pipes"] = self._filter_pipe_columns(
+                    envelope_dfs["Pipes"], pipe_columns
+                )
             self._write_case_sheet_content(summary_ws, envelope_dfs, source_name, element_keys)
             case_label = f"Cases: {'; '.join(case_names)}"
             summary_ws.cell(row=3, column=1, value=case_label).font = _STYLES.header
 
         for case_name in case_names:
             case_dfs = all_cases[case_name]
-            ws = self._write_case_sheet(workbook, case_name, case_dfs, source_name, element_keys)
+            ws = self._write_case_sheet(
+                workbook, case_name, case_dfs, source_name, element_keys, pipe_columns
+            )
             ws.cell(row=2, column=1, value=f"Case: {case_name}").font = _STYLES.header
 
     def _write_case_sheet_content(
@@ -370,6 +387,7 @@ class ResultExporter:
         dfs: dict[str, pd.DataFrame],
         source_name: str,
         elements: list[str] | None,
+        pipe_columns: list[str] | None = None,
     ) -> openpyxl.worksheet.worksheet.Worksheet:
         """Write a single worksheet with element tables from one case's DataFrames."""
         ws = workbook.create_sheet(sheet_name)
@@ -380,6 +398,10 @@ class ResultExporter:
         ws.page_setup.fitToHeight = 1
 
         ws.cell(row=2, column=1, value=f"Source File: {source_name}").font = _STYLES.header
+
+        if pipe_columns and "Pipes" in dfs and not dfs["Pipes"].empty:
+            dfs = dict(dfs)
+            dfs["Pipes"] = self._filter_pipe_columns(dfs["Pipes"], pipe_columns)
 
         element_keys = elements if elements is not None else list(dfs.keys())
 
@@ -443,6 +465,38 @@ class ResultExporter:
         ws.row_dimensions[footer_row].height = 30
 
         return ws
+
+    def _resolve_pipe_columns(self, df: pd.DataFrame, keys: list[str]) -> list[str]:
+        """Resolve partial column keys to actual DataFrame column names.
+
+        Does exact match first, then prefix match (e.g. "Velocity" → "Velocity [m/s]").
+        """
+        available = set(df.columns)
+        resolved: list[str] = []
+        for key in keys:
+            if key in available:
+                resolved.append(key)
+            else:
+                for col in df.columns:
+                    if col.startswith(key + " [") or col == key:
+                        resolved.append(col)
+                        break
+        return resolved
+
+    def _filter_pipe_columns(self, df: pd.DataFrame, pipe_columns: list[str]) -> pd.DataFrame:
+        """Filter pipe DataFrame to only include requested columns.
+
+        Always includes 'Pipe Name' and 'Criteria Check' regardless of selection.
+        Preserves the original DataFrame column order.
+        """
+        always_keys = {"Pipe Name", "Criteria Check"}
+        resolved = self._resolve_pipe_columns(df, pipe_columns)
+        always_resolved = self._resolve_pipe_columns(df, list(always_keys))
+        selected_set = set(resolved) | set(always_resolved)
+        ordered = [c for c in df.columns if c in selected_set]
+        if not ordered:
+            return df
+        return df[ordered]
 
     def _build_envelope_dataframes(
         self,

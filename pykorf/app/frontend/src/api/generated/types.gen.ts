@@ -138,6 +138,10 @@ export type BatchReportRequest = {
      * Validate Only
      */
     validate_only?: boolean;
+    /**
+     * Pipe Columns
+     */
+    pipe_columns?: string[] | null;
 };
 
 /**
