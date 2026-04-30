@@ -9,6 +9,7 @@ import {
   Folder,
   FolderOpen,
   Layers,
+  Settings,
 } from "lucide-vue-next";
 import { computed, onMounted, ref, watch } from "vue";
 import {
@@ -19,6 +20,7 @@ import {
   korfExcelStatus,
 } from "../api/client";
 import PathBrowser from "../components/PathBrowser.vue";
+import ReportCustomizeModal from "../components/ReportCustomizeModal.vue";
 import ReportModeToggle from "../components/ReportModeToggle.vue";
 import { useLoading } from "../composables/useLoading";
 import { useToastStore } from "../composables/useToast";
@@ -49,6 +51,10 @@ const batchValidCount = ref(0);
 const batchTotalCount = ref(0);
 const batchProblems = ref<string[]>([]);
 const batchValidating = ref(false);
+
+// Report column customization
+const showCustomizeModal = ref(false);
+const pipeColumns = ref<string[]>([]);
 
 const reportPath = computed(() => {
   if (!session.kdfPath) return "";
@@ -101,6 +107,7 @@ const genLoading = useLoading(async () => {
   const req: GenerateReportRequest = {
     report_path: reportPath.value || null,
     mode: isMultiCase.value ? "multi" : "single",
+    pipe_columns: pipeColumns.value.length > 0 ? pipeColumns.value : undefined,
   };
   const res = await generateReport({ body: req });
   if (!res.data?.success) {
@@ -114,6 +121,7 @@ const batchLoading = useLoading(async () => {
     batch_folder: batchFolder.value || null,
     single_report: singleReport.value,
     mode: isBatchMultiCase.value ? "multi" : "single",
+    pipe_columns: pipeColumns.value.length > 0 ? pipeColumns.value : undefined,
   };
   const res = await batchReport({ body: req });
   if (!res.data?.success) {
@@ -328,15 +336,24 @@ function onToggleMultiCase(value: boolean) {
           </div>
         </div>
 
-        <button
-          @click="generate"
-          class="mt-3 w-full bg-green-600 text-white rounded py-1.5 text-sm hover:bg-green-700 flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-          :disabled="!canGenerate"
-          :title="generateTooltip"
-        >
-          <span v-if="genLoading.isLoading.value" class="pk-spinner" />
-          <ArrowDownRight class="w-4 h-4" /> Generate Report
-        </button>
+        <div class="mt-3 flex gap-2">
+          <button
+            @click="showCustomizeModal = true"
+            class="flex items-center justify-center gap-1 rounded border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
+            title="Customize report columns"
+          >
+            <Settings class="w-4 h-4" />
+          </button>
+          <button
+            @click="generate"
+            class="flex-1 bg-green-600 text-white rounded py-1.5 text-sm hover:bg-green-700 flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="!canGenerate"
+            :title="generateTooltip"
+          >
+            <span v-if="genLoading.isLoading.value" class="pk-spinner" />
+            <ArrowDownRight class="w-4 h-4" /> Generate Report
+          </button>
+        </div>
       </div>
     </div>
 
@@ -481,5 +498,10 @@ function onToggleMultiCase(value: boolean) {
         showBatchBrowser = false;
       }
     "
+  />
+
+  <ReportCustomizeModal
+    v-model="pipeColumns"
+    v-model:open="showCustomizeModal"
   />
 </template>

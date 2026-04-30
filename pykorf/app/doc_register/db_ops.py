@@ -87,11 +87,11 @@ def get_engine():
         @event.listens_for(_engine, "connect")
         def _set_pragmas(dbapi_conn, _record):
             cur = dbapi_conn.cursor()
-            cur.execute("PRAGMA journal_mode=WAL")       # faster concurrent reads
-            cur.execute("PRAGMA synchronous=NORMAL")     # safe but not fsync on every write
-            cur.execute("PRAGMA cache_size=-4000")       # 4 MB page cache
-            cur.execute("PRAGMA mmap_size=16777216")     # 16 MB memory-mapped I/O
-            cur.execute("PRAGMA temp_store=MEMORY")      # temp tables in RAM
+            cur.execute("PRAGMA journal_mode=WAL")  # faster concurrent reads
+            cur.execute("PRAGMA synchronous=NORMAL")  # safe but not fsync on every write
+            cur.execute("PRAGMA cache_size=-4000")  # 4 MB page cache
+            cur.execute("PRAGMA mmap_size=16777216")  # 16 MB memory-mapped I/O
+            cur.execute("PRAGMA temp_store=MEMORY")  # temp tables in RAM
             cur.close()
 
         _SessionFactory = sessionmaker(bind=_engine)

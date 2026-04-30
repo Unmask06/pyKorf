@@ -263,12 +263,18 @@ class KorfReporter(_BaseReporter):
             vel_min_unit = units.get("velocity_criteria_min", "m/s")
             rho_v2_unit = units.get("rho_v2_in", "Pa")
 
+            volume: float | None = None
+            if pipe_model and pipe_model.index != 0:
+                vol = pipe_model.volume_m3
+                volume = round(vol, 4) if vol > 0 else None
+
             row = {
                 "Pipe Name": pd_pipe.name,
                 "Criteria Code": criteria_code,
                 "Line Number": line_number,
                 "Line Size": pd_pipe.size or "",
                 f"Line Length [{length_unit}]": pd_pipe.length,
+                "Volume [m³]": volume,
                 f"dP max Criteria [{dp_crit_unit}]": pd_pipe.dp_length_criteria_max,
                 f"v min Criteria [{vel_min_unit}]": pd_pipe.velocity_criteria_min,
                 f"v max Criteria [{vel_max_unit}]": pd_pipe.velocity_criteria_max,

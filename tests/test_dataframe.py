@@ -203,7 +203,9 @@ class TestExportFunctions:
             restored = Model(tmp_path)
             assert len(restored.pipes) == len(model.pipes)
             assert len(restored.pumps) == len(model.pumps)
-            assert sorted(e.name for e in restored.elements) == sorted(e.name for e in model.elements)
+            assert sorted(e.name for e in restored.elements) == sorted(
+                e.name for e in model.elements
+            )
         finally:
             Path(tmp_path).unlink(missing_ok=True)
 

@@ -79,6 +79,7 @@ class MultiCaseSummaryBuilder:
         ws: Worksheet,
         source_name: str,
         pipe_stats_handler: Any | None = None,
+        pipe_columns: list[str] | None = None,
     ) -> None:
         """Write the complete Summary sheet content.
 
@@ -86,6 +87,7 @@ class MultiCaseSummaryBuilder:
             ws: Worksheet to write to
             source_name: Source file name for display
             pipe_stats_handler: Optional callable to write pipe stats (Min-Max, Overall Criteria)
+            pipe_columns: Optional subset of pipe columns to include.
         """
         current_row = 2
 
@@ -100,6 +102,8 @@ class MultiCaseSummaryBuilder:
 
         pipe_df = self.build_pipe_summary_df()
         if not pipe_df.empty:
+            if pipe_columns:
+                pipe_df = self._filter_pipe_columns(pipe_df, pipe_columns)
             ws.cell(row=current_row, column=1, value="Pipes Summary").font = _STYLES.title
             current_row += 2
             end_row = self._write_pipe_table(ws, pipe_df, current_row)
@@ -323,12 +327,18 @@ class MultiCaseSummaryBuilder:
         vel_min_unit = units.get("velocity_criteria_min", "m/s")
         rho_v2_unit = units.get("rho_v2_in", "Pa")
 
+        volume: float | None = None
+        if pipe_model and pipe_model.index != 0:
+            vol = pipe_model.volume_m3
+            volume = round(vol, 4) if vol > 0 else None
+
         return {
             "Pipe Name": pd_pipe.name,
             "Criteria Code": criteria_code,
             "Line Number": line_number,
             "Line Size": pd_pipe.size or "",
             f"Line Length [{length_unit}]": pd_pipe.length,
+            "Volume [m³]": volume,
             f"dP max Criteria [{dp_crit_unit}]": pd_pipe.dp_length_criteria_max,
             f"v min Criteria [{vel_min_unit}]": pd_pipe.velocity_criteria_min,
             f"v max Criteria [{vel_max_unit}]": pd_pipe.velocity_criteria_max,
@@ -372,6 +382,38 @@ class MultiCaseSummaryBuilder:
             ):
                 return "FAIL"
         return "PASS"
+
+    def _resolve_pipe_columns(self, df: pd.DataFrame, keys: list[str]) -> list[str]:
+        """Resolve partial column keys to actual DataFrame column names.
+
+        Does exact match first, then prefix match (e.g. "Velocity" → "Velocity [m/s]").
+        """
+        available = set(df.columns)
+        resolved: list[str] = []
+        for key in keys:
+            if key in available:
+                resolved.append(key)
+            else:
+                for col in df.columns:
+                    if col.startswith(key + " [") or col == key:
+                        resolved.append(col)
+                        break
+        return resolved
+
+    def _filter_pipe_columns(self, df: pd.DataFrame, pipe_columns: list[str]) -> pd.DataFrame:
+        """Filter pipe DataFrame to only include requested columns.
+
+        Always includes 'Pipe Name' and 'Criteria Check' regardless of selection.
+        Preserves the original DataFrame column order.
+        """
+        always_keys = {"Pipe Name", "Criteria Check"}
+        resolved = self._resolve_pipe_columns(df, pipe_columns)
+        always_resolved = self._resolve_pipe_columns(df, list(always_keys))
+        selected_set = set(resolved) | set(always_resolved)
+        ordered = [c for c in df.columns if c in selected_set]
+        if not ordered:
+            return df
+        return df[ordered]
 
     def _build_pump_row(self, pump: PumpData, case_data: KorfCaseData) -> dict:
         """Build a single pump row dict (mirrors KorfReporter._extract_pumps)."""

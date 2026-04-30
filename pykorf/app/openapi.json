@@ -2022,6 +2022,20 @@
             "type": "boolean",
             "title": "Validate Only",
             "default": false
+          },
+          "pipe_columns": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pipe Columns"
           }
         },
         "type": "object",
@@ -2564,6 +2578,20 @@
             "type": "string",
             "title": "Mode",
             "default": "single"
+          },
+          "pipe_columns": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pipe Columns"
           }
         },
         "type": "object",

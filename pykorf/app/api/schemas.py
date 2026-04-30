@@ -208,6 +208,7 @@ class BulkCopyResponse(BaseModel):
 class GenerateReportRequest(BaseModel):
     report_path: str | None = None
     mode: str = "single"  # "single" | "multi"
+    pipe_columns: list[str] | None = None  # Optional subset of pipe columns to include
 
 
 class ExportRequest(BaseModel):
@@ -223,6 +224,7 @@ class BatchReportRequest(BaseModel):
     single_report: bool = False
     mode: str = "single"  # "single" | "multi"
     validate_only: bool = False  # If True, only validate multi-case readiness
+    pipe_columns: list[str] | None = None  # Optional subset of pipe columns to include
 
 
 class ReportResponse(BaseModel):

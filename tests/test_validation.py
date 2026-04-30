@@ -28,10 +28,7 @@ class TestValidate:
         """Pumpcases.kdf has DPL values well within criteria — no DPL/VEL violations."""
         m = Model(PUMP_KDF)
         issues = m.validate()
-        violations = [
-            i for i in issues
-            if "fails sizing criteria:" in i
-        ]
+        violations = [i for i in issues if "fails sizing criteria:" in i]
         assert len(violations) == 0
 
     def test_multiple_pipe_violations_all_reported(self):

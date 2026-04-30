@@ -134,14 +134,10 @@ class PumpData:
         """
         from pykorf.core.elements.pump import npsha_calc
 
-        if (
-            self.pressure_in is None
-            or self.vapour_pressure is None
-            or self.density is None
-        ):
+        if self.pressure_in is None or self.vapour_pressure is None or self.density is None:
             return None
         try:
-            return npsha_calc(self.pressure_in*100, self.vapour_pressure*100, self.density)
+            return npsha_calc(self.pressure_in * 100, self.vapour_pressure * 100, self.density)
         except (ZeroDivisionError, ValueError):
             return None
 
