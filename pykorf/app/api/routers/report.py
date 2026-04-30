@@ -15,6 +15,7 @@ from pykorf.app.api.schemas import (
     GenerateReportRequest,
     ImportRequest,
     KorfExcelStatusResponse,
+    ProjectInfoRequiredResponse,
     ReportResponse,
     StatusMessage,
 )
@@ -77,8 +78,14 @@ async def korf_excel_status() -> KorfExcelStatusResponse:
     return _korf_excel_status(kdf_path)
 
 
-@router.post("/generate", response_model=ReportResponse, operation_id="generateReport")
-async def generate_report(req: GenerateReportRequest) -> ReportResponse:
+@router.post(
+    "/generate",
+    response_model=ProjectInfoRequiredResponse | ReportResponse,
+    operation_id="generateReport",
+)
+async def generate_report(
+    req: GenerateReportRequest,
+) -> ProjectInfoRequiredResponse | ReportResponse:
     """Generate a single-model Excel report.
 
     Uses ``mode`` to select the reporter:
@@ -88,6 +95,13 @@ async def generate_report(req: GenerateReportRequest) -> ReportResponse:
     """
     model = await require_model()
     kdf_path = await _sess.get_kdf_path()
+
+    from pykorf.app.api.routers.model import check_project_info_or_return
+
+    check_result = await check_project_info_or_return(model, kdf_path)
+    if check_result:
+        return check_result
+
     kdf_folder = str(kdf_path.parent) if kdf_path else ""
     kdf_stem = kdf_path.stem if kdf_path else "model"
     default_name = f"{kdf_stem}_report.xlsx"
@@ -148,7 +162,7 @@ async def generate_report(req: GenerateReportRequest) -> ReportResponse:
                             references=references,
                         )
                         exporter = ResultExporter(reporter=reporter)
-                        exporter.export_to_excel(str(report_file))
+                        exporter.export_to_excel(str(report_file), pipe_columns=req.pipe_columns)
 
                     await asyncio.to_thread(_do_export)
                     messages.append(
@@ -173,7 +187,7 @@ async def generate_report(req: GenerateReportRequest) -> ReportResponse:
                         references=references,
                         justifications=justifications,
                     )
-                    exporter.export_to_excel(str(report_file))
+                    exporter.export_to_excel(str(report_file), pipe_columns=req.pipe_columns)
 
                 await asyncio.to_thread(_do_export)
                 messages.append(
@@ -303,6 +317,7 @@ async def batch_report(req: BatchReportRequest) -> ReportResponse:
                 output_path = generator.generate_report(
                     single_report=req.single_report,
                     multi_case=is_multi,
+                    pipe_columns=req.pipe_columns,
                 )
                 return generator, output_path
 

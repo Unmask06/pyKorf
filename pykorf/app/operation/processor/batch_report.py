@@ -87,6 +87,7 @@ class BatchReportGenerator:
         progress_callback: Callable[[int, int, str], None] | None = None,
         single_report: bool = False,
         multi_case: bool = False,
+        pipe_columns: list[str] | None = None,
     ) -> str:
         """Generate multi-sheet Excel report.
 
@@ -100,6 +101,7 @@ class BatchReportGenerator:
                 next to each KDF file.
             multi_case: If True, use KorfReporter (auto-detects KORF Excel)
                 for individual per-KDF reports instead of PykorfReporter.
+            pipe_columns: Optional subset of pipe columns to include in reports.
 
         Returns:
             Path to generated Excel file.
@@ -249,15 +251,20 @@ class BatchReportGenerator:
                                 references=references,
                             )
                             single_exporter = ResultExporter(reporter=korf_reporter)
-                            single_path = kdf_file.parent / f"{kdf_file.stem}_multi-case_report.xlsx"
+                            single_path = (
+                                kdf_file.parent / f"{kdf_file.stem}_multi-case_report.xlsx"
+                            )
                         else:
                             single_exporter = ResultExporter(
-                                model, basis=basis, remarks=remarks, hold=hold,
+                                model,
+                                basis=basis,
+                                remarks=remarks,
+                                hold=hold,
                                 references=references,
                             )
                             single_path = kdf_file.parent / f"{kdf_file.stem}_report.xlsx"
 
-                        single_exporter.export_to_excel(str(single_path))
+                        single_exporter.export_to_excel(str(single_path), pipe_columns=pipe_columns)
                         logger.info(
                             "batch_single_report_saved",
                             path=str(single_path),
@@ -280,7 +287,7 @@ class BatchReportGenerator:
                 self._errors.append(error_msg)
                 logger.error("batch_process_error", file=str(kdf_file), error=str(e))
 
-        self._write_excel(output_path, elements_by_type)
+        self._write_excel(output_path, elements_by_type, pipe_columns=pipe_columns)
 
         logger.info(
             "batch_report_complete",
@@ -291,7 +298,12 @@ class BatchReportGenerator:
 
         return str(output_path)
 
-    def _write_excel(self, output_path: Path, elements_by_type: dict[str, list[dict]]) -> None:
+    def _write_excel(
+        self,
+        output_path: Path,
+        elements_by_type: dict[str, list[dict]],
+        pipe_columns: list[str] | None = None,
+    ) -> None:
         """Write elements to Excel with multiple sheets, preserving existing custom sheets.
 
         If the Excel file exists, non-element sheets (e.g., Dashboard, Summary) are preserved.
@@ -301,6 +313,7 @@ class BatchReportGenerator:
         Args:
             output_path: Destination Excel file path.
             elements_by_type: Dict mapping sheet names to element lists.
+            pipe_columns: Optional subset of pipe columns to include.
         """
         workbook: openpyxl.Workbook | None = None
         output_path_actual = output_path
@@ -364,6 +377,28 @@ class BatchReportGenerator:
                 cols.append("source_path")
 
             df = df[[c for c in cols if c in df.columns]]
+
+            if sheet_name == "Pipes" and pipe_columns:
+                always_cols = {"Pipe Name", "source_file", "source_path"}
+                avail_cols = list(df.columns)
+
+                def _resolve(keys: list[str], columns: list[str]) -> list[str]:
+                    resolved: list[str] = []
+                    for key in keys:
+                        if key in columns:
+                            resolved.append(key)
+                        else:
+                            for col in columns:
+                                if col.startswith(key + " [") or col == key:
+                                    resolved.append(col)
+                                    break
+                    return resolved
+
+                filtered = _resolve(pipe_columns, avail_cols)
+                extra = [c for c in avail_cols if c in always_cols]
+                ordered = [c for c in ["Pipe Name", *filtered] if c in avail_cols]
+                ordered += [c for c in extra if c not in ordered]
+                df = df[[c for c in ordered if c in avail_cols]]
 
             if sheet_name in workbook.sheetnames:
                 ws = workbook[sheet_name]

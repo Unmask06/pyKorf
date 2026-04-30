@@ -155,9 +155,7 @@ class FlowOrifice(BaseElement):
     def summary(self, export: bool = False) -> dict:
         if export:
             dp_val, dp_unit = self.get_value_and_unit(FlowOrifice.DP, val_index=1, unit_index=-1)
-            pin_val, pin_unit = self.get_value_and_unit(
-                FlowOrifice.PIN, val_index=1, unit_index=-1
-            )
+            pin_val, pin_unit = self.get_value_and_unit(FlowOrifice.PIN, val_index=1, unit_index=-1)
             pout_val, pout_unit = self.get_value_and_unit(
                 FlowOrifice.POUT, val_index=1, unit_index=-1
             )

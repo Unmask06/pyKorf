@@ -7,7 +7,7 @@ company1 = "ADNOC "
 company2 = "CC7 GES"
 
 [project]
-name1 = ""
+name1 = "Project SALT"
 name2 = ""
 item_name1 = ""
 item_name2_from_filename = true   # auto-populate item_name2 from KDF filename stem

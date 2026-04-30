@@ -138,6 +138,10 @@ export type BatchReportRequest = {
      * Validate Only
      */
     validate_only?: boolean;
+    /**
+     * Pipe Columns
+     */
+    pipe_columns?: Array<string> | null;
 };
 
 /**
@@ -495,6 +499,10 @@ export type GenerateReportRequest = {
      * Mode
      */
     mode?: string;
+    /**
+     * Pipe Columns
+     */
+    pipe_columns?: Array<string> | null;
 };
 
 /**
@@ -611,6 +619,10 @@ export type ModelFullResponse = {
     prereqs: PrereqsResponse;
     project_info: ProjectInfoResponse;
     smart_defaults: SmartDefaultsResponse;
+    /**
+     * Required Fields
+     */
+    required_fields?: Array<string>;
 };
 
 /**
@@ -931,6 +943,27 @@ export type PrereqsResponse = {
      * Pms Path
      */
     pms_path?: string;
+};
+
+/**
+ * ProjectInfoRequiredResponse
+ *
+ * Response when project info is incomplete and needs to be filled.
+ *
+ * Returned by operations when project info check fails. Frontend should
+ * prompt user with the provided smart_defaults and current project_info.
+ */
+export type ProjectInfoRequiredResponse = {
+    /**
+     * Project Info Required
+     */
+    project_info_required?: boolean;
+    project_info: ProjectInfoResponse;
+    smart_defaults: SmartDefaultsResponse;
+    /**
+     * Required Fields
+     */
+    required_fields?: Array<string>;
 };
 
 /**
@@ -2053,9 +2086,11 @@ export type GenerateReportError = GenerateReportErrors[keyof GenerateReportError
 
 export type GenerateReportResponses = {
     /**
+     * Response Generatereport
+     *
      * Successful Response
      */
-    200: ReportResponse;
+    200: ProjectInfoRequiredResponse | ReportResponse;
 };
 
 export type GenerateReportResponse = GenerateReportResponses[keyof GenerateReportResponses];

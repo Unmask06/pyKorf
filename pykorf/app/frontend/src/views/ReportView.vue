@@ -9,6 +9,9 @@ import {
   Folder,
   FolderOpen,
   Layers,
+  PenSquare,
+  Settings,
+  X,
 } from "lucide-vue-next";
 import { computed, onMounted, ref, watch } from "vue";
 import {
@@ -17,8 +20,10 @@ import {
   getPreferences,
   getErrorMessage,
   korfExcelStatus,
+  saveProjectInfo,
 } from "../api/client";
 import PathBrowser from "../components/PathBrowser.vue";
+import ReportCustomizeModal from "../components/ReportCustomizeModal.vue";
 import ReportModeToggle from "../components/ReportModeToggle.vue";
 import { useLoading } from "../composables/useLoading";
 import { useToastStore } from "../composables/useToast";
@@ -26,10 +31,31 @@ import { useSessionStore } from "../stores/session";
 import type {
   BatchReportRequest,
   GenerateReportRequest,
+  ProjectInfoResponse,
+  SmartDefaultsResponse,
 } from "../api/generated/types.gen";
+
+interface ProjectInfoRequiredResponse {
+  project_info_required: boolean;
+  project_info: ProjectInfoResponse;
+  smart_defaults: SmartDefaultsResponse;
+  required_fields: string[];
+}
 
 const session = useSessionStore();
 const toast = useToastStore();
+
+// Project info modal (shown when report generation requires project info)
+const showProjectInfoModal = ref(false);
+const projectInfoRequired = ref<ProjectInfoRequiredResponse | null>(null);
+const editInfo = ref<ProjectInfoResponse>({});
+const smartDefaults = ref<SmartDefaultsResponse>({});
+const pendingReportReq = ref<GenerateReportRequest | null>(null);
+const saveProjectLoading = ref(false);
+
+function isRequired(field: string): boolean {
+  return projectInfoRequired.value?.required_fields?.includes(field) ?? false;
+}
 
 // Report mode toggle
 const isMultiCase = ref(false);
@@ -49,6 +75,10 @@ const batchValidCount = ref(0);
 const batchTotalCount = ref(0);
 const batchProblems = ref<string[]>([]);
 const batchValidating = ref(false);
+
+// Report column customization
+const showCustomizeModal = ref(false);
+const pipeColumns = ref<string[]>([]);
 
 const reportPath = computed(() => {
   if (!session.kdfPath) return "";
@@ -101,10 +131,24 @@ const genLoading = useLoading(async () => {
   const req: GenerateReportRequest = {
     report_path: reportPath.value || null,
     mode: isMultiCase.value ? "multi" : "single",
+    pipe_columns: pipeColumns.value.length > 0 ? pipeColumns.value : undefined,
   };
   const res = await generateReport({ body: req });
-  if (!res.data?.success) {
-    throw new Error(res.data?.errors?.[0] || 'Report generation failed');
+  if (!res.data) {
+    throw new Error('Report generation failed');
+  }
+  // Check if project info is required
+  if ('project_info_required' in res.data && res.data.project_info_required) {
+    const projResp = res.data as ProjectInfoRequiredResponse;
+    projectInfoRequired.value = projResp;
+    editInfo.value = { ...(projResp.project_info || {}) };
+    smartDefaults.value = projResp.smart_defaults || {};
+    pendingReportReq.value = req;
+    showProjectInfoModal.value = true;
+    return null;
+  }
+  if (!res.data.success) {
+    throw new Error(res.data.errors?.[0] || 'Report generation failed');
   }
   return res.data;
 });
@@ -114,6 +158,7 @@ const batchLoading = useLoading(async () => {
     batch_folder: batchFolder.value || null,
     single_report: singleReport.value,
     mode: isBatchMultiCase.value ? "multi" : "single",
+    pipe_columns: pipeColumns.value.length > 0 ? pipeColumns.value : undefined,
   };
   const res = await batchReport({ body: req });
   if (!res.data?.success) {
@@ -124,7 +169,8 @@ const batchLoading = useLoading(async () => {
 
 async function generate() {
   try {
-    await genLoading.execute();
+    const result = await genLoading.execute();
+    if (result === null) return; // project info modal shown
     if (isMultiCase.value) {
       toast.success("Multi-case report generated from KORF Excel.");
     } else {
@@ -132,6 +178,27 @@ async function generate() {
     }
   } catch (err: unknown) {
     toast.error(getErrorMessage(err, "An unexpected error occurred."));
+  }
+}
+
+async function saveProjectAndRetry() {
+  saveProjectLoading.value = true;
+  try {
+    await saveProjectInfo({ body: editInfo.value });
+    showProjectInfoModal.value = false;
+    toast.success("Project info saved. Generating report...");
+    if (pendingReportReq.value) {
+      const res = await generateReport({ body: pendingReportReq.value });
+      if (res.data && 'success' in res.data && res.data.success) {
+        toast.success("Report generated successfully.");
+      } else if (res.data && 'errors' in res.data) {
+        throw new Error(res.data.errors?.[0] || 'Report generation failed');
+      }
+    }
+  } catch (err: unknown) {
+    toast.error(getErrorMessage(err, "Failed to save project info or generate report."));
+  } finally {
+    saveProjectLoading.value = false;
   }
 }
 
@@ -328,15 +395,24 @@ function onToggleMultiCase(value: boolean) {
           </div>
         </div>
 
-        <button
-          @click="generate"
-          class="mt-3 w-full bg-green-600 text-white rounded py-1.5 text-sm hover:bg-green-700 flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-          :disabled="!canGenerate"
-          :title="generateTooltip"
-        >
-          <span v-if="genLoading.isLoading.value" class="pk-spinner" />
-          <ArrowDownRight class="w-4 h-4" /> Generate Report
-        </button>
+        <div class="mt-3 flex gap-2">
+          <button
+            @click="showCustomizeModal = true"
+            class="flex items-center justify-center gap-1 rounded border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
+            title="Customize report columns"
+          >
+            <Settings class="w-4 h-4" />
+          </button>
+          <button
+            @click="generate"
+            class="flex-1 bg-green-600 text-white rounded py-1.5 text-sm hover:bg-green-700 flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="!canGenerate"
+            :title="generateTooltip"
+          >
+            <span v-if="genLoading.isLoading.value" class="pk-spinner" />
+            <ArrowDownRight class="w-4 h-4" /> Generate Report
+          </button>
+        </div>
       </div>
     </div>
 
@@ -481,5 +557,107 @@ function onToggleMultiCase(value: boolean) {
         showBatchBrowser = false;
       }
     "
+  />
+
+  <!-- Project Info Modal (shown when report requires project info) -->
+  <div v-if="showProjectInfoModal" class="pk-modal-backdrop">
+    <div class="pk-modal" style="max-width: 520px;">
+      <div class="pk-modal-header">
+        <h6 class="font-semibold flex items-center gap-1 text-amber-600">
+          <AlertTriangle class="w-4 h-4" /> Project Info Required
+        </h6>
+        <button @click="showProjectInfoModal = false" class="text-gray-400 hover:text-gray-600">
+          <X class="w-4 h-4" />
+        </button>
+      </div>
+      <div class="p-4 space-y-2 overflow-auto">
+        <p class="text-xs text-gray-500 mb-2">
+          Please fill in the required fields before generating the report.
+        </p>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="pk-label-sm">Company <span v-if="isRequired('company1')" class="text-red-500">*</span></label>
+            <input v-model="editInfo.company1" type="text" class="pk-input"
+              :placeholder="smartDefaults?.company1 || ''" />
+          </div>
+          <div>
+            <label class="pk-label-sm">Company 2 <span v-if="isRequired('company2')" class="text-red-500">*</span></label>
+            <input v-model="editInfo.company2" type="text" class="pk-input"
+              :placeholder="smartDefaults?.company2 || ''" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="pk-label-sm">Project Name <span v-if="isRequired('project_name1')" class="text-red-500">*</span></label>
+            <input v-model="editInfo.project_name1" type="text" class="pk-input"
+              :placeholder="smartDefaults?.project_name1 || ''" />
+          </div>
+          <div>
+            <label class="pk-label-sm">Project Name 2</label>
+            <input v-model="editInfo.project_name2" type="text" class="pk-input"
+              :placeholder="smartDefaults?.project_name2 || ''" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="pk-label-sm">Document No</label>
+            <input v-model="editInfo.item_name1" type="text" class="pk-input"
+              :placeholder="smartDefaults?.item_name1 || ''" />
+          </div>
+          <div>
+            <label class="pk-label-sm">Item / Tag</label>
+            <input v-model="editInfo.item_name2" type="text" class="pk-input"
+              :placeholder="smartDefaults?.item_name2 || ''" />
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label class="pk-label-sm">Prepared <span v-if="isRequired('prepared_by')" class="text-red-500">*</span></label>
+            <input v-model="editInfo.prepared_by" type="text" class="pk-input"
+              :placeholder="smartDefaults?.prepared_by || ''" />
+          </div>
+          <div>
+            <label class="pk-label-sm">Checked</label>
+            <input v-model="editInfo.checked_by" type="text" class="pk-input"
+              :placeholder="smartDefaults?.checked_by || ''" />
+          </div>
+          <div>
+            <label class="pk-label-sm">Approved</label>
+            <input v-model="editInfo.approved_by" type="text" class="pk-input"
+              :placeholder="smartDefaults?.approved_by || ''" />
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label class="pk-label-sm">Date</label>
+            <input v-model="editInfo.date" type="text" class="pk-input"
+              :placeholder="smartDefaults?.date || ''" />
+          </div>
+          <div>
+            <label class="pk-label-sm">Project No</label>
+            <input v-model="editInfo.project_no" type="text" class="pk-input"
+              :placeholder="smartDefaults?.project_no || ''" />
+          </div>
+          <div>
+            <label class="pk-label-sm">Rev</label>
+            <input v-model="editInfo.revision" type="text" class="pk-input"
+              :placeholder="smartDefaults?.revision || ''" />
+          </div>
+        </div>
+      </div>
+      <div class="px-4 py-2 border-t flex justify-end gap-2">
+        <button @click="showProjectInfoModal = false" class="pk-btn-secondary">Cancel</button>
+        <button @click="saveProjectAndRetry()"
+          class="pk-btn-primary" :disabled="saveProjectLoading">
+          <span v-if="saveProjectLoading" class="pk-spinner" />
+          Save & Generate Report
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <ReportCustomizeModal
+    v-model="pipeColumns"
+    v-model:open="showCustomizeModal"
   />
 </template>

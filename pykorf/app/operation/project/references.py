@@ -170,15 +170,19 @@ class ReferencesStore:
         """
         sidecar = self._sidecar_path(kdf_path)
         try:
-            data: dict = json.loads(sidecar.read_text(encoding="utf-8")) if sidecar.is_file() else {}
+            data: dict = (
+                json.loads(sidecar.read_text(encoding="utf-8")) if sidecar.is_file() else {}
+            )
         except (json.JSONDecodeError, OSError):
             data = {}
-        data.update({
-            "basis": self.basis,
-            "remarks": self.remarks,
-            "hold": self.hold,
-            "references": [asdict(r) for r in self.references],
-        })
+        data.update(
+            {
+                "basis": self.basis,
+                "remarks": self.remarks,
+                "hold": self.hold,
+                "references": [asdict(r) for r in self.references],
+            }
+        )
         sidecar.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
 
     # ── Shortcut creation ─────────────────────────────────────────────────

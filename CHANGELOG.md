@@ -5,6 +5,17 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.30.0] - 2026-04-30
+
+### What's New
+
+- Reports can now be customized before generation, letting you pick which cases, components, and result tables to include.
+- Project information is now required before generating a report, with a modal prompt guiding you to fill in missing fields.
+
+### Improved
+
+- Validation error messages for pipe sizing criteria now show clearer column headers and format hints.
+
 ## [0.29.2] - 2026-04-28
 
 ### Improved

@@ -327,6 +327,15 @@ class Pipe(BaseElement):
         except (TypeError, ValueError):
             return 0.0
 
+    @property
+    def volume_m3(self) -> float:
+        """Internal volume in cubic metres."""
+        import math
+
+        if self.id_m <= 0 or self.length_m <= 0:
+            return 0.0
+        return math.pi * (self.id_m / 2) ** 2 * self.length_m
+
     # ------------------------------------------------------------------
     # Fluid properties (liquid)
     # ------------------------------------------------------------------
@@ -855,6 +864,7 @@ class Pipe(BaseElement):
                 "Line Number": parsed_line.raw_line_number if parsed_line else "",
                 "Line Size": self.diameter_inch or "",
                 self.format_export_header("Line Length", line_length_unit): line_length,
+                "Volume [m³]": round(self.volume_m3, 4) if self.volume_m3 > 0 else None,
                 self.format_export_header("dP max Criteria", dp_crit_unit): dp_crit_val,
                 self.format_export_header("v min Criteria", vel_min_crit_unit): vel_min_crit_val,
                 self.format_export_header("v max Criteria", vel_max_crit_unit): vel_max_crit_val,

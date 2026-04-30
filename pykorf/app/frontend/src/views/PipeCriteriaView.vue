@@ -439,7 +439,7 @@ onMounted(() => {
               <th style="width: 80px;" class="pk-table-head-cell-center crit-col">v min<br /><small class="font-normal text-gray-400">{{ velocityUnit }}</small></th>
               <th style="width: 80px;" class="pk-table-head-cell-center crit-col">v max<br /><small class="font-normal text-gray-400">{{ velocityUnit }}</small></th>
               <th style="width: 90px;" class="pk-table-head-cell-center">ρV² calc<br /><small class="font-normal text-gray-400">{{ rhoV2Unit }}</small></th>
-              <th style="width: 120px;" class="pk-table-head-cell-center crit-col">ρV² range<br /><small class="font-normal text-gray-400">{{ rhoV2Unit }}</small></th>
+              <th style="width: 80px;" class="pk-table-head-cell-center crit-col">ρV² max<br /><small class="font-normal text-gray-400">{{ rhoV2Unit }}</small></th>
             </tr>
           </thead>
           <tbody>
@@ -524,8 +524,6 @@ onMounted(() => {
               </td>
               <td class="pk-text-center-mono crit-col">
                 <template v-if="pipeCriteria[name]?.state && pipeCriteria[name]?.criteria">
-                  {{ convertValue('rho_v2', currentCriteriaInfo(name)?.rho_v2_min ?? null) }}
-                  –
                   {{ convertValue('rho_v2', currentCriteriaInfo(name)?.rho_v2_max ?? null) }}
                 </template>
                 <template v-else>—</template>

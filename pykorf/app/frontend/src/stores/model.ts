@@ -42,6 +42,7 @@ export const useModelStore = defineStore('model', () => {
   const prereqs = ref<PrereqsResponse | null>(null)
   const projectInfo = ref<ProjectInfoResponse | null>(null)
   const smartDefaults = ref<ProjectInfoResponse | null>(null)
+  const requiredFields = ref<string[]>([])
   const pipes = ref<string[]>([])
 
   async function _postReloadSession() {
@@ -57,6 +58,7 @@ export const useModelStore = defineStore('model', () => {
       prereqs.value = response.data.prereqs ?? null
       projectInfo.value = response.data.project_info ?? null
       smartDefaults.value = response.data.smart_defaults ?? null
+      requiredFields.value = response.data.required_fields ?? []
     } catch {
       // 409 = no model loaded, router guard handles redirect
     }
@@ -119,6 +121,7 @@ export const useModelStore = defineStore('model', () => {
     prereqs,
     projectInfo,
     smartDefaults,
+    requiredFields,
     pipes,
     fetchSummary,
     fetchPipes,

@@ -1,228 +1,93 @@
-# pyKorf — AI Agent Guide
+# AGENTS.md
 
-Guidance for agentic coding assistants working in this repository. Focus on **absolute accuracy**, **system-wide integrity**, and **pragmatic completeness**.
+This file provides guidance to Coding Agents when working with code in this repository.
 
-## Environment
+## Scope
+Use this guide for practical development work in this repo: running the app, testing, linting, editing architecture-critical paths, and validating changes before handoff.
 
-- **Shell**: PowerShell on Windows — use PowerShell syntax (`;` or `&&` for chaining, `$null` / `| Out-Null` instead of `/dev/null`, no bash heredocs).
-- **Python**: Managed via `uv`. Always prefix commands with `uv run` — never call `python` directly.
-- **Python version**: 3.13 exactly (enforced in `pyproject.toml` and `.python-version`).
-- **Node/npm**: Used only for frontend in `pykorf/app/frontend/`. Run via `& "C:\Program Files\nodejs\npm.cmd" ...` in PowerShell (script execution policy blocks bare `npm`).
-
-## Build, Lint & Test Commands
-
+## Common commands
+## Setup
 ```bash
-# Run all tests
-uv run pytest
+uv pip install -e ".[dev]"
+```
 
-# Run a single test file
-uv run pytest tests/test_model_api.py -v
-
-# Run a single test class
-uv run pytest tests/test_model_api.py::TestModelConstructor -v
-
-# Run a single test method
-uv run pytest tests/test_model_api.py::TestModelConstructor::test_model_no_args_creates_default -v
-
-# Run with specific markers
-uv run pytest -m unit           # Unit tests only
-uv run pytest -m integration    # Integration tests
-uv run pytest -m "not slow"     # Exclude slow tests
-
-# Lint (ruff — covers isort, pyflakes, pycodestyle, and more)
-uv run ruff check pykorf tests
-
-# Format code
-uv run ruff format pykorf tests
-
-# Type check (mypy with relaxed strict mode)
-uv run mypy pykorf
-
-# Launch the application
+## Run application
+```bash
 uv run pykorf
 uv run pykorf --port 9000
 uv run pykorf --debug
-
-# Generate TypeScript types from OpenAPI (Hey API)
-# ⚠️  MUST have backend server running first — script fetches live schema
-cd pykorf/app/frontend
-& "C:\Program Files\nodejs\npm.cmd" run generate-types
+uv run pykorf --no-debug
+uv run pykorf --trial
 ```
 
-## TypeScript Type Generation (Critical)
-
-**`npm run generate-types` auto-fetches the OpenAPI schema from the running pyKorf server** (`http://localhost:8000/openapi.json`), then generates TypeScript types.
-
-- **Server must be running** (`uv run pykorf`) before running this command.
-- If the server is unavailable, it falls back to the cached `openapi.json` at repo root.
-- If no cached file exists and server is down, the script exits with an error.
-- **Never run the backend server yourself** — always ask the user to start it first.
-
-## Code Style Guidelines
-
-### Imports
-
-- Use `from __future__ import annotations` at the top of every file
-- Group imports: stdlib → third-party → first-party (`pykorf`)
-- Use explicit imports (no `from module import *`)
-- Use `import tomllib` for TOML files (stdlib in Python 3.13)
-
-### Formatting
-
-- **Ruff** handles all formatting (line-length: 100)
-- Use double quotes for strings
-- Trailing commas are optional
-- Follow existing patterns in the codebase over strict rules
-
-### Types
-
-- Use `TYPE_CHECKING` blocks for imports used only for type hints
-- New code should be fully typed
-- Use modern syntax: `str | None` not `Optional[str]`, `list[int]` not `List[int]`
-- Mypy is configured with relaxed strict mode — focus on practical type safety
-
-### Naming Conventions
-
-- **Modules**: snake_case (`pipe_criteria.py`)
-- **Classes**: PascalCase (`Model`, `ElementService`)
-- **Functions/Methods**: snake_case (`get_element_by_name`)
-- **Constants**: UPPER_SNAKE_CASE (`ELEMENT_REGISTRY`)
-- **Private members**: Leading underscore (`_element_service`)
-- Allow unit suffixes like `kPag`, `kW` in variable names
-
-### Error Handling
-
-- Use specific exception types from `pykorf.exceptions`
-- Prefer `try/except` over `contextlib.suppress` for clarity
-- Log errors with `structlog` before raising where appropriate
-- In FastAPI routes, raise `UseCaseError` or `KorfError`; the registered exception handlers in `app.py` convert these to JSON responses
-
-### Docstrings
-
-- Google style docstrings
-- Required for public modules, classes, and functions
-- OK to skip docstrings for tests and private methods
-
-## Architecture Overview
-
-pyKorf is a toolkit for reading, editing, and writing KORF hydraulic model files (`.kdf`).
-
-### Model Layer (`pykorf/model/`)
-
-Public surface: `Model` (alias `KorfModel`), a facade that delegates to six services:
-
-| Service               | Attribute                     | Responsibility                                         |
-| --------------------- | ----------------------------- | ------------------------------------------------------ |
-| `ElementService`      | `model._element_service`      | CRUD for elements (add, update, delete, copy, move)    |
-| `QueryService`        | `model.query`                 | Filtering, parameter get/set                           |
-| `ConnectivityService` | `model._connectivity_service` | Connect/disconnect elements, pipe reference validation |
-| `LayoutService`       | `model._layout_service`       | XY positioning, visualization                          |
-| `IOService`           | `model._io_service`           | save, to_dataframes, to_excel, from_excel              |
-| `SummaryService`      | `model._summary_service`      | validate() (core layer), summary(), element accessors  |
-
-`Model(path)` parses `.kdf` via `KdfParser` into memory. Changes persist only on `model.io.save()`.
-
-**Validation architecture:** `Model.validate()` combines three layers:
-
-1. **Core** (`SummaryService`) — pipe sizing criteria from KDF SIZ records, title symbol check
-2. **App** (`pykorf.app.validation`) — PMS spec compliance, line-number parsing, pipe properties
-3. **Connectivity** (`ConnectivityService`) — dangling references, unconnected elements
-
-### Element Types (`pykorf/elements/`)
-
-17 typed element types. `ELEMENT_REGISTRY` maps KDF tokens (e.g. `\PIPE`) to classes. Multi-case parameters stored as semicolon-separated strings.
-
-Each element class defines `ETYPE`, `ENAME`, `ALL` (parameter tuple), and a `summary(export=False)` method. The `export=True` format dictates report column names.
-
-### Report System (`pykorf/core/reports/`)
-
-Two reporter implementations share the `Reporter` protocol:
-
-| Reporter         | Data Source            | Use Case                                                              |
-| ---------------- | ---------------------- | --------------------------------------------------------------------- |
-| `PykorfReporter` | KDF model in memory    | Single-case, KDF-only reports                                         |
-| `KorfReporter`   | KORF Excel + KDF model | Multi-case reports with per-case sheets + worst-case summary envelope |
-
-**KORF Excel parser** (`pykorf/core/reports/korf_parser/` package):
-
-- `models.py` — data classes (`CaseInfo`, `PipeData`, `FeedData`, `PumpData`, etc.)
-- `parser.py` — parsing logic with header-based column lookup (`_find_column`, `_extract_row_data`)
-- Column mappings use `(header_name, offset)` tuples to find columns dynamically, with hardcoded offsets for sub-headers (e.g., "Pressures" → +0=DP, +1=Inlet, +2=Outlet)
-
-**ResultExporter** (`exporter.py`): Accepts `model=` (PykorfReporter) or `reporter=` (any Reporter). Multi-case mode creates per-case sheets + a "Summary" envelope sheet with worst-case values per pipe.
-
-### Web Layer (`pykorf/app/api/` + `pykorf/app/frontend/`)
-
-Single-user, localhost-only FastAPI + Vue 3 SPA application. Entry point: `pykorf.__main__:main` → `run_server()` → uvicorn serving `create_app()`. The built Vue SPA lives in `pykorf/app/frontend/dist/`; FastAPI serves it via a catch-all `/{path:path}` route.
-
-**Session State** (`pykorf/app/api/session_state.py`): One model lives in process memory at a time. Async-safe via `asyncio.Lock`. Key functions:
-
-- `load(model, kdf_path)` / `load_sync(...)` — store model after opening
-- `get_model()` / `get_kdf_path()` — async accessors
-- `reload()` / `reload_sync()` — re-parse KDF from disk; call after every `model.io.save()`
-- `is_stale()` / `is_stale_sync()` — detect if KDF changed externally (e.g., by KORF GUI)
-- `flag_reload()` / `pop_reload_flag()` — stale-header flag for `_StaleHeaderMiddleware`
-
-Use `_sync` variants inside `asyncio.to_thread()` callbacks; use async variants in route handlers.
-
-**External Change Detection**: `require_model()` in `pykorf.app.api.deps` auto-reloads when the KDF is stale and sets the `X-Model-Stale: true` response header via middleware. The frontend axios client intercepts this header and shows a reload toast. KORF GUI changes always take priority.
-
-**Route Guards**: Routes requiring an active model use:
-
-```python
-from pykorf.app.api.deps import require_model
-model = await require_model()
+## Tests
+```bash
+uv run pytest
+uv run pytest tests/test_model_api.py
+uv run pytest tests/test_model_api.py::TestModelConstructor::test_model_no_args_creates_default
+uv run pytest -m unit
+uv run pytest -m integration
+uv run pytest -m "not slow"
 ```
 
-401/409 from any route causes the axios client to redirect to `/`.
-
-**Routers** (`pykorf/app/api/routers/`): `session`, `model`, `data`, `settings`, `report`, `browse`, `doc_register`, `preferences`, `references`, `about` — all mounted under `/api/*`.
-
-**Report API** (`pykorf/app/api/routers/report.py`):
-
-- `POST /api/report/generate` — generate single-model report (auto-detects KORF Excel)
-- `GET /api/report/korf-status` — returns KORF Excel path + staleness flag for UI badge
-- `_find_korf_excel(kdf_path)` — auto-detects `{stem}.xlsx` only if xlsx mtime >= kdf mtime
-- `_korf_excel_status(kdf_path)` — returns path regardless of staleness (for UI warning badge)
-
-**Frontend** (`pykorf/app/frontend/`): Vue 3 + Vite + Pinia + Tailwind CSS + TypeScript.
-
-- `src/stores/session.ts` — model status, `skipSpOverride` (doc register search guard), `kdfPath`
-- `src/api/generated/` — Hey API generated TypeScript client and types (auto-generated via `npm run generate-types`)
-- `npm run dev` (from `pykorf/app/frontend/`) — HMR dev server, proxies `/api/*` to localhost:8000
-- `npm run build` — produces `dist/` consumed by FastAPI
-- `scripts/fetch-openapi.mjs` — fetches live OpenAPI schema before type generation
-
-### Import Rules
-
-**Always import from `pykorf.app.operation.config.config`** in routes, not sub-modules (`preferences.py`, `pms.py`, etc.) directly.
-
-## Test Patterns
-
-```python
-SAMPLES_DIR = Path(__file__).parent.parent / "pykorf" / "library"
-model = KorfModel.load(SAMPLES_DIR / "Pumpcases.kdf")
+## Lint / format / type-check
+```bash
+uv run ruff check pykorf tests
+uv run ruff format pykorf tests
+uv run mypy pykorf
 ```
 
-Test markers: `unit`, `integration`, `slow`, `automation` (requires KORF GUI installed).
+## Frontend (run from `pykorf/app/frontend`)
+```bash
+npm run dev
+npm run build
+npm run generate-types
+```
 
-## Critical Rules
+## Docs (optional)
+```bash
+uv run mkdocs serve
+uv run mkdocs build
+```
 
-- **NEVER** launch a new KORF process. Always `Application().connect(path="korf.exe")`.
-- **NEVER** use hardcoded strings for element types/params. Use `pykorf.elements` constants.
-- **NEVER** delete files to resolve errors. Fix or rewrite tests; don't delete them.
-- **NEVER** start the backend server yourself — always ask the user to run `uv run pykorf` first.
-- All model operations are **in-memory**. Persistent only on `model.save()`.
-- Use `uv` for all package management and running commands.
-- After `model.io.save()`, always call `session_state.reload_sync()` (inside `asyncio.to_thread`) so in-memory state matches disk.
-- **KORF data priority**: If KDF file is modified externally (e.g., by KORF GUI), pyKorf automatically reloads from disk on next navigation. Unsaved pyKorf changes are discarded — users should save before switching applications.
-- Element `summary(export=True)` output is the single source of truth for report column names.
+## High-level architecture
+## Core model and parser
+- `pykorf/core/model/` exposes `Model`, a service-composed facade (element/query/connectivity/layout/io/summary).
+- `Model` changes are in-memory until `save()`/`io.save()` persists to disk.
+- `pykorf/core/parser.py` (`KdfParser`) owns `.kdf` parse/serialize fidelity.
+- `pykorf/core/elements/` defines typed element classes and `ELEMENT_REGISTRY`.
 
-## Guardrails
+## API and session lifecycle
+- `pykorf/app/api/app.py` creates the FastAPI app and mounts routers under `/api/*`.
+- `pykorf/app/api/session_state.py` stores a single active model in-process.
+- `pykorf/app/api/deps.py::require_model()` auto-reloads stale KDF state and coordinates stale notifications.
+- Most mutating routes save model changes and then reload session state.
 
-- **No Auto-Commits**: Don't commit on behalf of the user unless explicitly instructed. Always ask before committing, and summarize changes in the commit message.
-- **Global Research**: Before refactoring, use grep/glob to map all dependencies and callsites.
-- **Safe Rollbacks**: Use `git stash` or branches for complex changes.
-- **Exhaustive Validation**: After any change, run `uv run pytest`, `uv run ruff check pykorf tests`, and `uv run mypy pykorf`.
-- **Multi-File Changes**: When a feature spans 2+ files, present options with tradeoffs before implementing.
-- **Definition of Done**: Conclude sessions with: files changed, architectural decisions, and validation suite output.
+## Business workflows
+- `pykorf/app/operation/data_import/`: PMS/HMB import + line-number parsing.
+- `pykorf/app/operation/integration/sizing_criteria.py`: criteria lookup/prediction/application.
+- `pykorf/app/operation/processor/`: processing orchestration and batch report flows.
+- `pykorf/app/operation/project/`: sidecar metadata (`.pykorf`) such as references/justifications.
+- Use config accessors via `pykorf.app.operation.config.config` in route-level code.
+
+## Reporting system
+- `pykorf/core/reports/reporter.py` defines the reporter protocol and single-case extraction path.
+- `pykorf/core/reports/exporter.py` handles workbook generation/styling, validation sheet, and references.
+- Multi-case mode depends on KORF Excel pairing (`{kdf_stem}.xlsx`) and staleness checks in `app/api/routers/report.py`.
+
+## Frontend integration
+- Frontend is Vue + Vite + Pinia in `pykorf/app/frontend`.
+- `vite.config.ts` proxies `/api` to backend.
+- `src/api/client.ts` handles stale-model header and session-related API behavior.
+- Stores (`src/stores/session.ts`, `src/stores/model.ts`) mirror backend session/model contracts.
+
+## Agent behavior (carry-over from previous AGENTS guidance)
+- No auto-commits: do not commit unless explicitly asked.
+- Prefer global impact analysis before refactors: identify call sites/dependencies first.
+- Use non-destructive workflows: avoid deleting files to “fix” failures.
+- Keep changes architecture-consistent rather than patching isolated symptoms.
+- After meaningful code changes, run the full validation set:
+  - `uv run pytest`
+  - `uv run ruff check pykorf tests`
+  - `uv run mypy pykorf`
+- For API paths that mutate persisted model data, ensure in-memory session state is reloaded after save operations.

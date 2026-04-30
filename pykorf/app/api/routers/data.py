@@ -91,7 +91,6 @@ async def apply_pms(req: ApplyPmsRequest) -> ApplyDataResponse:
     from pykorf.app.operation.config.config import set_pms_excel_path
     from pykorf.app.operation.integration.sharepoint import get_local_path_from_sp_url
 
-    # Convert SharePoint URL to local path if needed
     if pms_source_str.startswith("https://"):
         converted = get_local_path_from_sp_url(pms_source_str)
         if converted is None:
@@ -134,7 +133,6 @@ async def apply_hmb(req: ApplyHmbRequest) -> ApplyDataResponse:
 
     from pykorf.app.operation.integration.sharepoint import get_local_path_from_sp_url
 
-    # Convert SharePoint URL to local path if needed
     if hmb_source_str.startswith("https://"):
         converted = get_local_path_from_sp_url(hmb_source_str)
         if converted is None:

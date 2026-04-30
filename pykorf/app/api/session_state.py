@@ -18,6 +18,7 @@ _kdf_path: Path | None = None
 _model_mtime: float | None = None
 _lock = asyncio.Lock()
 _was_reloaded: bool = False  # Set when reload() is triggered by stale detection
+_project_info_checked: bool = False  # Whether user has confirmed project info this session
 
 
 async def load(model: Model, kdf_path: Path) -> None:
@@ -27,11 +28,12 @@ async def load(model: Model, kdf_path: Path) -> None:
         model: Loaded KorfModel instance.
         kdf_path: Source .kdf file path.
     """
-    global _model, _kdf_path, _model_mtime
+    global _model, _kdf_path, _model_mtime, _project_info_checked
     async with _lock:
         _model = model
         _kdf_path = kdf_path
         _model_mtime = kdf_path.stat().st_mtime if kdf_path.exists() else None
+        _project_info_checked = False
 
 
 async def get_model() -> Model | None:
@@ -58,7 +60,7 @@ async def reload() -> None:
     Call this after any operation that writes the KDF to disk.
     Does nothing if no model is currently loaded.
     """
-    global _model, _model_mtime
+    global _model, _model_mtime, _project_info_checked
     async with _lock:
         if _kdf_path is None:
             return
@@ -66,6 +68,7 @@ async def reload() -> None:
 
         _model = Model(_kdf_path)
         _model_mtime = _kdf_path.stat().st_mtime if _kdf_path.exists() else None
+        _project_info_checked = False
 
 
 def flag_reload() -> None:
@@ -88,13 +91,25 @@ def pop_reload_flag() -> bool:
     return val
 
 
+def set_project_info_checked(checked: bool) -> None:
+    """Mark that user has confirmed project info for this session."""
+    global _project_info_checked
+    _project_info_checked = checked
+
+
+def is_project_info_checked() -> bool:
+    """Return whether user has confirmed project info this session."""
+    return _project_info_checked
+
+
 async def clear() -> None:
     """Unload the current model."""
-    global _model, _kdf_path, _model_mtime
+    global _model, _kdf_path, _model_mtime, _project_info_checked
     async with _lock:
         _model = None
         _kdf_path = None
         _model_mtime = None
+        _project_info_checked = False
 
 
 async def is_stale() -> bool:
@@ -142,13 +157,14 @@ def reload_sync() -> None:
     (e.g. from a function passed to asyncio.to_thread that needs
     to update state after model.save()).
     """
-    global _model, _model_mtime
+    global _model, _model_mtime, _project_info_checked
     if _kdf_path is None:
         return
     from pykorf.core.model import Model
 
     _model = Model(_kdf_path)
     _model_mtime = _kdf_path.stat().st_mtime if _kdf_path.exists() else None
+    _project_info_checked = False
 
 
 def load_sync(model: Model, kdf_path: Path) -> None:
@@ -156,18 +172,20 @@ def load_sync(model: Model, kdf_path: Path) -> None:
 
     Only call this from code that runs inside the same event loop.
     """
-    global _model, _kdf_path, _model_mtime
+    global _model, _kdf_path, _model_mtime, _project_info_checked
     _model = model
     _kdf_path = kdf_path
     _model_mtime = kdf_path.stat().st_mtime if kdf_path.exists() else None
+    _project_info_checked = False
 
 
 def clear_sync() -> None:
     """Sync: Unload the current model."""
-    global _model, _kdf_path, _model_mtime
+    global _model, _kdf_path, _model_mtime, _project_info_checked
     _model = None
     _kdf_path = None
     _model_mtime = None
+    _project_info_checked = False
 
 
 def is_stale_sync() -> bool:

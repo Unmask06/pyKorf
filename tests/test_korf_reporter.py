@@ -980,7 +980,12 @@ class TestMultiCaseSummaryBuilder:
             assert "valve_name" in valve_info
             assert "parameters" in valve_info
             assert "case_values" in valve_info
-            assert valve_info["parameters"] == ["Flow Rate", "Inlet Pressure", "Differential Pressure", "Opening"]
+            assert valve_info["parameters"] == [
+                "Flow Rate",
+                "Inlet Pressure",
+                "Differential Pressure",
+                "Opening",
+            ]
             assert "Rated" in valve_info["case_values"]
             assert "Case2" in valve_info["case_values"]
 

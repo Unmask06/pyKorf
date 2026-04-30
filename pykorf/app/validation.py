@@ -263,7 +263,7 @@ class AppValidationService:
                     expected_id_m = (od_mm - 2 * wall_mm) / 1000.0
                     actual_id_val = float(actual_id)
                     if abs(actual_id_val - expected_id_m) > 0.001:
-                        mismatches.append(f"ID={expected_id_m:.1f}mm")
+                        mismatches.append(f"ID={expected_id_m:.1f} m")
                 except (ValueError, TypeError):
                     pass
             elif expected_sch and actual_sch:
