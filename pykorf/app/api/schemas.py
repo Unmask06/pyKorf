@@ -122,6 +122,7 @@ class ProjectInfoRequiredResponse(BaseModel):
     project_info: ProjectInfoResponse
     smart_defaults: SmartDefaultsResponse
     required_fields: list[str] = ["company1", "project_name1", "prepared_by"]
+    incomplete_fields: list[str] = []
 
 
 class SaveResponse(BaseModel):

@@ -69,14 +69,15 @@ def _is_korf_default(field: str, value: str) -> bool:
     return value in KORF_DEFAULTS.get(field, [])
 
 
-def _is_project_info_complete_raw(model, smart_defaults: SmartDefaultsResponse) -> bool:
+def _is_project_info_complete_raw(model, smart_defaults: SmartDefaultsResponse) -> tuple[bool, list[str]]:
     """Check if required project info fields are filled with real values.
 
-    Reads raw values directly from model.general and compares against
-    smart_defaults. Returns False if any required field is empty or
-    still matches the smart default (i.e., never manually set).
+    Reads raw values directly from model.general. Returns a tuple of
+    (is_complete, incomplete_fields) where incomplete_fields contains
+    the names of fields that are empty or whitespace-only.
     """
     gen = model.general
+    incomplete: list[str] = []
     for field in REQUIRED_PROJECT_INFO_FIELDS:
         raw_value = getattr(gen, {
             "company1": "company",
@@ -84,10 +85,9 @@ def _is_project_info_complete_raw(model, smart_defaults: SmartDefaultsResponse) 
             "project_name1": "project",
             "prepared_by": "prepared_by",
         }.get(field, field), "") or ""
-        default_value = getattr(smart_defaults, field, "") or ""
-        if not raw_value or raw_value.strip() == default_value.strip():
-            return False
-    return True
+        if not raw_value.strip():
+            incomplete.append(field)
+    return (len(incomplete) == 0, incomplete)
 
 
 async def check_project_info_or_return(
@@ -97,10 +97,10 @@ async def check_project_info_or_return(
 
     Returns ProjectInfoRequiredResponse if:
     - Session hasn't confirmed project info yet
-    - Required fields are empty or still match smart defaults
+    - Required fields are empty or whitespace
 
     Call this at the start of mutating operations. If it returns a response,
-    return that response instead of proceeding with the operation.
+    return that responses instead of proceeding with the operation.
     """
     from pykorf.app.operation.project.project_info import build_smart_defaults
 
@@ -110,7 +110,9 @@ async def check_project_info_or_return(
     smart_defaults = SmartDefaultsResponse(**build_smart_defaults(kdf_path))
     project_info = _build_project_info(model, kdf_path, smart_defaults)
 
-    if _is_project_info_complete_raw(model, smart_defaults):
+    is_complete, incomplete_fields = _is_project_info_complete_raw(model, smart_defaults)
+
+    if is_complete:
         _sess.set_project_info_checked(True)
         return None
 
@@ -119,6 +121,7 @@ async def check_project_info_or_return(
         project_info=project_info,
         smart_defaults=smart_defaults,
         required_fields=REQUIRED_PROJECT_INFO_FIELDS,
+        incomplete_fields=incomplete_fields,
     )
 
 
