@@ -37,8 +37,11 @@ async def persist(model) -> None:
     """Save model changes to disk and reload session state.
 
     Centralizes the save + reload pattern used by every mutating endpoint.
+    model.save() is run in a thread to avoid blocking the event loop.
     """
-    model.save()
+    import asyncio
+
+    await asyncio.to_thread(model.save)
     await _sess.reload()
 
 

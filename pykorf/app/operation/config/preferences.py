@@ -36,7 +36,11 @@ def load_config() -> dict[str, Any]:
         return {}
     try:
         with open(config_path, encoding="utf-8") as f:
-            _config_cache = json.load(f)  # type: ignore[no-any-return]
+            data = json.load(f)
+            if isinstance(data, dict):
+                _config_cache = data
+            else:
+                _config_cache = {}
             return _config_cache.copy()
     except (json.JSONDecodeError, OSError):
         _config_cache = {}
@@ -57,10 +61,13 @@ def save_config(config: dict[str, Any]) -> None:
     try:
         # Write atomically: temp file then replace to avoid corruption.
         tmp_path = config_path.with_suffix(".tmp")
-        with open(tmp_path, "w", encoding="utf-8") as f:
-            json.dump(config, f, indent=2)
-        tmp_path.replace(config_path)
-        _config_cache = config.copy()
+        try:
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                json.dump(config, f, indent=2)
+            tmp_path.replace(config_path)
+            _config_cache = config.copy()
+        finally:
+            tmp_path.unlink(missing_ok=True)
     except OSError as e:
         raise UseCaseError(f"Failed to save configuration: {e}") from e
 
