@@ -33,6 +33,15 @@ async def require_model():
     return model
 
 
+async def persist(model) -> None:
+    """Save model changes to disk and reload session state.
+
+    Centralizes the save + reload pattern used by every mutating endpoint.
+    """
+    model.save()
+    await _sess.reload()
+
+
 def pipe_names(model) -> list[str]:
     """Return sorted pipe name list for tables and dropdowns.
 
@@ -45,3 +54,11 @@ def pipe_names(model) -> list[str]:
     return sorted(
         model.pipes[idx].name for idx in range(1, len(model.pipes) + 1) if model.pipes[idx].name
     )
+
+
+def is_real_pipe(pipe) -> bool:
+    """Return True if the pipe is not a dummy pipe.
+
+    Dummy pipes have names starting with 'd' (e.g. 'd1').
+    """
+    return bool(pipe.name and not pipe.name.startswith("d"))
