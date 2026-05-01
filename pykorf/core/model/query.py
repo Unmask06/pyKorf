@@ -11,7 +11,7 @@ import fnmatch
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from pykorf.core.elements import BaseElement, Common
+from pykorf.core.elements import BaseElement
 from pykorf.core.exceptions import ErrorContext, ParameterError
 from pykorf.core.parser import KdfRecord
 
@@ -199,11 +199,11 @@ class QueryService:
         for param_name, value in params.items():
             param_key = param_name.upper()
 
-            if param_key in (Common.X, Common.Y):
+            if param_key in (BaseElement.X, BaseElement.Y):
                 # Get current position and update the specific coordinate
-                xy_rec = elem.get_param(Common.XY)
+                xy_rec = elem.get_param(BaseElement.XY)
                 if xy_rec and len(xy_rec.values) >= 2:
-                    if param_key == Common.X:
+                    if param_key == BaseElement.X:
                         xy_rec.values[0] = str(value)
                     else:
                         xy_rec.values[1] = str(value)

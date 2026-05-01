@@ -27,7 +27,7 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from pykorf.core.elements import Expand
+from pykorf.core.elements import Expander
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -124,34 +124,6 @@ def apply_dummy_pipe_settings(model: Model) -> list[str]:
             errors.append(error_msg)
             continue
 
-            # Apply the settings - format matches apply_pms pattern
-            # LEN needs 2 values: [value, unit]
-            # ID needs 3 values: [value1, value2, unit] based on template
-            # LBL needs 3 values: [on/off, x_offset, font_size] - 0=off, -1=on
-            params: dict[str, Any] = {
-                Pipe.LEN: [0.1, "m"],
-                Pipe.SCH: "ID",
-                Pipe.ID: [str(id_meters), str(id_meters), "m"],
-                Pipe.LBL: [0, 0, 50],  # Turn off labels (0=off, 0=x_offset, 50=font_size)
-            }
-
-            try:
-                model.set_params(pipe_name, params)
-                affected_names.append(pipe_name)
-                logger.info(
-                    "Dummy pipe %s: LEN=0.1m, ID=%sm (1500mm), SCH=ID, LBL=OFF",
-                    pipe_name,
-                    id_meters,
-                )
-            except ParameterError as e:
-                error_msg = f"Validation error on {pipe_name}: {e}"
-                logger.error(error_msg)
-                errors.append(error_msg)
-            except Exception as e:
-                error_msg = f"Error setting params on {pipe_name}: {e}"
-                logger.error(error_msg)
-                errors.append(error_msg)
-
     # 2. Iterate through all junctions (index >= 1)
     for idx, junc in model.junctions.items():
         if idx == 0:
@@ -178,7 +150,7 @@ def apply_dummy_pipe_settings(model: Model) -> list[str]:
             continue
 
         try:
-            model.set_params(expander_name, {Expand.LBL: [0, 0, 50]})
+            model.set_params(expander_name, {Expander.LBL: [0, 0, 50]})
             affected_names.append(expander_name)
             logger.info("Expander/Reducer %s: LBL=OFF", expander_name)
         except Exception as e:
