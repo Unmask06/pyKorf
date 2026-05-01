@@ -429,7 +429,7 @@ onMounted(() => {
               </th>
               <th style="width: 60px;" class="pk-table-head-cell">#</th>
               <th style="width: 180px;" class="pk-table-head-cell">Pipe</th>
-              <th style="width: 70px;" class="pk-table-head-cell-center">NPS<br /><small class="font-normal text-gray-400">inch</small></th>
+              <th style="width: 70px;" class="pk-table-head-cell-center">Size<br /><small class="font-normal text-gray-400">inch</small></th>
               <th style="width: 60px;" class="pk-table-head-cell-center">Length<br /><small class="font-normal text-gray-400">m</small></th>
               <th style="width: 130px;" class="pk-table-head-cell">State</th>
               <th style="min-width: 180px;" class="pk-table-head-cell">Criteria</th>
