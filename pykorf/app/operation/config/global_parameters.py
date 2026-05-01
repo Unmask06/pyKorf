@@ -80,7 +80,6 @@ def apply_dummy_pipe_settings(model: Model) -> list[str]:
     from pykorf.core.exceptions import ParameterError
 
     affected_names: list[str] = []
-    errors: list[str] = []
 
     # ID in meters (1500mm = 1.5m)
     id_meters = 1.5
@@ -116,12 +115,10 @@ def apply_dummy_pipe_settings(model: Model) -> list[str]:
         except ParameterError as e:
             error_msg = f"Validation error on {pipe_name}: {e}"
             logger.error(error_msg)
-            errors.append(error_msg)
             continue
         except Exception as e:
             error_msg = f"Error updating {pipe_name}: {e}"
             logger.error(error_msg)
-            errors.append(error_msg)
             continue
 
     # 2. Iterate through all junctions (index >= 1)
@@ -139,7 +136,6 @@ def apply_dummy_pipe_settings(model: Model) -> list[str]:
         except Exception as e:
             error_msg = f"Error setting LBL on junction {junc_name}: {e}"
             logger.error(error_msg)
-            errors.append(error_msg)
 
     # 3. Iterate through all Expanders/Reducers (index >= 1)
     for idx, expander in model.expanders.items():
@@ -156,7 +152,6 @@ def apply_dummy_pipe_settings(model: Model) -> list[str]:
         except Exception as e:
             error_msg = f"Error setting LBL on expander/reducer {expander_name}: {e}"
             logger.error(error_msg)
-            errors.append(error_msg)
 
     return affected_names
 
@@ -177,7 +172,6 @@ def apply_dp_margin_settings(model: Model, margin: float) -> list[str]:
     from pykorf.core.exceptions import ParameterError
 
     affected_pipes: list[str] = []
-    errors: list[str] = []
 
     for idx in range(1, len(model.pipes) + 1):
         pipe = model.pipes[idx]
@@ -196,11 +190,9 @@ def apply_dp_margin_settings(model: Model, margin: float) -> list[str]:
         except ParameterError as e:
             error_msg = f"Validation error on {pipe_name}: {e}"
             logger.error(error_msg)
-            errors.append(error_msg)
         except Exception as e:
             error_msg = f"Error setting params on {pipe_name}: {e}"
             logger.error(error_msg)
-            errors.append(error_msg)
 
     return affected_pipes
 
@@ -226,7 +218,6 @@ def apply_rename_line_settings(model: Model) -> list[str]:
     from pykorf.core.exceptions import ParameterError
 
     affected_pipes: list[str] = []
-    errors: list[str] = []
     used_names: set[str] = set()
 
     for idx in range(1, len(model.pipes) + 1):
@@ -304,11 +295,9 @@ def apply_rename_line_settings(model: Model) -> list[str]:
         except ParameterError as e:
             error_msg = f"Validation error on {pipe_name}: {e}"
             logger.error(error_msg)
-            errors.append(error_msg)
         except Exception as e:
             error_msg = f"Error setting params on {pipe_name}: {e}"
             logger.error(error_msg)
-            errors.append(error_msg)
 
     return affected_pipes
 
@@ -333,7 +322,6 @@ def apply_pump_shutoff_settings(model: Model, margin: float) -> list[str]:
         return []
 
     affected_pumps: list[str] = []
-    errors: list[str] = []
 
     for idx in range(1, len(model.pumps) + 1):
         pump = model.pumps[idx]
@@ -364,11 +352,9 @@ def apply_pump_shutoff_settings(model: Model, margin: float) -> list[str]:
         except ParameterError as e:
             error_msg = f"Validation error on {pump_name}: {e}"
             logger.error(error_msg)
-            errors.append(error_msg)
         except Exception as e:
             error_msg = f"Error setting params on {pump_name}: {e}"
             logger.error(error_msg)
-            errors.append(error_msg)
 
     return affected_pumps
 
@@ -393,7 +379,6 @@ def apply_min_pump_elevation(model: Model, elevation: float) -> list[str]:
         return []
 
     affected_pumps: list[str] = []
-    errors: list[str] = []
 
     for idx in range(1, len(model.pumps) + 1):
         pump = model.pumps[idx]
@@ -426,11 +411,9 @@ def apply_min_pump_elevation(model: Model, elevation: float) -> list[str]:
         except ParameterError as e:
             error_msg = f"Validation error on {pump_name}: {e}"
             logger.error(error_msg)
-            errors.append(error_msg)
         except Exception as e:
             error_msg = f"Error setting params on {pump_name}: {e}"
             logger.error(error_msg)
-            errors.append(error_msg)
 
     return affected_pumps
 
