@@ -5,24 +5,20 @@ from __future__ import annotations
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
-from pykorf.app.exceptions import UseCaseError
-from pykorf.core.exceptions import KorfError
+def _json_error_handler(status_code: int):
+    """Factory for simple JSON error handlers."""
+
+    async def handler(request: Request, exc: Exception) -> JSONResponse:
+        return JSONResponse(
+            status_code=status_code,
+            content={"detail": str(exc)},
+        )
+
+    return handler
 
 
-async def use_case_error_handler(request: Request, exc: UseCaseError) -> JSONResponse:
-    """Handle UseCaseError exceptions."""
-    return JSONResponse(
-        status_code=400,
-        content={"detail": str(exc)},
-    )
-
-
-async def korf_error_handler(request: Request, exc: KorfError) -> JSONResponse:
-    """Handle core KorfError exceptions."""
-    return JSONResponse(
-        status_code=400,
-        content={"detail": str(exc)},
-    )
+use_case_error_handler = _json_error_handler(400)
+korf_error_handler = _json_error_handler(400)
 
 
 async def generic_error_handler(request: Request, exc: Exception) -> JSONResponse:
