@@ -11,6 +11,7 @@ from fastapi import APIRouter, HTTPException
 from pykorf.app.api import session_state as _sess
 from pykorf.app.api.schemas import (
     EmptyRequest,
+    OpenInKorfResponse,
     SessionCloseResponse,
     SessionOpenRequest,
     SessionReloadResponse,
@@ -119,3 +120,24 @@ async def close_model(_: EmptyRequest) -> SessionCloseResponse:
     """Unload the current model."""
     await _sess.clear()
     return SessionCloseResponse(message="Model unloaded")
+
+
+@router.post("/open-in-korf", response_model=OpenInKorfResponse, operation_id="openModelInKorf")
+async def open_model_in_korf() -> OpenInKorfResponse:
+    """Open the current KDF file in the external Korf application."""
+    kdf_path = await _sess.get_kdf_path()
+    if kdf_path is None:
+        raise HTTPException(status_code=400, detail="No model loaded.")
+
+    try:
+        from pykorf.app.automation import launch_ui
+
+        launch_ui(kdf_path)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+    except Exception as exc:
+        logger.error("Failed to launch Korf", exc_info=exc)
+        raise HTTPException(status_code=500, detail=f"Failed to launch Korf: {exc}")
+
+    logger.info("Korf launched", kdf_path=str(kdf_path))
+    return OpenInKorfResponse(message="Korf opened with current model.")

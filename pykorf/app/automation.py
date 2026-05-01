@@ -27,6 +27,7 @@ re-acquired before each action to stay robust against dialog changes.
 
 from __future__ import annotations
 
+import subprocess
 import time
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -329,3 +330,26 @@ def open_ui(
     app = KorfApp.connect(korf_path=korf_path)
     app.reload_model(file_path)
     return app
+
+
+def launch_ui(
+    file_path: str | Path,
+    korf_path: str = KORF_PATH_DEFAULT,
+) -> None:
+    """Open *file_path* in a **new** KORF instance, launching the app if needed.
+
+    Unlike :func:`open_ui`, this function spawns a fresh KORF process.
+    Use it when you want to view the model in a separate window without
+    touching the already-running instance.
+
+    Parameters
+    ----------
+    file_path:
+        Path to the ``.kdf`` file to open.
+    korf_path:
+        Path to the KORF executable.
+    """
+    exe = Path(korf_path)
+    if not exe.is_file():
+        raise FileNotFoundError(f"Korf executable not found at {korf_path}")
+    subprocess.Popen([str(exe), str(Path(file_path).resolve())])

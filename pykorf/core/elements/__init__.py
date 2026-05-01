@@ -37,8 +37,8 @@ Gen = General
 Hx = HeatExchanger
 Comp = Compressor
 Misc = MiscEquipment
-Expand = Expander
-Junc = Junction
+Expander = Expander
+Junction = Junction
 Prod = Product
 Check = CheckValve
 Orifice = FlowOrifice
@@ -162,7 +162,7 @@ __all__ = [
     "Comp",
     "Compressor",
     "Element",
-    "Expand",
+    "Expander",
     "Expander",
     "Feed",
     "FlowOrifice",
@@ -170,7 +170,7 @@ __all__ = [
     "General",
     "HeatExchanger",
     "Hx",
-    "Junc",
+    "Junction",
     "Junction",
     "Misc",
     "MiscEquipment",

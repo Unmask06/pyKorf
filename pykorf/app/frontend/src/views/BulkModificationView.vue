@@ -468,33 +468,4 @@ onMounted(async () => {
 .setting-card-unselected {
   border-color: #dee2e6;
 }
-/* Form toggle switch */
-.form-check-input {
-  width: 2em;
-  height: 1em;
-  border-radius: 1em;
-  appearance: none;
-  background: #adb5bd;
-  cursor: pointer;
-  position: relative;
-  transition: background 0.15s;
-  flex-shrink: 0;
-}
-.form-check-input:checked {
-  background: #3b82f6;
-}
-.form-check-input::after {
-  content: '';
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: calc(1em - 4px);
-  height: calc(1em - 4px);
-  border-radius: 50%;
-  background: white;
-  transition: transform 0.15s;
-}
-.form-check-input:checked::after {
-  transform: translateX(1em);
-}
 </style>

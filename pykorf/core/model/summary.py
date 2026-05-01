@@ -177,14 +177,15 @@ class SummaryService:
         except (ValueError, TypeError):
             pass
 
-        try:
-            vel_crit = float(pipe.sizing_velocity_criteria)
-            if vel_crit > 0:
-                vel_calc = float(pipe.velocity[0]) if pipe.velocity else 0.0
-                if vel_calc > vel_crit:
-                    failures.append(f"Vel({vel_calc:.2f} > {vel_crit})")
-        except (ValueError, TypeError):
-            pass
+        vel_calc = float(pipe.velocity[0]) if pipe.velocity else 0.0
+
+        max_vel = pipe.max_velocity_criteria
+        if max_vel is not None and max_vel > 0 and vel_calc > max_vel:
+            failures.append(f"Vel({vel_calc:.2f} > {max_vel})")
+
+        min_vel = pipe.min_velocity_criteria
+        if min_vel is not None and min_vel > 0 and vel_calc < min_vel:
+            failures.append(f"Vel({vel_calc:.2f} < {min_vel})")
 
         rho_v2_calc = pipe.rho_v2
         if rho_v2_calc is not None:

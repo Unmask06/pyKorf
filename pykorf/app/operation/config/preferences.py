@@ -16,6 +16,9 @@ from typing import Any
 from pykorf.app.exceptions import UseCaseError
 from pykorf.app.operation.config.paths import get_config_path
 
+# In-memory config cache to avoid reading from disk on every getter call.
+_config_cache: dict[str, Any] | None = None
+
 
 def load_config() -> dict[str, Any]:
     """Load user configuration from disk.
@@ -23,13 +26,24 @@ def load_config() -> dict[str, Any]:
     Returns:
         Dictionary of configuration values. Returns empty dict if file doesn't exist.
     """
+    global _config_cache
+    if _config_cache is not None:
+        return _config_cache.copy()
+
     config_path = get_config_path()
     if not config_path.exists():
+        _config_cache = {}
         return {}
     try:
         with open(config_path, encoding="utf-8") as f:
-            return json.load(f)  # type: ignore[no-any-return]
+            data = json.load(f)
+            if isinstance(data, dict):
+                _config_cache = data
+            else:
+                _config_cache = {}
+            return _config_cache.copy()
     except (json.JSONDecodeError, OSError):
+        _config_cache = {}
         return {}
 
 
@@ -42,10 +56,18 @@ def save_config(config: dict[str, Any]) -> None:
     Raises:
         UseCaseError: If saving the configuration file fails.
     """
+    global _config_cache
     config_path = get_config_path()
     try:
-        with open(config_path, "w", encoding="utf-8") as f:
-            json.dump(config, f, indent=2)
+        # Write atomically: temp file then replace to avoid corruption.
+        tmp_path = config_path.with_suffix(".tmp")
+        try:
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                json.dump(config, f, indent=2)
+            tmp_path.replace(config_path)
+            _config_cache = config.copy()
+        finally:
+            tmp_path.unlink(missing_ok=True)
     except OSError as e:
         raise UseCaseError(f"Failed to save configuration: {e}") from e
 

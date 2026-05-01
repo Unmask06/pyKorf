@@ -153,6 +153,28 @@
         }
       }
     },
+    "/api/session/open-in-korf": {
+      "post": {
+        "tags": [
+          "session"
+        ],
+        "summary": "Open Model In Korf",
+        "description": "Open the current KDF file in the external Korf application.",
+        "operationId": "openModelInKorf",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenInKorfResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/model/summary": {
       "get": {
         "tags": [
@@ -2868,6 +2890,19 @@
         ],
         "title": "OkResponse",
         "description": "Generic success/failure response for simple write operations."
+      },
+      "OpenInKorfResponse": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "OpenInKorfResponse"
       },
       "PinnedFolderRequest": {
         "properties": {
