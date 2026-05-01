@@ -336,6 +336,17 @@ class Pipe(BaseElement):
             return 0.0
         return math.pi * (self.id_m / 2) ** 2 * self.length_m
 
+    def format_line_size(self) -> str:
+        r"""Return formatted line size: NPS with \" suffix, or ID converted to inches."""
+        nps = self.diameter_inch
+        if nps and nps.strip():
+            return f'{nps}"'
+        id_m = self.id_m
+        if id_m and id_m > 0:
+            id_inch = id_m * 39.3701
+            return str(round(id_inch, 2))
+        return ""
+
     # ------------------------------------------------------------------
     # Fluid properties (liquid)
     # ------------------------------------------------------------------
@@ -862,7 +873,7 @@ class Pipe(BaseElement):
                 "Pipe Name": self.name,
                 "Criteria Code": self.criteria_code,
                 "Line Number": parsed_line.raw_line_number if parsed_line else "",
-                "Line Size": self.diameter_inch or "",
+                "Line Size": self.format_line_size(),
                 self.format_export_header("Line Length", line_length_unit): line_length,
                 "Volume [m³]": round(self.volume_m3, 4) if self.volume_m3 > 0 else None,
                 self.format_export_header("dP max Criteria", dp_crit_unit): dp_crit_val,

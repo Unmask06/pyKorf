@@ -268,11 +268,13 @@ class KorfReporter(_BaseReporter):
                 vol = pipe_model.volume_m3
                 volume = round(vol, 4) if vol > 0 else None
 
+            line_size = self._format_line_size(pd_pipe, pipe_model)
+
             row = {
                 "Pipe Name": pd_pipe.name,
                 "Criteria Code": criteria_code,
                 "Line Number": line_number,
-                "Line Size": pd_pipe.size or "",
+                "Line Size": line_size,
                 f"Line Length [{length_unit}]": pd_pipe.length,
                 "Volume [m³]": volume,
                 f"dP max Criteria [{dp_crit_unit}]": pd_pipe.dp_length_criteria_max,
@@ -321,6 +323,18 @@ class KorfReporter(_BaseReporter):
             ):
                 return "FAIL"
         return "PASS"
+
+    def _format_line_size(self, pd_pipe: PipeData, pipe_model) -> str:
+        r"""Return formatted line size: NPS with \" suffix, or ID converted to inches."""
+        size = pd_pipe.size
+        if size and size.strip():
+            return f'{size}"'
+        if pipe_model and pipe_model.index != 0:
+            id_m = pipe_model.id_m
+            if id_m and id_m > 0:
+                id_inch = id_m * 39.3701
+                return str(round(id_inch, 2))
+        return ""
 
     # ── PUMPS ──────────────────────────────────────────────────────────
 
