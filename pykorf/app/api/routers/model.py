@@ -9,7 +9,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 
 from pykorf.app.api import session_state as _sess
-from pykorf.app.api.deps import pipe_names, require_model
+from pykorf.app.api.deps import is_real_pipe, pipe_names, require_model
 from pykorf.app.api.schemas import (
     BulkCopyRequest,
     BulkCopyResponse,
@@ -319,8 +319,7 @@ async def predict_criteria(_req: PredictCriteriaRequest) -> PredictCriteriaRespo
     pipes = _get_pipes_list(model)
     existing = _map_pipecriteria_entry(model, pipes)
 
-    predicted, predict_result = _handle_predict_action(model, pipes, existing)
-    _ = predicted
+    _, predict_result = _handle_predict_action(model, pipes, existing)
     return predict_result
 
 
@@ -400,7 +399,7 @@ def _get_pipes_list(model) -> list[tuple[int, str]]:
     return [
         (idx, model.pipes[idx].name)
         for idx in range(1, len(model.pipes) + 1)
-        if model.pipes[idx].name and not model.pipes[idx].name.startswith("d")
+        if is_real_pipe(model.pipes[idx])
     ]
 
 
@@ -497,7 +496,7 @@ def _build_pipe_lookup(model):
     return {
         model.pipes[i].name: model.pipes[i]
         for i in range(1, len(model.pipes) + 1)
-        if model.pipes[i].name and not model.pipes[i].name.startswith("d")
+        if is_real_pipe(model.pipes[i])
     }
 
 
@@ -618,10 +617,7 @@ def _load_units_data() -> dict[str, dict[str, UnitConversionInfo]]:
 
 
 def _get_pipe_by_name(model, pipe_name):
-    for i in range(1, len(model.pipes) + 1):
-        if model.pipes[i].name == pipe_name:
-            return model.pipes[i]
-    return None
+    return _build_pipe_lookup(model).get(pipe_name)
 
 
 def _get_pipe_size_and_pressure(pipe):
