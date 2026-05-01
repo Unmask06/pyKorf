@@ -8,6 +8,7 @@ import {
   Grid3X3,
   Home,
   Info,
+  Monitor,
   Settings,
 } from "lucide-vue-next";
 import { computed } from "vue";
@@ -15,6 +16,7 @@ import { useRouter } from "vue-router";
 import { useSessionStore } from "../stores/session";
 import { useToastStore } from "../composables/useToast";
 import { api } from "../api/client";
+import { openModelInKorf } from "../api/generated/sdk.gen";
 
 const session = useSessionStore();
 const router = useRouter();
@@ -32,6 +34,15 @@ async function handleUpdateClick() {
     await api.post("/api/session/shutdown");
   } catch (error) {
     toast.error("Failed to shutdown server. Please close manually.");
+  }
+}
+
+async function openInKorf() {
+  try {
+    const res = await openModelInKorf();
+    toast.success(res.data?.message || "Korf opened");
+  } catch (error: any) {
+    toast.error(error?.response?.data?.detail || "Failed to open in Korf");
   }
 }
 </script>
@@ -70,6 +81,16 @@ async function handleUpdateClick() {
       <Clock class="w-3 h-3 inline" style="font-size: 0.7rem" />
       {{ session.kdfMtime }}
     </span>
+
+    <!-- Open in Korf -->
+    <button
+      v-if="isLoaded"
+      class="navbar-link ml-1"
+      title="Open in Korf application"
+      @click="openInKorf"
+    >
+      <Monitor class="w-4 h-4" /> Korf
+    </button>
 
     <!-- Update badge -->
     <button

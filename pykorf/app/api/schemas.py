@@ -579,3 +579,7 @@ class AboutResponse(BaseModel):
 
 class ShutdownResponse(BaseModel):
     status: str
+
+
+class OpenInKorfResponse(BaseModel):
+    message: str

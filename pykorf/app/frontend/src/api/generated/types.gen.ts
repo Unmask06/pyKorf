@@ -686,6 +686,16 @@ export type OkResponse = {
 };
 
 /**
+ * OpenInKorfResponse
+ */
+export type OpenInKorfResponse = {
+    /**
+     * Message
+     */
+    message: string;
+};
+
+/**
  * PinnedFolderRequest
  */
 export type PinnedFolderRequest = {
@@ -1716,6 +1726,22 @@ export type CloseModelResponses = {
 };
 
 export type CloseModelResponse = CloseModelResponses[keyof CloseModelResponses];
+
+export type OpenModelInKorfData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/session/open-in-korf';
+};
+
+export type OpenModelInKorfResponses = {
+    /**
+     * Successful Response
+     */
+    200: OpenInKorfResponse;
+};
+
+export type OpenModelInKorfResponse = OpenModelInKorfResponses[keyof OpenModelInKorfResponses];
 
 export type GetModelSummaryData = {
     body?: never;

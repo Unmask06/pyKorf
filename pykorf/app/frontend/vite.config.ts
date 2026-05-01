@@ -9,7 +9,7 @@ export default defineConfig({
     tailwindcss(),
     heyApiPlugin({
       config: {
-        input: '../../../openapi.json',
+        input: '../openapi.json',
         output: 'src/api/generated',
         watch: false,
         plugins: [

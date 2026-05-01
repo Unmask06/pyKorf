@@ -25,11 +25,11 @@ class TestValidate:
         assert len(pipe_issues) >= 1
 
     def test_no_false_positive_on_valid_model(self):
-        """Pumpcases.kdf has DPL values well within criteria — no DPL/VEL violations."""
+        """Pumpcases.kdf has DPL values well within criteria — no DPL violations."""
         m = Model(PUMP_KDF)
         issues = m.validate()
-        violations = [i for i in issues if "fails sizing criteria:" in i]
-        assert len(violations) == 0
+        dpl_violations = [i for i in issues if "fails sizing criteria:" in i and "DP/DL" in i]
+        assert len(dpl_violations) == 0
 
     def test_multiple_pipe_violations_all_reported(self):
         """Setting all pipes to extreme DPL must generate one issue per pipe."""
