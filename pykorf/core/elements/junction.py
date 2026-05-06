@@ -17,6 +17,8 @@ class Junction(BaseElement):
     XY = "XY"  # [icon_x, icon_y, nozzle1_x, nozzle1_y, ..., nozzle4_x, nozzle4_y] - 8 coordinate pairs (icon + 4 nozzle positions)
     PRES = "PRES"  # [pres_str, pres_num, unit]
     LBL = "LBL"  # [on/off, x-offset, y-offset]
+    NOZI = "NOZI"  # [nozzle_id, pipe_idx, elevation, unit] pipe_idx is 0 for unconnected nozzle
+    NOZO = "NOZO"  # [nozzle_id, pipe_idx, elevation, unit] pipe_idx is 0 for unconnected nozzle
 
     ALL = (
         "NUM",

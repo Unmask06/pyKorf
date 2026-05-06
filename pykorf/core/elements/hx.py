@@ -31,6 +31,8 @@ class HeatExchanger(BaseElement):
     K = "K"  # [k_factor_str]
     DPELEV = "DPELEV"  # [elevation_dp, unit]
     Q = "Q"  # [heat_duty_str, heat_duty_num, unit]
+    NOZI = "NOZI"  # [pipe_idx, elevation, unit]
+    NOZO = "NOZO"  # [pipe_idx, elevation, unit]
 
     ALL = (
         "NUM",
