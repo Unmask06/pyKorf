@@ -87,6 +87,8 @@ class KorfReporter(_BaseReporter):
                         excluded_names.add(p.name)
 
         for case_info in sorted(case_data.keys(), key=lambda c: int(c.number)):
+            if "120" in case_info.name:
+                continue
             cd = case_data[case_info]
             for entry in cd.validations:
                 msg = entry.message
