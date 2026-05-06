@@ -31,7 +31,7 @@ class Feed(BaseElement):
     DP = "DP"  # [dp_str, dp_num, unit]
     EQN = "EQN"  # [eqn_type, ..., ..., ..., ...]
     CHOKE = "CHOKE"  # [choke_bool]
-    NOZL = "NOZL"  # [pipe_idx,pipe_elev,unit,nozl_press...,unit] 
+    NOZL = "NOZL"  # [pipe_idx,pipe_elev,unit,nozl_press...,unit]
 
 
     ALL = (
