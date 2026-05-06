@@ -24,6 +24,8 @@ class MiscEquipment(BaseElement):
     DPELEV = "DPELEV"  # [elevation_dp, unit]
     VOLBAL = "VOLBAL"  # [vol_balance_bool]
     MASBAL = "MASBAL"  # [mass_balance_bool]
+    NOZI = "NOZI"  # [pipe_idx, elevation, unit]
+    NOZO = "NOZO"  # [pipe_idx, elevation, unit]
 
     ALL = (
         "NUM",

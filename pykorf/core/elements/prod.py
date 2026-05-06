@@ -31,6 +31,7 @@ class Product(BaseElement):
     DP = "DP"  # [dp_str, dp_num, unit]
     EQN = "EQN"  # [eqn_type, ..., ..., ..., ...]
     CHOKE = "CHOKE"  # [choke_bool]
+    NOZL = "NOZL"  # [pipe_idx,pipe_elev,unit,nozl_press...,unit]
 
     ALL = (
         "NUM",
@@ -43,7 +44,7 @@ class Product(BaseElement):
         TYPE,
         ELEV,
         LEVELH,
-        "NOZL",
+        NOZL,
         PRES,
         PIN,
         DP,
@@ -98,7 +99,7 @@ class Product(BaseElement):
     @property
     def nozzle_pipe_index(self) -> int:
         try:
-            return int(self._scalar(self.NOZ, 0))
+            return int(self._scalar(self.NOZL, 0))
         except (TypeError, ValueError):
             return 0
 

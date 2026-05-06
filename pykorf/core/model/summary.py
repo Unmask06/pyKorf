@@ -86,6 +86,7 @@ class SummaryService:
 
         self._validate_pipe_sizing_criteria(issues)
         self._validate_pipe_criteria_codes(issues)
+        self._validate_pump_vessel_pressure(issues)
         issues.extend(self._check_title_symbol())
 
         return issues
@@ -157,6 +158,22 @@ class SummaryService:
             criteria_code = pipe.criteria_code
             if not criteria_code or not criteria_code.strip():
                 issues.append(f"Pipe '{name}' (idx {pipe_idx}): missing criteria code")
+
+    def _validate_pump_vessel_pressure(self, issues: list[str]) -> None:
+        """Validate that pump suction vessel design pressure is specified."""
+        for pump_idx, pump in self.model.pumps.items():
+            if pump_idx == 0:
+                continue
+
+            if not hasattr(pump, "suction_vessel_max_pressure_kPag"):
+                continue
+
+            vessel_pres = pump.suction_max_pressure_kPag
+            if vessel_pres <= 0:
+                issues.append(
+                    f"Pump '{pump.name}' (idx {pump_idx}): "
+                    f"vessel pressure must be greater than 0 (found {vessel_pres:.2f} kPag)"
+                )
 
     def _build_criteria_failure_message(self, issues: list[str], name: str, pipe) -> None:
         """Build detailed failure message for a pipe that failed sizing criteria.

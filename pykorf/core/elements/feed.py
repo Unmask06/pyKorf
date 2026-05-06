@@ -31,6 +31,8 @@ class Feed(BaseElement):
     DP = "DP"  # [dp_str, dp_num, unit]
     EQN = "EQN"  # [eqn_type, ..., ..., ..., ...]
     CHOKE = "CHOKE"  # [choke_bool]
+    NOZL = "NOZL"  # [pipe_idx,pipe_elev,unit,nozl_press...,unit]
+
 
     ALL = (
         "NUM",
@@ -43,7 +45,7 @@ class Feed(BaseElement):
         TYPE,
         ELEV,
         LEVELH,
-        "NOZL",
+        NOZL,
         PRES,
         POUT,
         DP,
@@ -111,7 +113,7 @@ class Feed(BaseElement):
     def nozzle_pipe_index(self) -> int:
         """Index of the pipe connected at this feed."""
         try:
-            return int(self._scalar(self.NOZ, 0))
+            return int(self._scalar(self.NOZL, 0))
         except (TypeError, ValueError):
             return 0
 

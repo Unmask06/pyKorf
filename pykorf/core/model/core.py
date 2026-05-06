@@ -19,7 +19,7 @@ from __future__ import annotations
 import logging
 import warnings
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeVar
 
 from pykorf.core.elements import (
     BaseElement,
@@ -44,12 +44,14 @@ from pykorf.core.elements import (
 from pykorf.core.exceptions import ElementNotFound
 from pykorf.core.parser import KdfParser
 
+T = TypeVar("T")
+
 _DEFAULT_TEMPLATE = Path(__file__).resolve().parent.parent.parent / "library" / "New.kdf"
 
 _logger = logging.getLogger(__name__)
 
 
-class ElementCollection(dict[int, Any]):
+class ElementCollection(dict[int, T]):
     """Dict subclass for element collections where __len__ excludes index 0.
 
     KORF models use index 0 as the template record, with real instances
@@ -107,31 +109,33 @@ class _ModelBase:
         """Populate element dict-of-dicts from the parser records."""
         self.general = General(self._parser)
 
-        self.pipes: ElementCollection = self._build(Element.PIPE, Pipe)
-        self.feeds: ElementCollection = self._build(Element.FEED, Feed)
-        self.products: ElementCollection = self._build(Element.PROD, Product)
-        self.pumps: ElementCollection = self._build(Element.PUMP, Pump)
-        self.valves: ElementCollection = self._build(Element.VALVE, Valve)
-        self.check_valves: ElementCollection = self._build(Element.CHECK, CheckValve)
-        self.orifices: ElementCollection = self._build(Element.ORIFICE, FlowOrifice)
-        self.exchangers: ElementCollection = self._build(Element.HX, HeatExchanger)
-        self.compressors: ElementCollection = self._build(Element.COMP, Compressor)
-        self.misc_equipment: ElementCollection = self._build(Element.MISC, MiscEquipment)
-        self.expanders: ElementCollection = self._build(Element.EXPAND, Expander)
-        self.junctions: ElementCollection = self._build(Element.JUNC, Junction)
-        self.tees: ElementCollection = self._build(Element.TEE, Tee)
-        self.vessels: ElementCollection = self._build(Element.VESSEL, Vessel)
-        self.pipedata: ElementCollection = self._build(Element.PIPEDATA, PipeData)
+        self.pipes: ElementCollection[Pipe] = self._build(Element.PIPE, Pipe)
+        self.feeds: ElementCollection[Feed] = self._build(Element.FEED, Feed)
+        self.products: ElementCollection[Product] = self._build(Element.PROD, Product)
+        self.pumps: ElementCollection[Pump] = self._build(Element.PUMP, Pump)
+        self.valves: ElementCollection[Valve] = self._build(Element.VALVE, Valve)
+        self.check_valves: ElementCollection[CheckValve] = self._build(Element.CHECK, CheckValve)
+        self.orifices: ElementCollection[FlowOrifice] = self._build(Element.ORIFICE, FlowOrifice)
+        self.exchangers: ElementCollection[HeatExchanger] = self._build(Element.HX, HeatExchanger)
+        self.compressors: ElementCollection[Compressor] = self._build(Element.COMP, Compressor)
+        self.misc_equipment: ElementCollection[MiscEquipment] = self._build(
+            Element.MISC, MiscEquipment
+        )
+        self.expanders: ElementCollection[Expander] = self._build(Element.EXPAND, Expander)
+        self.junctions: ElementCollection[Junction] = self._build(Element.JUNC, Junction)
+        self.tees: ElementCollection[Tee] = self._build(Element.TEE, Tee)
+        self.vessels: ElementCollection[Vessel] = self._build(Element.VESSEL, Vessel)
+        self.pipedata: ElementCollection[PipeData] = self._build(Element.PIPEDATA, PipeData)
 
         self._rebuild_name_map()
 
-    def _build(self, etype: str, cls) -> ElementCollection:
+    def _build(self, etype: str, cls: type[Any]) -> ElementCollection[Any]:
         """Collect all distinct indices for *etype* from the record list.
 
         Return a dict mapping index -> element object.
         """
         seen = set()
-        result = ElementCollection()
+        result: ElementCollection[Any] = ElementCollection()
         for rec in self._parser.records:
             if rec.element_type == etype and rec.index not in seen:
                 seen.add(rec.index)
@@ -149,7 +153,7 @@ class _ModelBase:
                 if name:
                     self._name_map[name] = elem
 
-    def _all_collections(self) -> list[ElementCollection]:
+    def _all_collections(self) -> list[ElementCollection[Any]]:
         """Return all element collection dicts."""
         return [
             self.pipes,
@@ -169,7 +173,7 @@ class _ModelBase:
             self.pipedata,
         ]
 
-    def _collection_for_etype(self, etype: str) -> ElementCollection | None:
+    def _collection_for_etype(self, etype: str) -> ElementCollection[Any] | None:
         """Return the collection dict for a given element type keyword."""
         et = etype.upper()
         if et == Element.PIPE:

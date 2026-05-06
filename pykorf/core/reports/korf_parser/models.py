@@ -166,6 +166,7 @@ class ExchangerData:
     description: str = ""
     type: str = ""
     side: str = ""
+    elevation_in: float | None = None
     duty: float | None = None
     dp: float | None = None
     pressure_in: float | None = None

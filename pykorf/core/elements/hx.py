@@ -31,6 +31,8 @@ class HeatExchanger(BaseElement):
     K = "K"  # [k_factor_str]
     DPELEV = "DPELEV"  # [elevation_dp, unit]
     Q = "Q"  # [heat_duty_str, heat_duty_num, unit]
+    NOZI = "NOZI"  # [pipe_idx, elevation, unit]
+    NOZO = "NOZO"  # [pipe_idx, elevation, unit]
 
     ALL = (
         "NUM",
@@ -118,6 +120,14 @@ class HeatExchanger(BaseElement):
         except (TypeError, ValueError):
             return 0
 
+    @property
+    def inlet_elevation_m(self) -> float:
+        """Inlet nozzle elevation in metres."""
+        try:
+            return float(self._scalar(self.NOZI, 1))
+        except (TypeError, ValueError):
+            return 0.0
+
     def summary(self, export: bool = False) -> dict:
         if export:
             dp_val, dp_unit = self.get_value_and_unit(HeatExchanger.DP, val_index=1, unit_index=-1)
@@ -127,11 +137,15 @@ class HeatExchanger(BaseElement):
             pout_val, pout_unit = self.get_value_and_unit(
                 HeatExchanger.POUT, val_index=1, unit_index=-1
             )
+            elev_in_val, elev_in_unit = self.get_value_and_unit(
+                HeatExchanger.NOZI, val_index=1, unit_index=-1
+            )
 
             return {
                 "Heat Exchanger Name": self.name,
                 "Type": self.hx_type,
                 "Side": self.side,
+                self.format_export_header("Inlet Elevation", elev_in_unit): elev_in_val,
                 self.format_export_header("Pressure Drop", dp_unit): dp_val,
                 self.format_export_header("Inlet Pressure", pin_unit): pin_val,
                 self.format_export_header("Outlet Pressure", pout_unit): pout_val,

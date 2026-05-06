@@ -87,6 +87,8 @@ class KorfReporter(_BaseReporter):
                         excluded_names.add(p.name)
 
         for case_info in sorted(case_data.keys(), key=lambda c: int(c.number)):
+            if "120" in case_info.name:
+                continue
             cd = case_data[case_info]
             for entry in cd.validations:
                 msg = entry.message
@@ -433,7 +435,7 @@ class KorfReporter(_BaseReporter):
 
     def _extract_exchangers(self, cd: KorfCaseData) -> list[dict]:
         # Aligns with HeatExchanger.summary(export=True):
-        # Heat Exchanger Name, Type, Side, Pressure Drop,
+        # Heat Exchanger Name, Type, Side, Inlet Elevation, Pressure Drop,
         # Inlet Pressure, Outlet Pressure
         results = []
         for hx in cd.exchangers:
@@ -441,6 +443,7 @@ class KorfReporter(_BaseReporter):
                 "Heat Exchanger Name": hx.name,
                 "Type": hx.type,
                 "Side": hx.side,
+                "Inlet Elevation [m]": hx.elevation_in,
                 "Pressure Drop [bar]": hx.dp,
                 "Inlet Pressure [barg]": hx.pressure_in,
                 "Outlet Pressure [barg]": hx.pressure_out,

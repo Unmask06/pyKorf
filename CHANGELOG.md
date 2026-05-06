@@ -5,15 +5,16 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.32.0] - 2026-05-01
+## [0.33.0] - 2026-05-06
 
 ### What's New
 
-- A new "Korf" button in the navigation bar opens the current model directly in the Korf application, letting you switch between pyKorf and Korf with a single click.
+- Heat exchanger reports now include the inlet elevation for each exchanger.
+- Reports skip validation entries for cases with "120" in the case name, allowing test/120% cases to pass through without warnings.
 
 ### Fixed
 
-- Velocity criteria validation now checks both the minimum and maximum velocity limits, with clear messages showing the actual and limit values when a pipe fails.
+- Nozzle parameters are now properly organized across all core element types, resolving attribute errors when copying elements.
 
 ## [0.31.0] - 2026-05-01
 
