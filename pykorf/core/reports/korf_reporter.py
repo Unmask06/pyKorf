@@ -433,7 +433,7 @@ class KorfReporter(_BaseReporter):
 
     def _extract_exchangers(self, cd: KorfCaseData) -> list[dict]:
         # Aligns with HeatExchanger.summary(export=True):
-        # Heat Exchanger Name, Type, Side, Pressure Drop,
+        # Heat Exchanger Name, Type, Side, Inlet Elevation, Pressure Drop,
         # Inlet Pressure, Outlet Pressure
         results = []
         for hx in cd.exchangers:
@@ -441,6 +441,7 @@ class KorfReporter(_BaseReporter):
                 "Heat Exchanger Name": hx.name,
                 "Type": hx.type,
                 "Side": hx.side,
+                "Inlet Elevation [m]": hx.elevation_in,
                 "Pressure Drop [bar]": hx.dp,
                 "Inlet Pressure [barg]": hx.pressure_in,
                 "Outlet Pressure [barg]": hx.pressure_out,

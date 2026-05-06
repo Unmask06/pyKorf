@@ -161,4 +161,10 @@ class TestHeatExchanger:
         s = m.exchangers[1].summary(export=True)
         assert "Heat Exchanger Name" in s
         assert "Type" in s
+        assert "Inlet Elevation" in str(s)
         assert "Pressure Drop" in str(s)
+
+    def test_hx_inlet_elevation(self):
+        m = self._model()
+        assert hasattr(m.exchangers[1], "inlet_elevation_m")
+        assert m.exchangers[1].inlet_elevation_m == 0.0
