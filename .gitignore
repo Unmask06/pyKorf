@@ -59,4 +59,5 @@ examples/examples/
 *.local*
 .local/
 settings.local.jsonnul
-*.opencode
+*node_modules/
+*package-lock.json
