@@ -28,7 +28,6 @@ import hashlib
 import json
 import logging
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -354,22 +353,28 @@ def apply_update(update_info: dict) -> int:
         log.debug(f"Error: {e}")
         return 1
 
+    # Read old deps BEFORE overlay (to compare properly)
+    old_deps = parse_dependencies(APPDATA_DIR / "pyproject.toml")
+
     overlay_update(extract_dir)
 
     zip_path.unlink(missing_ok=True)
     shutil.rmtree(extract_dir, ignore_errors=True)
 
-    old_sig = read_signature()
-    new_sig = compute_signature()
+    # Read new deps AFTER overlay
+    new_deps = parse_dependencies(APPDATA_DIR / "pyproject.toml")
 
-    if old_sig != new_sig:
-        log.info("Dependencies changed, rebuilding venv...")
-        result = repair_venv()
+    if old_deps != new_deps:
+        log.info("Dependencies changed, syncing...")
+        result = sync_dependencies()
         if result != 0:
-            log.error("Venv rebuild failed after update")
-            return 1
+            log.error("Dependency sync failed, attempting full rebuild...")
+            result = repair_venv()
+            if result != 0:
+                log.error("Venv rebuild failed after update")
+                return 1
     else:
-        log.debug("Dependencies unchanged, skipping venv rebuild")
+        log.info("Dependencies unchanged, skipping venv operations")
 
     write_signature()
     write_version(update_info.get("latest", ""))
@@ -504,20 +509,117 @@ def venv_is_valid() -> bool:
     return current_sig == stored_sig
 
 
-def compute_signature() -> str:
-    """Hash dependency-relevant state."""
-    pyproject_path = APPDATA_DIR / "pyproject.toml"
+def parse_dependencies(pyproject_path: Path) -> dict[str, list[str]]:
+    """Extract dependencies from pyproject.toml, normalized and sorted.
 
+    Returns dict with keys: 'main', 'dev', 'docs', etc. from dependency-groups.
+    """
     if not pyproject_path.exists():
+        return {}
+
+    try:
+        import tomllib
+
+        with open(pyproject_path, "rb") as f:
+            data = tomllib.load(f)
+    except Exception:
+        return {}
+
+    deps: dict[str, list[str]] = {}
+
+    # Main dependencies from [project.dependencies]
+    main_deps = data.get("project", {}).get("dependencies", [])
+    if main_deps:
+        deps["main"] = sorted([d.strip() for d in main_deps if d.strip()])
+
+    # Dependency groups from [dependency-groups]
+    dep_groups = data.get("dependency-groups", {})
+    for group_name, group_deps in dep_groups.items():
+        if group_deps:
+            deps[group_name] = sorted([d.strip() for d in group_deps if d.strip()])
+
+    # Default groups from [tool.uv]
+    uv_config = data.get("tool", {}).get("uv", {})
+    default_groups = uv_config.get("default-groups", [])
+    if default_groups:
+        deps["uv_default_groups"] = sorted(default_groups)
+
+    return deps
+
+
+def compute_signature() -> str:
+    """Hash only dependency-relevant content (ignores version, formatting, comments)."""
+    deps = parse_dependencies(APPDATA_DIR / "pyproject.toml")
+
+    if not deps:
         return ""
 
-    content = pyproject_path.read_bytes()
-    content = re.sub(rb'^version = "[^"]+"\n', b"", content, flags=re.MULTILINE)
-
+    # Include Python version in signature since deps may differ per version
     py_version = f"{sys.version_info.major}.{sys.version_info.minor}"
-    content += f"\nPY={py_version}\n".encode()
 
-    return hashlib.sha256(content).hexdigest()
+    # Create canonical string representation
+    parts = [f"PY={py_version}"]
+    for key in sorted(deps.keys()):
+        parts.append(f"[{key}]")
+        parts.extend(deps[key])
+
+    content = "\n".join(parts)
+    return hashlib.sha256(content.encode()).hexdigest()
+
+
+def deps_changed() -> bool:
+    """Check if dependencies changed since last signature was stored."""
+    current_sig = compute_signature()
+    stored_sig = read_signature()
+
+    if not stored_sig:
+        return True
+
+    return current_sig != stored_sig
+
+
+def sync_dependencies() -> int:
+    """Sync dependencies using uv sync (incremental, no full rebuild).
+
+    Tries uv sync first, falls back to pip install if uv unavailable.
+    """
+    python_exe = VENV_DIR / "Scripts" / "python.exe"
+
+    if not python_exe.exists():
+        log.error("Python not found in venv")
+        return 1
+
+    # Try uv sync first (much faster, handles incremental updates)
+    try:
+        result = subprocess.run(
+            ["uv", "sync"],
+            cwd=str(APPDATA_DIR),
+            capture_output=True,
+            timeout=300,
+        )
+        if result.returncode == 0:
+            log.debug("Dependencies synced using uv")
+            return 0
+        log.debug(f"uv sync failed with code {result.returncode}")
+    except (FileNotFoundError, subprocess.TimeoutExpired) as e:
+        log.debug(f"uv sync unavailable or timed out: {e}")
+
+    # Fallback: pip install -e . --quiet
+    try:
+        result = subprocess.run(
+            [str(python_exe), "-m", "pip", "install", "-e", str(APPDATA_DIR), "--quiet"],
+            cwd=str(APPDATA_DIR),
+            capture_output=True,
+            timeout=300,
+        )
+        if result.returncode == 0:
+            log.debug("Dependencies synced using pip")
+            return 0
+        log.error(f"pip install failed with code {result.returncode}")
+        return 1
+    except subprocess.TimeoutExpired:
+        log.error("pip install timed out")
+        return 1
 
 
 def start_app(port: int, debug: bool, no_debug: bool) -> int:

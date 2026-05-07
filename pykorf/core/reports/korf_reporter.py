@@ -363,7 +363,9 @@ class KorfReporter(_BaseReporter):
                 "Differential Pressure [bar]": pump.dp,
                 "Differential Head [m]": pump.head,
                 "NPSH Available [m]": pump.npsha_calc,
-                "Hydraulic Power [kW]": pump.power,
+                "Shaft Power [kW]": pump.power,
+                "Efficiency [%]": pump.efficiency,
+                "Hydraulic Power [kW]": pump.hydraulic_power,
                 "Section_Performance Characteristics": "Performance Characteristics",
                 "Raise to Shutoff DP []": pump.raise_to_shutoff_dp,
                 "Suc Vessel Design Pressure [barg]": pump.vessel_pressure,
@@ -426,7 +428,9 @@ class KorfReporter(_BaseReporter):
                 "Discharge Pressure [barg]": comp.pressure_out,
                 "Differential Pressure [bar]": comp.dp,
                 "Gas Volumetric Flow [m³/h]": comp.flow,
-                "Power [kW]": comp.power,
+                "Shaft Power [kW]": comp.power,
+                "Efficiency [%]": comp.efficiency,
+                "Hydraulic Power [kW]": comp.hydraulic_power,
             }
             results.append(row)
         return results
