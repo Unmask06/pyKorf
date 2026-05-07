@@ -15,7 +15,6 @@ from pykorf.app.api.schemas import (
     GenerateReportRequest,
     ImportRequest,
     KorfExcelStatusResponse,
-    ProjectInfoRequiredResponse,
     ReportResponse,
     StatusMessage,
 )
@@ -23,6 +22,22 @@ from pykorf.core.log import get_logger
 
 logger = get_logger(__name__)
 router = APIRouter()
+
+MAX_STALENESS_OVERRIDE_SECONDS = 60.0
+
+
+def get_staleness_seconds(kdf_path: Path, korf_excel_path: Path) -> float | None:
+    """Return seconds between KDF and KORF Excel modification times.
+
+    Positive value means KORF Excel is stale (KDF modified after Excel).
+    Returns None if either file doesn't exist or stats can't be read.
+    """
+    try:
+        kdf_mtime = kdf_path.stat().st_mtime
+        korf_mtime = korf_excel_path.stat().st_mtime
+        return max(0.0, kdf_mtime - korf_mtime)
+    except OSError:
+        return None
 
 
 def _find_korf_excel(kdf_path: Path) -> Path | None:
@@ -50,19 +65,38 @@ def _korf_excel_status(kdf_path: Path) -> KorfExcelStatusResponse:
 
     Returns the xlsx path if it exists (regardless of staleness), and
     ``is_stale=True`` when the xlsx is older than the kdf.
+
+    Also returns:
+    - staleness_seconds: How many seconds stale (0 if not stale)
+    - can_override: True if stale but within 60s threshold
     """
     candidate = kdf_path.parent / f"{kdf_path.stem}.xlsx"
     if not candidate.is_file():
-        return KorfExcelStatusResponse(korf_excel_path=None, is_stale=False)
-    try:
-        kdf_mtime = kdf_path.stat().st_mtime
-        xlsx_mtime = candidate.stat().st_mtime
         return KorfExcelStatusResponse(
-            korf_excel_path=str(candidate),
-            is_stale=xlsx_mtime < kdf_mtime,
+            korf_excel_path=None,
+            is_stale=False,
+            staleness_seconds=None,
+            can_override=False,
         )
-    except OSError:
-        return KorfExcelStatusResponse(korf_excel_path=None, is_stale=False)
+
+    staleness_seconds = get_staleness_seconds(kdf_path, candidate)
+    if staleness_seconds is None:
+        return KorfExcelStatusResponse(
+            korf_excel_path=None,
+            is_stale=False,
+            staleness_seconds=None,
+            can_override=False,
+        )
+
+    is_stale = staleness_seconds > 0
+    can_override = is_stale and staleness_seconds <= MAX_STALENESS_OVERRIDE_SECONDS
+
+    return KorfExcelStatusResponse(
+        korf_excel_path=str(candidate),
+        is_stale=is_stale,
+        staleness_seconds=staleness_seconds,
+        can_override=can_override,
+    )
 
 
 @router.get("/korf-status", response_model=KorfExcelStatusResponse, operation_id="korfExcelStatus")
@@ -80,12 +114,12 @@ async def korf_excel_status() -> KorfExcelStatusResponse:
 
 @router.post(
     "/generate",
-    response_model=ProjectInfoRequiredResponse | ReportResponse,
+    response_model=ReportResponse,
     operation_id="generateReport",
 )
 async def generate_report(
     req: GenerateReportRequest,
-) -> ProjectInfoRequiredResponse | ReportResponse:
+) -> ReportResponse:
     """Generate a single-model Excel report.
 
     Uses ``mode`` to select the reporter:
@@ -95,12 +129,6 @@ async def generate_report(
     """
     model = await require_model()
     kdf_path = await _sess.get_kdf_path()
-
-    from pykorf.app.api.routers.model import check_project_info_or_return
-
-    check_result = await check_project_info_or_return(model, kdf_path)
-    if check_result:
-        return check_result
 
     kdf_folder = str(kdf_path.parent) if kdf_path else ""
     kdf_stem = kdf_path.stem if kdf_path else "model"
@@ -141,39 +169,96 @@ async def generate_report(
             is_multi = req.mode == "multi"
 
             if is_multi:
-                korf_excel_path = _find_korf_excel(kdf_path) if kdf_path else None
+                # Check for KORF Excel (even if stale)
+                korf_excel_path = kdf_path.parent / f"{kdf_path.stem}.xlsx" if kdf_path else None
 
-                if not korf_excel_path:
+                if not korf_excel_path or not korf_excel_path.is_file():
                     errors.append(
                         "Multi-case mode requires a KORF Excel report alongside the KDF "
                         f"(expected: {kdf_path.stem}.xlsx in the same folder). "
                         "Generate it from KORF first."
                     )
                 else:
-                    from pykorf.core.reports.korf_reporter import KorfReporter
+                    # Check staleness with threshold
+                    staleness_seconds = get_staleness_seconds(kdf_path, korf_excel_path)
 
-                    def _do_export():
-                        reporter = KorfReporter(
-                            excel_path=korf_excel_path,
-                            model=model,
-                            basis=basis,
-                            remarks=remarks,
-                            hold=hold,
-                            references=references,
+                    if staleness_seconds and staleness_seconds > MAX_STALENESS_OVERRIDE_SECONDS:
+                        # Hard block - exceeds 60s threshold
+                        errors.append(
+                            f"KORF Excel is {int(staleness_seconds)}s stale (exceeds "
+                            f"{int(MAX_STALENESS_OVERRIDE_SECONDS)}s threshold). "
+                            "Regenerate from KORF first."
                         )
-                        exporter = ResultExporter(reporter=reporter)
-                        exporter.export_to_excel(str(report_file), pipe_columns=req.pipe_columns)
+                    elif staleness_seconds and staleness_seconds > 0:
+                        # Soft block - within 60s threshold, need override
+                        if not req.skip_stale_check:
+                            errors.append(
+                                f"KORF Excel is {int(staleness_seconds)}s stale. "
+                                f"Check 'Proceed with stale data' to override "
+                                f"(max {int(MAX_STALENESS_OVERRIDE_SECONDS)}s)."
+                            )
+                        else:
+                            # User requested override - proceed with warning
+                            messages.append(
+                                StatusMessage(
+                                    type="warning",
+                                    message=f"Proceeding with {int(staleness_seconds)}s stale KORF Excel.",
+                                )
+                            )
+                            from pykorf.core.reports.korf_reporter import KorfReporter
 
-                    await asyncio.to_thread(_do_export)
-                    messages.append(
-                        StatusMessage(
-                            type="success",
-                            message=(
-                                f"Multi-case report saved to: {report_file} "
-                                f"(source: {korf_excel_path.name})"
-                            ),
+                            def _do_export():
+                                reporter = KorfReporter(
+                                    excel_path=korf_excel_path,
+                                    model=model,
+                                    basis=basis,
+                                    remarks=remarks,
+                                    hold=hold,
+                                    references=references,
+                                )
+                                exporter = ResultExporter(reporter=reporter)
+                                exporter.export_to_excel(
+                                    str(report_file), pipe_columns=req.pipe_columns
+                                )
+
+                            await asyncio.to_thread(_do_export)
+                            messages.append(
+                                StatusMessage(
+                                    type="success",
+                                    message=(
+                                        f"Multi-case report saved to: {report_file} "
+                                        f"(source: {korf_excel_path.name})"
+                                    ),
+                                )
+                            )
+                    else:
+                        # Not stale - proceed normally
+                        from pykorf.core.reports.korf_reporter import KorfReporter
+
+                        def _do_export():
+                            reporter = KorfReporter(
+                                excel_path=korf_excel_path,
+                                model=model,
+                                basis=basis,
+                                remarks=remarks,
+                                hold=hold,
+                                references=references,
+                            )
+                            exporter = ResultExporter(reporter=reporter)
+                            exporter.export_to_excel(
+                                str(report_file), pipe_columns=req.pipe_columns
+                            )
+
+                        await asyncio.to_thread(_do_export)
+                        messages.append(
+                            StatusMessage(
+                                type="success",
+                                message=(
+                                    f"Multi-case report saved to: {report_file} "
+                                    f"(source: {korf_excel_path.name})"
+                                ),
+                            )
                         )
-                    )
             else:
                 from pykorf.app.operation.project.pykorf_file import get_justifications
 

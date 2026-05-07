@@ -137,21 +137,21 @@ _EXCHANGER_COL_MAP: dict[str, int] = {
     "side": 4,
     "duty": 5,
     "elevation_in": 6,
-    "dp": 10,
-    "pressure_in": 11,
-    "pressure_out": 12,
-    "pipe_inlet": 13,
-    "pipe_outlet": 14,
+    "dp": 11,
+    "pressure_in": 13,
+    "pressure_out": 14,
+    "pipe_inlet": 15,
+    "pipe_outlet": 16,
 }
 
 _MISC_COL_MAP: dict[str, int] = {
     "name": 1,
     "description": 2,
-    "dp": 10,
-    "pressure_in": 11,
-    "pressure_out": 12,
-    "pipe_inlet": 13,
-    "pipe_outlet": 14,
+    "dp": 12,
+    "pressure_in": 14,
+    "pressure_out": 15,
+    "pipe_inlet": 16,
+    "pipe_outlet": 17,
 }
 
 

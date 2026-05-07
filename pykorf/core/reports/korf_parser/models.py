@@ -141,6 +141,15 @@ class PumpData:
         except (ZeroDivisionError, ValueError):
             return None
 
+    @property
+    def hydraulic_power(self) -> float | None:
+        """Computed hydraulic power [kW] = shaft_power * efficiency."""
+        if self.power is None or self.efficiency is None:
+            return None
+        if self.efficiency <= 0:
+            return None
+        return self.power * self.efficiency
+
 
 @dataclass
 class CompressorData:
@@ -156,6 +165,15 @@ class CompressorData:
     power: float | None = None
     efficiency: float | None = None
     head: float | None = None
+
+    @property
+    def hydraulic_power(self) -> float | None:
+        """Computed hydraulic power [kW] = shaft_power * efficiency."""
+        if self.power is None or self.efficiency is None:
+            return None
+        if self.efficiency <= 0:
+            return None
+        return self.power * self.efficiency
 
 
 @dataclass

@@ -20,6 +20,7 @@ import {
   getErrorMessage,
   korfExcelStatus,
   saveProjectInfo,
+  getProjectInfoStatus,
 } from "../api/client";
 import PathBrowser from "../components/PathBrowser.vue";
 import ReportCustomizeModal from "../components/ReportCustomizeModal.vue";
@@ -34,27 +35,26 @@ import type {
   SmartDefaultsResponse,
 } from "../api/generated/types.gen";
 
-interface ProjectInfoRequiredResponse {
-  project_info_required: boolean;
-  project_info: ProjectInfoResponse;
-  smart_defaults: SmartDefaultsResponse;
-  required_fields: string[];
-  incomplete_fields: string[];
-}
-
 const session = useSessionStore();
 const toast = useToastStore();
 
-// Project info modal (shown when report generation requires project info)
+// Project info modal
 const showProjectInfoModal = ref(false);
-const projectInfoRequired = ref<ProjectInfoRequiredResponse | null>(null);
 const editInfo = ref<ProjectInfoResponse>({});
 const smartDefaults = ref<SmartDefaultsResponse>({});
-const pendingReportReq = ref<GenerateReportRequest | null>(null);
 const saveProjectLoading = ref(false);
 
+// Project info status (non-blocking)
+const projectInfoIncomplete = ref(false);
+const incompleteFields = ref<string[]>([]);
+
+// Staleness override checkbox
+const skipStaleCheck = ref(false);
+const stalenessSeconds = ref<number | null | undefined>(null);
+const canOverrideStale = ref(false);
+
 function isRequired(field: string): boolean {
-  return projectInfoRequired.value?.incomplete_fields?.includes(field) ?? false;
+  return incompleteFields.value?.includes(field) ?? false;
 }
 
 // Report mode toggle
@@ -98,7 +98,10 @@ const canGenerate = computed(() => {
   if (genLoading.isLoading.value) return false;
   if (isMultiCase.value) {
     if (!korfExists.value) return false;
-    if (korfIsStale.value) return false;
+    // Hard block if > 60s stale
+    if (stalenessSeconds.value && stalenessSeconds.value > 60) return false;
+    // Soft block if stale but no override checkbox
+    if (korfIsStale.value && !skipStaleCheck.value) return false;
   }
   return true;
 });
@@ -121,10 +124,15 @@ const batchTooltip = computed(() => {
 
 const generateTooltip = computed(() => {
   if (isMultiCase.value) {
-    if (!korfExists.value)
-      return "Multi-case requires a KORF Excel report. Generate it from KORF first.";
-    if (korfIsStale.value)
-      return "KORF Excel is stale — regenerate from KORF first";
+    if (!korfExists.value) {
+      return "Multi-case requires a KORF Excel report.";
+    }
+    if (stalenessSeconds.value && stalenessSeconds.value > 60) {
+      return `KORF Excel is ${Math.round(stalenessSeconds.value)}s stale — regenerate from KORF first`;
+    }
+    if (korfIsStale.value && !skipStaleCheck.value) {
+      return "Check 'Proceed with stale data' to override";
+    }
   }
   return "";
 });
@@ -134,20 +142,11 @@ const genLoading = useLoading(async () => {
     report_path: reportPath.value || null,
     mode: isMultiCase.value ? "multi" : "single",
     pipe_columns: pipeColumns.value.length > 0 ? pipeColumns.value : undefined,
+    skip_stale_check: skipStaleCheck.value,
   };
   const res = await generateReport({ body: req });
   if (!res.data) {
     throw new Error("Report generation failed");
-  }
-  // Check if project info is required
-  if ("project_info_required" in res.data && res.data.project_info_required) {
-    const projResp = res.data as ProjectInfoRequiredResponse;
-    projectInfoRequired.value = projResp;
-    editInfo.value = { ...(projResp.project_info || {}) };
-    smartDefaults.value = projResp.smart_defaults || {};
-    pendingReportReq.value = req;
-    showProjectInfoModal.value = true;
-    return null;
   }
   if ("success" in res.data && !res.data.success) {
     throw new Error(res.data.errors?.[0] || "Report generation failed");
@@ -171,8 +170,7 @@ const batchLoading = useLoading(async () => {
 
 async function generate() {
   try {
-    const result = await genLoading.execute();
-    if (result === null) return; // project info modal shown
+    await genLoading.execute();
     if (isMultiCase.value) {
       toast.success("Multi-case report generated from KORF Excel.");
     } else {
@@ -188,19 +186,11 @@ async function saveProjectAndRetry() {
   try {
     await saveProjectInfo({ body: editInfo.value });
     showProjectInfoModal.value = false;
-    toast.success("Project info saved. Generating report...");
-    if (pendingReportReq.value) {
-      const res = await generateReport({ body: pendingReportReq.value });
-      if (res.data && "success" in res.data && res.data.success) {
-        toast.success("Report generated successfully.");
-      } else if (res.data && "errors" in res.data) {
-        throw new Error(res.data.errors?.[0] || "Report generation failed");
-      }
-    }
+    toast.success("Project info saved.");
+    // Re-check status after save
+    await checkProjectInfoStatus();
   } catch (err: unknown) {
-    toast.error(
-      getErrorMessage(err, "Failed to save project info or generate report."),
-    );
+    toast.error(getErrorMessage(err, "Failed to save project info."));
   } finally {
     saveProjectLoading.value = false;
   }
@@ -300,9 +290,23 @@ onMounted(async () => {
   } catch {
     // ignore — prefill is best-effort
   }
+  // Check project info status
+  await checkProjectInfoStatus();
   // Check KORF Excel status (for multi-case mode)
   await checkKorfExcelStatus();
 });
+
+async function checkProjectInfoStatus() {
+  try {
+    const res = await getProjectInfoStatus();
+    if (res.data) {
+      projectInfoIncomplete.value = !res.data.is_complete;
+      incompleteFields.value = res.data.incomplete_fields || [];
+    }
+  } catch {
+    // ignore — best-effort
+  }
+}
 
 async function checkKorfExcelStatus() {
   try {
@@ -310,6 +314,8 @@ async function checkKorfExcelStatus() {
     if (status.data) {
       korfExists.value = !!status.data.korf_excel_path;
       korfIsStale.value = status.data.is_stale || false;
+      stalenessSeconds.value = status.data.staleness_seconds;
+      canOverrideStale.value = status.data.can_override || false;
     }
   } catch {
     // ignore — staleness check is best-effort
@@ -385,7 +391,9 @@ function onToggleMultiCase(value: boolean) {
                 v-else
                 class="w-4 h-4 shrink-0"
                 :class="
-                  korfExists && korfIsStale ? 'text-amber-600' : 'text-red-600'
+                  stalenessSeconds && stalenessSeconds > 60
+                    ? 'text-red-600'
+                    : 'text-amber-600'
                 "
               />
               <span
@@ -393,25 +401,66 @@ function onToggleMultiCase(value: boolean) {
                 :class="
                   korfExists && !korfIsStale
                     ? 'text-green-700'
-                    : korfExists && korfIsStale
-                      ? 'text-amber-700'
-                      : 'text-red-700'
+                    : stalenessSeconds && stalenessSeconds > 60
+                      ? 'text-red-700'
+                      : 'text-amber-700'
                 "
               >
                 {{
                   korfExists && !korfIsStale
                     ? "KORF Excel detected and ready"
-                    : korfExists && korfIsStale
-                      ? "KORF Excel is stale — regenerate from KORF"
-                      : "KORF Excel not found in KDF folder"
+                    : stalenessSeconds && stalenessSeconds > 60
+                      ? `KORF Excel is ${Math.round(stalenessSeconds/60)}m stale — must regenerate`
+                      : `KORF Excel is ${Math.round(stalenessSeconds || 0)}s stale — can override`
                 }}
               </span>
             </div>
+
+            <!-- Override checkbox (only show if stale but ≤ 60s) -->
+            <div
+              v-if="
+                korfExists &&
+                korfIsStale &&
+                stalenessSeconds &&
+                stalenessSeconds <= 60
+              "
+              class="mt-2 flex items-center gap-2"
+            >
+              <input
+                id="skipStaleCheck"
+                type="checkbox"
+                v-model="skipStaleCheck"
+                class="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+              />
+              <label for="skipStaleCheck" class="text-xs text-gray-700">
+                Proceed with stale data ({{ Math.round(stalenessSeconds) }}s old)
+              </label>
+            </div>
+
             <div class="pk-hint mt-1">
               To export from KORF:
               <strong>Hydraulics &gt; Results &gt; View Excel Report</strong>,
               save the <strong>XML</strong> as <strong>XLSX</strong> with the
               same name as the KDF file.
+            </div>
+          </div>
+
+          <!-- Project info incomplete warning -->
+          <div
+            v-if="projectInfoIncomplete"
+            class="bg-amber-50 border border-amber-200 rounded p-2 mt-3"
+          >
+            <div class="flex items-center gap-2">
+              <AlertTriangle class="w-4 h-4 text-amber-600 shrink-0" />
+              <span class="text-xs text-amber-700">
+                Project info incomplete ({{ incompleteFields.join(", ") }})
+              </span>
+              <button
+                @click="showProjectInfoModal = true"
+                class="text-xs text-amber-600 underline hover:text-amber-800"
+              >
+                Fill now
+              </button>
             </div>
           </div>
         </div>
@@ -761,7 +810,7 @@ function onToggleMultiCase(value: boolean) {
           :disabled="saveProjectLoading"
         >
           <span v-if="saveProjectLoading" class="pk-spinner" />
-          Save & Generate Report
+          Save
         </button>
       </div>
     </div>
