@@ -5,6 +5,24 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.34.0] - 2026-05-07
+
+### What's New
+
+- Pump and compressor reports now include Efficiency, Shaft Power, and computed Hydraulic Power alongside the existing power values.
+- A new project info status endpoint lets the frontend check for incomplete fields on mount — the project info card on the main menu now pulses with a warning animation when fields are missing.
+- Installer dependencies are now synced incrementally with `uv sync` instead of rebuilding the entire virtual environment, making version-only updates much faster.
+
+### Improved
+
+- Multi-case reports can now proceed with a slightly stale KORF Excel (up to 60 seconds) by checking a "Proceed with stale data" checkbox, useful after saving project info.
+- Dependency change detection in the installer now compares only the dependency sections of `pyproject.toml`, ignoring version and formatting changes.
+
+### Fixed
+
+- Heat exchanger column mapping in the KORF Excel parser now correctly reads pressure drop, inlet pressure, and outlet pressure from the right columns.
+- Project info check no longer blocks report generation — warnings are shown non-blockingly on mount.
+
 ## [0.33.0] - 2026-05-06
 
 ### What's New
