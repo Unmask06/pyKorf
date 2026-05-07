@@ -29,6 +29,7 @@ from pykorf.app.api.schemas import (
     PrereqsResponse,
     ProjectInfoRequiredResponse,
     ProjectInfoResponse,
+    ProjectInfoStatusResponse,
     SaveProjectInfoRequest,
     SaveResponse,
     SetCriteriaResponse,
@@ -122,6 +123,28 @@ async def check_project_info_or_return(
         smart_defaults=smart_defaults,
         required_fields=REQUIRED_PROJECT_INFO_FIELDS,
         incomplete_fields=incomplete_fields,
+    )
+
+
+@router.get("/project-info/status", response_model=ProjectInfoStatusResponse, operation_id="getProjectInfoStatus")
+async def get_project_info_status() -> ProjectInfoStatusResponse:
+    """Return project info completeness status (non-blocking check).
+
+    Unlike check_project_info_or_return, this endpoint never blocks operations.
+    It simply returns the current status so the frontend can display warnings.
+    """
+    model = await require_model()
+    kdf_path = await _sess.get_kdf_path()
+
+    from pykorf.app.operation.project.project_info import build_smart_defaults
+
+    smart_defaults = SmartDefaultsResponse(**build_smart_defaults(kdf_path))
+    is_complete, incomplete_fields = _is_project_info_complete_raw(model, smart_defaults)
+
+    return ProjectInfoStatusResponse(
+        is_complete=is_complete,
+        incomplete_fields=incomplete_fields,
+        required_fields=REQUIRED_PROJECT_INFO_FIELDS,
     )
 
 

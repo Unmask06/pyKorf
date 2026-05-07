@@ -503,6 +503,10 @@ export type GenerateReportRequest = {
      * Pipe Columns
      */
     pipe_columns?: Array<string> | null;
+    /**
+     * Skip Stale Check
+     */
+    skip_stale_check?: boolean;
 };
 
 /**
@@ -587,6 +591,14 @@ export type KorfExcelStatusResponse = {
      * Is Stale
      */
     is_stale?: boolean;
+    /**
+     * Staleness Seconds
+     */
+    staleness_seconds?: number | null;
+    /**
+     * Can Override
+     */
+    can_override?: boolean;
 };
 
 /**
@@ -956,31 +968,6 @@ export type PrereqsResponse = {
 };
 
 /**
- * ProjectInfoRequiredResponse
- *
- * Response when project info is incomplete and needs to be filled.
- *
- * Returned by operations when project info check fails. Frontend should
- * prompt user with the provided smart_defaults and current project_info.
- */
-export type ProjectInfoRequiredResponse = {
-    /**
-     * Project Info Required
-     */
-    project_info_required?: boolean;
-    project_info: ProjectInfoResponse;
-    smart_defaults: SmartDefaultsResponse;
-    /**
-     * Required Fields
-     */
-    required_fields?: Array<string>;
-    /**
-     * Incomplete Fields
-     */
-    incomplete_fields?: Array<string>;
-};
-
-/**
  * ProjectInfoResponse
  *
  * Project info fetched from KDF.
@@ -1034,6 +1021,26 @@ export type ProjectInfoResponse = {
      * Revision
      */
     revision?: string;
+};
+
+/**
+ * ProjectInfoStatusResponse
+ *
+ * Project info completeness status (non-blocking check).
+ */
+export type ProjectInfoStatusResponse = {
+    /**
+     * Is Complete
+     */
+    is_complete: boolean;
+    /**
+     * Incomplete Fields
+     */
+    incomplete_fields?: Array<string>;
+    /**
+     * Required Fields
+     */
+    required_fields?: Array<string>;
 };
 
 /**
@@ -1743,6 +1750,22 @@ export type OpenModelInKorfResponses = {
 
 export type OpenModelInKorfResponse = OpenModelInKorfResponses[keyof OpenModelInKorfResponses];
 
+export type GetProjectInfoStatusData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/model/project-info/status';
+};
+
+export type GetProjectInfoStatusResponses = {
+    /**
+     * Successful Response
+     */
+    200: ProjectInfoStatusResponse;
+};
+
+export type GetProjectInfoStatusResponse = GetProjectInfoStatusResponses[keyof GetProjectInfoStatusResponses];
+
 export type GetModelSummaryData = {
     body?: never;
     path?: never;
@@ -2116,11 +2139,9 @@ export type GenerateReportError = GenerateReportErrors[keyof GenerateReportError
 
 export type GenerateReportResponses = {
     /**
-     * Response Generatereport
-     *
      * Successful Response
      */
-    200: ProjectInfoRequiredResponse | ReportResponse;
+    200: ReportResponse;
 };
 
 export type GenerateReportResponse = GenerateReportResponses[keyof GenerateReportResponses];

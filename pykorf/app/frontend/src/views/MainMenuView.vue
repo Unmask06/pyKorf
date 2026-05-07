@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSessionStore } from '../stores/session'
 import { useModelStore } from '../stores/model'
 import { useToastStore } from '../composables/useToast'
 import { useLoading } from '../composables/useLoading'
+import { getProjectInfoStatus } from '../api/client'
 import {
   Sliders, ClipboardCopy, FileSpreadsheet, Ruler, BookMarked,
   CheckCircle, XCircle, AlertCircle, FolderOpen, Lightbulb,
@@ -26,6 +27,9 @@ const editInfo = ref<ProjectInfoResponse>({
   date: '', project_no: '', revision: '',
 })
 
+const projectInfoIncomplete = ref(false)
+const incompleteFields = ref<string[]>([])
+
 function openProjectModal() {
   if (model.projectInfo) {
     editInfo.value = { ...model.projectInfo }
@@ -37,6 +41,7 @@ const saveProjectLoading = useLoading(async () => {
   await model.saveProjectInfo(editInfo.value)
   showProjectModal.value = false
   toast.success('Project info saved.')
+  await checkProjectInfoStatus()
 })
 
 // Summary items with icons and labels
@@ -65,19 +70,18 @@ function issueBadge(category: string): { label: string; cls: string } {
   return categoryMap[category] || { label: category.toUpperCase(), cls: 'bg-gray-200 text-gray-700' }
 }
 
-const projectInfoIncomplete = computed(() => {
-  const info = model.projectInfo
-  const required = model.requiredFields
-  if (!info || !required.length) return true
-  for (const field of required) {
-    const val = (info as Record<string, string>)[field] || ''
-    if (!val.trim()) return true
-  }
-  return false
-})
-
 function isRequired(field: string): boolean {
   return model.requiredFields.includes(field)
+}
+
+async function checkProjectInfoStatus() {
+  try {
+    const res = await getProjectInfoStatus()
+    if (res.data) {
+      projectInfoIncomplete.value = !res.data.is_complete
+      incompleteFields.value = res.data.incomplete_fields || []
+    }
+  } catch { /* best-effort */ }
 }
 
 onMounted(async () => {
@@ -86,6 +90,7 @@ onMounted(async () => {
     return
   }
   await model.fetchSummary()
+  await checkProjectInfoStatus()
 })
 </script>
 
@@ -100,7 +105,9 @@ onMounted(async () => {
         <div class="px-3 py-2 border-b flex justify-between items-center" style="background: transparent;">
           <span class="font-semibold text-xs flex items-center gap-1" :class="projectInfoIncomplete ? 'text-amber-600' : 'text-blue-600'">
             <FolderOpen class="w-3.5 h-3.5" /> Project Info
-            <span v-if="projectInfoIncomplete" class="text-[10px] font-normal">(incomplete)</span>
+            <span v-if="projectInfoIncomplete" class="text-[10px] font-normal text-amber-500">
+              (missing: {{ incompleteFields.join(', ') }})
+            </span>
           </span>
           <button type="button" @click="openProjectModal"
             class="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-0.5">
@@ -407,19 +414,21 @@ onMounted(async () => {
   color: inherit;
 }
 
-/* Blinking animation for incomplete project info */
+/* Enhanced pulse animation for incomplete project info */
 .project-info-incomplete {
-  animation: project-info-blink 2s ease-in-out infinite;
-  border-color: theme('colors.amber.300', #fcd34d);
+  animation: project-info-pulse 1.5s ease-in-out infinite;
+  background-color: rgba(251, 191, 36, 0.1);
+  border: 2px solid theme('colors.amber.400', #fbbf24);
 }
-@keyframes project-info-blink {
+
+@keyframes project-info-pulse {
   0%, 100% {
-    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
-    border-color: theme('colors.amber.300', #fcd34d);
+    background-color: rgba(251, 191, 36, 0.05);
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.3);
   }
   50% {
-    box-shadow: 0 0 8px 2px rgba(245, 158, 11, 0.2);
-    border-color: theme('colors.amber.500', #f59e0b);
+    background-color: rgba(251, 191, 36, 0.15);
+    box-shadow: 0 0 12px 3px rgba(245, 158, 11, 0.4);
   }
 }
 </style>

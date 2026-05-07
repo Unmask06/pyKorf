@@ -224,6 +224,7 @@ class GenerateReportRequest(BaseModel):
     report_path: str | None = None
     mode: str = "single"  # "single" | "multi"
     pipe_columns: list[str] | None = None  # Optional subset of pipe columns to include
+    skip_stale_check: bool = False  # Override staleness check if within 60s threshold
 
 
 class ExportRequest(BaseModel):
@@ -253,6 +254,16 @@ class KorfExcelStatusResponse(BaseModel):
 
     korf_excel_path: str | None = None
     is_stale: bool = False
+    staleness_seconds: float | None = None
+    can_override: bool = False
+
+
+class ProjectInfoStatusResponse(BaseModel):
+    """Project info completeness status (non-blocking check)."""
+
+    is_complete: bool
+    incomplete_fields: list[str] = []
+    required_fields: list[str] = []
 
 
 # --- Pipe Criteria ---

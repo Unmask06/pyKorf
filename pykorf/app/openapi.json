@@ -175,6 +175,28 @@
         }
       }
     },
+    "/api/model/project-info/status": {
+      "get": {
+        "tags": [
+          "model"
+        ],
+        "summary": "Get Project Info Status",
+        "description": "Return project info completeness status (non-blocking check).\n\nUnlike check_project_info_or_return, this endpoint never blocks operations.\nIt simply returns the current status so the frontend can display warnings.",
+        "operationId": "getProjectInfoStatus",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectInfoStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/model/summary": {
       "get": {
         "tags": [
@@ -769,15 +791,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/ProjectInfoRequiredResponse"
-                    },
-                    {
-                      "$ref": "#/components/schemas/ReportResponse"
-                    }
-                  ],
-                  "title": "Response Generatereport"
+                  "$ref": "#/components/schemas/ReportResponse"
                 }
               }
             }
@@ -2622,6 +2636,11 @@
               }
             ],
             "title": "Pipe Columns"
+          },
+          "skip_stale_check": {
+            "type": "boolean",
+            "title": "Skip Stale Check",
+            "default": false
           }
         },
         "type": "object",
@@ -2733,6 +2752,22 @@
           "is_stale": {
             "type": "boolean",
             "title": "Is Stale",
+            "default": false
+          },
+          "staleness_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Staleness Seconds"
+          },
+          "can_override": {
+            "type": "boolean",
+            "title": "Can Override",
             "default": false
           }
         },
@@ -3345,48 +3380,6 @@
         ],
         "title": "PrereqsResponse"
       },
-      "ProjectInfoRequiredResponse": {
-        "properties": {
-          "project_info_required": {
-            "type": "boolean",
-            "title": "Project Info Required",
-            "default": true
-          },
-          "project_info": {
-            "$ref": "#/components/schemas/ProjectInfoResponse"
-          },
-          "smart_defaults": {
-            "$ref": "#/components/schemas/SmartDefaultsResponse"
-          },
-          "required_fields": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Required Fields",
-            "default": [
-              "company1",
-              "project_name1",
-              "prepared_by"
-            ]
-          },
-          "incomplete_fields": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Incomplete Fields",
-            "default": []
-          }
-        },
-        "type": "object",
-        "required": [
-          "project_info",
-          "smart_defaults"
-        ],
-        "title": "ProjectInfoRequiredResponse",
-        "description": "Response when project info is incomplete and needs to be filled.\n\nReturned by operations when project info check fails. Frontend should\nprompt user with the provided smart_defaults and current project_info."
-      },
       "ProjectInfoResponse": {
         "properties": {
           "company1": {
@@ -3453,6 +3446,36 @@
         "type": "object",
         "title": "ProjectInfoResponse",
         "description": "Project info fetched from KDF."
+      },
+      "ProjectInfoStatusResponse": {
+        "properties": {
+          "is_complete": {
+            "type": "boolean",
+            "title": "Is Complete"
+          },
+          "incomplete_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Incomplete Fields",
+            "default": []
+          },
+          "required_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Required Fields",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "is_complete"
+        ],
+        "title": "ProjectInfoStatusResponse",
+        "description": "Project info completeness status (non-blocking check)."
       },
       "QueryEntryResult": {
         "properties": {
