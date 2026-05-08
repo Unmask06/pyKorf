@@ -176,7 +176,6 @@ class Valve(BaseElement):
                 else "",
                 self.format_export_header("Inlet Pressure", pin_unit): pin_val,
                 self.format_export_header("Differential Pressure", dp_unit): dp_val,
-                "Opening [%]": self.opening_string,
             }
 
         return {

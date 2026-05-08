@@ -76,9 +76,25 @@ const batchTotalCount = ref(0);
 const batchProblems = ref<string[]>([]);
 const batchValidating = ref(false);
 
-// Report column customization
+// Report column customization — default pipe columns (mandatory + default-on optional)
+const DEFAULT_PIPE_COLUMNS = [
+  "Pipe Name",
+  "Line Size",
+  "Line Length",
+  "dP max Criteria",
+  "v min Criteria",
+  "v max Criteria",
+  "DP/Length",
+  "Velocity",
+  "Criteria Check",
+  "Line Number",
+  "Criteria Code",
+  "ρV² min Criteria [Pa]",
+  "ρV² max Criteria [Pa]",
+  "ρV² calc [Pa]",
+];
 const showCustomizeModal = ref(false);
-const pipeColumns = ref<string[]>([]);
+const pipeColumns = ref<string[]>([...DEFAULT_PIPE_COLUMNS]);
 
 const reportPath = computed(() => {
   if (!session.kdfPath) return "";

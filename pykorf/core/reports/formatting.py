@@ -92,8 +92,8 @@ NUMBER_FORMAT_RULES: list[tuple[tuple[str, ...], str]] = [
     # ── Generic rules (applied to all matching columns) ──────────────
     (("\u03c1V\u00b2",), "#,##0"),
     (("Differential Head", "Temperature", "Flow Rate"), "#,##0"),
-    (("Velocity", "Pressure"), "#0.00"),
-    (("dP", "Differential Pressure"), "#0.000"),
+    (("Velocity", "Pressure", "Differential Pressure"), "#0.00"),
+    (("dP",), "#0.00"),
     (("Raise", "Shut-Off", "NPSH", "Power", "Volumetric Flow"), "#0.0"),
 ]
 
