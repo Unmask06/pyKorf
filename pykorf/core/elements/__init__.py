@@ -42,9 +42,6 @@ Junction = Junction
 Prod = Product
 Check = CheckValve
 Orifice = FlowOrifice
-# Common is now BaseElement
-Common = BaseElement
-
 # ------------------------------------------------------------------
 # Element type-token class (formerly definitions/element.py)
 # ------------------------------------------------------------------
@@ -158,7 +155,7 @@ __all__ = [
     # Backward-compat aliases
     "Check",
     "CheckValve",
-    "Common",
+
     "Comp",
     "Compressor",
     "Element",

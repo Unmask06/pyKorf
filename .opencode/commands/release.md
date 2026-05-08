@@ -1,13 +1,29 @@
+---
+description: Release a new version of pyKorf — bump version, update changelog, generate types, commit, and merge to main
+agent: build
+model: deepseek-v4-flash
+---
+
 Release a new version of pyKorf. Follow these steps exactly:
 
 ## Step 0 — Generate OpenAPI schema and TypeScript types
 
-Run:
-```powershell with Set ExecutionPolicy Bypass
+Ensure the backend is running (required for `generate-types` which fetches from `localhost:8000`):
+
+```
+uv run pykorf --port 8000 --no-debug
+```
+
+In a separate terminal, run from the project root:
+
+```
 uv run python -c "from pykorf.app.api import create_app; import json; app = create_app(); openapi = app.openapi(); json.dump(openapi, open('openapi.json', 'w'), indent=2)"
-cd pykorf/app/frontend
+```
+
+Then from `pykorf/app/frontend`:
+
+```
 npm run generate-types
-cd ../..
 ```
 
 This ensures the OpenAPI schema and TypeScript types are up-to-date before release.
@@ -89,9 +105,11 @@ Fix any failures before proceeding.
 ## Step 8 — Commit on dev
 
 ```
-git add pyproject.toml CHANGELOG.md uv.lock
+git add pyproject.toml CHANGELOG.md uv.lock openapi.json
 git commit -m "release: vX.Y.Z"
 ```
+
+(If Step 0 produced no changes to `openapi.json`, omit it from the add.)
 
 ## Step 9 — Merge to main, sync back to dev, and push
 

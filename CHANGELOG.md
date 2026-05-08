@@ -5,6 +5,17 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.34.1] - 2026-05-08
+
+### Improved
+
+- Report columns now show by default when viewing a report, instead of requiring the customize modal to be opened first.
+- The internal configuration system was streamlined for better maintainability.
+
+### Fixed
+
+- The report column customize modal no longer resets your selections every time it is reopened.
+
 ## [0.34.0] - 2026-05-07
 
 ### What's New

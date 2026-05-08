@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, Any
 from pykorf.core.elements import (
     ELEMENT_REGISTRY,
     BaseElement,
-    Common,
     Element,
     PipeData,
 )
@@ -52,8 +51,8 @@ class ElementService:
         elem = self.model.get_element(name)
         valid_params = type(elem).ALL
         rebuild_collections = False
-        if Common.NAME in {key.upper() for key in params}:
-            name_key = next(k for k in params if k.upper() == Common.NAME)
+        if BaseElement.NAME in {key.upper() for key in params}:
+            name_key = next(k for k in params if k.upper() == BaseElement.NAME)
             new_name = str(params[name_key])
             new_name = self.model._ensure_unique_name(new_name, current_name=elem.name)
             params[name_key] = new_name
@@ -61,7 +60,7 @@ class ElementService:
         xy_update: dict[str, float] = {}
         for param, value in params.items():
             key = param.upper()
-            if key in (Common.X, Common.Y):
+            if key in (BaseElement.X, BaseElement.Y):
                 xy_update[key] = float(value)
                 continue
             if key not in valid_params:
@@ -103,14 +102,14 @@ class ElementService:
 
     def _update_xy(self, elem: BaseElement, xy: dict[str, float]) -> None:
         """Update the XY record of an element with X and/or Y values."""
-        rec = elem.get_param(Common.XY)
+        rec = elem.get_param(BaseElement.XY)
         if rec is None:
             return
         vals = list(rec.values)
-        if Common.X in xy and len(vals) > 0:
-            vals[0] = str(xy[Common.X])
-        if Common.Y in xy and len(vals) > 1:
-            vals[1] = str(xy[Common.Y])
+        if BaseElement.X in xy and len(vals) > 0:
+            vals[0] = str(xy[BaseElement.X])
+        if BaseElement.Y in xy and len(vals) > 1:
+            vals[1] = str(xy[BaseElement.Y])
         rec.values = vals
         rec.raw_line = ""
 
@@ -180,7 +179,7 @@ class ElementService:
         current_count = self.model._parser.num_instances(et)
         self.model._parser.set_num_instances(et, current_count + 1)
 
-        name_rec = self.model._parser.get(et, new_idx, Common.NAME)
+        name_rec = self.model._parser.get(et, new_idx, BaseElement.NAME)
         if name_rec:
             name_rec.values[0] = name
             name_rec.raw_line = ""
@@ -192,7 +191,7 @@ class ElementService:
 
         if auto_position:
             x_or_y_provided = bool(params) and any(
-                key.upper() in {Common.X, Common.Y} for key in params
+                key.upper() in {BaseElement.X, BaseElement.Y} for key in params
             )
             if not x_or_y_provided:
                 self.model._layout_service.auto_place(self.model.get_element(name))
@@ -367,17 +366,17 @@ class ElementService:
         current_count = self.model._parser.num_instances(et)
         self.model._parser.set_num_instances(et, current_count + 1)
 
-        name_rec = self.model._parser.get(et, new_idx, Common.NAME)
+        name_rec = self.model._parser.get(et, new_idx, BaseElement.NAME)
         if name_rec:
             name_rec.values[0] = dst_name
             name_rec.raw_line = ""
 
         for con_param in (
-            Common.CON,
-            Common.NOZI,
-            Common.NOZO,
-            Common.NOZL,
-            Common.NOZ,
+            BaseElement.CON,
+            "NOZI",
+            "NOZO",
+            "NOZL",
+            "NOZ",
         ):
             rec = self.model._parser.get(et, new_idx, con_param)
             if rec is not None:

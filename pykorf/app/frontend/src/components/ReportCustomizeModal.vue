@@ -36,7 +36,7 @@ const MANDATORY_KEYS = [
 watch(
   () => props.open,
   (open) => {
-    if (open) {
+    if (open && selected.value.length === 0) {
       selected.value = [
         ...MANDATORY_KEYS,
         ...PIPE_COLUMNS.filter((c) => c.defaultOn).map((c) => c.key),
