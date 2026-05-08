@@ -86,6 +86,9 @@ def sample_excel_path(sample_eddr_df, sample_query_df):
 
 @pytest.fixture
 def mock_config(tmp_path):
+    from pykorf.app.operation.config._core import clear_config_cache
+
+    clear_config_cache()
     config_file = tmp_path / "config.json"
     config_file.write_text("{}", encoding="utf-8")
 

@@ -1,11 +1,11 @@
-from pykorf.core.elements import PROPERTIES_BY_ELEMENT, Common, Element, Orifice, Pipe
+from pykorf.core.elements import PROPERTIES_BY_ELEMENT, BaseElement, Element, Orifice, Pipe
 
 
 def test_element_tokens_and_common_props():
     assert Element.PIPE == "PIPE"
     assert Element.ORIFICE == "FO"
-    assert Common.NAME == "NAME"
-    assert Common.NUM == "NUM"
+    assert BaseElement.NAME == "NAME"
+    assert BaseElement.NUM == "NUM"
     assert Pipe.XY == "XY"
     assert Orifice.XY == "XY"
 

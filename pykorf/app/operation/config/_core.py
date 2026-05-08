@@ -11,6 +11,15 @@ from pykorf.app.operation.config.paths import get_config_path
 _config_cache: dict[str, Any] | None = None
 
 
+def clear_config_cache() -> None:
+    """Clear the in-memory config cache.
+
+    Used in tests to ensure fresh config reads after patching get_config_path.
+    """
+    global _config_cache
+    _config_cache = None
+
+
 def load_config() -> dict[str, Any]:
     """Load user configuration from disk.
 

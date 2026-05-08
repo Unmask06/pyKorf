@@ -8,7 +8,7 @@ Delegates to sub-modules:
 
 from __future__ import annotations
 
-from pykorf.app.operation.config._core import load_config, save_config  # noqa: F401
+from pykorf.app.operation.config._core import clear_config_cache, load_config, save_config  # noqa: F401
 from pykorf.app.operation.config._paths import (  # noqa: F401
     add_pinned_folder,
     add_recent_file,
