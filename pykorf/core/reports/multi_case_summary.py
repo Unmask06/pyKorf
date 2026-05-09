@@ -35,7 +35,6 @@ _VALVE_PARAMETERS = [
     ("Flow Rate", "kg/h"),
     ("Inlet Pressure", "barg"),
     ("Differential Pressure", "bar"),
-    ("Opening", "%"),
 ]
 
 

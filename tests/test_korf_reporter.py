@@ -984,7 +984,6 @@ class TestMultiCaseSummaryBuilder:
                 "Flow Rate",
                 "Inlet Pressure",
                 "Differential Pressure",
-                "Opening",
             ]
             assert "Rated" in valve_info["case_values"]
             assert "Case2" in valve_info["case_values"]
