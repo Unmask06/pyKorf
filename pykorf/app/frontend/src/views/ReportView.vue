@@ -58,8 +58,8 @@ function isRequired(field: string): boolean {
 }
 
 // Report mode toggle
-const isMultiCase = ref(false);
-const isBatchMultiCase = ref(false);
+const isMultiCase = ref(true);
+const isBatchMultiCase = ref(true);
 
 // Multi-case status (auto-detected via backend)
 const korfIsStale = ref(false);
@@ -650,6 +650,7 @@ function onToggleMultiCase(value: boolean) {
   <PathBrowser
     v-if="showBatchBrowser"
     filter="folder"
+    :initialPath="batchFolder"
     @close="showBatchBrowser = false"
     @select="
       (p: string) => {
