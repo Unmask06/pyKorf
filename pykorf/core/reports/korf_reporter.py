@@ -134,8 +134,6 @@ class KorfReporter(_BaseReporter):
 
         result: dict[str, dict[str, pd.DataFrame]] = {}
         for case_info in sorted(case_data.keys(), key=lambda c: int(c.number)):
-            if "120" in case_info.name:
-                continue
             case_name = f"{case_info.number} - {case_info.name}"
             cd = case_data[case_info]
             result[case_name] = self._build_case_dataframes(cd)
