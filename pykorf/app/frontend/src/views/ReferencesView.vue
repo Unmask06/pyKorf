@@ -530,6 +530,7 @@ onMounted(() => {
   <PathBrowser
     v-if="showLinkBrowser"
     filter="any"
+    :initialPath="newRefLink"
     @close="showLinkBrowser = false"
     @select="
       (p: string) => {

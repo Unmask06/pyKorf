@@ -544,13 +544,13 @@ onMounted(() => {
   </div>
 
   <!-- Path browsers -->
-  <PathBrowser v-if="showOverrideBrowser" filter="folder" @close="showOverrideBrowser = false" @select="
+  <PathBrowser v-if="showOverrideBrowser" filter="folder" :initialPath="newLocalPath" @close="showOverrideBrowser = false" @select="
     (p: string) => {
       newLocalPath = p;
       showOverrideBrowser = false;
     }
   " />
-  <PathBrowser v-if="showDocExcelBrowser" filter="excel" @close="showDocExcelBrowser = false" @select="
+  <PathBrowser v-if="showDocExcelBrowser" filter="excel" :initialPath="docExcelPath" @close="showDocExcelBrowser = false" @select="
     (p: string) => {
       docExcelPath = p;
       showDocExcelBrowser = false;

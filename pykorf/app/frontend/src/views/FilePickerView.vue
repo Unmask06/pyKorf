@@ -34,6 +34,10 @@ async function openFile() {
     toast.error("Please enter a file path.");
     return;
   }
+  if (!path.toLowerCase().endsWith('.kdf')) {
+    toast.error("Only .kdf files are supported.");
+    return;
+  }
   try {
     await openLoading.execute(path);
     if (session.isLoaded) {
@@ -220,6 +224,7 @@ onMounted(async () => {
 
   <PathBrowser
     v-if="showBrowser"
+    :initialPath="kdfPath"
     @close="showBrowser = false"
     @select="
       (p: string) => {

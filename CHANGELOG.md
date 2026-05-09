@@ -5,6 +5,20 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.35.0] - 2026-05-09
+
+### What's New
+
+- The file browser now opens at the folder of whatever path you've typed, so you don't have to navigate from scratch.
+
+### Improved
+
+- Report mode now defaults to multi-case instead of single-case.
+
+### Fixed
+
+- Opening a model now only accepts `.kdf` files — non-KORF file paths are rejected with a clear message.
+
 ## [0.34.2] - 2026-05-09
 
 ### Fixed

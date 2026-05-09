@@ -10,6 +10,7 @@ import type {
 
 const props = defineProps<{
   filter?: string
+  initialPath?: string
 }>()
 
 const emit = defineEmits<{
@@ -109,7 +110,12 @@ const filteredFiles = computed(() => {
 })
 
 onMounted(() => {
-  browse()
+  if (props.initialPath) {
+    const dir = props.initialPath.replace(/[/\\][^/\\]+\.[^/\\]+$/, '') || props.initialPath
+    browse(dir)
+  } else {
+    browse()
+  }
 })
 </script>
 

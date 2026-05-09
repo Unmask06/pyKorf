@@ -444,10 +444,10 @@ onMounted(async () => {
 
   </div>
 
-  <PathBrowser v-if="showPmsBrowser" filter="excel"
+  <PathBrowser v-if="showPmsBrowser" filter="excel" :initialPath="pmsSource"
     @close="showPmsBrowser = false"
     @select="(p: string) => { pmsSource = p; showPmsBrowser = false }" />
-  <PathBrowser v-if="showHmbBrowser" filter="excel"
+  <PathBrowser v-if="showHmbBrowser" filter="excel" :initialPath="hmbSource"
     @close="showHmbBrowser = false"
     @select="(p: string) => { hmbSource = p; showHmbBrowser = false }" />
 </template>
