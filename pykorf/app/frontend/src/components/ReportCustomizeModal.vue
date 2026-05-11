@@ -23,6 +23,7 @@ const PIPE_COLUMNS = [
 
 const MANDATORY_KEYS = [
   "Pipe Name",
+  "Governing Case",
   "Line Size",
   "Line Length",
   "dP max Criteria",
@@ -82,7 +83,7 @@ function close() {
 
           <p class="text-xs text-gray-500 mb-3">
             Select optional columns to include in the Pipes section.
-            Core columns (Pipe Name, Line Size, Length, Velocity, DP/Length, Criteria Check) are always included.
+            Core columns (Pipe Name, Governing Case, Line Size, Length, Velocity, DP/Length, Criteria Check) are always included.
           </p>
 
           <div class="space-y-1 max-h-80 overflow-y-auto">

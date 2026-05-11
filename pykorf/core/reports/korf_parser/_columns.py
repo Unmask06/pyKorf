@@ -87,7 +87,7 @@ _SHUTOFF_COL_MAP: dict[str, int] = {
     "suction_max_pressure": 9,
     "shutoff_dp": 13,
     "shutoff_pressure": 14,
-    "raise_to_shutoff_dp": 12,
+    "raise_to_shutoff_dp": 11,
 }
 
 _COMPRESSOR_COL_MAP: dict[str, int] = {

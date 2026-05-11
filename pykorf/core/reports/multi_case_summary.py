@@ -23,6 +23,7 @@ from pykorf.core.reports.formatting import (
     write_two_level_headers,
 )
 from pykorf.core.reports.korf_parser import CaseInfo, KorfCaseData, PipeData, PumpData
+from pykorf.core.reports.unit_converter import UnitConverter
 
 if TYPE_CHECKING:
     from pykorf.core.reports.korf_reporter import KorfReporter
@@ -223,6 +224,9 @@ class MultiCaseSummaryBuilder:
 
             pipe_rows.append(row)
 
+        converter = UnitConverter()
+        pipe_rows = converter.convert_summary(pipe_rows)
+
         if not pipe_rows:
             return pd.DataFrame()
 
@@ -405,7 +409,7 @@ class MultiCaseSummaryBuilder:
         Always includes 'Pipe Name' and 'Criteria Check' regardless of selection.
         Preserves the original DataFrame column order.
         """
-        always_keys = {"Pipe Name", "Criteria Check"}
+        always_keys = {"Pipe Name", "Governing Case", "Criteria Check"}
         resolved = self._resolve_pipe_columns(df, pipe_columns)
         always_resolved = self._resolve_pipe_columns(df, list(always_keys))
         selected_set = set(resolved) | set(always_resolved)
