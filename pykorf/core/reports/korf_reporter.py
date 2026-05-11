@@ -18,6 +18,7 @@ from pykorf.core.reports.korf_parser import (
     parse_korf_excel,
 )
 from pykorf.core.reports.reporter import _BaseReporter
+from pykorf.core.reports.unit_converter import UnitConverter
 
 _logger = logging.getLogger(__name__)
 
@@ -292,6 +293,9 @@ class KorfReporter(_BaseReporter):
                 "Criteria Check": self._check_pipe_criteria(pd_pipe),
             }
             results.append(row)
+
+        converter = UnitConverter()
+        results = converter.convert_summary(results)
 
         return results
 

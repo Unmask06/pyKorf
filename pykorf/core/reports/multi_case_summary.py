@@ -23,6 +23,7 @@ from pykorf.core.reports.formatting import (
     write_two_level_headers,
 )
 from pykorf.core.reports.korf_parser import CaseInfo, KorfCaseData, PipeData, PumpData
+from pykorf.core.reports.unit_converter import UnitConverter
 
 if TYPE_CHECKING:
     from pykorf.core.reports.korf_reporter import KorfReporter
@@ -222,6 +223,9 @@ class MultiCaseSummaryBuilder:
                 row = {k: row.get(k) for k in cols}
 
             pipe_rows.append(row)
+
+        converter = UnitConverter()
+        pipe_rows = converter.convert_summary(pipe_rows)
 
         if not pipe_rows:
             return pd.DataFrame()
