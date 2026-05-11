@@ -79,6 +79,7 @@ const batchValidating = ref(false);
 // Report column customization — default pipe columns (mandatory + default-on optional)
 const DEFAULT_PIPE_COLUMNS = [
   "Pipe Name",
+  "Governing Case",
   "Line Size",
   "Line Length",
   "dP max Criteria",

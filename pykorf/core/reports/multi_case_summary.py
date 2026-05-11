@@ -405,7 +405,7 @@ class MultiCaseSummaryBuilder:
         Always includes 'Pipe Name' and 'Criteria Check' regardless of selection.
         Preserves the original DataFrame column order.
         """
-        always_keys = {"Pipe Name", "Criteria Check"}
+        always_keys = {"Pipe Name", "Governing Case", "Criteria Check"}
         resolved = self._resolve_pipe_columns(df, pipe_columns)
         always_resolved = self._resolve_pipe_columns(df, list(always_keys))
         selected_set = set(resolved) | set(always_resolved)
