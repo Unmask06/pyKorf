@@ -5,6 +5,13 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.37.1] - 2026-05-12
+
+### Fixed
+
+- The installer now reads the version from `pyproject.toml` instead of querying the venv's package metadata, so updates are always detected even when the virtual environment is broken.
+- After applying an update, the package is always re-installed (via `uv sync` or `pip install -e .`) even when dependencies haven't changed, ensuring the installed version metadata matches the overlaid source files.
+
 ## [0.37.0] - 2026-05-12
 
 ### Fixed
