@@ -916,8 +916,40 @@ def cmd_reinstall() -> int:
     return 0
 
 
+def get_venv_package_version() -> str | None:
+    """Query the actual installed pykorf package version from venv."""
+    python_exe = VENV_DIR / "Scripts" / "python.exe"
+    if not python_exe.exists():
+        return None
+
+    try:
+        result = subprocess.run(
+            [
+                str(python_exe),
+                "-c",
+                "from importlib.metadata import version; print(version('pykorf'))",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if result.returncode == 0:
+            ver = result.stdout.strip()
+            if ver:
+                return ver
+    except Exception:
+        pass
+
+    return None
+
+
 def get_installed_version() -> str:
-    """Read VERSION file."""
+    """Read actual installed package version, fallback to VERSION file."""
+    pkg_version = get_venv_package_version()
+    if pkg_version:
+        log.debug(f"Package version from venv: {pkg_version}")
+        return pkg_version
+
     if VERSION_FILE.exists():
         version = VERSION_FILE.read_text().strip()
         log.debug(f"VERSION file exists, content: '{version}'")
