@@ -374,7 +374,14 @@ def apply_update(update_info: dict) -> int:
                 log.error("Venv rebuild failed after update")
                 return 1
     else:
-        log.info("Dependencies unchanged, skipping venv operations")
+        log.info("Dependencies unchanged, re-installing package...")
+        result = sync_dependencies()
+        if result != 0:
+            log.error("Package re-install failed, attempting full rebuild...")
+            result = repair_venv()
+            if result != 0:
+                log.error("Venv rebuild failed after update")
+                return 1
 
     write_signature()
     write_version(update_info.get("latest", ""))
@@ -916,39 +923,26 @@ def cmd_reinstall() -> int:
     return 0
 
 
-def get_venv_package_version() -> str | None:
-    """Query the actual installed pykorf package version from venv."""
-    python_exe = VENV_DIR / "Scripts" / "python.exe"
-    if not python_exe.exists():
-        return None
-
-    try:
-        result = subprocess.run(
-            [
-                str(python_exe),
-                "-c",
-                "from importlib.metadata import version; print(version('pykorf'))",
-            ],
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-        if result.returncode == 0:
-            ver = result.stdout.strip()
-            if ver:
-                return ver
-    except Exception:
-        pass
-
-    return None
-
-
 def get_installed_version() -> str:
-    """Read actual installed package version, fallback to VERSION file."""
-    pkg_version = get_venv_package_version()
-    if pkg_version:
-        log.debug(f"Package version from venv: {pkg_version}")
-        return pkg_version
+    """Read version from pyproject.toml (authoritative, always updated by overlay).
+
+    Falls back to VERSION file, then 0.0.0 if neither exists.
+    Using pyproject.toml instead of importlib.metadata because it works even when
+    the venv is broken or the package is not yet installed.
+    """
+    pyproject_path = APPDATA_DIR / "pyproject.toml"
+    if pyproject_path.exists():
+        try:
+            import tomllib
+
+            with open(pyproject_path, "rb") as f:
+                data = tomllib.load(f)
+                version = data.get("project", {}).get("version", "")
+                if version:
+                    log.debug(f"Version from pyproject.toml: {version}")
+                    return version
+        except Exception:
+            log.debug("Failed to read version from pyproject.toml")
 
     if VERSION_FILE.exists():
         version = VERSION_FILE.read_text().strip()
