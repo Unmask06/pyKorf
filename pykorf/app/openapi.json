@@ -1817,6 +1817,48 @@
         }
       }
     },
+    "/api/references/predict-category": {
+      "post": {
+        "tags": [
+          "references"
+        ],
+        "summary": "Predict Category Endpoint",
+        "description": "Predict a reference category from the description text.",
+        "operationId": "predictCategory",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PredictCategoryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PredictCategoryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/sharepoint/resolve-url": {
       "post": {
         "tags": [
@@ -3204,6 +3246,32 @@
         },
         "type": "object",
         "title": "PipeCriteriaResponse"
+      },
+      "PredictCategoryRequest": {
+        "properties": {
+          "description": {
+            "type": "string",
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "description"
+        ],
+        "title": "PredictCategoryRequest"
+      },
+      "PredictCategoryResponse": {
+        "properties": {
+          "category": {
+            "type": "string",
+            "title": "Category"
+          }
+        },
+        "type": "object",
+        "required": [
+          "category"
+        ],
+        "title": "PredictCategoryResponse"
       },
       "PredictCriteriaRequest": {
         "properties": {},

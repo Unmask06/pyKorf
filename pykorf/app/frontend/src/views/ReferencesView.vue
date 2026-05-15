@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useSessionStore } from "../stores/session";
 import { useToastStore } from "../composables/useToast";
@@ -9,6 +9,7 @@ import {
   saveReferences,
   addReference,
   deleteReference,
+  predictCategory,
   getErrorMessage,
 } from "../api/client";
 import {
@@ -66,6 +67,24 @@ const categories = [
   "Standard",
   "Other",
 ];
+
+const categoryTouchedByUser = ref(false);
+
+function onCategoryUserChange() {
+  categoryTouchedByUser.value = true;
+}
+
+watch(newRefDesc, async (val, oldVal) => {
+  if (!val || oldVal || categoryTouchedByUser.value || newRefCategory.value) return;
+  try {
+    const resp = await predictCategory({ body: { description: val } });
+    if (resp.data?.category) {
+      newRefCategory.value = resp.data.category;
+    }
+  } catch {
+    // silent — prediction is best-effort
+  }
+});
 
 function categoryBadgeCls(cat: string): string {
   const map: Record<string, string> = {
@@ -135,6 +154,7 @@ const addRefLoading = useLoading(async () => {
     newRefDesc.value = "";
     newRefCategory.value = "";
     editingId.value = "";
+    categoryTouchedByUser.value = false;
     await fetchReferences();
     toast.success("Reference saved.");
   } catch (err: unknown) {
@@ -159,6 +179,7 @@ function editReference(ref: ReferenceSchema) {
   newRefLink.value = ref.link;
   newRefDesc.value = ref.description ?? "";
   newRefCategory.value = ref.category ?? "";
+  categoryTouchedByUser.value = false;
 }
 
 function cancelEdit() {
@@ -167,6 +188,7 @@ function cancelEdit() {
   newRefLink.value = "";
   newRefDesc.value = "";
   newRefCategory.value = "";
+  categoryTouchedByUser.value = false;
 }
 
 function handleDocSearchSelect(name: string, link: string, description: string) {
@@ -350,6 +372,7 @@ onMounted(() => {
                 >
                 <select
                   v-model="newRefCategory"
+                  @change="onCategoryUserChange"
                   class="pk-select w-full"
                   required
                 >

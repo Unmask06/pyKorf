@@ -78,6 +78,7 @@ _NPSH_COL_MAP: dict[str, int] = {
     "npsha": 15,
     "npshr": 18,
     "vapour_pressure": 6,
+    "contigency": 14,
 }
 
 _SHUTOFF_COL_MAP: dict[str, int] = {

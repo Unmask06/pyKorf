@@ -10,7 +10,9 @@ if TYPE_CHECKING:
     from pykorf.core.model import Model
 
 
-def npsha_calc(suc_press: float, vap_press: float, density: float) -> float:
+def npsha_calc(
+    suc_press: float, vap_press: float, density: float, contigency: float = 0.0
+) -> float:
     """Calculate NPSH available [m].
 
     Parameters
@@ -18,9 +20,11 @@ def npsha_calc(suc_press: float, vap_press: float, density: float) -> float:
     suc_press: Suction pressure in kPag.
     vap_press: Vapour pressure in kPa abs.
     density: Density in kg/m3.
+    contigency: Contingency factor.
     """
     g = 9.8066
-    return ((suc_press + 101.325) - vap_press) * 1000 / (density * g)
+    npsha_raw = ((suc_press + 101.325) - vap_press) * 1000 / (density * g)
+    return npsha_raw - contigency
 
 
 class Pump(BaseElement):
@@ -460,8 +464,9 @@ class Pump(BaseElement):
                 p_suc = float(suc_press) if suc_press is not None else None
                 p_vap_raw = self._scalar(Pump.PUMP_VAP_PRESS, 0)
                 p_vap = float(p_vap_raw) if p_vap_raw is not None else None
+                contigency = self._scalar(Pump.NPSHA_FACTOR, 5)
                 if p_suc is not None and p_vap is not None and density_in is not None:
-                    npsha_val = npsha_calc(p_suc, p_vap, density_in)
+                    npsha_val = npsha_calc(p_suc, p_vap, density_in, contigency)
             except (TypeError, ValueError):
                 pass
             npsh_unit = "m"
