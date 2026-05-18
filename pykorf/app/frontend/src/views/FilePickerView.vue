@@ -24,6 +24,13 @@ const kdfPath = ref("");
 const showBrowser = ref(false);
 const searchQuery = ref("");
 
+const displayFilename = computed(() => {
+  const path = kdfPath.value.trim().replace(/^"|"$/g, "");
+  if (!path) return "Select file";
+  const parts = path.split(/[\/\\]/);
+  return parts[parts.length - 1] || "Select file";
+});
+
 const openLoading = useLoading(async (path: string) => {
   await session.openFile(path);
 });
@@ -116,7 +123,7 @@ onMounted(async () => {
           <form @submit.prevent="openFile">
             <div class="mb-3">
               <label class="font-bold text-blue-600 block mb-2">{{
-                session.filename || "Select file"
+                displayFilename
               }}</label>
               <label class="pk-label">File Path</label>
               <div class="flex">

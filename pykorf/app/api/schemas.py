@@ -414,6 +414,14 @@ class DeleteReferenceRequest(BaseModel):
     ref_id: str
 
 
+class PredictCategoryRequest(BaseModel):
+    description: str
+
+
+class PredictCategoryResponse(BaseModel):
+    category: str
+
+
 class ShortcutsResponse(BaseModel):
     count: int = 0
     path: str = ""

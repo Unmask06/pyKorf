@@ -11,6 +11,8 @@ from pykorf.app.api.schemas import (
     DeleteReferenceRequest,
     EmptyRequest,
     OkResponse,
+    PredictCategoryRequest,
+    PredictCategoryResponse,
     ReferenceSchema,
     ReferencesStoreSchema,
     SaveAllReferencesRequest,
@@ -152,3 +154,12 @@ async def create_shortcuts(_: EmptyRequest) -> ShortcutsResponse:
         return ShortcutsResponse(count=count, path=str(ref_dir))
     except Exception as exc:
         return ShortcutsResponse(error=str(exc))
+
+
+@router.post("/predict-category", response_model=PredictCategoryResponse, operation_id="predictCategory")
+async def predict_category_endpoint(req: PredictCategoryRequest) -> PredictCategoryResponse:
+    """Predict a reference category from the description text."""
+    from pykorf.app.operation.project.references import predict_category
+
+    category = predict_category(req.description)
+    return PredictCategoryResponse(category=category)

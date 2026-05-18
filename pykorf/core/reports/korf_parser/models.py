@@ -123,6 +123,7 @@ class PumpData:
     pressure_in_unit: str = ""
     vapour_pressure_unit: str = ""
     density_unit: str = ""
+    contigency: float = 0.0
 
     @property
     def npsha_calc(self) -> float | None:
@@ -137,7 +138,9 @@ class PumpData:
         if self.pressure_in is None or self.vapour_pressure is None or self.density is None:
             return None
         try:
-            return npsha_calc(self.pressure_in * 100, self.vapour_pressure * 100, self.density)
+            return npsha_calc(
+                self.pressure_in * 100, self.vapour_pressure * 100, self.density, self.contigency
+            )
         except (ZeroDivisionError, ValueError):
             return None
 

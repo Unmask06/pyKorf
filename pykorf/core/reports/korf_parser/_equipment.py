@@ -292,6 +292,7 @@ def _parse_pumps_section(ws: Worksheet, start_row: int) -> tuple[list[PumpData],
                         pump.npshr = _safe_float(data.get("npshr"))
                         pump.vapour_pressure = _safe_float(data.get("vapour_pressure"))
                         pump.vapour_pressure_unit = npsh_units.get("vapour_pressure", "")
+                        pump.contigency = _safe_float(data.get("contigency")) or 0.0
             data_row += 1
             continue
         if cell_a in ("SHUT OFF PRESSURE", "CURVES") or cell_a in _SECTION_MARKERS_EQUIPMENT:

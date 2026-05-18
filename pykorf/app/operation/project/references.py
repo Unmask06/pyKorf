@@ -32,7 +32,6 @@ from typing import Any
 from pykorf.app.operation.config.config import get_doc_register_sp_site_url
 from pykorf.core.log import get_logger
 
-
 # ── Data model ────────────────────────────────────────────────────────────────
 
 CATEGORIES: list[str] = [
@@ -46,6 +45,58 @@ CATEGORIES: list[str] = [
     "Standard",
     "Other",
 ]
+
+# Ordered from lowest → highest priority (last match wins).
+CATEGORY_KEYWORDS: list[tuple[str, list[str]]] = [
+    ("Drawing", ["drawing", "dwg", "layout", "sketch", "elevation", "section", "isometric"]),
+    ("Report", ["report", "study", "analysis", "assessment", "technical report"]),
+    (
+        "Standard",
+        [
+            "standard",
+            "code",
+            "regulation",
+            "guideline",
+            "api ",
+            "iso ",
+            "asme",
+            "astm",
+            "iec",
+            "nfpa",
+        ],
+    ),
+    ("Specification", ["specification", "spec", "scope of work", "technical requirement"]),
+    ("Datasheet", ["datasheet", "data sheet", "spec sheet", "product data"]),
+    ("Calculation", ["calculation", "sizing", "hydraulic", "pressure drop", "flow", "pipe sizing"]),
+    ("PFD", ["pfd", "process flow", "block flow"]),
+    ("P&ID", ["p&id", "piping", "instrumentation", "p&amp;id"]),
+]
+
+
+def predict_category(description: str) -> str:
+    """Predict a reference category from a description string.
+
+    Uses case-insensitive keyword matching where lower-priority
+    categories are checked first so that the **last** matching
+    category wins (supersedes earlier matches).
+
+    Returns:
+        Predicted category string, or ``"Other"`` when no keywords
+        match.
+    """
+    if not description:
+        return "Other"
+
+    desc_lower = description.lower()
+    predicted = ""
+
+    for category, keywords in CATEGORY_KEYWORDS:
+        for kw in keywords:
+            if kw.lower() in desc_lower:
+                predicted = category
+                break
+
+    return predicted or "Other"
 
 
 @dataclass

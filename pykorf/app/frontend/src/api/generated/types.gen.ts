@@ -853,6 +853,26 @@ export type PipeCriteriaResponse = {
 };
 
 /**
+ * PredictCategoryRequest
+ */
+export type PredictCategoryRequest = {
+    /**
+     * Description
+     */
+    description: string;
+};
+
+/**
+ * PredictCategoryResponse
+ */
+export type PredictCategoryResponse = {
+    /**
+     * Category
+     */
+    category: string;
+};
+
+/**
  * PredictCriteriaRequest
  *
  * Empty — predicts for all pipes in current model.
@@ -2767,6 +2787,31 @@ export type GetReferenceShortcutsResponses = {
 };
 
 export type GetReferenceShortcutsResponse = GetReferenceShortcutsResponses[keyof GetReferenceShortcutsResponses];
+
+export type PredictCategoryData = {
+    body: PredictCategoryRequest;
+    path?: never;
+    query?: never;
+    url: '/api/references/predict-category';
+};
+
+export type PredictCategoryErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PredictCategoryError = PredictCategoryErrors[keyof PredictCategoryErrors];
+
+export type PredictCategoryResponses = {
+    /**
+     * Successful Response
+     */
+    200: PredictCategoryResponse;
+};
+
+export type PredictCategoryResponse2 = PredictCategoryResponses[keyof PredictCategoryResponses];
 
 export type ResolveSpUrlData = {
     body: ResolveSpUrlRequest;
