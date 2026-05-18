@@ -24,7 +24,7 @@ def npsha_calc(
     """
     g = 9.8066
     npsha_raw = ((suc_press + 101.325) - vap_press) * 1000 / (density * g)
-    return npsha_raw - contigency
+    return npsha_raw - float(contigency)
 
 
 class Pump(BaseElement):
