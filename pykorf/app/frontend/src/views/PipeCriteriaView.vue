@@ -35,6 +35,7 @@ const pipeCalcs = ref<Record<string, PipeCalcInfo>>({})
 const unitsData = ref<Record<string, Record<string, UnitConversionInfo>>>({})
 const fluidLabels = ref<Record<string, string>>({})
 const justifications = ref<Record<string, string>>({})
+const orphanedJustifications = ref<Record<string, string>>({})
 const violationSummary = ref<ViolationSummary | null>(null)
 
 // Edited criteria entries
@@ -85,6 +86,7 @@ function _applyResponse(data: PipeCriteriaResponse) {
   setResult.value = data.set_result ?? null
   predictResult.value = data.predict_result ?? null
   justifications.value = data.justifications ?? {}
+  orphanedJustifications.value = data.orphaned_justifications ?? {}
   violationSummary.value = data.violation_summary ?? null
 
   const initial: Record<string, PipeCriteriaEntry> = {}
@@ -243,15 +245,19 @@ function getViolations(name: string): CriteriaViolationsInfo | undefined {
 function openJustificationModal(name: string, criteriaKey: string) {
   const entry = pipeCriteria.value[name]
   if (!entry?.state || !entry.criteria) return
-  
+
   const violations = criteriaViolations.value[name]?.[criteriaKey]
-  if (!violations || violations.overall === 'PASS') return
-  
+  const isOrphaned = !!orphanedJustifications.value[name]
+
+  if (!violations || violations.overall === 'PASS') {
+    if (!isOrphaned) return
+  }
+
   const critVals = criteriaValues.value[name]?.[criteriaKey]
   const calcInfo = pipeCalcs.value[name]
-  
+
   const criteriaLabel = codes.value[entry.state]?.find(c => c[0] === entry.criteria)?.[1] || entry.criteria
-  
+
   justificationModal.value = {
     open: true,
     pipeName: name,
@@ -348,6 +354,16 @@ onMounted(() => {
         <ul v-if="(predictResult.errors ?? []).length" class="mt-2 pl-4 text-xs list-disc">
           <li v-for="e in (predictResult.errors ?? [])" :key="e">{{ e }}</li>
         </ul>
+      </div>
+    </div>
+
+    <!-- Orphaned justifications alert -->
+    <div v-if="Object.keys(orphanedJustifications).length > 0" class="flex items-start gap-2 p-3 rounded bg-amber-50 border border-amber-200 text-amber-800">
+      <AlertCircle class="w-5 h-5 shrink-0 mt-0.5" />
+      <div>
+        <strong>{{ Object.keys(orphanedJustifications).length }}</strong> pipe(s) have saved justifications but no current violations:
+        {{ Object.keys(orphanedJustifications).join(', ') }}.
+        <span class="text-xs">These will be preserved and applied when violations re-occur (e.g. in other cases).</span>
       </div>
     </div>
 
@@ -478,11 +494,11 @@ onMounted(() => {
                 </select>
               </td>
               <td class="pk-text-center-mono" 
-                  :class="{ 'viol-red': getViolations(name)?.dp_exceeds && !justifications[name], 'viol-justified': getViolations(name)?.dp_exceeds && justifications[name] }"
-                  @click="getViolations(name)?.dp_exceeds && openJustificationModal(name, criteriaKeyFor(name))"
-                  :style="(getViolations(name)?.dp_exceeds) ? 'cursor: pointer;' : ''">
+                  :class="{ 'viol-red': getViolations(name)?.dp_exceeds && !justifications[name], 'viol-justified': getViolations(name)?.dp_exceeds && justifications[name] && !orphanedJustifications[name], 'viol-orphaned': justifications[name] && !getViolations(name)?.dp_exceeds }"
+                  @click="(getViolations(name)?.dp_exceeds || orphanedJustifications[name]) && openJustificationModal(name, criteriaKeyFor(name))"
+                  :style="(getViolations(name)?.dp_exceeds || orphanedJustifications[name]) ? 'cursor: pointer;' : ''">
                 <div class="flex items-center justify-center gap-1">
-                  <MessageSquare v-if="justifications[name] && getViolations(name)?.dp_exceeds" class="w-3 h-3 text-blue-500 shrink-0" />
+                  <MessageSquare v-if="justifications[name] && (getViolations(name)?.dp_exceeds || orphanedJustifications[name])" class="w-3 h-3 shrink-0" :class="orphanedJustifications[name] && !getViolations(name)?.dp_exceeds ? 'text-gray-400' : 'text-blue-500'" />
                   {{ convertValue('dp', pipeCalcs[name]?.dp_calc ?? null) }}
                 </div>
               </td>
@@ -493,11 +509,11 @@ onMounted(() => {
                 <template v-else>—</template>
               </td>
               <td class="pk-text-center-mono" 
-                  :class="{ 'viol-red': (getViolations(name)?.vel_below_min || getViolations(name)?.vel_above_max) && !justifications[name], 'viol-justified': (getViolations(name)?.vel_below_min || getViolations(name)?.vel_above_max) && justifications[name] }"
-                  @click="(getViolations(name)?.vel_below_min || getViolations(name)?.vel_above_max) && openJustificationModal(name, criteriaKeyFor(name))"
-                  :style="(getViolations(name)?.vel_below_min || getViolations(name)?.vel_above_max) ? 'cursor: pointer;' : ''">
+                  :class="{ 'viol-red': (getViolations(name)?.vel_below_min || getViolations(name)?.vel_above_max) && !justifications[name], 'viol-justified': (getViolations(name)?.vel_below_min || getViolations(name)?.vel_above_max) && justifications[name] && !orphanedJustifications[name], 'viol-orphaned': justifications[name] && !(getViolations(name)?.vel_below_min || getViolations(name)?.vel_above_max) }"
+                  @click="(getViolations(name)?.vel_below_min || getViolations(name)?.vel_above_max || orphanedJustifications[name]) && openJustificationModal(name, criteriaKeyFor(name))"
+                  :style="(getViolations(name)?.vel_below_min || getViolations(name)?.vel_above_max || orphanedJustifications[name]) ? 'cursor: pointer;' : ''">
                 <div class="flex items-center justify-center gap-1">
-                  <MessageSquare v-if="justifications[name] && (getViolations(name)?.vel_below_min || getViolations(name)?.vel_above_max)" class="w-3 h-3 text-blue-500 shrink-0" />
+                  <MessageSquare v-if="justifications[name] && (getViolations(name)?.vel_below_min || getViolations(name)?.vel_above_max || orphanedJustifications[name])" class="w-3 h-3 shrink-0" :class="orphanedJustifications[name] && !(getViolations(name)?.vel_below_min || getViolations(name)?.vel_above_max) ? 'text-gray-400' : 'text-blue-500'" />
                   {{ convertValue('velocity', pipeCalcs[name]?.vel_calc ?? null) }}
                 </div>
               </td>
@@ -514,11 +530,11 @@ onMounted(() => {
                 <template v-else>—</template>
               </td>
               <td class="pk-text-center-mono" 
-                  :class="{ 'viol-red': (getViolations(name)?.rho_v2_below_min || getViolations(name)?.rho_v2_above_max) && !justifications[name], 'viol-justified': (getViolations(name)?.rho_v2_below_min || getViolations(name)?.rho_v2_above_max) && justifications[name] }"
-                  @click="(getViolations(name)?.rho_v2_below_min || getViolations(name)?.rho_v2_above_max) && openJustificationModal(name, criteriaKeyFor(name))"
-                  :style="(getViolations(name)?.rho_v2_below_min || getViolations(name)?.rho_v2_above_max) ? 'cursor: pointer;' : ''">
+                  :class="{ 'viol-red': (getViolations(name)?.rho_v2_below_min || getViolations(name)?.rho_v2_above_max) && !justifications[name], 'viol-justified': (getViolations(name)?.rho_v2_below_min || getViolations(name)?.rho_v2_above_max) && justifications[name] && !orphanedJustifications[name], 'viol-orphaned': justifications[name] && !(getViolations(name)?.rho_v2_below_min || getViolations(name)?.rho_v2_above_max) }"
+                  @click="(getViolations(name)?.rho_v2_below_min || getViolations(name)?.rho_v2_above_max || orphanedJustifications[name]) && openJustificationModal(name, criteriaKeyFor(name))"
+                  :style="(getViolations(name)?.rho_v2_below_min || getViolations(name)?.rho_v2_above_max || orphanedJustifications[name]) ? 'cursor: pointer;' : ''">
                 <div class="flex items-center justify-center gap-1">
-                  <MessageSquare v-if="justifications[name] && (getViolations(name)?.rho_v2_below_min || getViolations(name)?.rho_v2_above_max)" class="w-3 h-3 text-blue-500 shrink-0" />
+                  <MessageSquare v-if="justifications[name] && (getViolations(name)?.rho_v2_below_min || getViolations(name)?.rho_v2_above_max || orphanedJustifications[name])" class="w-3 h-3 shrink-0" :class="orphanedJustifications[name] && !(getViolations(name)?.rho_v2_below_min || getViolations(name)?.rho_v2_above_max) ? 'text-gray-400' : 'text-blue-500'" />
                   {{ convertValue('rho_v2', pipeCalcs[name]?.rho_v2_calc ?? null) }}
                 </div>
               </td>
@@ -566,6 +582,12 @@ onMounted(() => {
           <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
             <p class="text-sm text-blue-800">
               <strong>Criteria:</strong> {{ justificationModal.criteriaLabel }}
+            </p>
+          </div>
+
+          <div v-if="orphanedJustifications[justificationModal.pipeName] && (!justificationModal.violations || justificationModal.violations.overall === 'PASS')" class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded">
+            <p class="text-sm text-amber-800">
+              This pipe is not currently violating criteria. The justification below will be preserved for future cases where it may be needed.
             </p>
           </div>
 
@@ -669,5 +691,11 @@ onMounted(() => {
 .viol-justified {
   background-color: #dbeafe !important;
   color: #1e40af;
+}
+
+/* Orphaned justification highlighting — grey background */
+.viol-orphaned {
+  background-color: #f3f4f6 !important;
+  color: #6b7280;
 }
 </style>

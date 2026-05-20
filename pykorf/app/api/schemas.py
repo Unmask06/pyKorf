@@ -352,6 +352,7 @@ class PipeCriteriaResponse(BaseModel):
     set_result: SetCriteriaResponse | None = None
     predict_result: PredictCriteriaResponse | None = None
     justifications: dict[str, str] = {}
+    orphaned_justifications: dict[str, str] = {}
     violation_summary: ViolationSummary = ViolationSummary()
 
 

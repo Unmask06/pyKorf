@@ -14,6 +14,7 @@ from pykorf.core.reports.formatting import (
     ReportStyles,
     apply_column_widths,
     apply_fail_format,
+    apply_justified_format,
     apply_number_format,
     apply_table_borders,
     parse_headers,
@@ -286,6 +287,7 @@ class ResultExporter:
                 case_data=case_data,
                 model=self.reporter.model,
                 reporter=self.reporter,
+                justifications=self.reporter._justifications,
             )
             builder.write_summary_sheet(
                 summary_ws,
@@ -633,8 +635,11 @@ class ResultExporter:
                 if c_idx > start_col:
                     col_name = df.columns[c_idx - start_col]
                     apply_number_format(cell, col_name)
-                if criteria_col_idx is not None and c_idx == criteria_col_idx and val == "FAIL":
-                    apply_fail_format(cell)
+                if criteria_col_idx is not None and c_idx == criteria_col_idx:
+                    if val == "FAIL":
+                        apply_fail_format(cell)
+                    elif val == "JUSTIFIED":
+                        apply_justified_format(cell)
 
         last_row = data_start_row + len(df) - 1
         apply_column_widths(ws, len(descriptions), start_col)

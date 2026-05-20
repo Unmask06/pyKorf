@@ -849,6 +849,12 @@ export type PipeCriteriaResponse = {
     justifications?: {
         [key: string]: string;
     };
+    /**
+     * Orphaned Justifications
+     */
+    orphaned_justifications?: {
+        [key: string]: string;
+    };
     violation_summary?: ViolationSummary;
 };
 

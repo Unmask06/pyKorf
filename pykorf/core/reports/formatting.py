@@ -39,6 +39,9 @@ class ReportStyles:
     fail_font = Font(bold=True, size=10, color="9C0006")
     fail_fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
 
+    justified_font = Font(bold=True, size=10, color="003366")
+    justified_fill = PatternFill(start_color="D9E2F3", end_color="D9E2F3", fill_type="solid")
+
     section_font = Font(bold=True, italic=True, size=11, color="003366")
     section_fill = PatternFill(start_color="D6EAF8", end_color="D6EAF8", fill_type="solid")
 
@@ -154,6 +157,12 @@ def apply_fail_format(cell: Any) -> None:
     """Apply red bold font + red fill to a FAIL criteria cell."""
     cell.font = _STYLES.fail_font
     cell.fill = _STYLES.fail_fill
+
+
+def apply_justified_format(cell: Any) -> None:
+    """Apply blue bold font + blue fill to a JUSTIFIED criteria cell."""
+    cell.font = _STYLES.justified_font
+    cell.fill = _STYLES.justified_fill
 
 
 # ---- Section Marker (Transposed Tables) --------------------------------------

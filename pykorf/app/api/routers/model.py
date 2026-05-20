@@ -297,6 +297,9 @@ async def get_pipe_criteria() -> PipeCriteriaResponse:
     violation_summary = _compute_violation_summary(
         pipe_criteria_violations, justifications, existing
     )
+    orphaned_justifications = _compute_orphaned_justifications(
+        justifications, pipe_criteria_violations, existing
+    )
 
     return PipeCriteriaResponse(
         kdf_path=str(kdf_path or ""),
@@ -309,6 +312,7 @@ async def get_pipe_criteria() -> PipeCriteriaResponse:
         pipe_criteria_violations=pipe_criteria_violations,
         units_data=_load_units_data(),
         justifications=justifications,
+        orphaned_justifications=orphaned_justifications,
         violation_summary=violation_summary,
     )
 
@@ -416,6 +420,26 @@ def _compute_violation_summary(
         pipes_needing_justification=len(unjustified),
         violations_needing_justification=_total_flags(unjustified),
     )
+
+
+def _compute_orphaned_justifications(
+    justifications: dict[str, str],
+    pipe_criteria_violations: dict[str, dict],
+    existing: dict[str, dict],
+) -> dict[str, str]:
+    """Return justifications for pipes that are NOT currently failing criteria."""
+    failing_pipes: set[str] = set()
+    for name in pipe_criteria_violations:
+        entry = existing.get(name)
+        if entry is None or not entry.state or not entry.criteria:
+            continue
+        violations = pipe_criteria_violations.get(name, {}).get(f"{entry.state}:{entry.criteria}")
+        if violations is not None and violations.overall == "FAIL":
+            failing_pipes.add(name)
+
+    return {
+        name: text for name, text in justifications.items() if name not in failing_pipes
+    }
 
 
 def _get_pipes_list(model) -> list[tuple[int, str]]:
