@@ -14,6 +14,7 @@ from pykorf.core.reports.formatting import (
     ReportStyles,
     apply_column_widths,
     apply_fail_format,
+    apply_justified_format,
     apply_number_format,
     apply_table_borders,
     parse_header_unit,
@@ -58,10 +59,12 @@ class MultiCaseSummaryBuilder:
         case_data: dict[CaseInfo, KorfCaseData],
         model: Model,
         reporter: KorfReporter,
+        justifications: dict[str, str] | None = None,
     ):
         self._case_data = case_data
         self._model = model
         self._reporter = reporter
+        self._justifications = justifications or {}
         self._case_names = self._get_case_names()
 
     def _get_case_names(self) -> list[str]:
@@ -363,27 +366,32 @@ class MultiCaseSummaryBuilder:
         return None
 
     def _check_pipe_criteria(self, pd_pipe: PipeData) -> str:
-        """Check pipe criteria and return PASS/FAIL status."""
+        """Check pipe criteria and return PASS/FAIL/JUSTIFIED status."""
+        failed = False
         if (
             pd_pipe.dp_length_criteria_max is not None
             and pd_pipe.dp_length is not None
             and pd_pipe.dp_length_criteria_max > 0
         ):
             if abs(pd_pipe.dp_length) > abs(pd_pipe.dp_length_criteria_max):
-                return "FAIL"
+                failed = True
         if (
             pd_pipe.velocity_criteria_max is not None
             and pd_pipe.velocity_in is not None
             and pd_pipe.velocity_criteria_max > 0
         ):
             if abs(pd_pipe.velocity_in) > abs(pd_pipe.velocity_criteria_max):
-                return "FAIL"
+                failed = True
         if pd_pipe.velocity_criteria_min is not None and pd_pipe.velocity_in is not None:
             if (
                 pd_pipe.velocity_criteria_min > 0
                 and abs(pd_pipe.velocity_in) < pd_pipe.velocity_criteria_min
             ):
-                return "FAIL"
+                failed = True
+        if failed:
+            if pd_pipe.name in self._justifications:
+                return "JUSTIFIED"
+            return "FAIL"
         return "PASS"
 
     def _resolve_pipe_columns(self, df: pd.DataFrame, keys: list[str]) -> list[str]:
@@ -524,9 +532,12 @@ class MultiCaseSummaryBuilder:
                 if c_idx > start_col:
                     col_name = df.columns[c_idx - start_col]
                     apply_number_format(cell, col_name)
-                if criteria_col_idx is not None and c_idx == criteria_col_idx and val == "FAIL":
-                    apply_fail_format(cell)
-                    cell.fill = _STYLES.fail_fill
+                if criteria_col_idx is not None and c_idx == criteria_col_idx:
+                    if val == "FAIL":
+                        apply_fail_format(cell)
+                        cell.fill = _STYLES.fail_fill
+                    elif val == "JUSTIFIED":
+                        apply_justified_format(cell)
 
         last_row = data_start_row + len(df) - 1
         apply_table_borders(ws, start_row, last_row, len(descriptions), start_col)

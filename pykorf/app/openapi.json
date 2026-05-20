@@ -3232,6 +3232,14 @@
             "title": "Justifications",
             "default": {}
           },
+          "orphaned_justifications": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Orphaned Justifications",
+            "default": {}
+          },
           "violation_summary": {
             "$ref": "#/components/schemas/ViolationSummary",
             "default": {

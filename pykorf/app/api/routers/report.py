@@ -179,6 +179,11 @@ async def generate_report(
                         "Generate it from KORF first."
                     )
                 else:
+                    # Load justifications from .pykorf sidecar
+                    from pykorf.app.operation.project.pykorf_file import get_justifications
+
+                    justifications = get_justifications(kdf_path) if kdf_path else {}
+
                     # Check staleness with threshold
                     staleness_seconds = get_staleness_seconds(kdf_path, korf_excel_path)
 
@@ -215,6 +220,7 @@ async def generate_report(
                                     remarks=remarks,
                                     hold=hold,
                                     references=references,
+                                    justifications=justifications,
                                 )
                                 exporter = ResultExporter(reporter=reporter)
                                 exporter.export_to_excel(
@@ -243,6 +249,7 @@ async def generate_report(
                                 remarks=remarks,
                                 hold=hold,
                                 references=references,
+                                justifications=justifications,
                             )
                             exporter = ResultExporter(reporter=reporter)
                             exporter.export_to_excel(

@@ -5,6 +5,17 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.40.0] - 2026-05-20
+
+### What's New
+
+- Multi-case reports now support pipe criteria justifications — justifications saved in the Pipe Criteria view are applied when generating multi-case reports from KORF Excel files, marking qualified pipes as JUSTIFIED in the criteria check column and suppressing the underlying violations in the Validation sheet.
+
+### Improved
+
+- The Pipe Criteria view now shows a warning banner when pipes have saved justifications but no current violations (for example, after switching cases). The justification icon stays visible in grey for orphaned entries, and the modal can still be opened to view or clear them.
+- Justified pipes in report tables now use blue styling for the criteria check cell, matching the Validation sheet's "Justified" severity styling.
+
 ## [0.39.0] - 2026-05-20
 
 ### What's New

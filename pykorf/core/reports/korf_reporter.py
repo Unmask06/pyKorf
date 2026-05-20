@@ -45,9 +45,11 @@ class KorfReporter(_BaseReporter):
         remarks: str = "",
         hold: str = "",
         references: list[dict] | None = None,
+        justifications: dict[str, str] | None = None,
     ):
         super().__init__(model, basis=basis, remarks=remarks, hold=hold, references=references)
         self._excel_path = Path(excel_path)
+        self._justifications = justifications or {}
 
         self._case_data: dict[CaseInfo, KorfCaseData] | None = None
 
@@ -72,6 +74,13 @@ class KorfReporter(_BaseReporter):
         """Combine validation issues from all KORF Excel cases."""
         all_issues: list[dict[str, str]] = []
         case_data = self._get_case_data()
+
+        justified_pipes: set[str] = set()
+        if self._justifications:
+            for cd in case_data.values():
+                for p in cd.pipes:
+                    if self._check_pipe_criteria(p) == "JUSTIFIED":
+                        justified_pipes.add(p.name)
 
         excluded_names: set[str] = set()
         for cd in case_data.values():
@@ -98,6 +107,8 @@ class KorfReporter(_BaseReporter):
                 severity, category, elem = self.classify_issue(msg)
                 if elem and elem in excluded_names:
                     continue
+                if elem and elem in justified_pipes:
+                    continue
                 all_issues.append(
                     {
                         "Severity": severity,
@@ -106,6 +117,17 @@ class KorfReporter(_BaseReporter):
                         "Message": f"[{case_info.name}] {msg}",
                     }
                 )
+
+        for pipe_name in sorted(justified_pipes):
+            justification = self._justifications.get(pipe_name, "")
+            all_issues.append(
+                {
+                    "Severity": "Justified",
+                    "Category": "Criteria",
+                    "Element": pipe_name,
+                    "Message": f"Pipe '{pipe_name}': criteria violation justified - {justification}",
+                }
+            )
 
         if not all_issues:
             return pd.DataFrame(columns=["Severity", "Category", "Element", "Message"])
@@ -311,27 +333,32 @@ class KorfReporter(_BaseReporter):
         return None
 
     def _check_pipe_criteria(self, pd_pipe: PipeData) -> str:
-        """Check pipe criteria and return PASS/FAIL status."""
+        """Check pipe criteria and return PASS/FAIL/JUSTIFIED status."""
+        failed = False
         if (
             pd_pipe.dp_length_criteria_max is not None
             and pd_pipe.dp_length is not None
             and pd_pipe.dp_length_criteria_max > 0
         ):
             if abs(pd_pipe.dp_length) > abs(pd_pipe.dp_length_criteria_max):
-                return "FAIL"
+                failed = True
         if (
             pd_pipe.velocity_criteria_max is not None
             and pd_pipe.velocity_in is not None
             and pd_pipe.velocity_criteria_max > 0
         ):
             if abs(pd_pipe.velocity_in) > abs(pd_pipe.velocity_criteria_max):
-                return "FAIL"
+                failed = True
         if pd_pipe.velocity_criteria_min is not None and pd_pipe.velocity_in is not None:
             if (
                 pd_pipe.velocity_criteria_min > 0
                 and abs(pd_pipe.velocity_in) < pd_pipe.velocity_criteria_min
             ):
-                return "FAIL"
+                failed = True
+        if failed:
+            if pd_pipe.name in self._justifications:
+                return "JUSTIFIED"
+            return "FAIL"
         return "PASS"
 
     def _format_line_size(self, pd_pipe: PipeData, pipe_model) -> str:

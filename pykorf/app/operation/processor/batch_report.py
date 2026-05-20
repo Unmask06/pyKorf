@@ -242,6 +242,13 @@ class BatchReportGenerator:
                                     continue
                             except OSError:
                                 continue
+
+                            from pykorf.app.operation.project.pykorf_file import (
+                                get_justifications,
+                            )
+
+                            justifications = get_justifications(kdf_file)
+
                             korf_reporter = KorfReporter(
                                 excel_path=korf_excel,
                                 model=model,
@@ -249,6 +256,7 @@ class BatchReportGenerator:
                                 remarks=remarks,
                                 hold=hold,
                                 references=references,
+                                justifications=justifications,
                             )
                             single_exporter = ResultExporter(reporter=korf_reporter)
                             single_path = (
