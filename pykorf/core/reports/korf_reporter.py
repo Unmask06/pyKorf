@@ -188,6 +188,8 @@ class KorfReporter(_BaseReporter):
         return [
             {
                 "Source": f"{f.name} , {f.description}" if f.description else f.name,
+                "Elevation [m]": f.elevation,
+                "Fluid Level [m]": f.fluid_level,
                 "Pressure [barg]": f.pressure,
             }
             for f in cd.feeds
@@ -199,6 +201,8 @@ class KorfReporter(_BaseReporter):
         return [
             {
                 "Sink": f"{p.name} , {p.description}" if p.description else p.name,
+                "Elevation [m]": p.elevation,
+                "Fluid Level [m]": p.fluid_level,
                 "Pressure [barg]": p.pressure,
             }
             for p in cd.products
@@ -391,7 +395,7 @@ class KorfReporter(_BaseReporter):
 
             row = {
                 "Valve Name": valve.name,
-                "Flow Rate [kg/h]": flow_rate,
+                "Flowrate [kg/h]": flow_rate,
                 "Inlet Pressure [barg]": valve.pressure_in,
                 "Differential Pressure [bar]": valve.dp,
             }
@@ -401,9 +405,11 @@ class KorfReporter(_BaseReporter):
     # ── ORIFICES ──────────────────────────────────────────────────────
 
     def _extract_orifices(self, cd: KorfCaseData) -> list[dict]:
-        # Orifice Name, Type, DP Pipe Tap, Inlet Pressure, Outlet Pressure
+        # Orifice Name, Type, DP Pipe Tap, Inlet Pressure, Flowrate
         results = []
         for orif in cd.orifices:
+            inlet_pipe = next((p for p in cd.pipes if p.name == orif.pipe_inlet), None)
+            flowrate = inlet_pipe.vol_flow if inlet_pipe else None
             row = {
                 "Orifice Name": f"{orif.name} , {orif.description}"
                 if orif.description
@@ -411,7 +417,7 @@ class KorfReporter(_BaseReporter):
                 "Type": orif.type,
                 "DP Pipe Tap [bar]": orif.dp_pipe_tap,
                 "Inlet Pressure [barg]": orif.pressure_in,
-                "Outlet Pressure [barg]": orif.pressure_out,
+                "Flowrate [m³/h]": flowrate,
             }
             results.append(row)
         return results
@@ -462,12 +468,13 @@ class KorfReporter(_BaseReporter):
 
     def _extract_misc_equipment(self, cd: KorfCaseData) -> list[dict]:
         # Aligns with MiscEquipment.summary(export=True):
-        # Equipment Name, Pressure Drop
+        # Equipment Name, Inlet Elevation, Pressure Drop
         results = []
         for misc in cd.misc_equipment:
             display_name = f"{misc.name} , {misc.description}" if misc.description else misc.name
             row = {
                 "Equipment Name": display_name,
+                "Inlet Elevation [m]": misc.elevation_in,
                 "Pressure Drop [bar]": misc.dp,
             }
             results.append(row)

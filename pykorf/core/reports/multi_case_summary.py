@@ -33,7 +33,7 @@ _STYLES = ReportStyles()
 _logger = logging.getLogger(__name__)
 
 _VALVE_PARAMETERS = [
-    ("Flow Rate", "kg/h"),
+    ("Flowrate", "kg/h"),
     ("Inlet Pressure", "barg"),
     ("Differential Pressure", "bar"),
 ]

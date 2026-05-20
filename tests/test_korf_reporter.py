@@ -981,7 +981,7 @@ class TestMultiCaseSummaryBuilder:
             assert "parameters" in valve_info
             assert "case_values" in valve_info
             assert valve_info["parameters"] == [
-                "Flow Rate",
+                "Flowrate",
                 "Inlet Pressure",
                 "Differential Pressure",
             ]
