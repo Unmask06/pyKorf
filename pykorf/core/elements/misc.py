@@ -63,6 +63,13 @@ class MiscEquipment(BaseElement):
         except (TypeError, ValueError):
             return 0.0
 
+    @property
+    def inlet_elevation_m(self) -> float:
+        try:
+            return float(self._scalar(MiscEquipment.NOZI, 1))
+        except (TypeError, ValueError):
+            return 0.0
+
     def set_dp(self, value: str | float) -> None:
         rec = self.get_param(MiscEquipment.DP)
         if rec:
@@ -74,6 +81,7 @@ class MiscEquipment(BaseElement):
             display_name = f"{self.name} , {self.description}" if self.description else self.name
             return {
                 "Equipment Name": display_name,
+                self.format_export_header("Inlet Elevation", "m"): self.inlet_elevation_m,
                 self.format_export_header("Pressure Drop", dp_unit): dp_val,
             }
 

@@ -20,7 +20,7 @@ uv run python -c "from pykorf.app.api import create_app; import json; app = crea
 ```
 
 Then from `pykorf/app/frontend`:
-use cmd
+use cmd instead of ps for npm scripts
 ```
 npm run generate-types
 ```

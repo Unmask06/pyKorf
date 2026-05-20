@@ -25,14 +25,13 @@ class Feed(BaseElement):
     XY = "XY"  # [icon_x, icon_y] - 1 coordinate pair (icon anchor position only)
     TYPE = "TYPE"  # ["feed_type"]
     ELEV = "ELEV"  # [elevation, unit]
-    LEVELH = "LEVELH"  # [level1, level2, unit, level4, unit, level6]
+    LEVELH = "LEVELH"  # [fluid_lvl_input, fluid_lvl_calc, unit, static_density, density_unit, static_reference("Line" or "")]
     PRES = "PRES"  # [pres_str, pres_num, unit]
     POUT = "POUT"  # [pres_out_str, pres_out_num, unit]
     DP = "DP"  # [dp_str, dp_num, unit]
     EQN = "EQN"  # [eqn_type, ..., ..., ..., ...]
     CHOKE = "CHOKE"  # [choke_bool]
     NOZL = "NOZL"  # [pipe_idx,pipe_elev,unit,nozl_press...,unit]
-
 
     ALL = (
         "NUM",
@@ -65,6 +64,13 @@ class Feed(BaseElement):
     def elevation_m(self) -> float:
         try:
             return float(self._scalar(Feed.ELEV, 0))
+        except (TypeError, ValueError):
+            return 0.0
+
+    @property
+    def fluid_level_m(self) -> float:
+        try:
+            return float(self._scalar(Feed.LEVELH, 1))
         except (TypeError, ValueError):
             return 0.0
 
@@ -123,6 +129,8 @@ class Feed(BaseElement):
             display_name = f"{self.name} , {self.description}" if self.description else self.name
             return {
                 "Source": display_name,
+                self.format_export_header("Elevation", "m"): self.elevation_m,
+                self.format_export_header("Fluid Level", "m"): self.fluid_level_m,
                 self.format_export_header("Pressure", pres_unit): pres_val,
             }
 
