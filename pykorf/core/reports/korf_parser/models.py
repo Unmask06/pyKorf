@@ -48,6 +48,8 @@ class FeedData:
 
     name: str
     description: str = ""
+    elevation: float | None = None
+    fluid_level: float | None = None
     pressure: float | None = None
 
 
@@ -57,6 +59,8 @@ class ProductData:
 
     name: str
     description: str = ""
+    elevation: float | None = None
+    fluid_level: float | None = None
     pressure: float | None = None
 
 
@@ -202,6 +206,7 @@ class MiscEquipmentData:
 
     name: str
     description: str = ""
+    elevation_in: float | None = None
     dp: float | None = None
     pressure_in: float | None = None
     pressure_out: float | None = None

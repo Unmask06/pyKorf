@@ -121,6 +121,8 @@ def _parse_feeds_section(ws: Worksheet, start_row: int) -> tuple[list[FeedData],
             FeedData(
                 name=_safe_str(data.get("name")),
                 description=_safe_str(data.get("description")),
+                elevation=_safe_float(data.get("elevation")),
+                fluid_level=_safe_float(data.get("fluid_level")),
                 pressure=_safe_float(data.get("pressure")),
             )
         )
@@ -148,6 +150,8 @@ def _parse_products_section(ws: Worksheet, start_row: int) -> tuple[list[Product
             ProductData(
                 name=_safe_str(data.get("name")),
                 description=_safe_str(data.get("description")),
+                elevation=_safe_float(data.get("elevation")),
+                fluid_level=_safe_float(data.get("fluid_level")),
                 pressure=_safe_float(data.get("pressure")),
             )
         )
@@ -411,6 +415,7 @@ def _parse_misc_section(ws: Worksheet, start_row: int) -> tuple[list[MiscEquipme
             MiscEquipmentData(
                 name=_safe_str(data.get("name")),
                 description=_safe_str(data.get("description")),
+                elevation_in=_safe_float(data.get("elevation_in")),
                 dp=_safe_float(data.get("dp")),
                 pressure_in=_safe_float(data.get("pressure_in")),
                 pressure_out=_safe_float(data.get("pressure_out")),

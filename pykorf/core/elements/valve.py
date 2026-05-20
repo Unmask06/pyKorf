@@ -171,7 +171,7 @@ class Valve(BaseElement):
 
             return {
                 "Valve Name": self.name,
-                self.format_export_header("Flow Rate", flow_unit): flow_rate_val
+                self.format_export_header("Flowrate", flow_unit): flow_rate_val
                 if flow_unit
                 else "",
                 self.format_export_header("Inlet Pressure", pin_unit): pin_val,

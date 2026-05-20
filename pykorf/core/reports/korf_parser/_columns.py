@@ -19,6 +19,8 @@ _SECTION_MARKERS_EQUIPMENT = {
 _FEED_COL_MAP: dict[str, int] = {
     "name": 1,
     "description": 2,
+    "elevation": 4,
+    "fluid_level": 5,
     "pressure": 12,
     "pipe": 13,
 }
@@ -26,6 +28,8 @@ _FEED_COL_MAP: dict[str, int] = {
 _PRODUCT_COL_MAP: dict[str, int] = {
     "name": 1,
     "description": 2,
+    "elevation": 4,
+    "fluid_level": 5,
     "pressure": 12,
     "pipe": 13,
 }
@@ -121,6 +125,7 @@ _EXCHANGER_COL_MAP: dict[str, int] = {
 _MISC_COL_MAP: dict[str, int] = {
     "name": 1,
     "description": 2,
+    "elevation_in": 3,
     "dp": 12,
     "pressure_in": 14,
     "pressure_out": 15,
