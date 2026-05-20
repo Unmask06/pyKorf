@@ -1,7 +1,6 @@
 ---
 description: Release a new version of pyKorf — bump version, update changelog, generate types, commit, and merge to main
 agent: build
-model: deepseek-v4-flash
 ---
 
 Release a new version of pyKorf. Follow these steps exactly:
@@ -21,7 +20,7 @@ uv run python -c "from pykorf.app.api import create_app; import json; app = crea
 ```
 
 Then from `pykorf/app/frontend`:
-
+use cmd
 ```
 npm run generate-types
 ```
