@@ -97,7 +97,7 @@ NUMBER_FORMAT_RULES: list[tuple[tuple[str, ...], str]] = [
     (("Differential Head", "Temperature", "Flowrate"), "#,##0"),
     (("Velocity", "Pressure", "Differential Pressure"), "#0.00"),
     (("dP",), "#0.00"),
-    (("Raise", "Shut-Off", "NPSH", "Power", "Volumetric Flow"), "#0.0"),
+    (("Raise", "Shut-Off", "NPSH", "Power", "Volumetric Flow", "Efficiency"), "#0.0"),
 ]
 
 

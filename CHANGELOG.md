@@ -5,6 +5,17 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.41.0] - 2026-05-21
+
+### What's New
+
+- Generated reports now include the model title at the top of every sheet, making it easier to identify the project across all report pages.
+
+### Improved
+
+- Pump and compressor efficiency values in reports are now shown as percentages (for example, 79.3%) instead of decimal fractions.
+- Criteria violation labels (DP/DL, velocity, rhoV2) are now generated from a single shared source, ensuring consistent wording across validation, summaries, and reports.
+
 ## [0.40.0] - 2026-05-20
 
 ### What's New

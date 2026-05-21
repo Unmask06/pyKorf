@@ -123,8 +123,6 @@ class ResultExporter:
         ):
             self._write_references_sheet(workbook)
 
-        self._write_validation_sheet(workbook)
-
         if is_multi_case:
             self._export_multi_case(workbook, all_cases, source_name, elements, pipe_columns)
         else:
@@ -144,6 +142,7 @@ class ResultExporter:
                 pipe_columns,
             )
 
+        self._write_validation_sheet(workbook)
         workbook.save(output_path)
         _logger.info("   Report saved | %s", output_path)
         return str(output_path)
@@ -166,18 +165,14 @@ class ResultExporter:
         worksheet.page_setup.fitToWidth = 1
         worksheet.page_setup.fitToHeight = 1
 
-        model_title = self.reporter.get_model_title()
-        if model_title:
-            title_cell = worksheet.cell(row=1, column=1, value=model_title)
-            title_cell.font = _STYLES.model_title
-            worksheet.row_dimensions[1].height = 28
+        current_row = self._write_model_title(worksheet)
 
-        worksheet.cell(row=2, column=1, value=f"Source File: {source_name}").font = _STYLES.header
+        worksheet.cell(row=current_row, column=1, value=f"Source File: {source_name}").font = _STYLES.header
 
         case_names = self.reporter.get_case_names()
         if case_names:
             worksheet.cell(
-                row=3, column=1, value=f"Cases: {'; '.join(case_names)}"
+                row=current_row + 1, column=1, value=f"Cases: {'; '.join(case_names)}"
             ).font = _STYLES.header
 
         if pipe_columns and "Pipes" in dfs_flat and not dfs_flat["Pipes"].empty:
@@ -272,11 +267,7 @@ class ResultExporter:
         summary_ws.page_setup.fitToWidth = 1
         summary_ws.page_setup.fitToHeight = 1
 
-        model_title = self.reporter.get_model_title()
-        if model_title:
-            title_cell = summary_ws.cell(row=1, column=1, value=model_title)
-            title_cell.font = _STYLES.model_title
-            summary_ws.row_dimensions[1].height = 28
+        current_row = self._write_model_title(summary_ws)
 
         if isinstance(
             self.reporter,
@@ -311,7 +302,7 @@ class ResultExporter:
             ws = self._write_case_sheet(
                 workbook, case_name, case_dfs, source_name, element_keys, pipe_columns
             )
-            ws.cell(row=2, column=1, value=f"Case: {case_name}").font = _STYLES.header
+            ws.cell(row=3, column=1, value=f"Case: {case_name}").font = _STYLES.header
 
     def _write_case_sheet_content(
         self,
@@ -399,7 +390,9 @@ class ResultExporter:
         ws.page_setup.fitToWidth = 1
         ws.page_setup.fitToHeight = 1
 
-        ws.cell(row=2, column=1, value=f"Source File: {source_name}").font = _STYLES.header
+        current_row = self._write_model_title(ws)
+
+        ws.cell(row=current_row, column=1, value=f"Source File: {source_name}").font = _STYLES.header
 
         if pipe_columns and "Pipes" in dfs and not dfs["Pipes"].empty:
             dfs = dict(dfs)
@@ -600,6 +593,16 @@ class ResultExporter:
     # INTERNAL WRITING HELPERS
     # =========================================================
 
+    def _write_model_title(self, ws: Any) -> int:
+        """Write the model title to A1 of *ws*. Returns 2 if title was written, else 1."""
+        title = self.reporter.get_model_title()
+        if title:
+            cell = ws.cell(row=1, column=1, value=title)
+            cell.font = _STYLES.model_title
+            ws.row_dimensions[1].height = 28
+            return 2
+        return 1
+
     def _write_cell(
         self, ws: Any, row: int, col: int, value: Any, style: str | None = None
     ) -> None:
@@ -726,11 +729,11 @@ class ResultExporter:
         for col_idx, width in enumerate([50, 15, 15], start=1):
             ref_ws.column_dimensions[get_column_letter(col_idx)].width = width
 
-        row = 1
+        row = self._write_model_title(ref_ws)
 
         # Sheet title
         title_cell = ref_ws.cell(row=row, column=1, value="References & Design Basis")
-        title_cell.font = _STYLES.model_title
+        title_cell.font = _STYLES.title
         ref_ws.row_dimensions[row].height = 30
         row += 2
 
@@ -830,7 +833,7 @@ class ResultExporter:
         if df.empty:
             return
 
-        val_ws = workbook.create_sheet("Validation", 0)
+        val_ws = workbook.create_sheet("Validation")
         assert val_ws is not None, "Failed to create Validation sheet"
         val_ws.page_setup.paperSize = val_ws.PAPERSIZE_A4
         val_ws.page_setup.orientation = val_ws.ORIENTATION_LANDSCAPE
@@ -839,11 +842,11 @@ class ResultExporter:
         for col_idx, width in enumerate([12, 18, 15, 80], start=1):
             val_ws.column_dimensions[get_column_letter(col_idx)].width = width
 
-        row = 1
+        row = self._write_model_title(val_ws)
 
         # Sheet title
         title_cell = val_ws.cell(row=row, column=1, value="Validation Results")
-        title_cell.font = _STYLES.model_title
+        title_cell.font = _STYLES.title
         val_ws.row_dimensions[row].height = 28
         row += 1
 
