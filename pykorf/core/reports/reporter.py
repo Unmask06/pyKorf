@@ -7,6 +7,7 @@ from typing import Protocol, runtime_checkable
 import pandas as pd
 
 from pykorf import Model
+from pykorf.core.elements.pipe import criteria_flags_to_labels
 from pykorf.core.reports.unit_converter import UnitConverter
 
 _logger = logging.getLogger(__name__)
@@ -242,12 +243,14 @@ class PykorfReporter(_BaseReporter):
 
         if self._justifications:
             for pipe_name, justification in self._justifications.items():
+                criteria_types = self._get_pipe_criteria_types(pipe_name)
+                criteria_str = ", ".join(criteria_types) if criteria_types else "criteria"
                 issues.append(
                     {
                         "Severity": "Justified",
                         "Category": "Criteria",
                         "Element": pipe_name,
-                        "Message": f"Pipe '{pipe_name}': criteria violation justified - {justification}",
+                        "Message": f"Pipe '{pipe_name}': {criteria_str} violation justified - {justification}",
                     }
                 )
 
@@ -258,6 +261,21 @@ class PykorfReporter(_BaseReporter):
     # =========================================================
     # ELEMENT EXTRACTORS
     # =========================================================
+
+    def _get_pipe_criteria_types(self, pipe_name: str) -> list[str]:
+        """Return list of violated criteria type names for a given pipe.
+
+        Checks DP/DL, velocity, and rhoV2 via ``pipe.check_criteria()``
+        and returns human-readable labels for each that fails.
+        """
+        for idx, pipe in self.model.pipes.items():
+            if idx == 0 or pipe.name != pipe_name:
+                continue
+            if not hasattr(pipe, "check_criteria"):
+                break
+            result = pipe.check_criteria(justified=False)
+            return criteria_flags_to_labels(result)
+        return []
 
     def _extract_pipes(self) -> list[dict]:
         results = []

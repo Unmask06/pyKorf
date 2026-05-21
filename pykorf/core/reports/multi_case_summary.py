@@ -448,7 +448,7 @@ class MultiCaseSummaryBuilder:
             "Differential Head [m]": pump.head,
             "NPSH Available [m]": pump.npsha_calc,
             "Shaft Power [kW]": pump.power,
-            "Efficiency [%]": pump.efficiency,
+            "Efficiency [%]": round(pump.efficiency * 100, 1) if pump.efficiency is not None else None,
             "Hydraulic Power [kW]": pump.hydraulic_power,
             "Section_Performance Characteristics": "Performance Characteristics",
             "Raise to Shutoff DP []": pump.raise_to_shutoff_dp,

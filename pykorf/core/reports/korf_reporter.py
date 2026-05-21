@@ -11,6 +11,7 @@ from pykorf.app.operation.integration.sizing_criteria import (
     code_to_state,
     lookup_criteria,
 )
+from pykorf.core.elements.pipe import criteria_flags_to_labels
 from pykorf.core.reports.korf_parser import (
     CaseInfo,
     KorfCaseData,
@@ -120,12 +121,14 @@ class KorfReporter(_BaseReporter):
 
         for pipe_name in sorted(justified_pipes):
             justification = self._justifications.get(pipe_name, "")
+            criteria_types = self._get_korf_pipe_criteria_types(pipe_name)
+            criteria_str = ", ".join(criteria_types) if criteria_types else "criteria"
             all_issues.append(
                 {
                     "Severity": "Justified",
                     "Category": "Criteria",
                     "Element": pipe_name,
-                    "Message": f"Pipe '{pipe_name}': criteria violation justified - {justification}",
+                    "Message": f"Pipe '{pipe_name}': {criteria_str} violation justified - {justification}",
                 }
             )
 
@@ -332,6 +335,57 @@ class KorfReporter(_BaseReporter):
                 return pipe
         return None
 
+    @staticmethod
+    def _pipe_data_criteria_flags(pd_pipe: PipeData) -> dict[str, bool]:
+        """Build a criteria flag dict from PipeData matching check_criteria() shape."""
+        result: dict[str, bool] = {
+            "dp_exceeds": False,
+            "vel_below_min": False,
+            "vel_above_max": False,
+            "rho_v2_below_min": False,
+            "rho_v2_above_max": False,
+        }
+
+        if (
+            pd_pipe.dp_length_criteria_max is not None
+            and pd_pipe.dp_length is not None
+            and pd_pipe.dp_length_criteria_max > 0
+        ):
+            if abs(pd_pipe.dp_length) > abs(pd_pipe.dp_length_criteria_max):
+                result["dp_exceeds"] = True
+
+        if (
+            pd_pipe.velocity_criteria_max is not None
+            and pd_pipe.velocity_in is not None
+            and pd_pipe.velocity_criteria_max > 0
+        ):
+            if abs(pd_pipe.velocity_in) > abs(pd_pipe.velocity_criteria_max):
+                result["vel_above_max"] = True
+
+        if pd_pipe.velocity_criteria_min is not None and pd_pipe.velocity_in is not None:
+            if (
+                pd_pipe.velocity_criteria_min > 0
+                and abs(pd_pipe.velocity_in) < pd_pipe.velocity_criteria_min
+            ):
+                result["vel_below_min"] = True
+
+        return result
+
+    def _get_korf_pipe_criteria_types(self, pipe_name: str) -> list[str]:
+        """Return list of violated criteria type names for a KORF pipe by name.
+
+        Checks DP/DL, velocity, and rhoV2 across all cases and returns
+        human-readable labels for each that fails.
+        """
+        case_data = self._get_case_data()
+        for cd in case_data.values():
+            for p in cd.pipes:
+                if p.name != pipe_name:
+                    continue
+                flags = self._pipe_data_criteria_flags(p)
+                return criteria_flags_to_labels(flags)
+        return []
+
     def _check_pipe_criteria(self, pd_pipe: PipeData) -> str:
         """Check pipe criteria and return PASS/FAIL/JUSTIFIED status."""
         failed = False
@@ -399,7 +453,7 @@ class KorfReporter(_BaseReporter):
                 "Differential Head [m]": pump.head,
                 "NPSH Available [m]": pump.npsha_calc,
                 "Shaft Power [kW]": pump.power,
-                "Efficiency [%]": pump.efficiency,
+                "Efficiency [%]": round(pump.efficiency * 100, 1) if pump.efficiency is not None else None,
                 "Hydraulic Power [kW]": pump.hydraulic_power,
                 "Section_Performance Characteristics": "Performance Characteristics",
                 "Raise to Shutoff DP []": pump.raise_to_shutoff_dp,
@@ -465,7 +519,7 @@ class KorfReporter(_BaseReporter):
                 "Differential Pressure [bar]": comp.dp,
                 "Gas Volumetric Flow [m³/h]": comp.flow,
                 "Shaft Power [kW]": comp.power,
-                "Efficiency [%]": comp.efficiency,
+                "Efficiency [%]": round(comp.efficiency * 100, 1) if comp.efficiency is not None else None,
                 "Hydraulic Power [kW]": comp.hydraulic_power,
             }
             results.append(row)

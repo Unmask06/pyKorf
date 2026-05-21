@@ -11,6 +11,32 @@ if TYPE_CHECKING:
     from pykorf.core.fluid import Fluid
     from pykorf.core.model import Model
 
+_CRITERIA_FLAG_LABELS: list[tuple[str, str]] = [
+    ("dp_exceeds", "DP/DL"),
+    ("vel_below_min", "velocity"),
+    ("vel_above_max", "velocity"),
+    ("rho_v2_below_min", "rhoV2"),
+    ("rho_v2_above_max", "rhoV2"),
+]
+
+
+def criteria_flags_to_labels(result: dict) -> list[str]:
+    """Convert check_criteria() result flags to human-readable labels.
+
+    Args:
+        result: Dict with boolean flags from pipe.check_criteria() or equivalent.
+
+    Returns:
+        Ordered list of unique label strings for flags that are True.
+    """
+    seen: set[str] = set()
+    labels: list[str] = []
+    for flag, label in _CRITERIA_FLAG_LABELS:
+        if result.get(flag) and label not in seen:
+            labels.append(label)
+            seen.add(label)
+    return labels
+
 
 class Pipe(BaseElement):
     """Represents a single KORF pipe / process line instance.

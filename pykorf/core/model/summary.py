@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from pykorf.core.elements import Element, Feed, Pipe, Product, Pump
+from pykorf.core.elements.pipe import criteria_flags_to_labels as _criteria_flags_to_labels
 from pykorf.core.exceptions import ElementNotFound
 
 if TYPE_CHECKING:
@@ -128,7 +129,15 @@ class SummaryService:
             if result["status"] == "FAIL":
                 self._build_criteria_failure_message(issues, name, pipe)
             elif result["status"] == "JUSTIFIED":
-                _logger.debug("Pipe '%s': criteria violation justified - skipped from issues", name)
+                failed_criteria = _criteria_flags_to_labels(result)
+                criteria_str = ", ".join(failed_criteria) if failed_criteria else "criteria"
+                reason = justifications.get(name, "")
+                _logger.debug(
+                    "Pipe '%s': %s violation justified%s",
+                    name,
+                    criteria_str,
+                    f" - {reason}" if reason else "",
+                )
 
     def _validate_pipe_criteria_codes(self, issues: list[str]) -> None:
         """Validate that all pipes have a criteria code assigned.
