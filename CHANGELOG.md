@@ -5,6 +5,17 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.42.0] - 2026-05-21
+
+### What's New
+
+- Global parameters now include a minimum velocity coefficient that is automatically set to 0.1 on all pipes.
+- The "Prepared by" field now uses a surname + initial format (for example, SMITHJ) instead of uppercase initials only.
+
+### Improved
+
+- Several settings are now applied automatically when running global parameters and no longer require manual selection: dummy pipe and junction labels, min velocity coefficient, and rename line from NOTES.
+
 ## [0.41.0] - 2026-05-21
 
 ### What's New

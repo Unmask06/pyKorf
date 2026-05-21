@@ -172,6 +172,7 @@ class ApplyGlobalSettingsRequest(BaseModel):
     dp_margin: float = 1.25
     shutoff_margin: float = 1.20
     min_pump_elevation: float = 0.5
+    min_vel_coeff: float = 0.1
 
 
 class CenterLayoutResponse(BaseModel):
@@ -185,6 +186,7 @@ class SnapOrthogonalRequest(BaseModel):
 
 class SettingsGetResponse(BaseModel):
     settings: list[GlobalSettingSchema] = []
+    default_settings: list[GlobalSettingSchema] = []
     saved_selections: list[str] = []
     saved_dp_margin: str = str(ApplyGlobalSettingsRequest.model_fields["dp_margin"].default)
     saved_shutoff_margin: str = str(
@@ -192,6 +194,9 @@ class SettingsGetResponse(BaseModel):
     )
     saved_min_pump_elev: str = str(
         ApplyGlobalSettingsRequest.model_fields["min_pump_elevation"].default
+    )
+    saved_min_vel_coeff: str = str(
+        ApplyGlobalSettingsRequest.model_fields["min_vel_coeff"].default
     )
 
 
