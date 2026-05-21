@@ -12,6 +12,7 @@ Global Settings (user-selectable):
 Default Settings (always applied, not shown as cards):
     1. Dummy Pipe & Junction Labels - Modify dummy pipes and hide labels
     2. Min Velocity Coefficient - Set vel_coeff_min = 0.1 in SIZ for all pipes
+    3. Rename Line from NOTES - Extract fluid code and serial number from NOTES
 
 Usage:
     >>> from pykorf import Model
@@ -478,6 +479,12 @@ _DEFAULT_SETTINGS: dict[str, GlobalSetting] = {
         description="Set minimum velocity coefficient (vel_coeff_min) to 0.1 in SIZ for all pipes",
         apply_func=apply_min_velocity_coeff_settings,
     ),
+    "rename_line": GlobalSetting(
+        id="rename_line",
+        name="Rename Line from NOTES",
+        description="Extract fluid code + serial number from NOTES, update pipe name",
+        apply_func=apply_rename_line_settings,
+    ),
 }
 
 # Registry of user-selectable global settings (shown as cards)
@@ -487,12 +494,6 @@ _GLOBAL_SETTINGS: dict[str, GlobalSetting] = {
         name="Margin in dP/dL",
         description="Set design margin for frictional pressure drop on all pipes",
         apply_func=apply_dp_margin_settings,
-    ),
-    "rename_line": GlobalSetting(
-        id="rename_line",
-        name="Rename Line from NOTES",
-        description="Extract fluid code + serial number from NOTES, update pipe name",
-        apply_func=apply_rename_line_settings,
     ),
     "pump_shutoff": GlobalSetting(
         id="pump_shutoff",
