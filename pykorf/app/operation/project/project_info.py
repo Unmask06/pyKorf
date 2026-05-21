@@ -71,8 +71,17 @@ def build_smart_defaults(kdf_path: str | Path | None = None) -> dict[str, str]:
     if not prepared_by:
         if en.get("prepared_by_from_username", False):
             username = os.environ.get("USERNAME", os.environ.get("USER", ""))
-            fmt = en.get("prepared_by_format", "initials")
-            prepared_by = re.sub(r"[^A-Z]", "", username) if fmt == "initials" else username
+            fmt = en.get("prepared_by_format", "surname3_name1")
+            if fmt == "surname3_name1":
+                parts = re.findall(r"[A-Z][a-z]*", username)
+                if len(parts) >= 2:
+                    surname = parts[-1][:3].upper()
+                    name = parts[0][:1].upper()
+                    prepared_by = surname + name
+                else:
+                    prepared_by = username[:3].upper()
+            else:
+                prepared_by = username
         else:
             prepared_by = en.get("prepared_by", "")
 
