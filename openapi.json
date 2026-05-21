@@ -2047,6 +2047,11 @@
             "type": "number",
             "title": "Min Pump Elevation",
             "default": 0.5
+          },
+          "min_vel_coeff": {
+            "type": "number",
+            "title": "Min Vel Coeff",
+            "default": 0.1
           }
         },
         "type": "object",
@@ -4069,6 +4074,14 @@
             "title": "Settings",
             "default": []
           },
+          "default_settings": {
+            "items": {
+              "$ref": "#/components/schemas/GlobalSettingSchema"
+            },
+            "type": "array",
+            "title": "Default Settings",
+            "default": []
+          },
           "saved_selections": {
             "items": {
               "type": "string"
@@ -4091,6 +4104,11 @@
             "type": "string",
             "title": "Saved Min Pump Elev",
             "default": "0.5"
+          },
+          "saved_min_vel_coeff": {
+            "type": "string",
+            "title": "Saved Min Vel Coeff",
+            "default": "0.1"
           }
         },
         "type": "object",

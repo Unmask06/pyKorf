@@ -28,9 +28,10 @@ async def get_settings() -> SettingsGetResponse:
         get_global_parameters_selected,
         get_last_interaction,
     )
-    from pykorf.app.operation.config.global_parameters import get_global_settings
+    from pykorf.app.operation.config.global_parameters import get_default_settings, get_global_settings
 
     settings = get_global_settings()
+    default_settings = get_default_settings()
     saved_selections = get_global_parameters_selected() or []
     interaction_data = get_last_interaction()
     _fields = ApplyGlobalSettingsRequest.model_fields
@@ -41,15 +42,23 @@ async def get_settings() -> SettingsGetResponse:
     saved_pump_elevation = interaction_data.get("pump_elevation") or str(
         _fields["min_pump_elevation"].default
     )
+    saved_min_vel_coeff = interaction_data.get("min_vel_coeff") or str(
+        _fields["min_vel_coeff"].default
+    )
 
     return SettingsGetResponse(
         settings=[
             GlobalSettingSchema(id=s.id, name=s.name, description=s.description) for s in settings
         ],
+        default_settings=[
+            GlobalSettingSchema(id=s.id, name=s.name, description=s.description)
+            for s in default_settings
+        ],
         saved_selections=saved_selections,
         saved_dp_margin=saved_dp_margin,
         saved_shutoff_margin=saved_shutoff_margin,
         saved_min_pump_elev=saved_pump_elevation,
+        saved_min_vel_coeff=saved_min_vel_coeff,
     )
 
 
@@ -73,6 +82,7 @@ async def apply_settings(req: ApplyGlobalSettingsRequest) -> SettingsApplyRespon
             "dp_margin": str(req.dp_margin),
             "shutoff_margin": str(req.shutoff_margin),
             "pump_elevation": str(req.min_pump_elevation),
+            "min_vel_coeff": str(req.min_vel_coeff),
             "selected_settings": req.setting_ids,
         },
     )
@@ -85,6 +95,7 @@ async def apply_settings(req: ApplyGlobalSettingsRequest) -> SettingsApplyRespon
             dp_margin=req.dp_margin,
             shutoff_margin=req.shutoff_margin,
             min_pump_elevation=req.min_pump_elevation,
+            min_vel_coeff=req.min_vel_coeff,
         )
         await _sess.reload()
         errors = apply_results.pop("_errors", [])

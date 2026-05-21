@@ -3,20 +3,22 @@
 This module provides preset functions that apply common global changes
 to KDF models, such as modifying dummy pipes or applying design margins.
 
-Global Settings:
+Global Settings (user-selectable):
+    1. Margin in dP/dL - Apply DP_DES_FAC = 1.25 to all pipes
+    2. Rename Line from NOTES - Extract fluid code and serial number from NOTES
+    3. Pump Raise-Shutoff Margin - Set shutoff DP margin on all pumps
+    4. Pump Elevation - Set minimum elevation for pumps
+
+Default Settings (always applied, not shown as cards):
     1. Dummy Pipe & Junction Labels - Modify dummy pipes and hide labels
-       - Pipes starting with "d": Set LEN = 0.1 m, ID = 1.5 m, SCH = "ID", LBL = OFF
-       - All Junctions: Set LBL = [0, 0, 50] (turn off labels)
-    2. 25% margin in dP/dL - Apply DP_DES_FAC = 1.25 to all pipes
-    3. Rename Line from NOTES - Extract fluid code and serial number from NOTES
-       and update pipe name (e.g., "L4" -> "VCL17-806")
+    2. Min Velocity Coefficient - Set vel_coeff_min = 0.1 in SIZ for all pipes
 
 Usage:
     >>> from pykorf import Model
     >>> from pykorf.app.operation.config.global_parameters import apply_global_settings
     >>>
     >>> model = Model("model.kdf")
-    >>> results = apply_global_settings(model, ["dummy_pipe", "dp_margin"])
+    >>> results = apply_global_settings(model, ["dp_margin"])
     >>> for setting_id, pipes in results.items():
     >>>     print(f"{setting_id}: {len(pipes)} pipes affected")
 """
@@ -418,14 +420,68 @@ def apply_min_pump_elevation(model: Model, elevation: float) -> list[str]:
     return affected_pumps
 
 
-# Registry of all available global settings
-_GLOBAL_SETTINGS: dict[str, GlobalSetting] = {
+def apply_min_velocity_coeff_settings(model: Model, coeff: float = 0.1) -> list[str]:
+    """Set minimum velocity coefficient in SIZ parameter for all real pipes.
+
+    Updates the SIZ record's vel_coeff_min (index 6) to the specified value
+    for every pipe with index >= 1 that has a SIZ record with enough values.
+
+    Args:
+        model: Loaded KDF model.
+        coeff: Minimum velocity coefficient value (default 0.1).
+
+    Returns:
+        List of pipe names that were modified.
+    """
+    from pykorf.core.elements import Pipe
+    from pykorf.core.exceptions import ParameterError
+
+    affected_pipes: list[str] = []
+
+    for idx in range(1, len(model.pipes) + 1):
+        pipe = model.pipes[idx]
+        pipe_name = pipe.name
+
+        siz_rec = pipe.get_param(Pipe.SIZ)
+        if siz_rec is None or not siz_rec.values:
+            continue
+        if len(siz_rec.values) < 7:
+            continue
+
+        try:
+            new_vals = list(siz_rec.values)
+            new_vals[6] = coeff
+            model.set_params(pipe_name, {Pipe.SIZ: new_vals})
+            affected_pipes.append(pipe_name)
+            logger.info("Pipe %s: SIZ vel_coeff_min set to %s", pipe_name, coeff)
+        except ParameterError as e:
+            error_msg = f"Validation error on {pipe_name}: {e}"
+            logger.error(error_msg)
+        except Exception as e:
+            error_msg = f"Error setting params on {pipe_name}: {e}"
+            logger.error(error_msg)
+
+    return affected_pipes
+
+
+# Registry of default settings (always applied, not shown as user-selectable cards)
+_DEFAULT_SETTINGS: dict[str, GlobalSetting] = {
     "dummy_pipe": GlobalSetting(
         id="dummy_pipe",
         name="Dummy Pipe & Junction Labels",
         description="""Pipes starting with "d": Set LEN=0.1m, ID=1500mm, SCH=ID, LBL=OFF. Junctions: LBL=OFF. Expanders/Reducers: LBL=OFF""",
         apply_func=apply_dummy_pipe_settings,
     ),
+    "min_vel_coeff": GlobalSetting(
+        id="min_vel_coeff",
+        name="Min Velocity Coefficient",
+        description="Set minimum velocity coefficient (vel_coeff_min) to 0.1 in SIZ for all pipes",
+        apply_func=apply_min_velocity_coeff_settings,
+    ),
+}
+
+# Registry of user-selectable global settings (shown as cards)
+_GLOBAL_SETTINGS: dict[str, GlobalSetting] = {
     "dp_margin": GlobalSetting(
         id="dp_margin",
         name="Margin in dP/dL",
@@ -474,6 +530,45 @@ def get_global_setting(setting_id: str) -> GlobalSetting | None:
     return _GLOBAL_SETTINGS.get(setting_id)
 
 
+def get_default_settings() -> list[GlobalSetting]:
+    """Return list of default settings that are always applied.
+
+    Returns:
+        List of GlobalSetting instances for default settings.
+    """
+    return list(_DEFAULT_SETTINGS.values())
+
+
+def _apply_one_setting(
+    model: Model,
+    setting_id: str,
+    *,
+    dp_margin: float = 1.25,
+    shutoff_margin: float = 1.20,
+    min_pump_elevation: float = 0.5,
+    min_vel_coeff: float = 0.1,
+) -> list[str]:
+    """Apply a single setting by ID, returning affected element names.
+
+    Looks up the setting in both default and global registries.
+    """
+    setting = _DEFAULT_SETTINGS.get(setting_id) or _GLOBAL_SETTINGS.get(setting_id)
+    if setting is None:
+        logger.warning("Unknown global setting: %s", setting_id)
+        return []
+
+    if setting_id == "dp_margin":
+        return setting.apply_func(model, margin=dp_margin)
+    elif setting_id == "pump_shutoff":
+        return setting.apply_func(model, margin=shutoff_margin)
+    elif setting_id == "min_pump_elevation":
+        return setting.apply_func(model, elevation=min_pump_elevation)
+    elif setting_id == "min_vel_coeff":
+        return setting.apply_func(model, coeff=min_vel_coeff)
+    else:
+        return setting.apply_func(model)
+
+
 def apply_global_settings(
     model: Model,
     setting_ids: list[str],
@@ -482,19 +577,24 @@ def apply_global_settings(
     dp_margin: float,
     shutoff_margin: float,
     min_pump_elevation: float,
+    min_vel_coeff: float = 0.1,
 ) -> dict[str, list[str]]:
-    """Apply selected global settings to a model.
+    """Apply default and selected global settings to a model.
+
+    Default settings (min_vel_coeff, dummy_pipe) are always applied first,
+    followed by user-selected settings.
 
     Args:
         model: Loaded KDF model.
-        setting_ids: List of setting IDs to apply (e.g., ["dummy_pipe", "dp_margin"]).
+        setting_ids: List of setting IDs to apply (e.g., ["dp_margin"]).
         save: Whether to save the model after applying changes (default True).
         dp_margin: Design margin factor for dp_margin setting.
         shutoff_margin: Shutoff DP margin factor for pump_shutoff setting.
         min_pump_elevation: Minimum elevation value for pump_elevation setting.
+        min_vel_coeff: Minimum velocity coefficient for min_vel_coeff setting.
 
     Returns:
-        Dictionary mapping setting IDs to lists of affected pipe names.
+        Dictionary mapping setting IDs to lists of affected element names.
         The special key "_errors" contains list of error messages if any.
 
     Example:
@@ -502,33 +602,52 @@ def apply_global_settings(
         >>> from pykorf.app.operation.config.global_parameters import apply_global_settings
         >>>
         >>> model = Model("model.kdf")
-        >>> results = apply_global_settings(model, ["dummy_pipe", "dp_margin"])
+        >>> results = apply_global_settings(model, ["dp_margin"])
         >>> print(results)
-        {'dummy_pipe': ['d1', 'd2'], 'dp_margin': ['L1', 'L2', 'P1'], '_errors': []}
+        {'dummy_pipe': ['d1', 'd2'], 'min_vel_coeff': ['L1', 'L2'], 'dp_margin': ['L1', 'L2', 'P1'], '_errors': []}
     """
     results: dict[str, list[str]] = {}
     all_errors: list[str] = []
 
-    for setting_id in setting_ids:
-        setting = _GLOBAL_SETTINGS.get(setting_id)
-        if setting is None:
-            logger.warning("Unknown global setting: %s", setting_id)
-            all_errors.append(f"Unknown setting: {setting_id}")
-            continue
-
+    # Always apply default settings first
+    for setting_id, setting in _DEFAULT_SETTINGS.items():
         try:
-            if setting_id == "dp_margin":
-                affected = setting.apply_func(model, margin=dp_margin)
-            elif setting_id == "pump_shutoff":
-                affected = setting.apply_func(model, margin=shutoff_margin)
-            elif setting_id == "min_pump_elevation":
-                affected = setting.apply_func(model, elevation=min_pump_elevation)
-            else:
-                affected = setting.apply_func(model)
+            affected = _apply_one_setting(
+                model,
+                setting_id,
+                dp_margin=dp_margin,
+                shutoff_margin=shutoff_margin,
+                min_pump_elevation=min_pump_elevation,
+                min_vel_coeff=min_vel_coeff,
+            )
             results[setting_id] = affected
             logger.info(
-                "Applied setting '%s' to %d pipes",
+                "Applied default setting '%s' to %d elements",
                 setting.name,
+                len(affected),
+            )
+        except Exception as e:
+            error_msg = f"Error applying default setting '{setting_id}': {e}"
+            logger.error(error_msg)
+            all_errors.append(error_msg)
+            results[setting_id] = []
+
+    # Apply user-selected settings
+    for setting_id in setting_ids:
+        try:
+            affected = _apply_one_setting(
+                model,
+                setting_id,
+                dp_margin=dp_margin,
+                shutoff_margin=shutoff_margin,
+                min_pump_elevation=min_pump_elevation,
+                min_vel_coeff=min_vel_coeff,
+            )
+            results[setting_id] = affected
+            setting = _DEFAULT_SETTINGS.get(setting_id) or _GLOBAL_SETTINGS.get(setting_id)
+            logger.info(
+                "Applied setting '%s' to %d elements",
+                setting.name if setting else setting_id,
                 len(affected),
             )
         except Exception as e:

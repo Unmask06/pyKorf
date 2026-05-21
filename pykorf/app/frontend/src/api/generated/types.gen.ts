@@ -96,6 +96,10 @@ export type ApplyGlobalSettingsRequest = {
      * Min Pump Elevation
      */
     min_pump_elevation?: number;
+    /**
+     * Min Vel Coeff
+     */
+    min_vel_coeff?: number;
 };
 
 /**
@@ -1428,6 +1432,10 @@ export type SettingsGetResponse = {
      */
     settings?: Array<GlobalSettingSchema>;
     /**
+     * Default Settings
+     */
+    default_settings?: Array<GlobalSettingSchema>;
+    /**
      * Saved Selections
      */
     saved_selections?: Array<string>;
@@ -1443,6 +1451,10 @@ export type SettingsGetResponse = {
      * Saved Min Pump Elev
      */
     saved_min_pump_elev?: string;
+    /**
+     * Saved Min Vel Coeff
+     */
+    saved_min_vel_coeff?: string;
 };
 
 /**

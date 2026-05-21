@@ -34,6 +34,7 @@ const model = useModelStore()
 const toast = useToastStore()
 
 const settings = ref<GlobalSettingSchema[]>([])
+const defaultSettings = ref<GlobalSettingSchema[]>([])
 const selectedIds = ref<string[]>([])
 const dpMargin = ref(0)
 const shutoffMargin = ref(0)
@@ -119,7 +120,10 @@ async function fetchSettings() {
     const response = await getSettings()
     const data = response.data!
     settings.value = data.settings ?? []
-    selectedIds.value = data.saved_selections ?? []
+    defaultSettings.value = data.default_settings ?? []
+    selectedIds.value = (data.saved_selections ?? []).filter(
+      (id: string) => !defaultSettings.value.some(d => d.id === id)
+    )
     dpMargin.value = parseFloat(data.saved_dp_margin ?? '1')
     shutoffMargin.value = parseFloat(data.saved_shutoff_margin ?? '1')
     pumpElevation.value = parseFloat(data.saved_min_pump_elev ?? '0')
@@ -390,6 +394,16 @@ onMounted(async () => {
         <Sliders class="w-4 h-4" /> Global Parameters
       </div>
       <div class="p-4">
+        <!-- Defaults info section -->
+        <div v-if="defaultSettings.length" class="mb-3 px-3 py-2 rounded bg-gray-50 border border-gray-200">
+          <div class="text-xs font-medium text-gray-600 mb-1">Always applied:</div>
+          <div v-for="d in defaultSettings" :key="d.id" class="flex items-center gap-2 text-xs text-gray-500">
+            <CheckCircle class="w-3 h-3 text-green-500 shrink-0" />
+            <span class="font-medium text-gray-600">{{ d.name }}</span>
+            <span>— {{ d.description }}</span>
+          </div>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mb-4">
           <div v-for="s in settings" :key="s.id"
             class="flex items-start gap-3 px-3 py-2 rounded border cursor-pointer select-none transition-colors"
