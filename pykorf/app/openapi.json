@@ -2046,7 +2046,7 @@
           "min_pump_elevation": {
             "type": "number",
             "title": "Min Pump Elevation",
-            "default": 0.5
+            "default": 1.5
           },
           "min_vel_coeff": {
             "type": "number",
@@ -4103,7 +4103,7 @@
           "saved_min_pump_elev": {
             "type": "string",
             "title": "Saved Min Pump Elev",
-            "default": "0.5"
+            "default": "1.5"
           },
           "saved_min_vel_coeff": {
             "type": "string",

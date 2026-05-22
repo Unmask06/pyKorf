@@ -34,5 +34,5 @@ pms_excel_url = "https://cc7ges.sharepoint.com/sites/25002TAZIZSALT-ADNOCUAE/Sha
 [global_parameters]
 dp_margin = 1.25
 shutoff_margin = 1.20
-min_pump_elevation = 0.5
+min_pump_elevation = 1.5
 min_vel_coeff = 0.0
