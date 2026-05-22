@@ -12,12 +12,12 @@ Please prefer importing from the specific modules:
 
 from __future__ import annotations
 
-# Re-export Stream functions
-from pykorf.app.operation.data_import.hmb import (
-    get_stream_path,
-    import_stream_from_excel,
-    load_stream_data,
-    save_stream_data,
+# Re-export default accessor functions
+from pykorf.app.operation.config.defaults import (
+    get_default_dp_margin,
+    get_default_min_pump_elevation,
+    get_default_min_vel_coeff,
+    get_default_shutoff_margin,
 )
 
 # Re-export path definitions and functions
@@ -40,6 +40,60 @@ from pykorf.app.operation.config.paths import (
     list_config_files,
 )
 
+# Re-export preference functions
+from pykorf.app.operation.config.preferences import (
+    add_pinned_folder,
+    add_recent_file,
+    get_doc_register_db_last_imported,
+    get_doc_register_excel_path,
+    get_doc_register_sp_site_url,
+    get_global_parameters_selected,
+    get_last_batch_folder_path,
+    get_last_hmb_path,
+    get_last_interaction,
+    get_last_kdf_path,
+    get_last_report_path,
+    get_license_key,
+    get_pinned_folders,
+    get_pms_excel_last_imported,
+    get_pms_excel_path,
+    get_project_info_overrides,
+    get_recent_files,
+    get_skip_sp_override,
+    get_sp_overrides,
+    get_stream_excel_last_imported,
+    get_trial_start,
+    load_config,
+    record_opened_file,
+    remove_pinned_folder,
+    save_config,
+    set_doc_register_db_last_imported,
+    set_doc_register_excel_path,
+    set_doc_register_sp_site_url,
+    set_global_parameters_selected,
+    set_last_batch_folder_path,
+    set_last_hmb_path,
+    set_last_interaction,
+    set_last_kdf_path,
+    set_last_report_path,
+    set_license_key,
+    set_pms_excel_last_imported,
+    set_pms_excel_path,
+    set_project_info_overrides,
+    set_skip_sp_override,
+    set_sp_overrides,
+    set_stream_excel_last_imported,
+    set_trial_start,
+)
+
+# Re-export Stream functions
+from pykorf.app.operation.data_import.hmb import (
+    get_stream_path,
+    import_stream_from_excel,
+    load_stream_data,
+    save_stream_data,
+)
+
 # Re-export PMS functions
 from pykorf.app.operation.data_import.pms import (
     get_pms_path,
@@ -50,52 +104,6 @@ from pykorf.app.operation.data_import.pms import (
 
 # Re-export project info functions
 from pykorf.app.operation.project.project_info import build_smart_defaults
-
-# Re-export preference functions
-from pykorf.app.operation.config.preferences import (
-    get_project_info_overrides,
-    set_project_info_overrides,
-    add_recent_file,
-    get_global_parameters_selected,
-    get_license_key,
-    get_sp_overrides,
-    get_skip_sp_override,
-    get_trial_start,
-    set_license_key,
-    set_sp_overrides,
-    set_skip_sp_override,
-    set_trial_start,
-    get_last_batch_folder_path,
-    get_last_report_path,
-    get_last_hmb_path,
-    get_last_interaction,
-    get_last_kdf_path,
-    get_pms_excel_last_imported,
-    get_pms_excel_path,
-    get_recent_files,
-    get_pinned_folders,
-    add_pinned_folder,
-    remove_pinned_folder,
-    get_stream_excel_last_imported,
-    get_doc_register_excel_path,
-    get_doc_register_sp_site_url,
-    get_doc_register_db_last_imported,
-    load_config,
-    record_opened_file,
-    save_config,
-    set_global_parameters_selected,
-    set_last_batch_folder_path,
-    set_last_report_path,
-    set_last_hmb_path,
-    set_last_interaction,
-    set_last_kdf_path,
-    set_pms_excel_last_imported,
-    set_pms_excel_path,
-    set_stream_excel_last_imported,
-    set_doc_register_excel_path,
-    set_doc_register_sp_site_url,
-    set_doc_register_db_last_imported,
-)
 
 __all__ = [
     "APP_NAME",
@@ -116,6 +124,10 @@ __all__ = [
     "get_config_dir",
     "get_config_path",
     "get_data_dir",
+    "get_default_dp_margin",
+    "get_default_min_pump_elevation",
+    "get_default_min_vel_coeff",
+    "get_default_shutoff_margin",
     "get_doc_register_db_last_imported",
     "get_doc_register_excel_path",
     "get_doc_register_sp_site_url",

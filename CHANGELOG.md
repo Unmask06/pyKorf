@@ -5,6 +5,20 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.43.0] - 2026-05-22
+
+### What's New
+
+- Global parameter defaults for dp_margin, shutoff_margin, min_pump_elevation, and min_vel_coeff can now be configured directly in the project_defaults.toml file.
+
+### Improved
+
+- The "Rename Line from NOTES" option is now applied automatically when running global parameters, so you no longer need to select it manually.
+
+### Fixed
+
+- The minimum velocity coefficient now defaults to 0.0 instead of 0.1, preventing unintended minimum velocity constraints on new projects.
+
 ## [0.42.0] - 2026-05-21
 
 ### What's New

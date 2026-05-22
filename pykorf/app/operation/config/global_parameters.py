@@ -421,7 +421,7 @@ def apply_min_pump_elevation(model: Model, elevation: float) -> list[str]:
     return affected_pumps
 
 
-def apply_min_velocity_coeff_settings(model: Model, coeff: float = 0.1) -> list[str]:
+def apply_min_velocity_coeff_settings(model: Model, coeff: float) -> list[str]:
     """Set minimum velocity coefficient in SIZ parameter for all real pipes.
 
     Updates the SIZ record's vel_coeff_min (index 6) to the specified value
@@ -429,7 +429,7 @@ def apply_min_velocity_coeff_settings(model: Model, coeff: float = 0.1) -> list[
 
     Args:
         model: Loaded KDF model.
-        coeff: Minimum velocity coefficient value (default 0.1).
+        coeff: Minimum velocity coefficient value.
 
     Returns:
         List of pipe names that were modified.
@@ -476,7 +476,7 @@ _DEFAULT_SETTINGS: dict[str, GlobalSetting] = {
     "min_vel_coeff": GlobalSetting(
         id="min_vel_coeff",
         name="Min Velocity Coefficient",
-        description="Set minimum velocity coefficient (vel_coeff_min) to 0.1 in SIZ for all pipes",
+        description="Set minimum velocity coefficient (vel_coeff_min) in SIZ for all pipes",
         apply_func=apply_min_velocity_coeff_settings,
     ),
     "rename_line": GlobalSetting(
@@ -544,15 +544,31 @@ def _apply_one_setting(
     model: Model,
     setting_id: str,
     *,
-    dp_margin: float = 1.25,
-    shutoff_margin: float = 1.20,
-    min_pump_elevation: float = 0.5,
-    min_vel_coeff: float = 0.1,
+    dp_margin: float | None = None,
+    shutoff_margin: float | None = None,
+    min_pump_elevation: float | None = None,
+    min_vel_coeff: float | None = None,
 ) -> list[str]:
     """Apply a single setting by ID, returning affected element names.
 
     Looks up the setting in both default and global registries.
+    Missing parameter values fall back to project_defaults.toml.
     """
+    from pykorf.app.operation.config.defaults import (
+        get_default_dp_margin,
+        get_default_min_pump_elevation,
+        get_default_min_vel_coeff,
+        get_default_shutoff_margin,
+    )
+
+    if dp_margin is None:
+        dp_margin = get_default_dp_margin()
+    if shutoff_margin is None:
+        shutoff_margin = get_default_shutoff_margin()
+    if min_pump_elevation is None:
+        min_pump_elevation = get_default_min_pump_elevation()
+    if min_vel_coeff is None:
+        min_vel_coeff = get_default_min_vel_coeff()
     setting = _DEFAULT_SETTINGS.get(setting_id) or _GLOBAL_SETTINGS.get(setting_id)
     if setting is None:
         logger.warning("Unknown global setting: %s", setting_id)
@@ -575,10 +591,10 @@ def apply_global_settings(
     setting_ids: list[str],
     *,
     save: bool = True,
-    dp_margin: float,
-    shutoff_margin: float,
-    min_pump_elevation: float,
-    min_vel_coeff: float = 0.1,
+    dp_margin: float | None = None,
+    shutoff_margin: float | None = None,
+    min_pump_elevation: float | None = None,
+    min_vel_coeff: float | None = None,
 ) -> dict[str, list[str]]:
     """Apply default and selected global settings to a model.
 
@@ -593,6 +609,7 @@ def apply_global_settings(
         shutoff_margin: Shutoff DP margin factor for pump_shutoff setting.
         min_pump_elevation: Minimum elevation value for pump_elevation setting.
         min_vel_coeff: Minimum velocity coefficient for min_vel_coeff setting.
+        All parameters fall back to project_defaults.toml if not provided.
 
     Returns:
         Dictionary mapping setting IDs to lists of affected element names.
@@ -607,6 +624,21 @@ def apply_global_settings(
         >>> print(results)
         {'dummy_pipe': ['d1', 'd2'], 'min_vel_coeff': ['L1', 'L2'], 'dp_margin': ['L1', 'L2', 'P1'], '_errors': []}
     """
+    from pykorf.app.operation.config.defaults import (
+        get_default_dp_margin,
+        get_default_min_pump_elevation,
+        get_default_min_vel_coeff,
+        get_default_shutoff_margin,
+    )
+
+    if dp_margin is None:
+        dp_margin = get_default_dp_margin()
+    if shutoff_margin is None:
+        shutoff_margin = get_default_shutoff_margin()
+    if min_pump_elevation is None:
+        min_pump_elevation = get_default_min_pump_elevation()
+    if min_vel_coeff is None:
+        min_vel_coeff = get_default_min_vel_coeff()
     results: dict[str, list[str]] = {}
     all_errors: list[str] = []
 

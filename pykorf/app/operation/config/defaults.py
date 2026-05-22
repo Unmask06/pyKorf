@@ -17,6 +17,7 @@ _FACTORY_DEFAULTS = tomllib.loads(
     files("pykorf.app").joinpath("project_defaults.toml").read_bytes().decode("utf-8")
 )
 _SHAREPOINT_DEFAULTS = _FACTORY_DEFAULTS.get("sharepoint", {})
+_GLOBAL_PARAM_DEFAULTS = _FACTORY_DEFAULTS.get("global_parameters", {})
 
 
 def get_factory_defaults() -> dict[str, Any]:
@@ -80,3 +81,23 @@ def get_default_sp_site_url() -> str:
 
     # 2. Fall back to factory defaults (project_defaults.toml)
     return _SHAREPOINT_DEFAULTS.get("default_site_url", "")
+
+
+def get_default_dp_margin() -> float:
+    """Get default dp_margin from project_defaults.toml."""
+    return float(_GLOBAL_PARAM_DEFAULTS.get("dp_margin", 1.25))
+
+
+def get_default_shutoff_margin() -> float:
+    """Get default shutoff_margin from project_defaults.toml."""
+    return float(_GLOBAL_PARAM_DEFAULTS.get("shutoff_margin", 1.20))
+
+
+def get_default_min_pump_elevation() -> float:
+    """Get default min_pump_elevation from project_defaults.toml."""
+    return float(_GLOBAL_PARAM_DEFAULTS.get("min_pump_elevation", 0.5))
+
+
+def get_default_min_vel_coeff() -> float:
+    """Get default min_vel_coeff from project_defaults.toml."""
+    return float(_GLOBAL_PARAM_DEFAULTS.get("min_vel_coeff", 0.1))

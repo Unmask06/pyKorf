@@ -2051,7 +2051,7 @@
           "min_vel_coeff": {
             "type": "number",
             "title": "Min Vel Coeff",
-            "default": 0.1
+            "default": 0
           }
         },
         "type": "object",
@@ -4108,7 +4108,7 @@
           "saved_min_vel_coeff": {
             "type": "string",
             "title": "Saved Min Vel Coeff",
-            "default": "0.1"
+            "default": "0.0"
           }
         },
         "type": "object",
