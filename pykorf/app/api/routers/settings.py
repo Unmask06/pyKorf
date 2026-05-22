@@ -28,23 +28,29 @@ async def get_settings() -> SettingsGetResponse:
         get_global_parameters_selected,
         get_last_interaction,
     )
-    from pykorf.app.operation.config.global_parameters import get_default_settings, get_global_settings
+    from pykorf.app.operation.config.defaults import (
+        get_default_dp_margin,
+        get_default_min_pump_elevation,
+        get_default_min_vel_coeff,
+        get_default_shutoff_margin,
+    )
+    from pykorf.app.operation.config.global_parameters import (
+        get_default_settings,
+        get_global_settings,
+    )
 
     settings = get_global_settings()
     default_settings = get_default_settings()
     saved_selections = get_global_parameters_selected() or []
     interaction_data = get_last_interaction()
-    _fields = ApplyGlobalSettingsRequest.model_fields
-    saved_dp_margin = interaction_data.get("dp_margin") or str(_fields["dp_margin"].default)
+    saved_dp_margin = interaction_data.get("dp_margin") or str(get_default_dp_margin())
     saved_shutoff_margin = interaction_data.get("shutoff_margin") or str(
-        _fields["shutoff_margin"].default
+        get_default_shutoff_margin()
     )
     saved_pump_elevation = interaction_data.get("pump_elevation") or str(
-        _fields["min_pump_elevation"].default
+        get_default_min_pump_elevation()
     )
-    saved_min_vel_coeff = interaction_data.get("min_vel_coeff") or str(
-        _fields["min_vel_coeff"].default
-    )
+    saved_min_vel_coeff = interaction_data.get("min_vel_coeff") or str(get_default_min_vel_coeff())
 
     return SettingsGetResponse(
         settings=[

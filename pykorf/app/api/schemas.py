@@ -4,7 +4,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+from pykorf.app.operation.config.defaults import (
+    get_default_dp_margin,
+    get_default_min_pump_elevation,
+    get_default_min_vel_coeff,
+    get_default_shutoff_margin,
+)
 
 
 class EmptyRequest(BaseModel):
@@ -169,10 +176,10 @@ class GlobalSettingSchema(BaseModel):
 
 class ApplyGlobalSettingsRequest(BaseModel):
     setting_ids: list[str]
-    dp_margin: float = 1.25
-    shutoff_margin: float = 1.20
-    min_pump_elevation: float = 0.5
-    min_vel_coeff: float = 0.1
+    dp_margin: float = Field(default=get_default_dp_margin())
+    shutoff_margin: float = Field(default=get_default_shutoff_margin())
+    min_pump_elevation: float = Field(default=get_default_min_pump_elevation())
+    min_vel_coeff: float = Field(default=get_default_min_vel_coeff())
 
 
 class CenterLayoutResponse(BaseModel):
@@ -188,16 +195,10 @@ class SettingsGetResponse(BaseModel):
     settings: list[GlobalSettingSchema] = []
     default_settings: list[GlobalSettingSchema] = []
     saved_selections: list[str] = []
-    saved_dp_margin: str = str(ApplyGlobalSettingsRequest.model_fields["dp_margin"].default)
-    saved_shutoff_margin: str = str(
-        ApplyGlobalSettingsRequest.model_fields["shutoff_margin"].default
-    )
-    saved_min_pump_elev: str = str(
-        ApplyGlobalSettingsRequest.model_fields["min_pump_elevation"].default
-    )
-    saved_min_vel_coeff: str = str(
-        ApplyGlobalSettingsRequest.model_fields["min_vel_coeff"].default
-    )
+    saved_dp_margin: str = str(get_default_dp_margin())
+    saved_shutoff_margin: str = str(get_default_shutoff_margin())
+    saved_min_pump_elev: str = str(get_default_min_pump_elevation())
+    saved_min_vel_coeff: str = str(get_default_min_vel_coeff())
 
 
 class SettingsApplyResponse(BaseModel):

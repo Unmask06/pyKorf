@@ -30,7 +30,6 @@ def test_model(label: str, kdf_path: Path) -> None:
 
     m = Model.load(kdf_path)
 
-    # Page info
     page = m.layout.page_size
     x_min, y_min, x_max, y_max = m.layout.boundary_coordinates
     page_cx = (x_min + x_max) / 2
@@ -61,7 +60,7 @@ def test_model(label: str, kdf_path: Path) -> None:
     ax_min, ay_min, ax_max, ay_max = after
     after_cx = (ax_min + ax_max) / 2
     after_cy = (ay_min + ay_max) / 2
-    print(f"After  center_layout()")
+    print("After  center_layout()")
     print(f"  Bbox  : [{ax_min:.1f},{ay_min:.1f}] -> [{ax_max:.1f},{ay_max:.1f}]")
     print(f"  Centre: ({after_cx:.1f}, {after_cy:.1f})")
     print(f"  Offset from page centre: dx={page_cx - after_cx:.1f}, dy={page_cy - after_cy:.1f}")
@@ -69,7 +68,7 @@ def test_model(label: str, kdf_path: Path) -> None:
     # Verify
     ok = abs(after_cx - page_cx) < 1.0 and abs(after_cy - page_cy) < 1.0
     print(f"\n  {'PASS' if ok else 'FAIL'} — layout centred on page")
-    #save
+    # save
     m.save()
 
 
