@@ -2,7 +2,6 @@
 import {
   AlertTriangle,
   ArrowDownRight,
-  ArrowUpRight,
   CheckCircle2,
   Clipboard,
   FileText,
@@ -30,6 +29,7 @@ import { useLoading } from "../composables/useLoading";
 import { useToastStore } from "../composables/useToast";
 import { useSessionStore } from "../stores/session";
 import type {
+  BatchFileStatus,
   BatchReportRequest,
   GenerateReportRequest,
   ProjectInfoResponse,
@@ -75,7 +75,7 @@ const showBatchBrowser = ref(false);
 // Batch multi-case validation
 const batchValidCount = ref(0);
 const batchTotalCount = ref(0);
-const batchProblems = ref<string[]>([]);
+const batchFileStatus = ref<BatchFileStatus[]>([]);
 const batchValidating = ref(false);
 
 // Report column customization — default pipe columns (mandatory + default-on optional)
@@ -252,29 +252,25 @@ async function runBatchValidation() {
     };
     const res = await batchReport({ body: req });
     if (res.data) {
-      const problems: string[] = [];
       let validCount = 0;
       let totalCount = 0;
       for (const msg of res.data.messages || []) {
         if (msg.type === "info" && msg.message) {
-          // Parse "X of Y KDF files have valid KORF Excel"
           const match = msg.message.match(/(\d+)\s+of\s+(\d+)/);
           if (match) {
             validCount = parseInt(match[1]);
             totalCount = parseInt(match[2]);
           }
-        } else if (msg.type === "warning" && msg.message) {
-          problems.push(msg.message);
         }
       }
       batchValidCount.value = validCount;
       batchTotalCount.value = totalCount;
-      batchProblems.value = problems;
+      batchFileStatus.value = res.data.file_results || [];
     }
   } catch {
     batchValidCount.value = 0;
     batchTotalCount.value = 0;
-    batchProblems.value = [];
+    batchFileStatus.value = [];
   } finally {
     batchValidating.value = false;
   }
@@ -284,7 +280,7 @@ watch(isBatchMultiCase, (val) => {
   if (val && batchFolder.value) {
     runBatchValidation();
   } else {
-    batchProblems.value = [];
+    batchFileStatus.value = [];
   }
 });
 
@@ -292,7 +288,7 @@ watch(batchFolder, (val) => {
   if (val && isBatchMultiCase.value) {
     runBatchValidation();
   } else {
-    batchProblems.value = [];
+    batchFileStatus.value = [];
   }
 });
 
@@ -543,7 +539,7 @@ function onToggleMultiCase(value: boolean) {
       </div>
     </div>
 
-    <!-- Column 2: Batch Report + Export/Import (coming soon) -->
+    <!-- Column 2: Batch Report + KDF File Status -->
     <div class="space-y-4">
       <!-- Batch Report -->
       <div class="pk-card">
@@ -597,7 +593,7 @@ function onToggleMultiCase(value: boolean) {
           <!-- Batch Report Mode Toggle -->
           <ReportModeToggle v-model="isBatchMultiCase" />
 
-          <!-- Batch multi-case validation results -->
+<!-- Batch multi-case validation results -->
           <div v-if="isBatchMultiCase && batchTotalCount > 0" class="mb-3">
             <div class="flex items-center gap-2 mb-1">
               <span v-if="batchValidating" class="pk-spinner" />
@@ -626,23 +622,9 @@ function onToggleMultiCase(value: boolean) {
                 valid KORF Excel
               </span>
             </div>
-            <textarea
-              v-if="batchProblems.length > 0"
-              class="pk-input-mono resize-none rounded w-full mt-2 p-2 text-xs bg-gray-50 border border-gray-200"
-              :value="batchProblems.join('\n')"
-              rows="4"
-              readonly
-            />
-            <div
-              v-if="!batchValidating && batchValidCount === 0"
-              class="mt-1 text-xs text-red-600"
-            >
-              No KDF files have valid KORF Excel reports. Generate them from
-              KORF first.
-            </div>
           </div>
 
-          <div class="mb-3 flex items-center gap-2 text-sm text-gray-700">
+<div class="mb-3 flex items-center gap-2 text-sm text-gray-700">
             <input
               id="singleReport"
               type="checkbox"
@@ -665,37 +647,37 @@ function onToggleMultiCase(value: boolean) {
         </div>
       </div>
 
-      <!-- Export to Excel (Coming Soon) -->
-      <div class="pk-card opacity-60">
+      <!-- KDF File Validation Table -->
+      <div v-if="isBatchMultiCase && batchFileStatus.length > 0" class="pk-card">
         <div class="pk-card-header flex items-center gap-1">
-          <ArrowUpRight class="w-4 h-4 text-blue-600" /> Export to Excel
-          <span
-            class="ml-auto text-[10px] font-semibold uppercase tracking-wider text-gray-400 bg-gray-100 border border-gray-200 rounded px-1.5 py-0.5"
-            >Coming Soon</span
-          >
+          <FileText class="w-4 h-4 text-gray-500" /> KDF File Status
         </div>
-        <div
-          class="p-4 flex flex-col items-center justify-center text-gray-400 text-sm py-8"
-        >
-          <ArrowUpRight class="w-8 h-8 mb-2 opacity-30" />
-          <span>Export model to Excel — coming soon</span>
-        </div>
-      </div>
-
-      <!-- Import from Excel (Coming Soon) -->
-      <div class="pk-card opacity-60">
-        <div class="pk-card-header flex items-center gap-1">
-          <ArrowDownRight class="w-4 h-4 text-yellow-500" /> Import from Excel
-          <span
-            class="ml-auto text-[10px] font-semibold uppercase tracking-wider text-gray-400 bg-gray-100 border border-gray-200 rounded px-1.5 py-0.5"
-            >Coming Soon</span
-          >
-        </div>
-        <div
-          class="p-4 flex flex-col items-center justify-center text-gray-400 text-sm py-8"
-        >
-          <ArrowDownRight class="w-8 h-8 mb-2 opacity-30" />
-          <span>Import model from Excel — coming soon</span>
+        <div class="p-4">
+          <table class="w-full text-xs">
+            <thead>
+              <tr class="border-b border-gray-200">
+                <th class="text-left py-1.5 px-2 font-medium text-gray-600">KDF File</th>
+                <th class="text-left py-1.5 px-2 font-medium text-gray-600">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="file in batchFileStatus"
+                :key="file.filename"
+                class="border-b border-gray-100 last:border-0"
+              >
+                <td class="py-1.5 px-2 font-mono text-gray-700">{{ file.filename }}</td>
+                <td class="py-1.5 px-2">
+                  <span v-if="file.ok" class="inline-flex items-center gap-1 text-green-700">
+                    <CheckCircle2 class="w-3.5 h-3.5" /> OK
+                  </span>
+                  <span v-else class="inline-flex items-center gap-1 text-red-700">
+                    <AlertTriangle class="w-3.5 h-3.5" /> {{ file.issue || 'Error' }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

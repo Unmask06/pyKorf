@@ -2128,6 +2128,35 @@
         ],
         "title": "ApplyPmsRequest"
       },
+      "BatchFileStatus": {
+        "properties": {
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "issue": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Issue"
+          }
+        },
+        "type": "object",
+        "required": [
+          "filename",
+          "ok"
+        ],
+        "title": "BatchFileStatus"
+      },
       "BatchReportRequest": {
         "properties": {
           "batch_folder": {
@@ -3761,6 +3790,14 @@
             },
             "type": "array",
             "title": "Errors",
+            "default": []
+          },
+          "file_results": {
+            "items": {
+              "$ref": "#/components/schemas/BatchFileStatus"
+            },
+            "type": "array",
+            "title": "File Results",
             "default": []
           }
         },

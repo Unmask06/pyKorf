@@ -10,6 +10,7 @@ from fastapi import APIRouter
 from pykorf.app.api import session_state as _sess
 from pykorf.app.api.deps import require_model
 from pykorf.app.api.schemas import (
+    BatchFileStatus,
     BatchReportRequest,
     ExportRequest,
     GenerateReportRequest,
@@ -363,6 +364,7 @@ async def batch_report(req: BatchReportRequest) -> ReportResponse:
 
     batch_folder = Path(req.batch_folder) if req.batch_folder else Path(kdf_folder)
     messages: list[StatusMessage] = []
+    file_results: list[BatchFileStatus] = []
     errors = []
 
     if not batch_folder.exists():
@@ -370,7 +372,6 @@ async def batch_report(req: BatchReportRequest) -> ReportResponse:
     elif not batch_folder.is_dir():
         errors.append(f"Batch path is not a directory: {batch_folder}")
     elif req.validate_only and req.mode == "multi":
-        # Validate-only: scan KDF files and check KORF Excel readiness
         kdf_files = sorted(batch_folder.rglob("*.kdf"))
         if req.path_keyword_filter:
             keyword = req.path_keyword_filter.strip().lower()
@@ -381,6 +382,9 @@ async def batch_report(req: BatchReportRequest) -> ReportResponse:
             status = _korf_excel_status(kf)
             if status.korf_excel_path and not status.is_stale:
                 valid_count += 1
+                file_results.append(
+                    BatchFileStatus(filename=kf.name, ok=True)
+                )
             elif status.korf_excel_path and status.is_stale:
                 messages.append(
                     StatusMessage(
@@ -388,12 +392,18 @@ async def batch_report(req: BatchReportRequest) -> ReportResponse:
                         message=f"{kf.name}: KORF Excel stale",
                     )
                 )
+                file_results.append(
+                    BatchFileStatus(filename=kf.name, ok=False, issue="KORF Excel stale")
+                )
             else:
                 messages.append(
                     StatusMessage(
                         type="warning",
                         message=f"{kf.name}: KORF Excel missing",
                     )
+                )
+                file_results.append(
+                    BatchFileStatus(filename=kf.name, ok=False, issue="KORF Excel missing")
                 )
         messages.insert(
             0,
@@ -429,4 +439,4 @@ async def batch_report(req: BatchReportRequest) -> ReportResponse:
         except Exception as exc:
             errors.append(f"Error generating batch report: {exc}")
 
-    return ReportResponse(success=len(errors) == 0, messages=messages, errors=errors)
+    return ReportResponse(success=len(errors) == 0, messages=messages, errors=errors, file_results=file_results)
