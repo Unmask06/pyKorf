@@ -77,6 +77,7 @@ const batchValidCount = ref(0);
 const batchTotalCount = ref(0);
 const batchFileStatus = ref<BatchFileStatus[]>([]);
 const batchValidating = ref(false);
+const excludedFiles = ref<Set<string>>(new Set());
 
 // Report column customization — default pipe columns (mandatory + default-on optional)
 const DEFAULT_PIPE_COLUMNS = [
@@ -129,7 +130,12 @@ const canBatchGenerate = computed(() => {
   if (batchLoading.isLoading.value) return false;
   if (batchValidating.value) return false;
   if (!batchFolder.value) return false;
-  if (isBatchMultiCase.value && batchValidCount.value === 0) return false;
+  if (isBatchMultiCase.value) {
+    const validNotExcluded = batchFileStatus.value.filter(
+      (f) => f.ok && !excludedFiles.value.has(f.filename)
+    );
+    if (validNotExcluded.length === 0) return false;
+  }
   return true;
 });
 
@@ -180,6 +186,7 @@ const batchLoading = useLoading(async () => {
     mode: isBatchMultiCase.value ? "multi" : "single",
     pipe_columns: pipeColumns.value.length > 0 ? pipeColumns.value : undefined,
     path_keyword_filter: pathKeywordFilter.value || null,
+    exclude_filenames: excludedFiles.value.size > 0 ? Array.from(excludedFiles.value) : undefined,
   };
   const res = await batchReport({ body: req });
   if (!res.data?.success) {
@@ -266,6 +273,12 @@ async function runBatchValidation() {
       batchValidCount.value = validCount;
       batchTotalCount.value = totalCount;
       batchFileStatus.value = res.data.file_results || [];
+      const validNames = new Set(
+        (res.data.file_results || []).filter((f) => f.ok).map((f) => f.filename)
+      );
+      excludedFiles.value = new Set(
+        [...excludedFiles.value].filter((n) => validNames.has(n))
+      );
     }
   } catch {
     batchValidCount.value = 0;
@@ -328,6 +341,16 @@ async function saveBatchFolder() {
 function copyToClipboard(text: string) {
   navigator.clipboard.writeText(text);
   toast.info("Path copied to clipboard.");
+}
+
+function toggleExcludedFile(filename: string) {
+  const next = new Set(excludedFiles.value);
+  if (next.has(filename)) {
+    next.delete(filename);
+  } else {
+    next.add(filename);
+  }
+  excludedFiles.value = next;
 }
 
 onMounted(async () => {
@@ -656,6 +679,7 @@ function onToggleMultiCase(value: boolean) {
           <table class="w-full text-xs">
             <thead>
               <tr class="border-b border-gray-200">
+                <th class="text-left py-1.5 px-2 font-medium text-gray-600 w-6"></th>
                 <th class="text-left py-1.5 px-2 font-medium text-gray-600">KDF File</th>
                 <th class="text-left py-1.5 px-2 font-medium text-gray-600">Status</th>
               </tr>
@@ -665,7 +689,17 @@ function onToggleMultiCase(value: boolean) {
                 v-for="file in batchFileStatus"
                 :key="file.filename"
                 class="border-b border-gray-100 last:border-0"
+                :class="{ 'opacity-50': !file.ok || excludedFiles.has(file.filename) }"
               >
+                <td class="py-1.5 px-2">
+                  <input
+                    v-if="file.ok"
+                    type="checkbox"
+                    :checked="!excludedFiles.has(file.filename)"
+                    @change="toggleExcludedFile(file.filename)"
+                    class="h-3.5 w-3.5 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                  />
+                </td>
                 <td class="py-1.5 px-2 font-mono text-gray-700">{{ file.filename }}</td>
                 <td class="py-1.5 px-2">
                   <span v-if="file.ok" class="inline-flex items-center gap-1 text-green-700">

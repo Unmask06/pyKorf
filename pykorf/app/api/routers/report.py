@@ -377,6 +377,9 @@ async def batch_report(req: BatchReportRequest) -> ReportResponse:
             keyword = req.path_keyword_filter.strip().lower()
             if keyword:
                 kdf_files = [p for p in kdf_files if keyword in str(p).lower()]
+        if req.exclude_filenames:
+            excluded = {f.strip().lower() for f in req.exclude_filenames}
+            kdf_files = [p for p in kdf_files if p.name.lower() not in excluded]
         valid_count = 0
         for kf in kdf_files:
             status = _korf_excel_status(kf)
@@ -425,6 +428,7 @@ async def batch_report(req: BatchReportRequest) -> ReportResponse:
                     multi_case=is_multi,
                     pipe_columns=req.pipe_columns,
                     path_keyword_filter=req.path_keyword_filter,
+                    exclude_filenames=req.exclude_filenames,
                 )
                 return generator, output_path
 

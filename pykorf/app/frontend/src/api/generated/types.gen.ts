@@ -168,6 +168,10 @@ export type BatchReportRequest = {
      * Path Keyword Filter
      */
     path_keyword_filter?: string | null;
+    /**
+     * Exclude Filenames
+     */
+    exclude_filenames?: Array<string> | null;
 };
 
 /**

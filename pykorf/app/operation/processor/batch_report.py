@@ -89,6 +89,7 @@ class BatchReportGenerator:
         multi_case: bool = False,
         pipe_columns: list[str] | None = None,
         path_keyword_filter: str | None = None,
+        exclude_filenames: list[str] | None = None,
     ) -> str:
         """Generate multi-sheet Excel report.
 
@@ -105,6 +106,7 @@ class BatchReportGenerator:
             pipe_columns: Optional subset of pipe columns to include in reports.
             path_keyword_filter: Optional case-insensitive keyword to filter KDF
                 files by their full path. Only files containing the keyword are processed.
+            exclude_filenames: Optional list of KDF filenames to exclude from processing.
 
         Returns:
             Path to generated Excel file.
@@ -121,6 +123,12 @@ class BatchReportGenerator:
                 self.kdf_files = [
                     p for p in self.kdf_files if keyword in str(p).lower()
                 ]
+
+        if exclude_filenames:
+            excluded = {f.strip().lower() for f in exclude_filenames}
+            self.kdf_files = [
+                p for p in self.kdf_files if p.name.lower() not in excluded
+            ]
 
         if not self.kdf_files:
             raise ValueError(f"No KDF files found in: {self.folder}")

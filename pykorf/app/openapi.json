@@ -2209,6 +2209,20 @@
               }
             ],
             "title": "Path Keyword Filter"
+          },
+          "exclude_filenames": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exclude Filenames"
           }
         },
         "type": "object",
