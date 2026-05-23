@@ -217,18 +217,35 @@ class BatchReportGenerator:
                 else:
                     reporter = PykorfReporter(model)
 
-                for sheet_name in types_to_process:
-                    if sheet_name not in reporter._extractors:
-                        continue
+                _KORF_SHEET_RENAME = {
+                    "Exchangers": "Heat Exchangers",
+                    "Misc Equipment": "Misc Equipment",
+                }
 
-                    extractor = reporter._extractors[sheet_name]
-                    elements = extractor()
+                if multi_case:
+                    dfs = reporter.generate_dataframes()
+                    for sheet_name, df in dfs.items():
+                        if df.empty:
+                            continue
+                        normalized = _KORF_SHEET_RENAME.get(sheet_name, sheet_name)
+                        df["source_file"] = kdf_file.name
+                        df["source_path"] = str(kdf_file)
+                        elements_by_type.setdefault(normalized, []).extend(
+                            df.to_dict("records")
+                        )
+                else:
+                    for sheet_name in types_to_process:
+                        if sheet_name not in reporter._extractors:
+                            continue
 
-                    for elem in elements:
-                        elem["source_file"] = kdf_file.name
-                        elem["source_path"] = str(kdf_file)
+                        extractor = reporter._extractors[sheet_name]
+                        elements = extractor()
 
-                    elements_by_type[sheet_name].extend(elements)
+                        for elem in elements:
+                            elem["source_file"] = kdf_file.name
+                            elem["source_path"] = str(kdf_file)
+
+                        elements_by_type[sheet_name].extend(elements)
 
                 # Extract remarks and hold items from .pykorf sidecar
                 if "Remarks" in types_to_process or "Hold Items" in types_to_process:
