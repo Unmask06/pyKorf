@@ -681,7 +681,7 @@ function onToggleMultiCase(value: boolean) {
               <tr class="border-b border-gray-200">
                 <th class="text-left py-1.5 px-2 font-medium text-gray-600 w-6"></th>
                 <th class="text-left py-1.5 px-2 font-medium text-gray-600">KDF File</th>
-                <th class="text-left py-1.5 px-2 font-medium text-gray-600">Status</th>
+                <th class="text-left py-1.5 px-2 font-medium text-gray-600" style="min-width: 10rem">Status</th>
               </tr>
             </thead>
             <tbody>
