@@ -223,16 +223,18 @@ class BatchReportGenerator:
                 }
 
                 if multi_case:
-                    dfs = reporter.generate_dataframes()
-                    for sheet_name, df in dfs.items():
-                        if df.empty:
-                            continue
-                        normalized = _KORF_SHEET_RENAME.get(sheet_name, sheet_name)
-                        df["source_file"] = kdf_file.name
-                        df["source_path"] = str(kdf_file)
-                        elements_by_type.setdefault(normalized, []).extend(
-                            df.to_dict("records")
-                        )
+                    all_case_dfs = reporter.generate_all_case_dataframes()
+                    for case_name, case_dfs in all_case_dfs.items():
+                        for sheet_name, df in case_dfs.items():
+                            if df.empty:
+                                continue
+                            normalized = _KORF_SHEET_RENAME.get(sheet_name, sheet_name)
+                            df["source_file"] = kdf_file.name
+                            df["source_path"] = str(kdf_file)
+                            df["Case"] = case_name
+                            elements_by_type.setdefault(normalized, []).extend(
+                                df.to_dict("records")
+                            )
                 else:
                     for sheet_name in types_to_process:
                         if sheet_name not in reporter._extractors:
@@ -469,14 +471,18 @@ class BatchReportGenerator:
             df = pd.DataFrame(elements)
 
             cols = list(df.columns)
-            for col in ["source_path", "source_file"]:
+            for col in ["source_path", "source_file", "Case"]:
                 if col in cols:
                     cols.remove(col)
             cols = ["source_file", *cols]
 
+            if "Case" in df.columns:
+                cols.insert(1, "Case")
+
             if sheet_name == "Pipes" and "Line Number" in df.columns:
                 cols.remove("Line Number")
-                cols.insert(1, "Line Number")
+                insert_pos = 2 if "Case" in df.columns else 1
+                cols.insert(insert_pos, "Line Number")
 
             if "source_path" in df.columns:
                 cols.append("source_path")
