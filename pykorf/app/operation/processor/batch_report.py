@@ -153,7 +153,69 @@ class BatchReportGenerator:
                 progress_callback(i, len(self.kdf_files), kdf_file.name)
             try:
                 model = Model.load(kdf_file)
-                reporter = PykorfReporter(model)
+
+                if multi_case:
+                    korf_excel = kdf_file.parent / f"{kdf_file.stem}.xlsx"
+                    if not korf_excel.is_file():
+                        logger.warning(
+                            "batch_korf_excel_missing",
+                            file=kdf_file.name,
+                            expected=str(korf_excel),
+                        )
+                        self._errors.append(
+                            f"{kdf_file.name}: KORF Excel missing (skipped)"
+                        )
+                        continue
+                    try:
+                        kdf_mtime = kdf_file.stat().st_mtime
+                        xlsx_mtime = korf_excel.stat().st_mtime
+                        if xlsx_mtime < kdf_mtime:
+                            logger.warning(
+                                "batch_korf_excel_stale",
+                                file=kdf_file.name,
+                            )
+                            self._errors.append(
+                                f"{kdf_file.name}: KORF Excel stale (skipped)"
+                            )
+                            continue
+                    except OSError:
+                        continue
+
+                    from pykorf.app.operation.project.pykorf_file import (
+                        get_justifications,
+                    )
+                    from pykorf.core.reports.korf_reporter import KorfReporter
+
+                    ref_store = ReferencesStore.load(kdf_file)
+                    basis = ref_store.basis if ref_store else ""
+                    remarks = ref_store.remarks if ref_store else ""
+                    hold = ref_store.hold if ref_store else ""
+                    references = (
+                        [
+                            {
+                                "name": r.name,
+                                "category": r.category,
+                                "link": r.link,
+                                "description": r.description,
+                            }
+                            for r in ref_store.references
+                        ]
+                        if ref_store
+                        else []
+                    )
+                    justifications = get_justifications(kdf_file)
+
+                    reporter = KorfReporter(
+                        excel_path=korf_excel,
+                        model=model,
+                        basis=basis,
+                        remarks=remarks,
+                        hold=hold,
+                        references=references,
+                        justifications=justifications,
+                    )
+                else:
+                    reporter = PykorfReporter(model)
 
                 for sheet_name in types_to_process:
                     if sheet_name not in reporter._extractors:
