@@ -123,6 +123,24 @@ export type ApplyPmsRequest = {
 };
 
 /**
+ * BatchFileStatus
+ */
+export type BatchFileStatus = {
+    /**
+     * Filename
+     */
+    filename: string;
+    /**
+     * Ok
+     */
+    ok: boolean;
+    /**
+     * Issue
+     */
+    issue?: string | null;
+};
+
+/**
  * BatchReportRequest
  */
 export type BatchReportRequest = {
@@ -146,6 +164,14 @@ export type BatchReportRequest = {
      * Pipe Columns
      */
     pipe_columns?: Array<string> | null;
+    /**
+     * Path Keyword Filter
+     */
+    path_keyword_filter?: string | null;
+    /**
+     * Exclude Filenames
+     */
+    exclude_filenames?: Array<string> | null;
 };
 
 /**
@@ -965,6 +991,10 @@ export type PreferencesResponse = {
      * Last Batch Folder Path
      */
     last_batch_folder_path?: string | null;
+    /**
+     * Last Batch Path Keyword Filter
+     */
+    last_batch_path_keyword_filter?: string | null;
 };
 
 /**
@@ -1163,6 +1193,10 @@ export type ReportResponse = {
      * Errors
      */
     errors?: Array<string>;
+    /**
+     * File Results
+     */
+    file_results?: Array<BatchFileStatus>;
 };
 
 /**
@@ -1341,6 +1375,20 @@ export type SessionStatusResponse = {
      * Version
      */
     version?: string;
+};
+
+/**
+ * SetBatchFolderRequest
+ */
+export type SetBatchFolderRequest = {
+    /**
+     * Path
+     */
+    path: string;
+    /**
+     * Path Keyword Filter
+     */
+    path_keyword_filter?: string | null;
 };
 
 /**
@@ -2664,6 +2712,31 @@ export type SetDocRegisterConfigFromPreferencesResponses = {
 };
 
 export type SetDocRegisterConfigFromPreferencesResponse = SetDocRegisterConfigFromPreferencesResponses[keyof SetDocRegisterConfigFromPreferencesResponses];
+
+export type SetBatchFolderData = {
+    body: SetBatchFolderRequest;
+    path?: never;
+    query?: never;
+    url: '/api/preferences/batch-folder';
+};
+
+export type SetBatchFolderErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SetBatchFolderError = SetBatchFolderErrors[keyof SetBatchFolderErrors];
+
+export type SetBatchFolderResponses = {
+    /**
+     * Successful Response
+     */
+    200: OkResponse;
+};
+
+export type SetBatchFolderResponse = SetBatchFolderResponses[keyof SetBatchFolderResponses];
 
 export type GetReferencesData = {
     body?: never;

@@ -88,6 +88,8 @@ class BatchReportGenerator:
         single_report: bool = False,
         multi_case: bool = False,
         pipe_columns: list[str] | None = None,
+        path_keyword_filter: str | None = None,
+        exclude_filenames: list[str] | None = None,
     ) -> str:
         """Generate multi-sheet Excel report.
 
@@ -102,6 +104,9 @@ class BatchReportGenerator:
             multi_case: If True, use KorfReporter (auto-detects KORF Excel)
                 for individual per-KDF reports instead of PykorfReporter.
             pipe_columns: Optional subset of pipe columns to include in reports.
+            path_keyword_filter: Optional case-insensitive keyword to filter KDF
+                files by their full path. Only files containing the keyword are processed.
+            exclude_filenames: Optional list of KDF filenames to exclude from processing.
 
         Returns:
             Path to generated Excel file.
@@ -111,6 +116,19 @@ class BatchReportGenerator:
         """
         if not self.kdf_files:
             self.discover_files()
+
+        if path_keyword_filter:
+            keyword = path_keyword_filter.strip().lower()
+            if keyword:
+                self.kdf_files = [
+                    p for p in self.kdf_files if keyword in str(p).lower()
+                ]
+
+        if exclude_filenames:
+            excluded = {f.strip().lower() for f in exclude_filenames}
+            self.kdf_files = [
+                p for p in self.kdf_files if p.name.lower() not in excluded
+            ]
 
         if not self.kdf_files:
             raise ValueError(f"No KDF files found in: {self.folder}")
@@ -135,20 +153,101 @@ class BatchReportGenerator:
                 progress_callback(i, len(self.kdf_files), kdf_file.name)
             try:
                 model = Model.load(kdf_file)
-                reporter = PykorfReporter(model)
 
-                for sheet_name in types_to_process:
-                    if sheet_name not in reporter._extractors:
+                if multi_case:
+                    korf_excel = kdf_file.parent / f"{kdf_file.stem}.xlsx"
+                    if not korf_excel.is_file():
+                        logger.warning(
+                            "batch_korf_excel_missing",
+                            file=kdf_file.name,
+                            expected=str(korf_excel),
+                        )
+                        self._errors.append(
+                            f"{kdf_file.name}: KORF Excel missing (skipped)"
+                        )
+                        continue
+                    try:
+                        kdf_mtime = kdf_file.stat().st_mtime
+                        xlsx_mtime = korf_excel.stat().st_mtime
+                        if xlsx_mtime < kdf_mtime:
+                            logger.warning(
+                                "batch_korf_excel_stale",
+                                file=kdf_file.name,
+                            )
+                            self._errors.append(
+                                f"{kdf_file.name}: KORF Excel stale (skipped)"
+                            )
+                            continue
+                    except OSError:
                         continue
 
-                    extractor = reporter._extractors[sheet_name]
-                    elements = extractor()
+                    from pykorf.app.operation.project.pykorf_file import (
+                        get_justifications,
+                    )
+                    from pykorf.core.reports.korf_reporter import KorfReporter
 
-                    for elem in elements:
-                        elem["source_file"] = kdf_file.name
-                        elem["source_path"] = str(kdf_file)
+                    ref_store = ReferencesStore.load(kdf_file)
+                    basis = ref_store.basis if ref_store else ""
+                    remarks = ref_store.remarks if ref_store else ""
+                    hold = ref_store.hold if ref_store else ""
+                    references = (
+                        [
+                            {
+                                "name": r.name,
+                                "category": r.category,
+                                "link": r.link,
+                                "description": r.description,
+                            }
+                            for r in ref_store.references
+                        ]
+                        if ref_store
+                        else []
+                    )
+                    justifications = get_justifications(kdf_file)
 
-                    elements_by_type[sheet_name].extend(elements)
+                    reporter = KorfReporter(
+                        excel_path=korf_excel,
+                        model=model,
+                        basis=basis,
+                        remarks=remarks,
+                        hold=hold,
+                        references=references,
+                        justifications=justifications,
+                    )
+                else:
+                    reporter = PykorfReporter(model)
+
+                _KORF_SHEET_RENAME = {
+                    "Exchangers": "Heat Exchangers",
+                    "Misc Equipment": "Misc Equipment",
+                }
+
+                if multi_case:
+                    all_case_dfs = reporter.generate_all_case_dataframes()
+                    for case_name, case_dfs in all_case_dfs.items():
+                        for sheet_name, df in case_dfs.items():
+                            if df.empty:
+                                continue
+                            normalized = _KORF_SHEET_RENAME.get(sheet_name, sheet_name)
+                            df["source_file"] = kdf_file.name
+                            df["source_path"] = str(kdf_file)
+                            df["Case"] = case_name
+                            elements_by_type.setdefault(normalized, []).extend(
+                                df.to_dict("records")
+                            )
+                else:
+                    for sheet_name in types_to_process:
+                        if sheet_name not in reporter._extractors:
+                            continue
+
+                        extractor = reporter._extractors[sheet_name]
+                        elements = extractor()
+
+                        for elem in elements:
+                            elem["source_file"] = kdf_file.name
+                            elem["source_path"] = str(kdf_file)
+
+                        elements_by_type[sheet_name].extend(elements)
 
                 # Extract remarks and hold items from .pykorf sidecar
                 if "Remarks" in types_to_process or "Hold Items" in types_to_process:
@@ -372,14 +471,18 @@ class BatchReportGenerator:
             df = pd.DataFrame(elements)
 
             cols = list(df.columns)
-            for col in ["source_path", "source_file"]:
+            for col in ["source_path", "source_file", "Case"]:
                 if col in cols:
                     cols.remove(col)
             cols = ["source_file", *cols]
 
+            if "Case" in df.columns:
+                cols.insert(1, "Case")
+
             if sheet_name == "Pipes" and "Line Number" in df.columns:
                 cols.remove("Line Number")
-                cols.insert(1, "Line Number")
+                insert_pos = 2 if "Case" in df.columns else 1
+                cols.insert(insert_pos, "Line Number")
 
             if "source_path" in df.columns:
                 cols.append("source_path")

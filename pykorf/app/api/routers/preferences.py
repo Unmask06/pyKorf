@@ -15,6 +15,7 @@ from pykorf.app.api.schemas import (
     LicenseValidationResponse,
     OkResponse,
     PreferencesResponse,
+    SetBatchFolderRequest,
     SetDocRegisterConfigRequest,
     SetLicenseKeyRequest,
     SetSkipSpRequest,
@@ -29,11 +30,14 @@ from pykorf.app.operation.config.preferences import (
     get_doc_register_excel_path,
     get_doc_register_sp_site_url,
     get_last_batch_folder_path,
+    get_last_batch_path_keyword_filter,
     get_license_key,
     get_sp_overrides,
     get_skip_sp_override,
     set_doc_register_excel_path,
     set_doc_register_sp_site_url,
+    set_last_batch_folder_path,
+    set_last_batch_path_keyword_filter,
     set_license_key,
     set_sp_overrides,
     set_skip_sp_override,
@@ -68,6 +72,7 @@ async def get_preferences() -> PreferencesResponse:
         default_pms_url=get_pms_excel_url(),
         default_sp_site_url=get_default_sp_site_url(),
         last_batch_folder_path=get_last_batch_folder_path(),
+        last_batch_path_keyword_filter=get_last_batch_path_keyword_filter(),
     )
 
 
@@ -186,3 +191,11 @@ async def set_doc_register_config(req: SetDocRegisterConfigRequest) -> DocRegist
             )
 
     return DocRegisterRebuildResponse(success=True, message="Document Register config saved.")
+
+
+@router.post("/batch-folder", response_model=OkResponse, operation_id="setBatchFolder")
+async def set_batch_folder(req: SetBatchFolderRequest) -> OkResponse:
+    """Save the last used batch folder path and optional keyword filter."""
+    set_last_batch_folder_path(req.path)
+    set_last_batch_path_keyword_filter(req.path_keyword_filter)
+    return OkResponse(success=True, message="Batch folder preference saved.")

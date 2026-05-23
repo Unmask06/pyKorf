@@ -2,7 +2,6 @@
 import {
   AlertTriangle,
   ArrowDownRight,
-  ArrowUpRight,
   CheckCircle2,
   Clipboard,
   FileText,
@@ -12,7 +11,7 @@ import {
   Settings,
   X,
 } from "lucide-vue-next";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import {
   generateReport,
   batchReport,
@@ -21,6 +20,7 @@ import {
   korfExcelStatus,
   saveProjectInfo,
   getProjectInfoStatus,
+  setBatchFolder,
 } from "../api/client";
 import PathBrowser from "../components/PathBrowser.vue";
 import ReportCustomizeModal from "../components/ReportCustomizeModal.vue";
@@ -29,6 +29,7 @@ import { useLoading } from "../composables/useLoading";
 import { useToastStore } from "../composables/useToast";
 import { useSessionStore } from "../stores/session";
 import type {
+  BatchFileStatus,
   BatchReportRequest,
   GenerateReportRequest,
   ProjectInfoResponse,
@@ -67,14 +68,16 @@ const korfExists = ref(false);
 
 // Batch report
 const batchFolder = ref("");
+const pathKeywordFilter = ref("");
 const singleReport = ref(false);
 const showBatchBrowser = ref(false);
 
 // Batch multi-case validation
 const batchValidCount = ref(0);
 const batchTotalCount = ref(0);
-const batchProblems = ref<string[]>([]);
+const batchFileStatus = ref<BatchFileStatus[]>([]);
 const batchValidating = ref(false);
+const excludedFiles = ref<Set<string>>(new Set());
 
 // Report column customization — default pipe columns (mandatory + default-on optional)
 const DEFAULT_PIPE_COLUMNS = [
@@ -127,7 +130,12 @@ const canBatchGenerate = computed(() => {
   if (batchLoading.isLoading.value) return false;
   if (batchValidating.value) return false;
   if (!batchFolder.value) return false;
-  if (isBatchMultiCase.value && batchValidCount.value === 0) return false;
+  if (isBatchMultiCase.value) {
+    const validNotExcluded = batchFileStatus.value.filter(
+      (f) => f.ok && !excludedFiles.value.has(f.filename)
+    );
+    if (validNotExcluded.length === 0) return false;
+  }
   return true;
 });
 
@@ -177,6 +185,8 @@ const batchLoading = useLoading(async () => {
     single_report: singleReport.value,
     mode: isBatchMultiCase.value ? "multi" : "single",
     pipe_columns: pipeColumns.value.length > 0 ? pipeColumns.value : undefined,
+    path_keyword_filter: pathKeywordFilter.value || null,
+    exclude_filenames: excludedFiles.value.size > 0 ? Array.from(excludedFiles.value) : undefined,
   };
   const res = await batchReport({ body: req });
   if (!res.data?.success) {
@@ -245,32 +255,35 @@ async function runBatchValidation() {
       single_report: false,
       mode: "multi",
       validate_only: true,
+      path_keyword_filter: pathKeywordFilter.value || null,
     };
     const res = await batchReport({ body: req });
     if (res.data) {
-      const problems: string[] = [];
       let validCount = 0;
       let totalCount = 0;
       for (const msg of res.data.messages || []) {
         if (msg.type === "info" && msg.message) {
-          // Parse "X of Y KDF files have valid KORF Excel"
           const match = msg.message.match(/(\d+)\s+of\s+(\d+)/);
           if (match) {
             validCount = parseInt(match[1]);
             totalCount = parseInt(match[2]);
           }
-        } else if (msg.type === "warning" && msg.message) {
-          problems.push(msg.message);
         }
       }
       batchValidCount.value = validCount;
       batchTotalCount.value = totalCount;
-      batchProblems.value = problems;
+      batchFileStatus.value = res.data.file_results || [];
+      const currentNames = new Set(
+        (res.data.file_results || []).map((f) => f.filename)
+      );
+      excludedFiles.value = new Set(
+        [...excludedFiles.value].filter((n) => currentNames.has(n))
+      );
     }
   } catch {
     batchValidCount.value = 0;
     batchTotalCount.value = 0;
-    batchProblems.value = [];
+    batchFileStatus.value = [];
   } finally {
     batchValidating.value = false;
   }
@@ -280,7 +293,7 @@ watch(isBatchMultiCase, (val) => {
   if (val && batchFolder.value) {
     runBatchValidation();
   } else {
-    batchProblems.value = [];
+    batchFileStatus.value = [];
   }
 });
 
@@ -288,13 +301,56 @@ watch(batchFolder, (val) => {
   if (val && isBatchMultiCase.value) {
     runBatchValidation();
   } else {
-    batchProblems.value = [];
+    batchFileStatus.value = [];
   }
 });
+
+let keywordDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+watch(pathKeywordFilter, () => {
+  if (keywordDebounceTimer) {
+    clearTimeout(keywordDebounceTimer);
+  }
+  keywordDebounceTimer = setTimeout(() => {
+    saveBatchFolder();
+    if (batchFolder.value && isBatchMultiCase.value) {
+      runBatchValidation();
+    }
+  }, 300);
+});
+
+onUnmounted(() => {
+  if (keywordDebounceTimer) {
+    clearTimeout(keywordDebounceTimer);
+  }
+});
+
+async function saveBatchFolder() {
+  try {
+    await setBatchFolder({
+      body: {
+        path: batchFolder.value || "",
+        path_keyword_filter: pathKeywordFilter.value || null,
+      },
+    });
+  } catch {
+    // ignore — saving preferences is best-effort
+  }
+}
 
 function copyToClipboard(text: string) {
   navigator.clipboard.writeText(text);
   toast.info("Path copied to clipboard.");
+}
+
+function toggleExcludedFile(filename: string) {
+  const next = new Set(excludedFiles.value);
+  if (next.has(filename)) {
+    next.delete(filename);
+  } else {
+    next.add(filename);
+  }
+  excludedFiles.value = next;
 }
 
 onMounted(async () => {
@@ -303,6 +359,9 @@ onMounted(async () => {
     const response = await getPreferences();
     if (response.data!.last_batch_folder_path) {
       batchFolder.value = response.data!.last_batch_folder_path;
+    }
+    if (response.data!.last_batch_path_keyword_filter) {
+      pathKeywordFilter.value = response.data!.last_batch_path_keyword_filter;
     }
   } catch {
     // ignore — prefill is best-effort
@@ -503,7 +562,7 @@ function onToggleMultiCase(value: boolean) {
       </div>
     </div>
 
-    <!-- Column 2: Batch Report + Export/Import (coming soon) -->
+    <!-- Column 2: Batch Report + KDF File Status -->
     <div class="space-y-4">
       <!-- Batch Report -->
       <div class="pk-card">
@@ -541,10 +600,23 @@ function onToggleMultiCase(value: boolean) {
             </div>
           </div>
 
+          <div class="mb-3">
+            <label class="pk-label">Path Keyword Filter</label>
+            <input
+              v-model="pathKeywordFilter"
+              type="text"
+              class="pk-input"
+              placeholder="Optional: filter by path keyword (e.g., Rev A)"
+            />
+            <div class="pk-hint">
+              Case-insensitive, trims whitespace. Only KDF paths containing this keyword will be processed.
+            </div>
+          </div>
+
           <!-- Batch Report Mode Toggle -->
           <ReportModeToggle v-model="isBatchMultiCase" />
 
-          <!-- Batch multi-case validation results -->
+<!-- Batch multi-case validation results -->
           <div v-if="isBatchMultiCase && batchTotalCount > 0" class="mb-3">
             <div class="flex items-center gap-2 mb-1">
               <span v-if="batchValidating" class="pk-spinner" />
@@ -573,23 +645,9 @@ function onToggleMultiCase(value: boolean) {
                 valid KORF Excel
               </span>
             </div>
-            <textarea
-              v-if="batchProblems.length > 0"
-              class="pk-input-mono resize-none rounded w-full mt-2 p-2 text-xs bg-gray-50 border border-gray-200"
-              :value="batchProblems.join('\n')"
-              rows="4"
-              readonly
-            />
-            <div
-              v-if="!batchValidating && batchValidCount === 0"
-              class="mt-1 text-xs text-red-600"
-            >
-              No KDF files have valid KORF Excel reports. Generate them from
-              KORF first.
-            </div>
           </div>
 
-          <div class="mb-3 flex items-center gap-2 text-sm text-gray-700">
+<div class="mb-3 flex items-center gap-2 text-sm text-gray-700">
             <input
               id="singleReport"
               type="checkbox"
@@ -612,37 +670,51 @@ function onToggleMultiCase(value: boolean) {
         </div>
       </div>
 
-      <!-- Export to Excel (Coming Soon) -->
-      <div class="pk-card opacity-60">
+      <!-- KDF File Validation Table -->
+      <div v-if="isBatchMultiCase && batchFileStatus.length > 0" class="pk-card">
         <div class="pk-card-header flex items-center gap-1">
-          <ArrowUpRight class="w-4 h-4 text-blue-600" /> Export to Excel
-          <span
-            class="ml-auto text-[10px] font-semibold uppercase tracking-wider text-gray-400 bg-gray-100 border border-gray-200 rounded px-1.5 py-0.5"
-            >Coming Soon</span
-          >
+          <FileText class="w-4 h-4 text-gray-500" /> KDF File Status
         </div>
-        <div
-          class="p-4 flex flex-col items-center justify-center text-gray-400 text-sm py-8"
-        >
-          <ArrowUpRight class="w-8 h-8 mb-2 opacity-30" />
-          <span>Export model to Excel — coming soon</span>
-        </div>
-      </div>
-
-      <!-- Import from Excel (Coming Soon) -->
-      <div class="pk-card opacity-60">
-        <div class="pk-card-header flex items-center gap-1">
-          <ArrowDownRight class="w-4 h-4 text-yellow-500" /> Import from Excel
-          <span
-            class="ml-auto text-[10px] font-semibold uppercase tracking-wider text-gray-400 bg-gray-100 border border-gray-200 rounded px-1.5 py-0.5"
-            >Coming Soon</span
-          >
-        </div>
-        <div
-          class="p-4 flex flex-col items-center justify-center text-gray-400 text-sm py-8"
-        >
-          <ArrowDownRight class="w-8 h-8 mb-2 opacity-30" />
-          <span>Import model from Excel — coming soon</span>
+        <div class="p-4">
+          <table class="w-full text-xs">
+            <thead>
+              <tr class="border-b border-gray-200">
+                <th class="text-left py-1.5 px-2 font-medium text-gray-600 w-6"></th>
+                <th class="text-left py-1.5 px-2 font-medium text-gray-600">KDF File</th>
+                <th class="text-left py-1.5 px-2 font-medium text-gray-600" style="min-width: 10rem">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="file in batchFileStatus"
+                :key="file.filename"
+                class="border-b border-gray-100 last:border-0"
+                :class="{ 'opacity-50': excludedFiles.has(file.filename) }"
+              >
+                <td class="py-1.5 px-2">
+                  <button
+                    @click="toggleExcludedFile(file.filename)"
+                    :title="excludedFiles.has(file.filename) ? 'Include this file' : 'Exclude this file'"
+                    class="p-0.5 rounded hover:bg-gray-100"
+                  >
+                    <X
+                      class="w-3.5 h-3.5"
+                      :class="excludedFiles.has(file.filename) ? 'text-red-500' : 'text-gray-300 hover:text-gray-400'"
+                    />
+                  </button>
+                </td>
+                <td class="py-1.5 px-2 font-mono text-gray-700">{{ file.filename }}</td>
+                <td class="py-1.5 px-2">
+                  <span v-if="file.ok" class="inline-flex items-center gap-1 text-green-700">
+                    <CheckCircle2 class="w-3.5 h-3.5" /> OK
+                  </span>
+                  <span v-else class="inline-flex items-center gap-1 text-red-700">
+                    <AlertTriangle class="w-3.5 h-3.5" /> {{ file.issue || 'Error' }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -657,6 +729,7 @@ function onToggleMultiCase(value: boolean) {
       (p: string) => {
         batchFolder = p;
         showBatchBrowser = false;
+        saveBatchFolder();
       }
     "
   />

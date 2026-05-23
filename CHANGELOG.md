@@ -5,7 +5,23 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.43.0] - 2026-05-22
+## [0.44.0] - 2026-05-23
+
+### What's New
+
+- Batch reports now support a path keyword filter — enter a keyword such as "Rev A" and only KDF files whose path contains the keyword will be processed.
+- The KDF file validation table now shows a per-file status (OK, KORF Excel missing, or KORF Excel stale) instead of a plain text list, making problems easier to spot.
+- You can exclude individual files from a batch report by clicking the X button next to any file in the KDF file status table.
+- When generating a batch report in multi-case mode, the report now includes data from all available cases with a "Case" column identifying which case each row belongs to.
+
+### Improved
+
+- In multi-case mode, the combined batch report reads directly from the KORF Excel files so that result data (governing case, velocities, pressure drops) is taken from the KORF hydraulics rather than from the KDF model alone.
+- The batch folder and path keyword filter are saved to your preferences as soon as they are entered, so they persist across sessions even without running a report.
+
+### Fixed
+
+- The minimum pump elevation now defaults to 1.5 for new projects, matching the intended behaviour.
 
 ### What's New
 
