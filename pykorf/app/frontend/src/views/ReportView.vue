@@ -273,11 +273,11 @@ async function runBatchValidation() {
       batchValidCount.value = validCount;
       batchTotalCount.value = totalCount;
       batchFileStatus.value = res.data.file_results || [];
-      const validNames = new Set(
-        (res.data.file_results || []).filter((f) => f.ok).map((f) => f.filename)
+      const currentNames = new Set(
+        (res.data.file_results || []).map((f) => f.filename)
       );
       excludedFiles.value = new Set(
-        [...excludedFiles.value].filter((n) => validNames.has(n))
+        [...excludedFiles.value].filter((n) => currentNames.has(n))
       );
     }
   } catch {
@@ -693,7 +693,6 @@ function onToggleMultiCase(value: boolean) {
               >
                 <td class="py-1.5 px-2">
                   <input
-                    v-if="file.ok"
                     type="checkbox"
                     :checked="!excludedFiles.has(file.filename)"
                     @change="toggleExcludedFile(file.filename)"
