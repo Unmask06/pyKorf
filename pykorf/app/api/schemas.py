@@ -247,6 +247,7 @@ class BatchReportRequest(BaseModel):
     mode: str = "single"  # "single" | "multi"
     validate_only: bool = False  # If True, only validate multi-case readiness
     pipe_columns: list[str] | None = None  # Optional subset of pipe columns to include
+    path_keyword_filter: str | None = None  # Optional case-insensitive path filter
 
 
 class ReportResponse(BaseModel):
@@ -455,6 +456,12 @@ class PreferencesResponse(BaseModel):
     default_pms_url: str = ""
     default_sp_site_url: str = ""
     last_batch_folder_path: str | None = None
+    last_batch_path_keyword_filter: str | None = None
+
+
+class SetBatchFolderRequest(BaseModel):
+    path: str
+    path_keyword_filter: str | None = None
 
 
 class AddSpOverrideRequest(BaseModel):

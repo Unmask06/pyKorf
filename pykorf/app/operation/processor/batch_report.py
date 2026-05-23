@@ -88,6 +88,7 @@ class BatchReportGenerator:
         single_report: bool = False,
         multi_case: bool = False,
         pipe_columns: list[str] | None = None,
+        path_keyword_filter: str | None = None,
     ) -> str:
         """Generate multi-sheet Excel report.
 
@@ -102,6 +103,8 @@ class BatchReportGenerator:
             multi_case: If True, use KorfReporter (auto-detects KORF Excel)
                 for individual per-KDF reports instead of PykorfReporter.
             pipe_columns: Optional subset of pipe columns to include in reports.
+            path_keyword_filter: Optional case-insensitive keyword to filter KDF
+                files by their full path. Only files containing the keyword are processed.
 
         Returns:
             Path to generated Excel file.
@@ -111,6 +114,13 @@ class BatchReportGenerator:
         """
         if not self.kdf_files:
             self.discover_files()
+
+        if path_keyword_filter:
+            keyword = path_keyword_filter.strip().lower()
+            if keyword:
+                self.kdf_files = [
+                    p for p in self.kdf_files if keyword in str(p).lower()
+                ]
 
         if not self.kdf_files:
             raise ValueError(f"No KDF files found in: {self.folder}")

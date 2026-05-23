@@ -38,10 +38,11 @@ uv run mypy pykorf
 ```
 
 ## Frontend (run from `pykorf/app/frontend`)
+Use `cmd /c` to run npm scripts (PowerShell execution policy blocks npm/npx):
 ```bash
-npm run dev
-npm run build
-npm run generate-types
+cmd /c "cd C:\Users\PrasannaPalanivel\Documents\Code\pyKorf\pykorf\app\frontend && npm run dev"
+cmd /c "cd C:\Users\PrasannaPalanivel\Documents\Code\pyKorf\pykorf\app\frontend && npm run build"
+cmd /c "cd C:\Users\PrasannaPalanivel\Documents\Code\pyKorf\pykorf\app\frontend && npm run generate-types"
 ```
 
 ## Docs (optional)

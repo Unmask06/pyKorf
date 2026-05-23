@@ -12,7 +12,7 @@ import {
   Settings,
   X,
 } from "lucide-vue-next";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import {
   generateReport,
   batchReport,
@@ -21,6 +21,7 @@ import {
   korfExcelStatus,
   saveProjectInfo,
   getProjectInfoStatus,
+  setBatchFolder,
 } from "../api/client";
 import PathBrowser from "../components/PathBrowser.vue";
 import ReportCustomizeModal from "../components/ReportCustomizeModal.vue";
@@ -67,6 +68,7 @@ const korfExists = ref(false);
 
 // Batch report
 const batchFolder = ref("");
+const pathKeywordFilter = ref("");
 const singleReport = ref(false);
 const showBatchBrowser = ref(false);
 
@@ -177,6 +179,7 @@ const batchLoading = useLoading(async () => {
     single_report: singleReport.value,
     mode: isBatchMultiCase.value ? "multi" : "single",
     pipe_columns: pipeColumns.value.length > 0 ? pipeColumns.value : undefined,
+    path_keyword_filter: pathKeywordFilter.value || null,
   };
   const res = await batchReport({ body: req });
   if (!res.data?.success) {
@@ -245,6 +248,7 @@ async function runBatchValidation() {
       single_report: false,
       mode: "multi",
       validate_only: true,
+      path_keyword_filter: pathKeywordFilter.value || null,
     };
     const res = await batchReport({ body: req });
     if (res.data) {
@@ -292,6 +296,39 @@ watch(batchFolder, (val) => {
   }
 });
 
+let keywordDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+watch(pathKeywordFilter, () => {
+  if (keywordDebounceTimer) {
+    clearTimeout(keywordDebounceTimer);
+  }
+  keywordDebounceTimer = setTimeout(() => {
+    saveBatchFolder();
+    if (batchFolder.value && isBatchMultiCase.value) {
+      runBatchValidation();
+    }
+  }, 300);
+});
+
+onUnmounted(() => {
+  if (keywordDebounceTimer) {
+    clearTimeout(keywordDebounceTimer);
+  }
+});
+
+async function saveBatchFolder() {
+  try {
+    await setBatchFolder({
+      body: {
+        path: batchFolder.value || "",
+        path_keyword_filter: pathKeywordFilter.value || null,
+      },
+    });
+  } catch {
+    // ignore — saving preferences is best-effort
+  }
+}
+
 function copyToClipboard(text: string) {
   navigator.clipboard.writeText(text);
   toast.info("Path copied to clipboard.");
@@ -303,6 +340,9 @@ onMounted(async () => {
     const response = await getPreferences();
     if (response.data!.last_batch_folder_path) {
       batchFolder.value = response.data!.last_batch_folder_path;
+    }
+    if (response.data!.last_batch_path_keyword_filter) {
+      pathKeywordFilter.value = response.data!.last_batch_path_keyword_filter;
     }
   } catch {
     // ignore — prefill is best-effort
@@ -541,6 +581,19 @@ function onToggleMultiCase(value: boolean) {
             </div>
           </div>
 
+          <div class="mb-3">
+            <label class="pk-label">Path Keyword Filter</label>
+            <input
+              v-model="pathKeywordFilter"
+              type="text"
+              class="pk-input"
+              placeholder="Optional: filter by path keyword (e.g., Rev A)"
+            />
+            <div class="pk-hint">
+              Case-insensitive, trims whitespace. Only KDF paths containing this keyword will be processed.
+            </div>
+          </div>
+
           <!-- Batch Report Mode Toggle -->
           <ReportModeToggle v-model="isBatchMultiCase" />
 
@@ -657,6 +710,7 @@ function onToggleMultiCase(value: boolean) {
       (p: string) => {
         batchFolder = p;
         showBatchBrowser = false;
+        saveBatchFolder();
       }
     "
   />

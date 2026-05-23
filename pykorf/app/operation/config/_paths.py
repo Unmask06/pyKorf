@@ -111,6 +111,30 @@ def set_last_batch_folder_path(path: str | Path) -> None:
     save_config(config)
 
 
+def get_last_batch_path_keyword_filter() -> str | None:
+    """Get the last used batch path keyword filter.
+
+    Returns:
+        The last used path keyword filter for batch mode, or None if not set.
+    """
+    config = load_config()
+    return config.get("last_batch_path_keyword_filter")
+
+
+def set_last_batch_path_keyword_filter(keyword: str | None) -> None:
+    """Save the last used batch path keyword filter.
+
+    Args:
+        keyword: The path keyword filter to save, or None to clear.
+    """
+    config = load_config()
+    if keyword:
+        config["last_batch_path_keyword_filter"] = keyword
+    else:
+        config.pop("last_batch_path_keyword_filter", None)
+    save_config(config)
+
+
 def get_last_hmb_path() -> str | None:
     """Get the last used HMB JSON file path.
 

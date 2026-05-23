@@ -372,6 +372,10 @@ async def batch_report(req: BatchReportRequest) -> ReportResponse:
     elif req.validate_only and req.mode == "multi":
         # Validate-only: scan KDF files and check KORF Excel readiness
         kdf_files = sorted(batch_folder.rglob("*.kdf"))
+        if req.path_keyword_filter:
+            keyword = req.path_keyword_filter.strip().lower()
+            if keyword:
+                kdf_files = [p for p in kdf_files if keyword in str(p).lower()]
         valid_count = 0
         for kf in kdf_files:
             status = _korf_excel_status(kf)
@@ -410,6 +414,7 @@ async def batch_report(req: BatchReportRequest) -> ReportResponse:
                     single_report=req.single_report,
                     multi_case=is_multi,
                     pipe_columns=req.pipe_columns,
+                    path_keyword_filter=req.path_keyword_filter,
                 )
                 return generator, output_path
 

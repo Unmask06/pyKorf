@@ -1585,6 +1585,48 @@
         }
       }
     },
+    "/api/preferences/batch-folder": {
+      "post": {
+        "tags": [
+          "preferences"
+        ],
+        "summary": "Set Batch Folder",
+        "description": "Save the last used batch folder path and optional keyword filter.",
+        "operationId": "setBatchFolder",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetBatchFolderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/references/": {
       "get": {
         "tags": [
@@ -2127,6 +2169,17 @@
               }
             ],
             "title": "Pipe Columns"
+          },
+          "path_keyword_filter": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Path Keyword Filter"
           }
         },
         "type": "object",
@@ -3415,6 +3468,17 @@
               }
             ],
             "title": "Last Batch Folder Path"
+          },
+          "last_batch_path_keyword_filter": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Batch Path Keyword Filter"
           }
         },
         "type": "object",
@@ -3944,6 +4008,30 @@
           "model_loaded"
         ],
         "title": "SessionStatusResponse"
+      },
+      "SetBatchFolderRequest": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "title": "Path"
+          },
+          "path_keyword_filter": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Path Keyword Filter"
+          }
+        },
+        "type": "object",
+        "required": [
+          "path"
+        ],
+        "title": "SetBatchFolderRequest"
       },
       "SetCriteriaResponse": {
         "properties": {
