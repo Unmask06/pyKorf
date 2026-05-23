@@ -689,15 +689,19 @@ function onToggleMultiCase(value: boolean) {
                 v-for="file in batchFileStatus"
                 :key="file.filename"
                 class="border-b border-gray-100 last:border-0"
-                :class="{ 'opacity-50': !file.ok || excludedFiles.has(file.filename) }"
+                :class="{ 'opacity-50': excludedFiles.has(file.filename) }"
               >
                 <td class="py-1.5 px-2">
-                  <input
-                    type="checkbox"
-                    :checked="!excludedFiles.has(file.filename)"
-                    @change="toggleExcludedFile(file.filename)"
-                    class="h-3.5 w-3.5 rounded border-gray-300 text-green-600 focus:ring-green-500"
-                  />
+                  <button
+                    @click="toggleExcludedFile(file.filename)"
+                    :title="excludedFiles.has(file.filename) ? 'Include this file' : 'Exclude this file'"
+                    class="p-0.5 rounded hover:bg-gray-100"
+                  >
+                    <X
+                      class="w-3.5 h-3.5"
+                      :class="excludedFiles.has(file.filename) ? 'text-red-500' : 'text-gray-300 hover:text-gray-400'"
+                    />
+                  </button>
                 </td>
                 <td class="py-1.5 px-2 font-mono text-gray-700">{{ file.filename }}</td>
                 <td class="py-1.5 px-2">
