@@ -241,6 +241,12 @@ class ImportRequest(BaseModel):
     file_path: str | None = None
 
 
+class BatchFileStatus(BaseModel):
+    filename: str
+    ok: bool
+    issue: str | None = None
+
+
 class BatchReportRequest(BaseModel):
     batch_folder: str | None = None
     single_report: bool = False
@@ -253,6 +259,7 @@ class ReportResponse(BaseModel):
     success: bool
     messages: list[StatusMessage] = []
     errors: list[str] = []
+    file_results: list[BatchFileStatus] = []
 
 
 class KorfExcelStatusResponse(BaseModel):

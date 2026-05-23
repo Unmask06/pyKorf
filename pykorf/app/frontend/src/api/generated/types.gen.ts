@@ -123,6 +123,24 @@ export type ApplyPmsRequest = {
 };
 
 /**
+ * BatchFileStatus
+ */
+export type BatchFileStatus = {
+    /**
+     * Filename
+     */
+    filename: string;
+    /**
+     * Ok
+     */
+    ok: boolean;
+    /**
+     * Issue
+     */
+    issue?: string | null;
+};
+
+/**
  * BatchReportRequest
  */
 export type BatchReportRequest = {
@@ -1163,6 +1181,10 @@ export type ReportResponse = {
      * Errors
      */
     errors?: Array<string>;
+    /**
+     * File Results
+     */
+    file_results?: Array<BatchFileStatus>;
 };
 
 /**
