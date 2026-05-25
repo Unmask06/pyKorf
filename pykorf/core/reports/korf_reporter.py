@@ -25,6 +25,18 @@ _logger = logging.getLogger(__name__)
 
 DUMMY_LINE_RE = re.compile(r"\bLine d")  # exclude dummy lines from validation
 
+_RATED_ONLY_PUMP_KEYS = frozenset(
+    {
+        "Section_Performance Characteristics",
+        "Raise to Shutoff DP []",
+        "Suc Vessel Design Pressure [barg]",
+        "Suc Vessel Max Level [m]",
+        "Shut-Off DP [bar]",
+        "Suction Max Pressure [barg]",
+        "Discharge Shut-Off Pressure [barg]",
+    }
+)
+
 
 class KorfReporter(_BaseReporter):
     """Extracts element data from a KORF Excel report + KDF Model for report generation.
@@ -158,14 +170,17 @@ class KorfReporter(_BaseReporter):
             _logger.warning("No case data found in KORF Excel: %s", self._excel_path)
             return {}
 
+        sorted_cases = sorted(case_data.keys(), key=lambda c: int(c.number))
         result: dict[str, dict[str, pd.DataFrame]] = {}
-        for case_info in sorted(case_data.keys(), key=lambda c: int(c.number)):
+        for i, case_info in enumerate(sorted_cases):
             case_name = f"{case_info.number} - {case_info.name}"
             cd = case_data[case_info]
-            result[case_name] = self._build_case_dataframes(cd)
+            result[case_name] = self._build_case_dataframes(cd, rated=(i == 0))
         return result
 
-    def _build_case_dataframes(self, cd: KorfCaseData) -> dict[str, pd.DataFrame]:
+    def _build_case_dataframes(
+        self, cd: KorfCaseData, rated: bool = True
+    ) -> dict[str, pd.DataFrame]:
         """Build element DataFrames for a single case."""
         dfs: dict[str, pd.DataFrame] = {}
 
@@ -181,7 +196,7 @@ class KorfReporter(_BaseReporter):
         if pipes_data:
             dfs["Pipes"] = pd.DataFrame(pipes_data)
 
-        pumps_data = self._extract_pumps(cd)
+        pumps_data = self._extract_pumps(cd, rated=rated)
         if pumps_data:
             dfs["Pumps"] = pd.DataFrame(pumps_data)
 
@@ -429,7 +444,7 @@ class KorfReporter(_BaseReporter):
 
     # ── PUMPS ──────────────────────────────────────────────────────────
 
-    def _extract_pumps(self, cd: KorfCaseData) -> list[dict]:
+    def _extract_pumps(self, cd: KorfCaseData, rated: bool = True) -> list[dict]:
         results = []
         for pump in cd.pumps:
             # Find inlet pipe data by name to get temperature and viscosity
@@ -453,7 +468,9 @@ class KorfReporter(_BaseReporter):
                 "Differential Head [m]": pump.head,
                 "NPSH Available [m]": pump.npsha_calc,
                 "Shaft Power [kW]": pump.power,
-                "Efficiency [%]": round(pump.efficiency * 100, 1) if pump.efficiency is not None else None,
+                "Efficiency [%]": round(pump.efficiency * 100, 1)
+                if pump.efficiency is not None
+                else None,
                 "Hydraulic Power [kW]": pump.hydraulic_power,
                 "Section_Performance Characteristics": "Performance Characteristics",
                 "Raise to Shutoff DP []": pump.raise_to_shutoff_dp,
@@ -463,6 +480,9 @@ class KorfReporter(_BaseReporter):
                 "Suction Max Pressure [barg]": pump.suction_max_pressure,
                 "Discharge Shut-Off Pressure [barg]": pump.shutoff_pressure,
             }
+            if not rated:
+                for key in _RATED_ONLY_PUMP_KEYS:
+                    row.pop(key, None)
             results.append(row)
         return results
 
@@ -519,7 +539,9 @@ class KorfReporter(_BaseReporter):
                 "Differential Pressure [bar]": comp.dp,
                 "Gas Volumetric Flow [m³/h]": comp.flow,
                 "Shaft Power [kW]": comp.power,
-                "Efficiency [%]": round(comp.efficiency * 100, 1) if comp.efficiency is not None else None,
+                "Efficiency [%]": round(comp.efficiency * 100, 1)
+                if comp.efficiency is not None
+                else None,
                 "Hydraulic Power [kW]": comp.hydraulic_power,
             }
             results.append(row)
