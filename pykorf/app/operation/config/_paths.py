@@ -33,7 +33,7 @@ def set_last_kdf_path(path: str | Path) -> None:
     save_config(config)
 
 
-def get_recent_files(max_count: int = 20) -> list[str]:
+def get_recent_files(max_count: int = 30) -> list[str]:
     """Get the list of recently used KDF file paths.
 
     Filters out paths that no longer exist and persists the cleaned list.
@@ -56,7 +56,7 @@ def get_recent_files(max_count: int = 20) -> list[str]:
 def add_recent_file(path: str | Path) -> None:
     """Add a file path to the recent files list.
 
-    Moves existing entries to the front and caps the list at 20 entries.
+    Moves existing entries to the front and caps the list at 30 entries.
 
     Args:
         path: The KDF file path to add.
@@ -67,7 +67,7 @@ def add_recent_file(path: str | Path) -> None:
     if path_str in recent:
         recent.remove(path_str)
     recent.insert(0, path_str)
-    config["recent_files"] = recent[:20]
+    config["recent_files"] = recent[:30]
     save_config(config)
 
 
@@ -86,7 +86,7 @@ def record_opened_file(path: str | Path) -> None:
     if path_str in recent:
         recent.remove(path_str)
     recent.insert(0, path_str)
-    config["recent_files"] = recent[:20]
+    config["recent_files"] = recent[:30]
     save_config(config)
 
 
