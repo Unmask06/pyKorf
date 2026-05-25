@@ -120,15 +120,11 @@ class BatchReportGenerator:
         if path_keyword_filter:
             keyword = path_keyword_filter.strip().lower()
             if keyword:
-                self.kdf_files = [
-                    p for p in self.kdf_files if keyword in str(p).lower()
-                ]
+                self.kdf_files = [p for p in self.kdf_files if keyword in str(p).lower()]
 
         if exclude_filenames:
             excluded = {f.strip().lower() for f in exclude_filenames}
-            self.kdf_files = [
-                p for p in self.kdf_files if p.name.lower() not in excluded
-            ]
+            self.kdf_files = [p for p in self.kdf_files if p.name.lower() not in excluded]
 
         if not self.kdf_files:
             raise ValueError(f"No KDF files found in: {self.folder}")
@@ -162,9 +158,7 @@ class BatchReportGenerator:
                             file=kdf_file.name,
                             expected=str(korf_excel),
                         )
-                        self._errors.append(
-                            f"{kdf_file.name}: KORF Excel missing (skipped)"
-                        )
+                        self._errors.append(f"{kdf_file.name}: KORF Excel missing (skipped)")
                         continue
                     try:
                         kdf_mtime = kdf_file.stat().st_mtime
@@ -174,9 +168,7 @@ class BatchReportGenerator:
                                 "batch_korf_excel_stale",
                                 file=kdf_file.name,
                             )
-                            self._errors.append(
-                                f"{kdf_file.name}: KORF Excel stale (skipped)"
-                            )
+                            self._errors.append(f"{kdf_file.name}: KORF Excel stale (skipped)")
                             continue
                     except OSError:
                         continue

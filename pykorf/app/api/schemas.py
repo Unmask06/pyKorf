@@ -254,7 +254,9 @@ class BatchReportRequest(BaseModel):
     validate_only: bool = False  # If True, only validate multi-case readiness
     pipe_columns: list[str] | None = None  # Optional subset of pipe columns to include
     path_keyword_filter: str | None = None  # Optional case-insensitive path filter
-    exclude_filenames: list[str] | None = None  # Optional list of filenames to exclude from processing
+    exclude_filenames: list[str] | None = (
+        None  # Optional list of filenames to exclude from processing
+    )
 
 
 class ReportResponse(BaseModel):

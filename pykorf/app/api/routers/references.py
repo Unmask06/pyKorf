@@ -156,7 +156,9 @@ async def create_shortcuts(_: EmptyRequest) -> ShortcutsResponse:
         return ShortcutsResponse(error=str(exc))
 
 
-@router.post("/predict-category", response_model=PredictCategoryResponse, operation_id="predictCategory")
+@router.post(
+    "/predict-category", response_model=PredictCategoryResponse, operation_id="predictCategory"
+)
 async def predict_category_endpoint(req: PredictCategoryRequest) -> PredictCategoryResponse:
     """Predict a reference category from the description text."""
     from pykorf.app.operation.project.references import predict_category
