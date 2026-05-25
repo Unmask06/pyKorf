@@ -118,15 +118,34 @@ def apply_number_format(cell: Any, header_name: str) -> None:
 
 # ---- Column Widths -----------------------------------------------------------
 
-_COL_A_WIDTH = 25
-_OTHER_COL_WIDTH = 15
 
+def auto_fit_columns(
+    ws: Any,
+    col_a_min_width: int = 25,
+    data_min_width: int = 10,
+    data_max_width: int = 50,
+) -> None:
+    """Auto-fit all column widths based on actual cell content.
 
-def apply_column_widths(ws: Any, num_cols: int, start_col: int = 1) -> None:
-    """Set fixed column widths: col A = 25, others = 15."""
-    ws.column_dimensions[get_column_letter(start_col)].width = _COL_A_WIDTH
-    for c in range(start_col + 1, start_col + num_cols):
-        ws.column_dimensions[get_column_letter(c)].width = _OTHER_COL_WIDTH
+    Column A gets a fixed width of *col_a_min_width*.
+    Columns B onwards are auto-fit based on the longest cell value in each
+    column, clamped between *data_min_width* and *data_max_width*.
+    """
+    col_widths: dict[str, int] = {}
+    for row in ws.iter_rows():
+        for cell in row:
+            if cell.value is not None:
+                col_letter = get_column_letter(cell.column)
+                cell_length = len(str(cell.value))
+                col_widths[col_letter] = max(col_widths.get(col_letter, 0), cell_length)
+
+    for col_letter, width in col_widths.items():
+        if col_letter == "A":
+            ws.column_dimensions[col_letter].width = col_a_min_width
+        else:
+            ws.column_dimensions[col_letter].width = min(
+                max(width + 2, data_min_width), data_max_width
+            )
 
 
 # ---- Borders -----------------------------------------------------------------

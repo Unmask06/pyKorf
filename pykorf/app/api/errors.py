@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
+
 def _json_error_handler(status_code: int):
     """Factory for simple JSON error handlers."""
 

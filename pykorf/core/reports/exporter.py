@@ -6,17 +6,16 @@ from typing import Any
 import openpyxl
 import pandas as pd
 from openpyxl.styles import Alignment, Border, Font, PatternFill
-from openpyxl.utils import get_column_letter
 from openpyxl.utils.dataframe import dataframe_to_rows
 
 from pykorf import Model
 from pykorf.core.reports.formatting import (
     ReportStyles,
-    apply_column_widths,
     apply_fail_format,
     apply_justified_format,
     apply_number_format,
     apply_table_borders,
+    auto_fit_columns,
     parse_headers,
     write_section_marker,
     write_transposed_header,
@@ -143,6 +142,11 @@ class ResultExporter:
             )
 
         self._write_validation_sheet(workbook)
+
+        # Auto-fit all columns on every sheet after all content is written
+        for ws in workbook.worksheets:
+            auto_fit_columns(ws)
+
         workbook.save(output_path)
         _logger.info("   Report saved | %s", output_path)
         return str(output_path)
@@ -167,7 +171,9 @@ class ResultExporter:
 
         current_row = self._write_model_title(worksheet)
 
-        worksheet.cell(row=current_row, column=1, value=f"Source File: {source_name}").font = _STYLES.header
+        worksheet.cell(
+            row=current_row, column=1, value=f"Source File: {source_name}"
+        ).font = _STYLES.header
 
         case_names = self.reporter.get_case_names()
         if case_names:
@@ -392,7 +398,9 @@ class ResultExporter:
 
         current_row = self._write_model_title(ws)
 
-        ws.cell(row=current_row, column=1, value=f"Source File: {source_name}").font = _STYLES.header
+        ws.cell(
+            row=current_row, column=1, value=f"Source File: {source_name}"
+        ).font = _STYLES.header
 
         if pipe_columns and "Pipes" in dfs and not dfs["Pipes"].empty:
             dfs = dict(dfs)
@@ -645,19 +653,6 @@ class ResultExporter:
                         apply_justified_format(cell)
 
         last_row = data_start_row + len(df) - 1
-        apply_column_widths(ws, len(descriptions), start_col)
-
-        # Auto-fit "Line Number" column if present
-        line_num_idx = None
-        for i, col in enumerate(df.columns):
-            if col == "Line Number":
-                line_num_idx = start_col + i
-                break
-        if line_num_idx is not None:
-            max_len = max(len(str(v)) for v in df["Line Number"].fillna("")) if len(df) else 0
-            ws.column_dimensions[get_column_letter(line_num_idx)].width = min(
-                max(max_len + 2, 8), 40
-            )
 
         return last_row, len(descriptions)
 
@@ -713,7 +708,6 @@ class ResultExporter:
             current_row += 1
 
         last_row = current_row - 1
-        apply_column_widths(ws, num_cols, start_col)
 
         return last_row, num_cols
 
@@ -724,10 +718,6 @@ class ResultExporter:
         ref_ws.page_setup.paperSize = ref_ws.PAPERSIZE_A4
         ref_ws.page_setup.orientation = ref_ws.ORIENTATION_LANDSCAPE
         ref_ws.page_setup.scale = 75
-
-        # Fixed column widths for Name, Category, Link; Description auto-fits below
-        for col_idx, width in enumerate([50, 15, 15], start=1):
-            ref_ws.column_dimensions[get_column_letter(col_idx)].width = width
 
         row = self._write_model_title(ref_ws)
 
@@ -813,14 +803,6 @@ class ResultExporter:
                 )
                 row += 1
 
-            # Auto-fit Description column (column 4)
-            desc_col_letter = get_column_letter(4)
-            desc_max = max(
-                (len(str(ref.get("description", ""))) for ref in self.reporter.references),
-                default=0,
-            )
-            ref_ws.column_dimensions[desc_col_letter].width = min(max(desc_max + 2, 10), 80)
-
             # Outer border around the table
             apply_table_borders(ref_ws, header_row, row - 1, len(headers), 1)
 
@@ -838,9 +820,6 @@ class ResultExporter:
         val_ws.page_setup.paperSize = val_ws.PAPERSIZE_A4
         val_ws.page_setup.orientation = val_ws.ORIENTATION_LANDSCAPE
         val_ws.page_setup.scale = 90
-
-        for col_idx, width in enumerate([12, 18, 15, 80], start=1):
-            val_ws.column_dimensions[get_column_letter(col_idx)].width = width
 
         row = self._write_model_title(val_ws)
 

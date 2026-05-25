@@ -70,7 +70,9 @@ def _is_korf_default(field: str, value: str) -> bool:
     return value in KORF_DEFAULTS.get(field, [])
 
 
-def _is_project_info_complete_raw(model, smart_defaults: SmartDefaultsResponse) -> tuple[bool, list[str]]:
+def _is_project_info_complete_raw(
+    model, smart_defaults: SmartDefaultsResponse
+) -> tuple[bool, list[str]]:
     """Check if required project info fields are filled with real values.
 
     Reads raw values directly from model.general. Returns a tuple of
@@ -80,12 +82,19 @@ def _is_project_info_complete_raw(model, smart_defaults: SmartDefaultsResponse) 
     gen = model.general
     incomplete: list[str] = []
     for field in REQUIRED_PROJECT_INFO_FIELDS:
-        raw_value = getattr(gen, {
-            "company1": "company",
-            "company2": "company2",
-            "project_name1": "project",
-            "prepared_by": "prepared_by",
-        }.get(field, field), "") or ""
+        raw_value = (
+            getattr(
+                gen,
+                {
+                    "company1": "company",
+                    "company2": "company2",
+                    "project_name1": "project",
+                    "prepared_by": "prepared_by",
+                }.get(field, field),
+                "",
+            )
+            or ""
+        )
         if not raw_value.strip():
             incomplete.append(field)
     return (len(incomplete) == 0, incomplete)
@@ -126,7 +135,11 @@ async def check_project_info_or_return(
     )
 
 
-@router.get("/project-info/status", response_model=ProjectInfoStatusResponse, operation_id="getProjectInfoStatus")
+@router.get(
+    "/project-info/status",
+    response_model=ProjectInfoStatusResponse,
+    operation_id="getProjectInfoStatus",
+)
 async def get_project_info_status() -> ProjectInfoStatusResponse:
     """Return project info completeness status (non-blocking check).
 
@@ -437,9 +450,7 @@ def _compute_orphaned_justifications(
         if violations is not None and violations.overall == "FAIL":
             failing_pipes.add(name)
 
-    return {
-        name: text for name, text in justifications.items() if name not in failing_pipes
-    }
+    return {name: text for name, text in justifications.items() if name not in failing_pipes}
 
 
 def _get_pipes_list(model) -> list[tuple[int, str]]:

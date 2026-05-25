@@ -5,6 +5,13 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.45.1] - 2026-05-25
+
+### Improved
+
+- Column widths in report sheets are now auto-fitted to the cell content, so long values like line numbers and pipe names are no longer truncated.
+- The recent files list now remembers up to 30 entries instead of 20, making it easier to find previously opened models.
+
 ## [0.45.0] - 2026-05-25
 
 ### Improved

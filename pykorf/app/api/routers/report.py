@@ -385,9 +385,7 @@ async def batch_report(req: BatchReportRequest) -> ReportResponse:
             status = _korf_excel_status(kf)
             if status.korf_excel_path and not status.is_stale:
                 valid_count += 1
-                file_results.append(
-                    BatchFileStatus(filename=kf.name, ok=True)
-                )
+                file_results.append(BatchFileStatus(filename=kf.name, ok=True))
             elif status.korf_excel_path and status.is_stale:
                 messages.append(
                     StatusMessage(
@@ -443,4 +441,6 @@ async def batch_report(req: BatchReportRequest) -> ReportResponse:
         except Exception as exc:
             errors.append(f"Error generating batch report: {exc}")
 
-    return ReportResponse(success=len(errors) == 0, messages=messages, errors=errors, file_results=file_results)
+    return ReportResponse(
+        success=len(errors) == 0, messages=messages, errors=errors, file_results=file_results
+    )
