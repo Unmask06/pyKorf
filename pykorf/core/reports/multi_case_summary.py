@@ -12,7 +12,6 @@ from openpyxl.worksheet.worksheet import Worksheet
 from pykorf import Model
 from pykorf.core.reports.formatting import (
     ReportStyles,
-    apply_column_widths,
     apply_fail_format,
     apply_justified_format,
     apply_number_format,
@@ -448,7 +447,9 @@ class MultiCaseSummaryBuilder:
             "Differential Head [m]": pump.head,
             "NPSH Available [m]": pump.npsha_calc,
             "Shaft Power [kW]": pump.power,
-            "Efficiency [%]": round(pump.efficiency * 100, 1) if pump.efficiency is not None else None,
+            "Efficiency [%]": round(pump.efficiency * 100, 1)
+            if pump.efficiency is not None
+            else None,
             "Hydraulic Power [kW]": pump.hydraulic_power,
             "Section_Performance Characteristics": "Performance Characteristics",
             "Raise to Shutoff DP []": pump.raise_to_shutoff_dp,
@@ -541,7 +542,6 @@ class MultiCaseSummaryBuilder:
 
         last_row = data_start_row + len(df) - 1
         apply_table_borders(ws, start_row, last_row, len(descriptions), start_col)
-        apply_column_widths(ws, len(descriptions), start_col)
 
         return last_row
 
@@ -602,7 +602,6 @@ class MultiCaseSummaryBuilder:
 
         last_row = current_row - 1
         apply_table_borders(ws, start_row, last_row, num_cols, start_col)
-        apply_column_widths(ws, num_cols, start_col)
 
         return last_row
 
@@ -641,7 +640,6 @@ class MultiCaseSummaryBuilder:
 
         last_row = current_row - 1
         apply_table_borders(ws, start_row, last_row, num_cols, start_col)
-        apply_column_widths(ws, num_cols, start_col)
 
         return last_row
 
@@ -685,7 +683,6 @@ class MultiCaseSummaryBuilder:
 
         last_row = data_start_row + len(df) - 1
         apply_table_borders(ws, start_row, last_row, len(descriptions), start_col)
-        apply_column_widths(ws, len(descriptions), start_col)
 
         return last_row
 
