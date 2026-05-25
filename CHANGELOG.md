@@ -5,6 +5,12 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.45.0] - 2026-05-25
+
+### Improved
+
+- In multi-case reports, the pump table on alternative-case sheets no longer repeats design input parameters (Performance Characteristics section like Shut-Off DP, Discharge Shut-Off Pressure, vessel pressure settings). These appear only on the rated-case sheet and the Summary sheet, keeping alternative-case tables focused on operating results.
+
 ## [0.44.0] - 2026-05-23
 
 ### What's New
