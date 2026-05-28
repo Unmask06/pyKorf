@@ -56,6 +56,7 @@ const setResult = ref<SetCriteriaResponse | null>(null)
 const justificationModal = ref({
   open: false,
   pipeName: '',
+  pipeIdx: 0,
   criteria: '',
   criteriaLabel: '',
   justification: '',
@@ -258,9 +259,13 @@ function openJustificationModal(name: string, criteriaKey: string) {
 
   const criteriaLabel = codes.value[entry.state]?.find(c => c[0] === entry.criteria)?.[1] || entry.criteria
 
+  const pipeEntry = pipes.value.find(([, n]) => n === name)
+  const pipeIdx = pipeEntry ? pipeEntry[0] : 0
+
   justificationModal.value = {
     open: true,
     pipeName: name,
+    pipeIdx,
     criteria: criteriaKey,
     criteriaLabel,
     justification: justifications.value[name] || '',
@@ -275,12 +280,11 @@ function closeJustificationModal() {
 }
 
 const saveJustificationLoading = useLoading(async () => {
-  const { pipeName, criteria, justification } = justificationModal.value
+  const { pipeIdx, criteria, justification } = justificationModal.value
   try {
     const response = await savePipeJustification({
       body: {
-        pipe_name: pipeName,
-        criteria: criteria,
+        pipe_idx: pipeIdx,
         justification: justification,
       } as JustificationRequest,
     })

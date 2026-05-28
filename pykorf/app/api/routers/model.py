@@ -306,7 +306,13 @@ async def get_pipe_criteria() -> PipeCriteriaResponse:
     pipe_calcs = _compute_pipe_calcs(model, pipes)
     pipe_criteria_violations = _compute_criteria_violations(pipe_calcs, pipe_criteria_values)
 
-    justifications = get_justifications(kdf_path) if kdf_path else {}
+    valid_indices = {idx for idx, _ in pipes}
+    idx_justifications = get_justifications(kdf_path, valid_pipe_indices=valid_indices) if kdf_path else {}
+    idx_to_name = {idx: model.pipes[idx].name for idx in valid_indices if idx in model.pipes}
+    justifications = {
+        idx_to_name[idx]: text for idx, text in idx_justifications.items() if idx in idx_to_name
+    }
+
     violation_summary = _compute_violation_summary(
         pipe_criteria_violations, justifications, existing
     )
@@ -375,18 +381,25 @@ async def save_justification(req: JustificationRequest) -> JustificationSaveResp
     if not kdf_path:
         raise HTTPException(status_code=400, detail="No KDF file loaded")
 
-    valid_names = {name for _, name in _get_pipes_list(model)}
-    if req.pipe_name not in valid_names:
-        raise HTTPException(status_code=400, detail=f"Pipe '{req.pipe_name}' not found")
+    if req.pipe_idx not in model.pipes or req.pipe_idx == 0:
+        raise HTTPException(status_code=400, detail=f"Pipe index {req.pipe_idx} not found")
 
-    justifications = get_justifications(kdf_path)
+    valid_indices = {idx for idx, _ in _get_pipes_list(model)}
+    if req.pipe_idx not in valid_indices:
+        raise HTTPException(status_code=400, detail=f"Pipe index {req.pipe_idx} not found")
+
+    justifications = get_justifications(kdf_path, valid_pipe_indices=valid_indices)
     if req.justification.strip():
-        justifications[req.pipe_name] = req.justification
+        justifications[req.pipe_idx] = req.justification
     else:
-        justifications.pop(req.pipe_name, None)
+        justifications.pop(req.pipe_idx, None)
     set_justifications(kdf_path, justifications)
 
-    return JustificationSaveResponse(justifications=justifications, saved=True)
+    idx_to_name = {idx: model.pipes[idx].name for idx in valid_indices}
+    name_keyed = {
+        idx_to_name[idx]: text for idx, text in justifications.items() if idx in idx_to_name
+    }
+    return JustificationSaveResponse(justifications=name_keyed, saved=True)
 
 
 # --- Helper functions (ported from routes/pipe_criteria.py) ---

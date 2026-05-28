@@ -213,9 +213,6 @@ class ReferencesStore:
     def save(self, kdf_path: Path) -> None:
         """Persist to the ``.pykorf`` sidecar beside the KDF file.
 
-        Merges into any existing sidecar data so other sections (e.g.
-        ``pipe_criteria``, ``justifications``) are not overwritten.
-
         Args:
             kdf_path: Path to the .kdf file; sidecar is written next to it.
         """

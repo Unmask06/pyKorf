@@ -379,7 +379,7 @@ class SetCriteriaResponse(BaseModel):
 
 
 class JustificationRequest(BaseModel):
-    pipe_name: str
+    pipe_idx: int
     justification: str
 
 
