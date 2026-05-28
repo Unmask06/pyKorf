@@ -307,7 +307,9 @@ async def get_pipe_criteria() -> PipeCriteriaResponse:
     pipe_criteria_violations = _compute_criteria_violations(pipe_calcs, pipe_criteria_values)
 
     valid_indices = {idx for idx, _ in pipes}
-    idx_justifications = get_justifications(kdf_path, valid_pipe_indices=valid_indices) if kdf_path else {}
+    idx_justifications = (
+        get_justifications(kdf_path, valid_pipe_indices=valid_indices) if kdf_path else {}
+    )
     idx_to_name = {idx: model.pipes[idx].name for idx in valid_indices if idx in model.pipes}
     justifications = {
         idx_to_name[idx]: text for idx, text in idx_justifications.items() if idx in idx_to_name

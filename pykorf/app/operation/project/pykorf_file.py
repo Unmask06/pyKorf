@@ -115,7 +115,9 @@ def _save(kdf_path: Path, data: dict) -> None:
         raise UseCaseError(f"Failed to save {path.name}: {e}") from e
 
 
-def get_justifications(kdf_path: Path, valid_pipe_indices: set[int] | None = None) -> dict[int, str]:
+def get_justifications(
+    kdf_path: Path, valid_pipe_indices: set[int] | None = None
+) -> dict[int, str]:
     """Load justifications from the .pykorf sidecar.
 
     Args:
