@@ -183,7 +183,12 @@ async def generate_report(
                     # Load justifications from .pykorf sidecar
                     from pykorf.app.operation.project.pykorf_file import get_justifications
 
-                    justifications = get_justifications(kdf_path) if kdf_path else {}
+                    idx_justifications = get_justifications(kdf_path) if kdf_path else {}
+                    justifications = {
+                        model.pipes[idx].name: text
+                        for idx, text in idx_justifications.items()
+                        if idx in model.pipes and idx != 0
+                    }
 
                     # Check staleness with threshold
                     staleness_seconds = get_staleness_seconds(kdf_path, korf_excel_path)
@@ -271,7 +276,12 @@ async def generate_report(
                 from pykorf.app.operation.project.pykorf_file import get_justifications
 
                 def _do_export():
-                    justifications = get_justifications(kdf_path) if kdf_path else {}
+                    idx_justifications = get_justifications(kdf_path) if kdf_path else {}
+                    justifications = {
+                        model.pipes[idx].name: text
+                        for idx, text in idx_justifications.items()
+                        if idx in model.pipes and idx != 0
+                    }
                     exporter = ResultExporter(
                         model=model,
                         basis=basis,

@@ -582,9 +582,9 @@ export type ImportRequest = {
  */
 export type JustificationRequest = {
     /**
-     * Pipe Name
+     * Pipe Idx
      */
-    pipe_name: string;
+    pipe_idx: number;
     /**
      * Justification
      */

@@ -106,7 +106,12 @@ class SummaryService:
         """
         from pykorf.app.operation.project.pykorf_file import get_justifications
 
-        justifications = get_justifications(self.kdf_path) if self.kdf_path else {}
+        valid_indices = {idx for idx in self.model.pipes if idx != 0}
+        justifications = (
+            get_justifications(self.kdf_path, valid_pipe_indices=valid_indices)
+            if self.kdf_path
+            else {}
+        )
 
         for pipe_idx, pipe in self.model.pipes.items():
             if pipe_idx == 0:
@@ -123,7 +128,7 @@ class SummaryService:
             if not hasattr(pipe, "check_criteria"):
                 continue
 
-            is_justified = name in justifications
+            is_justified = pipe_idx in justifications
             result = pipe.check_criteria(justified=is_justified)
 
             if result["status"] == "FAIL":
@@ -131,7 +136,7 @@ class SummaryService:
             elif result["status"] == "JUSTIFIED":
                 failed_criteria = _criteria_flags_to_labels(result)
                 criteria_str = ", ".join(failed_criteria) if failed_criteria else "criteria"
-                reason = justifications.get(name, "")
+                reason = justifications.get(pipe_idx, "")
                 _logger.debug(
                     "Pipe '%s': %s violation justified%s",
                     name,

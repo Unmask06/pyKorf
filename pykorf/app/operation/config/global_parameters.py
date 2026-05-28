@@ -13,6 +13,7 @@ Default Settings (always applied, not shown as cards):
     1. Dummy Pipe & Junction Labels - Modify dummy pipes and hide labels
     2. Min Velocity Coefficient - Set vel_coeff_min = 0.1 in SIZ for all pipes
     3. Rename Line from NOTES - Extract fluid code and serial number from NOTES
+    4. Short Pipe Labels (LBL=OFF) - Turn off labels for pipes shorter than 5 meters
 
 Usage:
     >>> from pykorf import Model
@@ -465,6 +466,44 @@ def apply_min_velocity_coeff_settings(model: Model, coeff: float) -> list[str]:
     return affected_pipes
 
 
+def apply_short_pipe_label_settings(model: Model) -> list[str]:
+    """Turn off LBL for pipes with length less than 5 meters.
+
+    For each pipe with length_m < 5.0:
+    - Set LBL = [0, 0, 50] (turn off labels)
+
+    Args:
+        model: Loaded KDF model.
+
+    Returns:
+        List of pipe names that were modified.
+    """
+    from pykorf.core.elements import Pipe
+    from pykorf.core.exceptions import ParameterError
+
+    affected_names: list[str] = []
+
+    for idx in range(1, len(model.pipes) + 1):
+        pipe = model.pipes[idx]
+        pipe_name = pipe.name
+
+        if pipe.length_m >= 5.0:
+            continue
+
+        try:
+            model.set_params(pipe_name, {Pipe.LBL: [0, 0, 50]})
+            affected_names.append(pipe_name)
+            logger.info("Pipe %s: LBL=OFF (length %.1fm < 5m)", pipe_name, pipe.length_m)
+        except ParameterError as e:
+            error_msg = f"Validation error on {pipe_name}: {e}"
+            logger.error(error_msg)
+        except Exception as e:
+            error_msg = f"Error setting LBL on pipe {pipe_name}: {e}"
+            logger.error(error_msg)
+
+    return affected_names
+
+
 # Registry of default settings (always applied, not shown as user-selectable cards)
 _DEFAULT_SETTINGS: dict[str, GlobalSetting] = {
     "dummy_pipe": GlobalSetting(
@@ -484,6 +523,12 @@ _DEFAULT_SETTINGS: dict[str, GlobalSetting] = {
         name="Rename Line from NOTES",
         description="Extract fluid code + serial number from NOTES, update pipe name",
         apply_func=apply_rename_line_settings,
+    ),
+    "short_pipe_lbl": GlobalSetting(
+        id="short_pipe_lbl",
+        name="Short Pipe Labels",
+        description="Turn off labels (LBL) for pipes shorter than 5 meters",
+        apply_func=apply_short_pipe_label_settings,
     ),
 }
 

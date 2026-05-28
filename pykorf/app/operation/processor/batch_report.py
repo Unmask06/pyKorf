@@ -195,7 +195,11 @@ class BatchReportGenerator:
                         if ref_store
                         else []
                     )
-                    justifications = get_justifications(kdf_file)
+                    justifications = {
+                        model.pipes[idx].name: text
+                        for idx, text in get_justifications(kdf_file).items()
+                        if idx in model.pipes and idx != 0
+                    }
 
                     reporter = KorfReporter(
                         excel_path=korf_excel,
@@ -338,7 +342,11 @@ class BatchReportGenerator:
                                 get_justifications,
                             )
 
-                            justifications = get_justifications(kdf_file)
+                            justifications = {
+                                model.pipes[idx].name: text
+                                for idx, text in get_justifications(kdf_file).items()
+                                if idx in model.pipes and idx != 0
+                            }
 
                             korf_reporter = KorfReporter(
                                 excel_path=korf_excel,

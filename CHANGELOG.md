@@ -5,6 +5,16 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.46.0] - 2026-05-28
+
+### What's New
+
+- Pipe criteria justifications are now stored by pipe index instead of pipe name. This means justifications survive pipe renames — they are no longer orphaned when a pipe name changes. Existing justification files are automatically migrated on first load.
+
+### Improved
+
+- A new default setting turns off labels (LBL) for pipes shorter than 5 meters, keeping the model drawing clean without manual cleanup.
+
 ## [0.45.1] - 2026-05-25
 
 ### Improved
