@@ -280,7 +280,7 @@ function closeJustificationModal() {
 }
 
 const saveJustificationLoading = useLoading(async () => {
-  const { pipeIdx, criteria, justification } = justificationModal.value
+  const { pipeIdx, justification } = justificationModal.value
   try {
     const response = await savePipeJustification({
       body: {
