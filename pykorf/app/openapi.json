@@ -2093,7 +2093,7 @@
           "min_vel_coeff": {
             "type": "number",
             "title": "Min Vel Coeff",
-            "default": 0.0
+            "default": 0
           }
         },
         "type": "object",
@@ -2447,7 +2447,7 @@
           "min_vel": {
             "type": "number",
             "title": "Min Vel",
-            "default": 0.0
+            "default": 0
           },
           "rho_v2_min": {
             "anyOf": [
@@ -3386,7 +3386,7 @@
         "properties": {},
         "type": "object",
         "title": "PredictCriteriaRequest",
-        "description": "Empty \u2014 predicts for all pipes in current model."
+        "description": "Empty — predicts for all pipes in current model."
       },
       "PredictCriteriaResponse": {
         "properties": {
@@ -4352,12 +4352,12 @@
           "threshold_deg": {
             "type": "number",
             "title": "Threshold Deg",
-            "default": 10.0
+            "default": 10
           },
           "grid_size": {
             "type": "number",
             "title": "Grid Size",
-            "default": 500.0
+            "default": 500
           }
         },
         "type": "object",
@@ -4390,12 +4390,12 @@
           "multiplier": {
             "type": "number",
             "title": "Multiplier",
-            "default": 1.0
+            "default": 1
           },
           "offset": {
             "type": "number",
             "title": "Offset",
-            "default": 0.0
+            "default": 0
           },
           "factor": {
             "anyOf": [
