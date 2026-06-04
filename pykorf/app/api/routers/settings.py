@@ -78,9 +78,6 @@ async def apply_settings(req: ApplyGlobalSettingsRequest) -> SettingsApplyRespon
     )
     from pykorf.app.operation.config.global_parameters import apply_global_settings
 
-    if not req.setting_ids:
-        return SettingsApplyResponse(errors=["No settings selected."])
-
     set_global_parameters_selected(req.setting_ids)
     set_last_interaction(
         "global_parameters",

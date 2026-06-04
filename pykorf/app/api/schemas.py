@@ -175,7 +175,7 @@ class GlobalSettingSchema(BaseModel):
 
 
 class ApplyGlobalSettingsRequest(BaseModel):
-    setting_ids: list[str]
+    setting_ids: list[str] = []
     dp_margin: float = Field(default=get_default_dp_margin())
     shutoff_margin: float = Field(default=get_default_shutoff_margin())
     min_pump_elevation: float = Field(default=get_default_min_pump_elevation())
