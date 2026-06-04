@@ -36,7 +36,7 @@ git status --porcelain
 Generate `openapi.json` programmatically — no running server required:
 
 ```
-uv run python -c "from pykorf.app.api import create_app; import json; app = create_app(); openapi = app.openapi(); json.dump(openapi, open('openapi.json', 'w'), indent=2)"
+uv run python -c "from pykorf.app.api import create_app; import json; app = create_app(); openapi = app.openapi(); json.dump(openapi, open('pykorf/app/openapi.json', 'w'), indent=2)"
 ```
 
 Check if it actually changed — if nothing prints, there is no diff and you can skip frontend type generation:

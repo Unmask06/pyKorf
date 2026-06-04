@@ -83,7 +83,7 @@ export type ApplyGlobalSettingsRequest = {
     /**
      * Setting Ids
      */
-    setting_ids: Array<string>;
+    setting_ids?: Array<string>;
     /**
      * Dp Margin
      */

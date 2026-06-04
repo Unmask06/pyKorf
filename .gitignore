@@ -1,3 +1,6 @@
+# ── Generated OpenAPI schema (canonical copy is in pykorf/app/) ──
+openapi.json
+
 # ── Python build / runtime ──────────────────────────────────
 __pycache__/
 *.py[oc]

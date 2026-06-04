@@ -39,6 +39,7 @@ const selectedIds = ref<string[]>([])
 const dpMargin = ref(0)
 const shutoffMargin = ref(0)
 const pumpElevation = ref(0)
+const minVelCoeff = ref(0)
 const applyResults = ref<SettingsApplyResponse | ApplyDataResponse | null>(null)
 
 const thresholdDeg = ref(10.0)
@@ -127,6 +128,7 @@ async function fetchSettings() {
     dpMargin.value = parseFloat(data.saved_dp_margin ?? '1')
     shutoffMargin.value = parseFloat(data.saved_shutoff_margin ?? '1')
     pumpElevation.value = parseFloat(data.saved_min_pump_elev ?? '0')
+    minVelCoeff.value = parseFloat(data.saved_min_vel_coeff ?? '0')
   } catch (err: unknown) {
     toast.error(getErrorMessage(err, 'Failed to load settings.'))
   }
@@ -138,6 +140,7 @@ const applyLoading = useLoading(async () => {
     dp_margin: dpMargin.value,
     shutoff_margin: shutoffMargin.value,
     min_pump_elevation: pumpElevation.value,
+    min_vel_coeff: minVelCoeff.value,
   }
   const response = await applySettings({ body: req })
   applyResults.value = response.data ?? null
@@ -163,10 +166,6 @@ const snapLoading = useLoading(async () => {
 })
 
 async function applyGlobalParams() {
-  if (!selectedIds.value.length) {
-    toast.error('Select at least one setting to apply.')
-    return
-  }
   try {
     applyResults.value = null
     const result = await applyLoading.execute()
