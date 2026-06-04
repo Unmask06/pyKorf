@@ -940,7 +940,7 @@ wheels = [
 
 [[package]]
 name = "pykorf"
-version = "0.46.2"
+version = "0.46.3"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
