@@ -510,7 +510,7 @@ class KorfReporter(_BaseReporter):
         results = []
         for orif in cd.orifices:
             inlet_pipe = next((p for p in cd.pipes if p.name == orif.pipe_inlet), None)
-            flowrate = inlet_pipe.vol_flow if inlet_pipe else None
+            flowrate = inlet_pipe.mass_flow if inlet_pipe else None
             row = {
                 "Orifice Name": f"{orif.name} , {orif.description}"
                 if orif.description
@@ -518,7 +518,7 @@ class KorfReporter(_BaseReporter):
                 "Type": orif.type,
                 "DP Pipe Tap [bar]": orif.dp_pipe_tap,
                 "Inlet Pressure [barg]": orif.pressure_in,
-                "Flowrate [m³/h]": flowrate,
+                "Flowrate [kg/h]": flowrate,
             }
             results.append(row)
         return results
