@@ -50,11 +50,10 @@ echo ==========================================
 echo.
 robocopy "pykorf" "%DIST_DIR%\pykorf" /E /NFL /NDL /NJH /NJS ^
     /XD "library" ^
-    /XD "config" ^
-    /XD "trail_files" ^
     /XD "node_modules" ^
     /XD "dist" ^
     /XD "src" ^
+    /XD "__pycache__" ^
     /XF "*.kdf" ^
     /XF "*.lib" ^
     /XF "*.csv" ^
