@@ -5,6 +5,12 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.46.6] - 2026-06-16
+
+### Fixed
+
+- Fixed a critical issue where the distribution package was missing the configuration module, causing the application to fail to start with a "No module named" error.
+
 ## [0.46.5] - 2026-06-16
 
 ### Improved
