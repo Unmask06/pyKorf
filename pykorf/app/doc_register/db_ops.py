@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Any
 
-import sqlalchemy.dialects.sqlite  # noqa: F401  # pre-load sqlite dialect; PyArmor blocks lazy dialect resolution
+import sqlalchemy.dialects.sqlite  # noqa: F401  # pre-load sqlite dialect for lazy resolution
 from sqlalchemy import Column, Integer, String, Text, create_engine, event, or_
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
 

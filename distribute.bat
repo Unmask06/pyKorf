@@ -2,11 +2,10 @@
 setlocal enabledelayedexpansion
 
 REM pyKorf Distribution Script
-REM Builds Vue frontend, obfuscates Python source with PyArmor, and packages for distribution
+REM Builds Vue frontend, copies Python source, and packages for distribution
 
 set DIST_DIR=dist
 set PACKAGE_NAME=pykorf
-set TRIAL_DAYS=5
 
 REM Get version from pyproject.toml (match only ^version = to avoid requires-python)
 for /f "tokens=3 delims= " %%v in ('findstr /r /c:"^version = " pyproject.toml') do set VERSION=%%v
@@ -43,48 +42,36 @@ echo.
 echo Frontend build complete.
 echo.
 
-REM Step 1: Check PyArmor installation
+REM Step 1: Copy pykorf package directly (no obfuscation)
+echo.
 echo ==========================================
-echo Step 1: Checking PyArmor installation...
+echo Step 1: Copying pykorf package...
 echo ==========================================
 echo.
-uv run python -c "import pyarmor" 2>nul
-if errorlevel 1 (
-    echo Installing PyArmor...
-    uv add pyarmor
-)
+robocopy "pykorf" "%DIST_DIR%\pykorf" /E /NFL /NDL /NJH /NJS ^
+    /XD "library" ^
+    /XD "config" ^
+    /XD "trail_files" ^
+    /XD "node_modules" ^
+    /XD "dist" ^
+    /XD "src" ^
+    /XF "*.kdf" ^
+    /XF "*.lib" ^
+    /XF "*.csv" ^
+    /XF "*.txt" ^
+    /XF "*.pdf" ^
+    /XF "*.log" ^
+    /XF "*.json"
 
-REM Step 2: Obfuscate pykorf package with runtime inside package (-i)
-echo.
-echo ==========================================
-echo Step 2: Obfuscating pykorf package...
-echo ==========================================
-echo.
-uv run pyarmor gen -O %DIST_DIR% -r -i -e %TRIAL_DAYS% ^
-    --exclude "library/*" ^
-    --exclude "config/*" ^
-    --exclude "trail_files/*" ^
-    --exclude "app/frontend/node_modules/*" ^
-    --exclude "app/frontend/dist/*" ^
-    --exclude "app/frontend/src/*" ^
-    --exclude "*.kdf" ^
-    --exclude "*.lib" ^
-    --exclude "*.csv" ^
-    --exclude "*.txt" ^
-    --exclude "*.pdf" ^
-    --exclude "*.log" ^
-    --exclude "*.json" ^
-    pykorf
-
-if errorlevel 1 (
-    echo ERROR: PyArmor obfuscation failed
+if errorlevel 8 (
+    echo ERROR: Failed to copy pykorf package
     exit /b 1
 )
 
 REM Copy Vue frontend build output
 echo.
 echo ==========================================
-echo Step 2b: Copying Vue frontend assets...
+echo Step 1b: Copying Vue frontend assets...
 echo ==========================================
 echo.
 if exist "pykorf\app\frontend\dist" (
@@ -97,7 +84,7 @@ if exist "pykorf\app\frontend\dist" (
 REM Generate static _version.py for distribution with dynamic version parsing
 echo.
 echo ==========================================
-echo Step 3: Generating _version.py...
+echo Step 2: Generating _version.py...
 echo ==========================================
 echo.
 
@@ -118,10 +105,10 @@ if exist "%DIST_DIR%\pykorf\_version.py" (
     exit /b 1
 )
 
-REM Step 4: Copy non-Python data files
+REM Step 3: Copy non-Python data files
 echo.
 echo ==========================================
-echo Step 4: Copying data files...
+echo Step 3: Copying data files...
 echo ==========================================
 echo.
 
@@ -185,10 +172,10 @@ if exist pykorf_installer.py (
     echo WARNING: pykorf_installer.py not found
 )
 
-REM Step 5: Create distribution zip
+REM Step 4: Create distribution zip
 echo.
 echo ==========================================
-echo Step 5: Creating distribution package...
+echo Step 4: Creating distribution package...
 echo ==========================================
 echo.
 uv run python -c "import zipfile, os; z = zipfile.ZipFile(r'%DIST_DIR%/pykorf-latest.zip', 'w', zipfile.ZIP_DEFLATED); base = r'%DIST_DIR%'; [z.write(os.path.join(root, f), os.path.relpath(os.path.join(root, f), base)) for root, dirs, files in os.walk(base) for f in files if not f.endswith('.zip')]; z.close()"
@@ -211,7 +198,7 @@ echo ==========================================
 echo Distribution package: %DIST_DIR%\pykorf-latest.zip
 echo.
 echo Contents:
-echo   - pykorf/               (obfuscated package + Vue dist assets)
+echo   - pykorf/               (Python package + Vue dist assets)
 echo   - pyproject.toml        (dependencies)
 echo   - pykorf_installer.py   (standalone installer)
 echo   - VERSION               (version tracker)
