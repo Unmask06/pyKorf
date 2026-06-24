@@ -22,7 +22,13 @@ from pykorf.core.reports.formatting import (
     write_transposed_header,
     write_two_level_headers,
 )
-from pykorf.core.reports.korf_parser import CaseInfo, CompressorData, KorfCaseData, PipeData, PumpData
+from pykorf.core.reports.korf_parser import (
+    CaseInfo,
+    CompressorData,
+    KorfCaseData,
+    PipeData,
+    PumpData,
+)
 from pykorf.core.reports.unit_converter import UnitConverter
 
 if TYPE_CHECKING:
@@ -133,9 +139,7 @@ class MultiCaseSummaryBuilder:
 
         compressor_df = self.build_compressor_summary_df()
         if not compressor_df.empty:
-            ws.cell(
-                row=current_row, column=1, value="Compressors Summary"
-            ).font = _STYLES.title
+            ws.cell(row=current_row, column=1, value="Compressors Summary").font = _STYLES.title
             current_row += 2
             end_row = self._write_pump_table(ws, compressor_df, current_row)
             current_row = end_row + 3

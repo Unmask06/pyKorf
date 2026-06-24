@@ -5,6 +5,24 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.47.0] - 2026-06-24
+
+### What's New
+
+- Compressor data now appears in the report Summary sheet with a dedicated transposed table format showing Fluid Properties and Operating Conditions sections.
+- The Document Register search now prioritizes files in "CLIENT" folders, showing them first in the search results.
+
+### Improved
+
+- The Document Register Step 2 search now returns up to 500 results instead of 100, so more matching files appear in the search results.
+- Compressor data in the single-case report now includes density and mass flow read from the suction pipe, plus additional fields such as elevation, efficiency, hydraulic power, and differential head.
+- The pump column mapping was renamed from `power` to `shaft_power` for consistency with the compressor naming convention.
+
+### Fixed
+
+- Fixed the compressor section parser to correctly read all columns from the KORF Excel Equipment sheet, including the previously missing elevation, density, volumetric flow, and pipe connection fields.
+- Fixed a typo in the compressor column map (`eficiency` → `efficiency`) so efficiency values are properly read from Excel.
+
 ## [0.46.6] - 2026-06-16
 
 ### Fixed
