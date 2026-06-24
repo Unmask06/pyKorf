@@ -298,7 +298,9 @@ class PykorfReporter(_BaseReporter):
 
     def _extract_compressors(self) -> list[dict]:
         return [
-            comp.summary(export=True) for idx, comp in self.model.compressors.items() if idx != 0
+            comp.summary(export=True, model=self.model)
+            for idx, comp in self.model.compressors.items()
+            if idx != 0
         ]
 
     def _extract_feeds(self) -> list[dict]:

@@ -22,7 +22,7 @@ from pykorf.core.reports.formatting import (
     write_transposed_header,
     write_two_level_headers,
 )
-from pykorf.core.reports.korf_parser import CaseInfo, KorfCaseData, PipeData, PumpData
+from pykorf.core.reports.korf_parser import CaseInfo, CompressorData, KorfCaseData, PipeData, PumpData
 from pykorf.core.reports.unit_converter import UnitConverter
 
 if TYPE_CHECKING:
@@ -49,7 +49,7 @@ class MultiCaseSummaryBuilder:
 
     Excluded from Summary: Feeds, Products, Orifices
 
-    Placeholder TODO methods for: Compressors, Heat Exchangers, Misc Equipment,
+    Placeholder TODO methods for: Heat Exchangers, Misc Equipment,
     Feeds, Products, Orifices (to be implemented later).
     """
 
@@ -131,8 +131,16 @@ class MultiCaseSummaryBuilder:
                 end_row = self._write_valve_table(ws, valve_info, current_row)
                 current_row = end_row + 3
 
+        compressor_df = self.build_compressor_summary_df()
+        if not compressor_df.empty:
+            ws.cell(
+                row=current_row, column=1, value="Compressors Summary"
+            ).font = _STYLES.title
+            current_row += 2
+            end_row = self._write_pump_table(ws, compressor_df, current_row)
+            current_row = end_row + 3
+
         placeholder_elements = [
-            ("Compressors", self.build_compressor_summary_df),
             ("Heat Exchangers", self.build_exchanger_summary_df),
             ("Misc Equipment", self.build_misc_summary_df),
             ("Feeds", self.build_feed_summary_df),
@@ -446,7 +454,7 @@ class MultiCaseSummaryBuilder:
             "Differential Pressure [bar]": pump.dp,
             "Differential Head [m]": pump.head,
             "NPSH Available [m]": pump.npsha_calc,
-            "Shaft Power [kW]": pump.power,
+            "Shaft Power [kW]": pump.shaft_power,
             "Efficiency [%]": round(pump.efficiency * 100, 1)
             if pump.efficiency is not None
             else None,
@@ -687,8 +695,67 @@ class MultiCaseSummaryBuilder:
         return last_row
 
     def build_compressor_summary_df(self) -> pd.DataFrame:
-        """TODO: Build compressor summary DataFrame."""
-        return pd.DataFrame()
+        """Build compressor summary DataFrame with first case as governing.
+
+        Governing case = first case from sorted case list.
+        Add 'Governing Case' column after 'Compressor Name'.
+        """
+        sorted_cases = sorted(self._case_data.keys(), key=lambda c: int(c.number))
+        if not sorted_cases:
+            return pd.DataFrame()
+
+        first_case = sorted_cases[0]
+        first_case_name = first_case.name
+        case_data = self._case_data[first_case]
+
+        compressor_rows: list[dict] = []
+        for comp in case_data.compressors:
+            row = self._build_compressor_row(comp)
+            row["Governing Case"] = first_case_name
+
+            cols = list(row.keys())
+            if "Compressor Name" in cols:
+                cols = ["Compressor Name", "Governing Case"] + [
+                    c for c in row.keys() if c not in ("Compressor Name", "Governing Case")
+                ]
+                row = {k: row.get(k) for k in cols}
+
+            compressor_rows.append(row)
+
+        if not compressor_rows:
+            return pd.DataFrame()
+
+        df = pd.DataFrame(compressor_rows)
+        cols = list(df.columns)
+        if "Compressor Name" in cols and "Governing Case" in cols:
+            new_order = ["Compressor Name", "Governing Case"] + [
+                c for c in cols if c not in ("Compressor Name", "Governing Case")
+            ]
+            df = df[new_order]
+
+        return df
+
+    def _build_compressor_row(self, comp: CompressorData) -> dict:
+        """Build a single compressor row dict (mirrors KorfReporter._extract_compressors)."""
+        display_name = f"{comp.name} , {comp.description}" if comp.description else comp.name
+        return {
+            "Compressor Name": display_name,
+            "Section_Fluid Properties": "Fluid Properties",
+            "Density [kg/m³]": comp.density,
+            "Section_Operating Conditions": "Operating Conditions",
+            "Compressor Datum Elevation [m]": comp.elevation,
+            "Mass Flow [kg/h]": comp.mass_flow,
+            "Volumetric Flow [m³/h]": comp.vol_flow,
+            "Discharge Pressure [barg]": comp.pressure_out,
+            "Suction Pressure [barg]": comp.pressure_in,
+            "Differential Pressure [bar]": comp.dp,
+            "Differential Head [m]": comp.head,
+            "Shaft Power [kW]": comp.shaft_power,
+            "Efficiency [%]": round(comp.efficiency * 100, 1)
+            if comp.efficiency is not None
+            else None,
+            "Hydraulic Power [kW]": comp.hydraulic_power,
+        }
 
     def build_exchanger_summary_df(self) -> pd.DataFrame:
         """TODO: Build heat exchanger summary DataFrame."""

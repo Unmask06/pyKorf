@@ -29,8 +29,8 @@ _STYLES = ReportStyles()
 _logger = logging.getLogger(__name__)
 
 _RIGHT_SIDE_ELEMENTS = frozenset({"Feeds", "Products", "Junctions", "Misc Equipment"})
-_TRANSPOSED_ELEMENTS = frozenset({"Pumps", "Valves"})
-_STANDARD_ELEMENTS = frozenset({"Pipes", "Compressors", "Heat Exchangers", "Orifices"})
+_TRANSPOSED_ELEMENTS = frozenset({"Pumps", "Valves", "Compressors"})
+_STANDARD_ELEMENTS = frozenset({"Pipes", "Heat Exchangers", "Orifices"})
 
 
 class ResultExporter:

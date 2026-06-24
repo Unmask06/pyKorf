@@ -467,7 +467,7 @@ class KorfReporter(_BaseReporter):
                 "Differential Pressure [bar]": pump.dp,
                 "Differential Head [m]": pump.head,
                 "NPSH Available [m]": pump.npsha_calc,
-                "Shaft Power [kW]": pump.power,
+                "Shaft Power [kW]": pump.shaft_power,
                 "Efficiency [%]": round(pump.efficiency * 100, 1)
                 if pump.efficiency is not None
                 else None,
@@ -526,19 +526,24 @@ class KorfReporter(_BaseReporter):
     # ── COMPRESSORS ───────────────────────────────────────────────────
 
     def _extract_compressors(self, cd: KorfCaseData) -> list[dict]:
-        # Aligns with Compressor.summary(export=True):
-        # Compressor Name, Suction Pressure, Discharge Pressure,
-        # Differential Pressure, Gas Volumetric Flow, Power
         results = []
         for comp in cd.compressors:
-            display_name = f"{comp.name} , {comp.description}" if comp.description else comp.name
+            if not comp.description or not comp.description.strip():
+                continue
+            display_name = f"{comp.name} , {comp.description}"
             row = {
                 "Compressor Name": display_name,
-                "Suction Pressure [barg]": comp.pressure_in,
+                "Section_Fluid Properties": "Fluid Properties",
+                "Density [kg/m³]": comp.density,
+                "Section_Operating Conditions": "Operating Conditions",
+                "Compressor Datum Elevation [m]": comp.elevation,
+                "Mass Flow [kg/h]": comp.mass_flow,
+                "Volumetric Flow [m³/h]": comp.vol_flow,
                 "Discharge Pressure [barg]": comp.pressure_out,
+                "Suction Pressure [barg]": comp.pressure_in,
                 "Differential Pressure [bar]": comp.dp,
-                "Gas Volumetric Flow [m³/h]": comp.flow,
-                "Shaft Power [kW]": comp.power,
+                "Differential Head [m]": comp.head,
+                "Shaft Power [kW]": comp.shaft_power,
                 "Efficiency [%]": round(comp.efficiency * 100, 1)
                 if comp.efficiency is not None
                 else None,
