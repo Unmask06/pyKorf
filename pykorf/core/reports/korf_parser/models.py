@@ -105,7 +105,7 @@ class PumpData:
     description: str = ""
     elevation: float | None = None
     efficiency: float | None = None
-    power: float | None = None
+    shaft_power: float | None = None
     flow: float | None = None
     density: float | None = None
     vol_flow: float | None = None
@@ -151,11 +151,11 @@ class PumpData:
     @property
     def hydraulic_power(self) -> float | None:
         """Computed hydraulic power [kW] = shaft_power * efficiency."""
-        if self.power is None or self.efficiency is None:
+        if self.shaft_power is None or self.efficiency is None:
             return None
         if self.efficiency <= 0:
             return None
-        return self.power * self.efficiency
+        return self.shaft_power * self.efficiency
 
 
 @dataclass
@@ -164,23 +164,27 @@ class CompressorData:
 
     name: str
     description: str = ""
-    type: str = ""
+    elevation: float | None = None
+    efficiency: float | None = None
+    shaft_power: float | None = None
+    mass_flow: float | None = None
+    density: float | None = None
+    vol_flow: float | None = None
+    head: float | None = None
     dp: float | None = None
     pressure_in: float | None = None
     pressure_out: float | None = None
-    flow: float | None = None
-    power: float | None = None
-    efficiency: float | None = None
-    head: float | None = None
+    pipe_inlet: str = ""
+    pipe_outlet: str = ""
 
     @property
     def hydraulic_power(self) -> float | None:
         """Computed hydraulic power [kW] = shaft_power * efficiency."""
-        if self.power is None or self.efficiency is None:
+        if self.shaft_power is None or self.efficiency is None:
             return None
         if self.efficiency <= 0:
             return None
-        return self.power * self.efficiency
+        return self.shaft_power * self.efficiency
 
 
 @dataclass

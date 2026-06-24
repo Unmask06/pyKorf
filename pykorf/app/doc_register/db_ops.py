@@ -12,7 +12,7 @@ from __future__ import annotations
 from typing import Any
 
 import sqlalchemy.dialects.sqlite  # noqa: F401  # pre-load sqlite dialect for lazy resolution
-from sqlalchemy import Column, Integer, String, Text, create_engine, event, or_
+from sqlalchemy import Column, Integer, String, Text, case, create_engine, event, or_
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
 from pykorf.app.doc_register.excel_to_db import get_db_path
@@ -146,11 +146,12 @@ def search_eddr_by_title(query: str, limit: int = 50) -> list[dict[str, str]]:
         session.close()
 
 
-def search_query_by_name(doc_no: str, limit: int = 20) -> list[dict[str, str]]:
+def search_query_by_name(doc_no: str, limit: int = 500) -> list[dict[str, str]]:
     """Search query entries where name contains the document number.
 
-    Returns both Items (files) and Folders, sorted by modified time
-    descending (latest first).
+    Entries whose path contains "CLIENT" (case-insensitive) are prioritised
+    ahead of all others. Within each tier, results are ordered by item type
+    then by modified time descending (latest first).
 
     Args:
         doc_no: Document number to search for in the name field.
@@ -175,7 +176,11 @@ def search_query_by_name(doc_no: str, limit: int = 20) -> list[dict[str, str]]:
                 QueryEntry.item_type,
             )
             .filter(QueryEntry.name.ilike(term))
-            .order_by(QueryEntry.item_type.desc(), QueryEntry.modified.desc())
+            .order_by(
+                case((QueryEntry.path.ilike("%CLIENT%"), 0), else_=1).asc(),
+                QueryEntry.item_type.desc(),
+                QueryEntry.modified.desc(),
+            )
             .limit(limit)
             .all()
         )

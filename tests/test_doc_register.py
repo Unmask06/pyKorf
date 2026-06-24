@@ -332,6 +332,54 @@ class TestDBOps:
         results = search_query_by_name("DOC-002")
         assert len(results) == 1
 
+    def test_search_query_by_name_prioritises_client_path(self, populated_db):
+        from pykorf.app.doc_register.db_ops import (
+            QueryEntry,
+            get_session,
+            reset_engine,
+            search_query_by_name,
+        )
+
+        reset_engine()
+        session = get_session()
+        try:
+            session.query(QueryEntry).delete()
+            test_entries = [
+                {
+                    "name": "DOC-X new.pdf",
+                    "modified": "2025-06-01",
+                    "modified_by": "user",
+                    "path": "sites/Vendor/Docs",
+                    "item_type": "Item",
+                },
+                {
+                    "name": "DOC-X old.pdf",
+                    "modified": "2024-01-01",
+                    "modified_by": "user",
+                    "path": "sites/CLIENT/Docs",
+                    "item_type": "Item",
+                },
+                {
+                    "name": "DOC-X mid.pdf",
+                    "modified": "2025-02-01",
+                    "modified_by": "user",
+                    "path": "sites/client/misc",
+                    "item_type": "Item",
+                },
+            ]
+            for entry in test_entries:
+                session.add(QueryEntry(**entry))
+            session.commit()
+
+            results = search_query_by_name("DOC-X")
+            assert len(results) == 3
+            assert results[0]["name"] == "DOC-X mid.pdf"
+            assert results[1]["name"] == "DOC-X old.pdf"
+            assert results[2]["name"] == "DOC-X new.pdf"
+        finally:
+            session.close()
+            reset_engine()
+
     def test_search_query_entries_scoring(self, populated_db):
         from pykorf.app.doc_register.db_ops import search_query_entries
 
