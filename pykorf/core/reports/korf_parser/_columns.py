@@ -12,6 +12,7 @@ _SECTION_MARKERS_EQUIPMENT = {
     "TEES",
     "PUMPS",
     "COMPRESSORS",
+    "VESSELS",
     "EXCHANGERS",
     "MISCELLANEOUS",
 }
@@ -135,6 +136,20 @@ _MISC_COL_MAP: dict[str, int] = {
     "pressure_out": 15,
     "pipe_inlet": 16,
     "pipe_outlet": 17,
+}
+
+_VESSEL_COL_MAP: dict[str, int] = {
+    "name": 1,
+    "description": 2,
+    "pressure": 3,
+    "elevation": 4,
+    "density": 5,
+    "fluid_level": 6,
+    "rel_elevation": 7,
+    "dp": 8,
+    "dp_relative": 9,
+    "dp_inlet": 10,
+    "dp_total": 11,
 }
 
 

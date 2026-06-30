@@ -99,6 +99,7 @@ pykorf = [
     "use_case/web/templates/*.html",
     "use_case/web/static/**/*",
     "use_case/web/static/vendor/fonts/*",
+    "CHANGELOG.md",
 ]
 
 [tool.pytest.ini_options]

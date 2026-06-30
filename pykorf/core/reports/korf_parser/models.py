@@ -219,6 +219,23 @@ class MiscEquipmentData:
 
 
 @dataclass
+class VesselData:
+    """Result data for a single vessel from Equipment sheet."""
+
+    name: str
+    description: str = ""
+    pressure: float | None = None
+    elevation: float | None = None
+    density: float | None = None
+    fluid_level: float | None = None
+    rel_elevation: float | None = None
+    dp: float | None = None
+    dp_relative: float | None = None
+    dp_inlet: float | None = None
+    dp_total: float | None = None
+
+
+@dataclass
 class ValidationEntry:
     """A single validation issue from the Title sheet."""
 
@@ -237,6 +254,7 @@ class KorfCaseData:
     valves: list[ValveData] = field(default_factory=list)
     pumps: list[PumpData] = field(default_factory=list)
     compressors: list[CompressorData] = field(default_factory=list)
+    vessels: list[VesselData] = field(default_factory=list)
     exchangers: list[ExchangerData] = field(default_factory=list)
     misc_equipment: list[MiscEquipmentData] = field(default_factory=list)
     validations: list[ValidationEntry] = field(default_factory=list)

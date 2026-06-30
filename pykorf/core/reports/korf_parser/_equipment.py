@@ -18,6 +18,7 @@ from pykorf.core.reports.korf_parser._columns import (
     _SECTION_MARKERS_EQUIPMENT,
     _SHUTOFF_COL_MAP,
     _VALVE_COL_MAP,
+    _VESSEL_COL_MAP,
 )
 from pykorf.core.reports.korf_parser._utils import _safe_float, _safe_str
 from pykorf.core.reports.korf_parser.models import (
@@ -29,6 +30,7 @@ from pykorf.core.reports.korf_parser.models import (
     ProductData,
     PumpData,
     ValveData,
+    VesselData,
 )
 
 
@@ -56,6 +58,7 @@ def _parse_equipment_sheet(ws: Worksheet) -> dict[str, list]:
         "valves": [],
         "pumps": [],
         "compressors": [],
+        "vessels": [],
         "exchangers": [],
         "misc_equipment": [],
     }
@@ -87,6 +90,10 @@ def _parse_equipment_sheet(ws: Worksheet) -> dict[str, list]:
         elif cell_a == "COMPRESSORS":
             compressors, row = _parse_compressors_section(ws, row)
             result["compressors"] = compressors
+            continue
+        elif cell_a == "VESSELS":
+            vessels, row = _parse_vessels_section(ws, row)
+            result["vessels"] = vessels
             continue
         elif cell_a == "EXCHANGERS":
             exchangers, row = _parse_exchangers_section(ws, row)
@@ -335,7 +342,10 @@ def _parse_compressors_section(ws: Worksheet, start_row: int) -> tuple[list[Comp
     while row <= ws.max_row:
         cell_a = ws.cell(row=row, column=1).value
         cell_a_str = _safe_str(cell_a)
-        if cell_a_str in _SECTION_MARKERS_EQUIPMENT:
+        if (
+            cell_a_str in ("CURVES", "VESSELS")
+            or cell_a_str in _SECTION_MARKERS_EQUIPMENT
+        ):
             break
         if not cell_a_str:
             row += 1
@@ -363,6 +373,46 @@ def _parse_compressors_section(ws: Worksheet, start_row: int) -> tuple[list[Comp
         row += 1
 
     return compressors, row
+
+
+def _parse_vessels_section(ws: Worksheet, start_row: int) -> tuple[list[VesselData], int]:
+    """Parse VESSELS section from Equipment sheet using explicit column indices.
+
+    Only the main vessel data row is parsed (name, description, pressure, elevation,
+    density). Subsections like Levels and Inlet/Outlet Nozzles are skipped per the
+    "parse only, don't report" decision.
+    """
+    vessels: list[VesselData] = []
+    row = start_row + 4
+
+    while row <= ws.max_row:
+        cell_a = ws.cell(row=row, column=1).value
+        cell_a_str = _safe_str(cell_a)
+        if cell_a_str in _SECTION_MARKERS_EQUIPMENT:
+            break
+        if not cell_a_str:
+            row += 1
+            continue
+
+        data = _extract_row_data_direct(ws, row, _VESSEL_COL_MAP)
+        vessels.append(
+            VesselData(
+                name=_safe_str(data.get("name")),
+                description=_safe_str(data.get("description")),
+                pressure=_safe_float(data.get("pressure")),
+                elevation=_safe_float(data.get("elevation")),
+                density=_safe_float(data.get("density")),
+                fluid_level=_safe_float(data.get("fluid_level")),
+                rel_elevation=_safe_float(data.get("rel_elevation")),
+                dp=_safe_float(data.get("dp")),
+                dp_relative=_safe_float(data.get("dp_relative")),
+                dp_inlet=_safe_float(data.get("dp_inlet")),
+                dp_total=_safe_float(data.get("dp_total")),
+            )
+        )
+        row += 1
+
+    return vessels, row
 
 
 def _parse_exchangers_section(ws: Worksheet, start_row: int) -> tuple[list[ExchangerData], int]:

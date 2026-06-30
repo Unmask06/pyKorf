@@ -478,6 +478,14 @@ export type EddrResult = {
      * Title
      */
     title: string;
+    /**
+     * Source
+     */
+    source?: string;
+    /**
+     * Contractor Doc No
+     */
+    contractor_doc_no?: string | null;
 };
 
 /**
@@ -1127,6 +1135,10 @@ export type QueryEntryResult = {
      * Item Type
      */
     item_type?: string | null;
+    /**
+     * Sheet
+     */
+    sheet?: string | null;
 };
 
 /**
@@ -1727,6 +1739,56 @@ export type ViolationSummary = {
      * Violations Needing Justification
      */
     violations_needing_justification?: number;
+};
+
+/**
+ * WhatsNewResponse
+ */
+export type WhatsNewResponse = {
+    /**
+     * Version
+     */
+    version: string;
+    /**
+     * Date
+     */
+    date?: string | null;
+    /**
+     * Sections
+     */
+    sections?: Array<WhatsNewSection>;
+    /**
+     * Has Unseen
+     */
+    has_unseen?: boolean;
+};
+
+/**
+ * WhatsNewSection
+ */
+export type WhatsNewSection = {
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Items
+     */
+    items?: Array<string>;
+};
+
+/**
+ * WhatsNewSeenResponse
+ */
+export type WhatsNewSeenResponse = {
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Version
+     */
+    version: string;
 };
 
 export type GetSessionStatusData = {
@@ -2445,6 +2507,10 @@ export type SearchQueryData = {
          * Doc No
          */
         doc_no?: string;
+        /**
+         * Sheet
+         */
+        sheet?: string | null;
     };
     url: '/api/doc-register/search-query';
 };
@@ -2944,3 +3010,44 @@ export type GetAboutResponses = {
 };
 
 export type GetAboutResponse = GetAboutResponses[keyof GetAboutResponses];
+
+export type GetWhatsNewData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/whats-new';
+};
+
+export type GetWhatsNewResponses = {
+    /**
+     * Successful Response
+     */
+    200: WhatsNewResponse;
+};
+
+export type GetWhatsNewResponse = GetWhatsNewResponses[keyof GetWhatsNewResponses];
+
+export type MarkWhatsNewSeenData = {
+    body: EmptyRequest;
+    path?: never;
+    query?: never;
+    url: '/api/whats-new/seen';
+};
+
+export type MarkWhatsNewSeenErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type MarkWhatsNewSeenError = MarkWhatsNewSeenErrors[keyof MarkWhatsNewSeenErrors];
+
+export type MarkWhatsNewSeenResponses = {
+    /**
+     * Successful Response
+     */
+    200: WhatsNewSeenResponse;
+};
+
+export type MarkWhatsNewSeenResponse = MarkWhatsNewSeenResponses[keyof MarkWhatsNewSeenResponses];

@@ -43,6 +43,7 @@ from pykorf.app.operation.config._settings import (  # noqa: F401
     get_sp_overrides,
     get_stream_excel_last_imported,
     get_trial_start,
+    get_whats_new_last_seen_version,
     set_doc_register_db_last_imported,
     set_doc_register_sp_site_url,
     set_global_parameters_selected,
@@ -54,4 +55,5 @@ from pykorf.app.operation.config._settings import (  # noqa: F401
     set_sp_overrides,
     set_stream_excel_last_imported,
     set_trial_start,
+    set_whats_new_last_seen_version,
 )

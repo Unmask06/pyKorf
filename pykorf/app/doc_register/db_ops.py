@@ -1,8 +1,8 @@
 """SQLAlchemy models and database operations for Document Register.
 
 Provides:
-- ORM models for EDDR and query_entries tables
-- Search functions for EDDR titles and query entries
+- ORM models for FE EDDR, DE EDDR and SP-entries (Process/Client/Mechanical) tables
+- Search functions for EDDR titles (FE + DE union) and SP entries
 - SharePoint URL construction helper
 - Database statistics
 """
@@ -12,7 +12,17 @@ from __future__ import annotations
 from typing import Any
 
 import sqlalchemy.dialects.sqlite  # noqa: F401  # pre-load sqlite dialect for lazy resolution
-from sqlalchemy import Column, Integer, String, Text, case, create_engine, event, or_
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Text,
+    create_engine,
+    event,
+    literal,
+    or_,
+)
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
 from pykorf.app.doc_register.excel_to_db import get_db_path
@@ -20,8 +30,8 @@ from pykorf.app.doc_register.excel_to_db import get_db_path
 Base = declarative_base()  # type: ignore[misc]
 
 
-class EDDR(Base):  # type: ignore[valid-type]
-    """EDDR (Engineering Document Deliverable Register) entry.
+class FEEDDR(Base):  # type: ignore[valid-type]
+    """FE EDDR (Front-End Engineering Document Deliverable Register) entry.
 
     Attributes:
         id: Auto-incrementing primary key.
@@ -29,18 +39,38 @@ class EDDR(Base):  # type: ignore[valid-type]
         title: Document title/description.
     """
 
-    __tablename__ = "eddr"
+    __tablename__ = "fe_eddr"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     document_no = Column(String(200), nullable=False, index=True)
     title = Column(Text, nullable=False, index=True)
 
 
-class QueryEntry(Base):  # type: ignore[valid-type]
-    """Query table entry from SharePoint file listing.
+class DEEDDR(Base):  # type: ignore[valid-type]
+    """DE EDDR (Detailed Engineering Document Deliverable Register) entry.
 
     Attributes:
         id: Auto-incrementing primary key.
+        company_document_no: Company-issued document number (used as the primary
+            doc number for SharePoint lookups).
+        description: Document description / title.
+        contractor_document_no: Contractor-issued document number (extra info).
+    """
+
+    __tablename__ = "de_eddr"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    company_document_no = Column(String(200), nullable=False, index=True)
+    description = Column(Text, nullable=False, index=True)
+    contractor_document_no = Column(String(200), nullable=True, index=True)
+
+
+class SpEntry(Base):  # type: ignore[valid-type]
+    """SharePoint file/folder entry from one of the Process/Client/Mechanical sheets.
+
+    Attributes:
+        id: Auto-incrementing primary key.
+        sheet: Source sheet name — one of 'Process', 'Client', 'Mechanical'.
         name: File or folder name.
         modified: ISO datetime string of last modification.
         modified_by: Username of last modifier.
@@ -48,9 +78,10 @@ class QueryEntry(Base):  # type: ignore[valid-type]
         item_type: 'Item' for files, 'Folder' for folders.
     """
 
-    __tablename__ = "query_entries"
+    __tablename__ = "sp_entries"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    sheet = Column(String(50), nullable=False, index=True)
     name = Column(String(300), nullable=False, index=True)
     modified = Column(String(50))
     modified_by = Column(String(200))
@@ -111,20 +142,23 @@ def get_session() -> Session:
     return _SessionFactory()
 
 
-def search_eddr_by_title(query: str, limit: int = 50) -> list[dict[str, str]]:
-    """Search EDDR entries by Document No or Title, with unordered word matching.
+def search_eddr(query: str, limit: int = 50) -> list[dict[str, str | None]]:
+    """Search FE EDDR + DE EDDR entries by Document No or Title/description.
 
-    Each whitespace-separated word must appear in either the document number
-    or the title (AND across words, OR across fields). For example,
-    "EV000 data sheet" matches any entry where every word is found in at
-    least one of the two fields.
+    Each whitespace-separated word must appear in at least one of the searchable
+    fields (AND across words, OR across fields). Results from both registers are
+    merged and tagged with a ``source`` field (``"FE"`` or ``"DE"``).
+
+    - FE rows are searched against ``document_no`` and ``title``.
+    - DE rows are searched against ``company_document_no`` and ``description``.
 
     Args:
         query: Search term — words may appear in any order across either field.
-        limit: Maximum number of results to return.
+        limit: Maximum number of results to return (applied per register).
 
     Returns:
-        List of dicts with keys 'document_no' and 'title'.
+        List of dicts with keys ``source`` ("FE"/"DE"), ``document_no``,
+        ``title``, ``contractor_doc_no`` (None for FE rows).
     """
     words = query.strip().split()
     if not words:
@@ -132,34 +166,87 @@ def search_eddr_by_title(query: str, limit: int = 50) -> list[dict[str, str]]:
 
     session = get_session()
     try:
-        q = session.query(EDDR.document_no, EDDR.title)
+        # --- FE EDDR rows ---
+        fe_q = session.query(
+            literal("FE").label("source"),
+            FEEDDR.document_no.label("document_no"),
+            FEEDDR.title.label("title"),
+            literal(None).label("contractor_doc_no"),
+        )
         for word in words:
-            q = q.filter(
+            fe_q = fe_q.filter(
                 or_(
-                    EDDR.title.ilike(f"%{word}%"),
-                    EDDR.document_no.ilike(f"%{word}%"),
+                    FEEDDR.title.ilike(f"%{word}%"),
+                    FEEDDR.document_no.ilike(f"%{word}%"),
                 )
             )
-        results = q.limit(limit).all()
-        return [{"document_no": row.document_no, "title": row.title} for row in results]
+
+        # --- DE EDDR rows ---
+        de_q = session.query(
+            literal("DE").label("source"),
+            DEEDDR.company_document_no.label("document_no"),
+            DEEDDR.description.label("title"),
+            DEEDDR.contractor_document_no.label("contractor_doc_no"),
+        )
+        for word in words:
+            de_q = de_q.filter(
+                or_(
+                    DEEDDR.description.ilike(f"%{word}%"),
+                    DEEDDR.company_document_no.ilike(f"%{word}%"),
+                )
+            )
+
+        # UNION ALL + per-branch limit. We apply the limit on each branch so that
+        # neither register can starve the other (e.g. all FE rows matching first).
+        fe_rows = fe_q.limit(limit).all()
+        de_rows = de_q.limit(limit).all()
+
+        results: list[dict[str, str | None]] = []
+        for row in fe_rows:
+            results.append(
+                {
+                    "source": row.source,
+                    "document_no": row.document_no,
+                    "title": row.title,
+                    "contractor_doc_no": None,
+                }
+            )
+        for row in de_rows:
+            results.append(
+                {
+                    "source": row.source,
+                    "document_no": row.document_no,
+                    "title": row.title,
+                    "contractor_doc_no": row.contractor_doc_no,
+                }
+            )
+        return results
+    except OperationalError:
+        # DB has a stale/legacy schema — return empty until the user rebuilds.
+        return []
     finally:
         session.close()
 
 
-def search_query_by_name(doc_no: str, limit: int = 500) -> list[dict[str, str]]:
-    """Search query entries where name contains the document number.
+def search_sp_entries(
+    doc_no: str, sheet: str | None = None, limit: int = 500
+) -> list[dict[str, str | None]]:
+    """Search SharePoint entries (Process/Client/Mechanical) by document number.
 
-    Entries whose path contains "CLIENT" (case-insensitive) are prioritised
-    ahead of all others. Within each tier, results are ordered by item type
-    then by modified time descending (latest first).
+    Filters ``sp_entries`` where ``name`` contains the document number. Results
+    are ordered by item type (files before folders) then by modified time
+    descending (latest first). Each result includes the originating ``sheet``
+    so callers can tag/filter results by source.
 
     Args:
         doc_no: Document number to search for in the name field.
+        sheet: Optional sheet filter — one of ``"Process"``, ``"Client"``,
+            ``"Mechanical"``. When ``None`` all three sheets are searched.
         limit: Maximum number of results to return.
 
     Returns:
-        List of dicts with keys 'name', 'modified', 'modified_by',
-        'path', 'item_type'.
+        List of dicts with keys ``sheet``, ``name``, ``modified``,
+        ``modified_by``, ``path``, ``item_type``.
     """
     if not doc_no.strip():
         return []
@@ -167,25 +254,27 @@ def search_query_by_name(doc_no: str, limit: int = 500) -> list[dict[str, str]]:
     term = f"%{doc_no.strip()}%"
     session = get_session()
     try:
-        results = (
+        q = (
             session.query(
-                QueryEntry.name,
-                QueryEntry.modified,
-                QueryEntry.modified_by,
-                QueryEntry.path,
-                QueryEntry.item_type,
+                SpEntry.sheet,
+                SpEntry.name,
+                SpEntry.modified,
+                SpEntry.modified_by,
+                SpEntry.path,
+                SpEntry.item_type,
             )
-            .filter(QueryEntry.name.ilike(term))
+            .filter(SpEntry.name.ilike(term))
             .order_by(
-                case((QueryEntry.path.ilike("%CLIENT%"), 0), else_=1).asc(),
-                QueryEntry.item_type.desc(),
-                QueryEntry.modified.desc(),
+                SpEntry.item_type.desc(),
+                SpEntry.modified.desc(),
             )
-            .limit(limit)
-            .all()
         )
+        if sheet:
+            q = q.filter(SpEntry.sheet == sheet)
+        results = q.limit(limit).all()
         return [
             {
+                "sheet": row.sheet,
                 "name": row.name,
                 "modified": row.modified,
                 "modified_by": row.modified_by,
@@ -194,6 +283,9 @@ def search_query_by_name(doc_no: str, limit: int = 500) -> list[dict[str, str]]:
             }
             for row in results
         ]
+    except OperationalError:
+        # DB has a stale/legacy schema — return empty until the user rebuilds.
+        return []
     finally:
         session.close()
 
@@ -266,19 +358,20 @@ def _score_match(query: str, target: str) -> int:
     return score
 
 
-def search_query_entries(term: str, limit: int = 50) -> list[dict[str, str]]:
-    """Search query entries by name or path.
+def search_sp_entries_by_term(term: str, limit: int = 50) -> list[dict[str, str | None]]:
+    """Search SharePoint entries by name or path (fuzzy, score-sorted).
 
     Returns both Items (files) and Folders, sorted by match score (best first),
-    then by modified time descending.
+    then by modified time descending. Each result includes the originating
+    ``sheet`` (Process/Client/Mechanical).
 
     Args:
         term: Search term (matched against name and path).
         limit: Maximum number of results to return.
 
     Returns:
-        List of dicts with keys 'name', 'modified', 'modified_by',
-        'path', 'item_type'.
+        List of dicts with keys ``sheet``, ``name``, ``modified``,
+        ``modified_by``, ``path``, ``item_type``.
     """
     if not term or len(term.strip()) < 2:
         return []
@@ -289,16 +382,17 @@ def search_query_entries(term: str, limit: int = 50) -> list[dict[str, str]]:
         # Fetch at most limit*4 rows from SQLite — never pull the whole table
         results = (
             session.query(
-                QueryEntry.name,
-                QueryEntry.modified,
-                QueryEntry.modified_by,
-                QueryEntry.path,
-                QueryEntry.item_type,
+                SpEntry.sheet,
+                SpEntry.name,
+                SpEntry.modified,
+                SpEntry.modified_by,
+                SpEntry.path,
+                SpEntry.item_type,
             )
             .filter(
                 or_(
-                    QueryEntry.name.ilike(search_term),
-                    QueryEntry.path.ilike(search_term),
+                    SpEntry.name.ilike(search_term),
+                    SpEntry.path.ilike(search_term),
                 )
             )
             .limit(limit * 4)
@@ -316,6 +410,7 @@ def search_query_entries(term: str, limit: int = 50) -> list[dict[str, str]]:
 
             scored_results.append(
                 {
+                    "sheet": row.sheet,
                     "name": row.name,
                     "modified": row.modified,
                     "modified_by": row.modified_by,
@@ -332,6 +427,7 @@ def search_query_entries(term: str, limit: int = 50) -> list[dict[str, str]]:
         # Remove internal scoring fields and apply limit
         return [
             {
+                "sheet": r["sheet"],
                 "name": r["name"],
                 "modified": r["modified"],
                 "modified_by": r["modified_by"],
@@ -340,6 +436,9 @@ def search_query_entries(term: str, limit: int = 50) -> list[dict[str, str]]:
             }
             for r in scored_results[:limit]
         ]
+    except OperationalError:
+        # DB has a stale/legacy schema — return empty until the user rebuilds.
+        return []
     finally:
         session.close()
 
@@ -365,26 +464,40 @@ def get_db_stats() -> dict[str, Any]:
     """Return statistics about the Document Register database.
 
     Returns:
-        Dict with keys 'eddr_count', 'query_count', 'db_path', 'db_exists'.
+        Dict with keys ``fe_eddr_count``, ``de_eddr_count``, ``sp_count``,
+        ``db_path``, ``db_exists``.
     """
     db_path = get_db_path()
     if not db_path.is_file():
         return {
-            "eddr_count": 0,
-            "query_count": 0,
+            "fe_eddr_count": 0,
+            "de_eddr_count": 0,
+            "sp_count": 0,
             "db_path": str(db_path),
             "db_exists": False,
         }
 
     session = get_session()
     try:
-        eddr_count = session.query(EDDR).count()
-        query_count = session.query(QueryEntry).count()
+        fe_eddr_count = session.query(FEEDDR).count()
+        de_eddr_count = session.query(DEEDDR).count()
+        sp_count = session.query(SpEntry).count()
         return {
-            "eddr_count": eddr_count,
-            "query_count": query_count,
+            "fe_eddr_count": fe_eddr_count,
+            "de_eddr_count": de_eddr_count,
+            "sp_count": sp_count,
             "db_path": str(db_path),
             "db_exists": True,
+        }
+    except OperationalError:
+        # DB file exists but has a stale/legacy schema — treat as absent so the
+        # UI prompts the user to rebuild from the current Excel workbook.
+        return {
+            "fe_eddr_count": 0,
+            "de_eddr_count": 0,
+            "sp_count": 0,
+            "db_path": str(db_path),
+            "db_exists": False,
         }
     finally:
         session.close()

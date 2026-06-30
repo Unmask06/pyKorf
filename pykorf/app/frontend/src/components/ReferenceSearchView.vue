@@ -39,12 +39,20 @@ const selectedEddrItem = ref<EddrResult | null>(null);
 const docSearchMode = ref<"eddr" | "query">("eddr");
 const queryFilter = ref("");
 
+// Step 2 sheet filter — "All" merges Process/Client/Mechanical.
+const sheetFilter = ref<"All" | "Process" | "Client" | "Mechanical">("All");
+const SHEET_OPTIONS = ["All", "Process", "Client", "Mechanical"] as const;
+
+// Step 1 source filter — "All" merges FE / DE EDDR results.
+const sourceFilter = ref<"All" | "FE" | "DE">("All");
+const SOURCE_OPTIONS = ["All", "FE", "DE"] as const;
+
 function docResultKey(item: EddrResult): string {
-  return item.document_no;
+  return `${item.source ?? "FE"}:${item.document_no}`;
 }
 
 function queryResultKey(item: QueryEntryResult): string {
-  return `${item.name}:${item.path || ""}`;
+  return `${item.sheet ?? ""}:${item.name}:${item.path || ""}`;
 }
 
 function formatSharePointUrl(path: string): string {
@@ -65,15 +73,66 @@ function itemUrl(item: QueryEntryResult): string {
   return formatSharePointUrl(full);
 }
 
+// Source badge class for Step 1 (FE = blue, DE = purple)
+function sourceBadgeClass(source?: string): string {
+  return source === "DE" ? "src-badge src-de" : "src-badge src-fe";
+}
+
+// Sheet badge class for Step 2
+function sheetBadgeClass(sheet?: string | null): string {
+  switch (sheet) {
+    case "Process":
+      return "sheet-badge sheet-process";
+    case "Client":
+      return "sheet-badge sheet-client";
+    case "Mechanical":
+      return "sheet-badge sheet-mechanical";
+    default:
+      return "sheet-badge sheet-unknown";
+  }
+}
+
+// Per-source counts shown in the Step 1 filter tabs
+const sourceCounts = computed(() => {
+  const counts: Record<string, number> = { All: 0, FE: 0, DE: 0 };
+  for (const item of docSearchResults.value) {
+    counts.All += 1;
+    const src = item.source ?? "FE";
+    if (src in counts) counts[src] += 1;
+  }
+  return counts;
+});
+
+const filteredDocSearchResults = computed(() => {
+  if (sourceFilter.value === "All") return docSearchResults.value;
+  return docSearchResults.value.filter(
+    (item) => (item.source ?? "FE") === sourceFilter.value,
+  );
+});
+
 const filteredQueryResults = computed(() => {
-  if (!queryFilter.value) return queryResults.value;
+  let rows = queryResults.value;
+  if (sheetFilter.value !== "All") {
+    rows = rows.filter((item) => item.sheet === sheetFilter.value);
+  }
+  if (!queryFilter.value) return rows;
   const q = queryFilter.value.toLowerCase();
-  return queryResults.value.filter(
+  return rows.filter(
     (item) =>
       item.name.toLowerCase().includes(q) ||
       (item.path || "").toLowerCase().includes(q) ||
       (item.modified_by || "").toLowerCase().includes(q),
   );
+});
+
+// Per-sheet counts shown in the filter tabs
+const sheetCounts = computed(() => {
+  const counts: Record<string, number> = { All: 0, Process: 0, Client: 0, Mechanical: 0 };
+  for (const item of queryResults.value) {
+    counts.All += 1;
+    if (item.sheet && item.sheet in counts) counts[item.sheet] += 1;
+  }
+  return counts;
 });
 
 const docSearchLoading = useLoading(async () => {
@@ -129,6 +188,8 @@ async function selectEddrItem(item: EddrResult) {
   selectedEddrItem.value = item;
   queryResults.value = [];
   queryFilter.value = "";
+  sheetFilter.value = "All";
+  sourceFilter.value = "All";
   docSearchMode.value = "query";
   await docSearchLoading.execute();
 }
@@ -145,6 +206,8 @@ watch(docSearchQuery, (query) => {
   selectedEddrItem.value = null;
   queryResults.value = [];
   queryFilter.value = "";
+  sheetFilter.value = "All";
+  sourceFilter.value = "All";
   if (!query.trim()) {
     docSearchResults.value = [];
     return;
@@ -209,12 +272,19 @@ onBeforeUnmount(() => {
         <div class="flex items-center gap-1">
           <button
             @click="refreshDbLoading.execute()"
-            class="pk-btn-ghost text-sm flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100"
+            class="pk-btn-ghost text-sm flex items-center gap-1.5 px-2 py-1 rounded hover:bg-gray-100"
             title="Refresh database"
             :disabled="refreshDbLoading.isLoading.value"
           >
-            <span v-if="refreshDbLoading.isLoading.value" class="pk-spinner" />
-            <RotateCw v-else class="w-3.5 h-3.5" /> Refresh DB
+            <span
+              v-if="refreshDbLoading.isLoading.value"
+              class="refresh-spinner"
+              aria-label="Refreshing"
+            />
+            <RotateCw v-else class="w-3.5 h-3.5" />
+            <span :class="{ 'refresh-loading-text': refreshDbLoading.isLoading.value }">
+              {{ refreshDbLoading.isLoading.value ? "Refreshing…" : "Refresh DB" }}
+            </span>
           </button>
           <button
             @click="emit('close')"
@@ -243,44 +313,78 @@ onBeforeUnmount(() => {
         <div class="step-section step-section-1">
           <label class="step-label">
             <span class="step-badge step-badge-blue">Step 1</span>
-            Search Document by Title in EDDR
+            Search Document by Title in FEED (FE) / Detailed Engineering (DE) EDDR 
           </label>
-          <input
-            v-model="docSearchQuery"
-            @keyup.enter="
-              docSearchMode = 'eddr';
-              docSearchLoading.execute();
-            "
-            type="text"
-            class="pk-input w-full step-input"
-            placeholder="Search by document title (e.g. 'Quench Column', 'Data sheet', 'P&ID')..."
-            autocomplete="off"
-          />
+          <div class="step1-controls">
+            <input
+              v-model="docSearchQuery"
+              @keyup.enter="
+                docSearchMode = 'eddr';
+                docSearchLoading.execute();
+              "
+              type="text"
+              class="pk-input w-full step-input step1-search-input"
+              placeholder="Search by document title (e.g. 'Quench Column', 'Data sheet', 'P&ID')..."
+              autocomplete="off"
+            />
+            <div class="source-tabs">
+              <button
+                v-for="opt in SOURCE_OPTIONS"
+                :key="opt"
+                type="button"
+                class="source-tab"
+                :class="{
+                  'source-tab-active': sourceFilter === opt,
+                  'source-tab-fe': opt === 'FE',
+                  'source-tab-de': opt === 'DE',
+                }"
+                @click="sourceFilter = opt"
+              >
+                {{ opt }}
+                <span class="source-tab-count">{{ sourceCounts[opt] ?? 0 }}</span>
+              </button>
+            </div>
+          </div>
           <div class="step-results-area">
-            <div v-if="docSearchResults.length" class="results-table-wrap">
+            <div v-if="filteredDocSearchResults.length" class="results-table-wrap">
               <table class="results-table">
                 <thead>
                   <tr>
+                    <th style="width: 6%">Src</th>
                     <th style="width: 22%">Document No</th>
                     <th>Title</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr
-                    v-for="item in docSearchResults"
+                    v-for="item in filteredDocSearchResults"
                     :key="docResultKey(item)"
                     @click="selectEddrItem(item)"
                     class="results-row"
                     :class="{
                       'row-selected':
-                        selectedEddrItem?.document_no === item.document_no,
+                        selectedEddrItem?.document_no === item.document_no &&
+                        (selectedEddrItem?.source ?? 'FE') === (item.source ?? 'FE'),
                     }"
                   >
+                    <td class="px-2 py-1">
+                      <span :class="sourceBadgeClass(item.source)">
+                        {{ item.source ?? 'FE' }}
+                      </span>
+                    </td>
                     <td
                       class="font-mono font-semibold text-gray-800 px-3 py-1"
                       style="font-size: 0.7rem"
                     >
-                      {{ item.document_no }}
+                      <div>{{ item.document_no }}</div>
+                      <div
+                        v-if="item.source === 'DE' && item.contractor_doc_no"
+                        class="font-normal text-gray-400"
+                        style="font-size: 0.62rem"
+                        :title="`Contractor: ${item.contractor_doc_no}`"
+                      >
+                        Ctr: {{ item.contractor_doc_no }}
+                      </div>
                     </td>
                     <td
                       class="px-3 py-1 text-gray-700"
@@ -305,23 +409,39 @@ onBeforeUnmount(() => {
             <span class="step-badge step-badge-green">Step 2</span>
             Select File or Folder from SharePoint
           </label>
-          <input
-            v-model="queryFilter"
-            type="text"
-            class="pk-input w-full step-input"
-            placeholder="Filter files/folders from sharepoint (e.g. '1060-2304-....')..."
-            autocomplete="off"
-          />
+          <div class="step2-controls">
+            <input
+              v-model="queryFilter"
+              type="text"
+              class="pk-input step-input step2-filter-input"
+              placeholder="Filter files/folders (e.g. '1060-2304-....')..."
+              autocomplete="off"
+            />
+            <div class="sheet-tabs">
+              <button
+                v-for="opt in SHEET_OPTIONS"
+                :key="opt"
+                type="button"
+                class="sheet-tab"
+                :class="{ 'sheet-tab-active': sheetFilter === opt }"
+                @click="sheetFilter = opt"
+              >
+                {{ opt }}
+                <span class="sheet-tab-count">{{ sheetCounts[opt] ?? 0 }}</span>
+              </button>
+            </div>
+          </div>
           <div class="step-results-area">
             <div v-if="filteredQueryResults.length" class="results-table-wrap">
               <table class="results-table">
                 <thead>
                   <tr>
-                    <th style="width: 33%">Name</th>
-                    <th style="width: 8%">Type</th>
+                    <th style="width: 36%">Name</th>
+                    <th style="width: 7%">Sheet</th>
+                    <th style="width: 6%">Type</th>
                     <th style="width: 11%">Modified</th>
-                    <th style="width: 13%">Modified By</th>
-                    <th style="width: 15%">Path</th>
+                    <th style="width: 12%">Modified By</th>
+                    <th style="width: 22%">Path</th>
                     <th style="width: 3rem"></th>
                   </tr>
                 </thead>
@@ -350,6 +470,11 @@ onBeforeUnmount(() => {
                           {{ item.name }}
                         </span>
                       </div>
+                    </td>
+                    <td class="px-2 py-1">
+                      <span :class="sheetBadgeClass(item.sheet)">
+                        {{ item.sheet || '—' }}
+                      </span>
                     </td>
                     <td class="px-2 py-1">
                       <span
@@ -405,7 +530,10 @@ onBeforeUnmount(() => {
                 Select a document above, or type a Document Number to search
                 directly.
               </p>
-              <p v-else-if="docSearchLoading.isLoading.value">Searching…</p>
+              <div v-else-if="docSearchLoading.isLoading.value" class="searching-loader">
+                <span class="searching-spinner" aria-label="Searching" />
+                <span class="searching-text">Searching…</span>
+              </div>
               <p v-else>No files found.</p>
             </div>
           </div>
@@ -420,9 +548,9 @@ onBeforeUnmount(() => {
           <InfoCircle class="w-3.5 h-3.5 text-blue-400 shrink-0" />
           <span>
             Step 1: Search by Document Title → click a document. Step 2: Pick a
-            file → auto-fills fields. Or use
-            <strong>Step 2 search directly</strong> to find files by Document
-            Number.
+            file → auto-fills fields. Use the
+            <strong>Sheet tabs</strong> to filter by Process / Client /
+            Mechanical.
           </span>
         </div>
         <button
@@ -490,6 +618,139 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 
+/* ── Step 1 controls: search input + source tabs (All/FE/DE) ─────────────── */
+.step1-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.step1-search-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.source-tabs {
+  display: flex;
+  gap: 0.2rem;
+  flex-shrink: 0;
+}
+
+.source-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.18rem 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.66rem;
+  font-weight: 600;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background-color 0.12s, color 0.12s, border-color 0.12s;
+  white-space: nowrap;
+}
+
+.source-tab:hover {
+  background: #f3f4f6;
+}
+
+.source-tab-active {
+  color: #fff;
+  border-color: transparent;
+}
+
+.source-tab-active.source-tab-fe {
+  background: #1d4ed8;
+}
+
+.source-tab-active.source-tab-de {
+  background: #6d28d9;
+}
+
+.source-tab-active:not(.source-tab-fe):not(.source-tab-de) {
+  background: #2563eb;
+}
+
+.source-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.1rem;
+  padding: 0 0.25rem;
+  border-radius: 9999px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.source-tab-active .source-tab-count {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* ── Step 2 controls: filter input + sheet tabs ──────────────────────────── */
+.step2-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.step2-filter-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.sheet-tabs {
+  display: flex;
+  gap: 0.2rem;
+  flex-shrink: 0;
+}
+
+.sheet-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.18rem 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.66rem;
+  font-weight: 600;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background-color 0.12s, color 0.12s, border-color 0.12s;
+  white-space: nowrap;
+}
+
+.sheet-tab:hover {
+  background: #f3f4f6;
+}
+
+.sheet-tab-active {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+
+.sheet-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.1rem;
+  padding: 0 0.25rem;
+  border-radius: 9999px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.sheet-tab-active .sheet-tab-count {
+  background: rgba(255, 255, 255, 0.25);
+}
+
 /* ── Step label ──────────────────────────────────────────────────────────── */
 .step-label {
   display: flex;
@@ -540,6 +801,60 @@ onBeforeUnmount(() => {
 .badge-stale {
   background: #f59e0b;
   color: #fff;
+}
+
+/* ── Source badge (Step 1: FE / DE) ──────────────────────────────────────── */
+.src-badge {
+  display: inline-block;
+  padding: 0.08rem 0.4rem;
+  border-radius: 0.25rem;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.src-fe {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.src-de {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+/* ── Sheet badge (Step 2: Process / Client / Mechanical) ─────────────────── */
+.sheet-badge {
+  display: inline-block;
+  padding: 0.08rem 0.4rem;
+  border-radius: 9999px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.sheet-process {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.sheet-client {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.sheet-mechanical {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.sheet-unknown {
+  background: #f3f4f6;
+  color: #6b7280;
 }
 
 /* ── Results table wrapper — scrolls vertically only, NO horizontal scroll ─ */
@@ -659,5 +974,64 @@ onBeforeUnmount(() => {
   border: 1px solid #e5e7eb;
   border-radius: 0.375rem;
   padding: 1rem;
+}
+
+/* ── Refresh DB button — high-contrast inline spinner ─────────────────────── */
+.refresh-spinner {
+  display: inline-block;
+  width: 0.95rem;
+  height: 0.95rem;
+  border: 2.5px solid rgba(8, 145, 178, 0.2);
+  border-top-color: #0891b2;
+  border-right-color: #0891b2;
+  border-radius: 50%;
+  animation: refresh-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+.refresh-loading-text {
+  color: #0891b2;
+  font-weight: 600;
+}
+
+@keyframes refresh-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Searching loader (Step 2 empty state while loading) ─────────────────── */
+.searching-loader {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 1rem;
+  background: #ecfdf5;
+  border: 1px solid #34d399;
+  border-radius: 9999px;
+  box-shadow: 0 1px 3px rgba(16, 185, 129, 0.15);
+}
+
+.searching-spinner {
+  display: inline-block;
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 3px solid rgba(16, 185, 129, 0.25);
+  border-top-color: #059669;
+  border-right-color: #059669;
+  border-radius: 50%;
+  animation: refresh-spin 0.65s linear infinite;
+  flex-shrink: 0;
+}
+
+.searching-text {
+  color: #047857;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  animation: searching-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes searching-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
 }
 </style>

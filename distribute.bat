@@ -124,6 +124,12 @@ if exist pykorf\py.typed (
     echo   Copied py.typed
 )
 
+REM Copy CHANGELOG.md so the "What's New" modal can surface release notes at runtime
+if exist CHANGELOG.md (
+    copy /y CHANGELOG.md %DIST_DIR%\pykorf\CHANGELOG.md >nul
+    echo   Copied CHANGELOG.md
+)
+
 REM Copy project_defaults.toml from app directory (required for smart defaults)
 if exist pykorf\app\project_defaults.toml (
     copy /y pykorf\app\project_defaults.toml %DIST_DIR%\pykorf\app\ >nul

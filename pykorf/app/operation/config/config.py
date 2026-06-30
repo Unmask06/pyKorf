@@ -64,6 +64,7 @@ from pykorf.app.operation.config.preferences import (
     get_sp_overrides,
     get_stream_excel_last_imported,
     get_trial_start,
+    get_whats_new_last_seen_version,
     load_config,
     record_opened_file,
     remove_pinned_folder,
@@ -86,6 +87,7 @@ from pykorf.app.operation.config.preferences import (
     set_sp_overrides,
     set_stream_excel_last_imported,
     set_trial_start,
+    set_whats_new_last_seen_version,
 )
 
 # Re-export Stream functions
@@ -152,6 +154,7 @@ __all__ = [
     "get_stream_excel_last_imported",
     "get_stream_path",
     "get_trial_start",
+    "get_whats_new_last_seen_version",
     "import_pms_from_excel",
     "import_stream_from_excel",
     "list_config_files",
@@ -181,4 +184,5 @@ __all__ = [
     "set_sp_overrides",
     "set_stream_excel_last_imported",
     "set_trial_start",
+    "set_whats_new_last_seen_version",
 ]

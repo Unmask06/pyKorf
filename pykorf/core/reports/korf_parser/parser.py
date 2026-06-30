@@ -10,15 +10,14 @@ from typing import Any
 from openpyxl import load_workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
+from pykorf.core.reports.korf_parser._equipment import _parse_equipment_sheet
+from pykorf.core.reports.korf_parser._utils import _safe_float, _safe_str
 from pykorf.core.reports.korf_parser.models import (
     CaseInfo,
     KorfCaseData,
     PipeData,
     ValidationEntry,
 )
-
-from pykorf.core.reports.korf_parser._equipment import _parse_equipment_sheet
-from pykorf.core.reports.korf_parser._utils import _safe_float, _safe_str
 
 _logger = logging.getLogger(__name__)
 
@@ -316,6 +315,7 @@ def parse_korf_excel(excel_path: str | Path) -> dict[CaseInfo, KorfCaseData]:
             case_data.valves = equip_data.get("valves", [])
             case_data.pumps = equip_data.get("pumps", [])
             case_data.compressors = equip_data.get("compressors", [])
+            case_data.vessels = equip_data.get("vessels", [])
             case_data.exchangers = equip_data.get("exchangers", [])
             case_data.misc_equipment = equip_data.get("misc_equipment", [])
 

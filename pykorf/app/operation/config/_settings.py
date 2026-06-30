@@ -243,3 +243,24 @@ def set_project_info_overrides(overrides: dict[str, Any]) -> None:
     config = load_config()
     config["project_info"] = overrides
     save_config(config)
+
+
+def get_whats_new_last_seen_version() -> str | None:
+    """Get the app version for which the user has already seen the "What's New" modal.
+
+    Returns:
+        Version string (e.g. ``"0.47.0"``) or ``None`` if never seen.
+    """
+    config = load_config()
+    return config.get("whats_new_last_seen_version")
+
+
+def set_whats_new_last_seen_version(version: str) -> None:
+    """Record that the user has seen the "What's New" modal for the given version.
+
+    Args:
+        version: The app version (e.g. ``"0.47.0"``) the user acknowledged.
+    """
+    config = load_config()
+    config["whats_new_last_seen_version"] = version
+    save_config(config)

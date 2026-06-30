@@ -25,9 +25,9 @@ from pykorf.app.api.schemas import (
 )
 from pykorf.app.doc_register.db_ops import (
     get_db_stats,
-    search_eddr_by_title,
-    search_query_by_name,
-    search_query_entries,
+    search_eddr,
+    search_sp_entries,
+    search_sp_entries_by_term,
 )
 from pykorf.app.doc_register.excel_to_db import (
     build_db_from_excel,
@@ -56,7 +56,11 @@ async def api_status() -> DocRegisterStatusResponse:
     db_path = get_db_path()
     db_exists = db_path.is_file()
     stale = is_excel_stale() if excel_path else False
-    stats = get_db_stats() if db_exists else {"eddr_count": 0, "query_count": 0, "db_exists": False}
+    stats = (
+        get_db_stats()
+        if db_exists
+        else {"fe_eddr_count": 0, "de_eddr_count": 0, "sp_count": 0, "db_exists": False}
+    )
 
     return DocRegisterStatusResponse(
         excel_path=excel_path,
@@ -71,10 +75,10 @@ async def api_status() -> DocRegisterStatusResponse:
 async def api_search_eddr(
     req: Annotated[DocRegisterSearchEddrRequest, Query()],
 ) -> DocRegisterSearchEddrResponse:
-    """Search EDDR entries by title."""
+    """Search FE EDDR + DE EDDR entries by title/document number."""
     if not req.q.strip():
         return DocRegisterSearchEddrResponse()
-    results = search_eddr_by_title(req.q)
+    results = search_eddr(req.q)
     return DocRegisterSearchEddrResponse(results=[EddrResult(**r) for r in results])
 
 
@@ -84,10 +88,10 @@ async def api_search_eddr(
 async def api_search_query(
     req: Annotated[DocRegisterSearchQueryRequest, Query()],
 ) -> DocRegisterSearchQueryResponse:
-    """Search query entries by document number."""
+    """Search SharePoint entries (Process/Client/Mechanical) by document number."""
     if not req.doc_no.strip():
         return DocRegisterSearchQueryResponse()
-    results = search_query_by_name(req.doc_no)
+    results = search_sp_entries(req.doc_no, sheet=req.sheet)
     return DocRegisterSearchQueryResponse(results=[QueryEntryResult(**r) for r in results])
 
 
@@ -97,10 +101,10 @@ async def api_search_query(
 async def api_search_files(
     req: Annotated[DocRegisterSearchFilesRequest, Query()],
 ) -> DocRegisterSearchFilesResponse:
-    """Search query entries by name or path."""
+    """Search SharePoint entries by name or path."""
     if len(req.q.strip()) < 2:
         return DocRegisterSearchFilesResponse()
-    results = search_query_entries(req.q)
+    results = search_sp_entries_by_term(req.q)
     return DocRegisterSearchFilesResponse(results=[QueryEntryResult(**r) for r in results])
 
 
@@ -127,8 +131,9 @@ async def api_rebuild_db(_: EmptyRequest) -> DocRegisterRebuildResponse:
         return DocRegisterRebuildResponse(
             success=True,
             message=(
-                f"DB rebuilt: {stats['eddr_count']} EDDR entries, "
-                f"{stats['query_count']} query entries"
+                f"DB rebuilt: {stats['fe_eddr_count']} FE EDDR, "
+                f"{stats['de_eddr_count']} DE EDDR, "
+                f"{stats['sp_count']} SharePoint entries"
             ),
             stats=stats,
         )

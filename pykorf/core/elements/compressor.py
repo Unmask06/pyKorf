@@ -188,7 +188,6 @@ class Compressor(BaseElement):
                 self.format_export_header("Discharge Pressure", dis_unit): dis_val,
                 self.format_export_header("Suction Pressure", suc_unit): suc_val,
                 self.format_export_header("Differential Pressure", dp_unit): dp_val,
-                self.format_export_header("Differential Head", head_unit): head_val,
                 self.format_export_header("Shaft Power", pow_unit): pow_val,
                 self.format_export_header("Efficiency", "%"): eff_display,
                 self.format_export_header("Hydraulic Power", pow_unit): hydraulic_power,

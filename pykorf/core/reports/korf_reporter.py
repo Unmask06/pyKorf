@@ -528,6 +528,10 @@ class KorfReporter(_BaseReporter):
     def _extract_compressors(self, cd: KorfCaseData) -> list[dict]:
         results = []
         for comp in cd.compressors:
+            # Defensive: skip CURVES subsection rows that may have leaked through
+            # the parser (CURVES is a subsection of COMPRESSORS, not a top-level section).
+            if comp.name == "CURVES":
+                continue
             if not comp.description or not comp.description.strip():
                 continue
             display_name = f"{comp.name} , {comp.description}"
@@ -542,7 +546,6 @@ class KorfReporter(_BaseReporter):
                 "Discharge Pressure [barg]": comp.pressure_out,
                 "Suction Pressure [barg]": comp.pressure_in,
                 "Differential Pressure [bar]": comp.dp,
-                "Differential Head [m]": comp.head,
                 "Shaft Power [kW]": comp.shaft_power,
                 "Efficiency [%]": round(comp.efficiency * 100, 1)
                 if comp.efficiency is not None

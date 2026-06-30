@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddReferenceData, AddReferenceErrors, AddReferenceResponses, AddSpOverrideData, AddSpOverrideErrors, AddSpOverrideResponses, ApplyHmbData, ApplyHmbErrors, ApplyHmbResponses, ApplyPmsData, ApplyPmsErrors, ApplyPmsResponses, ApplySettingsData, ApplySettingsErrors, ApplySettingsResponses, BatchReportData, BatchReportErrors, BatchReportResponses, BrowseFilesData, BrowseFilesErrors, BrowseFilesResponses, BulkCopyData, BulkCopyErrors, BulkCopyResponses, CenterLayoutData, CenterLayoutErrors, CenterLayoutResponses, CloseModelData, CloseModelErrors, CloseModelResponses, DeleteReferenceData, DeleteReferenceErrors, DeleteReferenceResponses, DeleteSpOverrideData, DeleteSpOverrideErrors, DeleteSpOverrideResponses, EditSpOverrideData, EditSpOverrideErrors, EditSpOverrideResponses, ExportReportData, ExportReportErrors, ExportReportResponses, GenerateReportData, GenerateReportErrors, GenerateReportResponses, GetAboutData, GetAboutResponses, GetDocRegisterStatusData, GetDocRegisterStatusResponses, GetModelSummaryData, GetModelSummaryResponses, GetPipeCriteriaData, GetPipeCriteriaResponses, GetPipesData, GetPipesResponses, GetPreferencesData, GetPreferencesResponses, GetProjectInfoStatusData, GetProjectInfoStatusResponses, GetReferencesData, GetReferenceShortcutsData, GetReferenceShortcutsErrors, GetReferenceShortcutsResponses, GetReferencesResponses, GetSessionStatusData, GetSessionStatusResponses, GetSettingsData, GetSettingsResponses, ImportReportData, ImportReportErrors, ImportReportResponses, KorfExcelStatusData, KorfExcelStatusResponses, OpenFileData, OpenFileErrors, OpenFileResponses, OpenModelInKorfData, OpenModelInKorfResponses, PinFolderData, PinFolderErrors, PinFolderResponses, PredictCategoryData, PredictCategoryErrors, PredictCategoryResponses, PredictPipeCriteriaData, PredictPipeCriteriaErrors, PredictPipeCriteriaResponses, RebuildDocRegisterDbData, RebuildDocRegisterDbErrors, RebuildDocRegisterDbResponses, ReloadModelData, ReloadModelErrors, ReloadModelResponses, ResolveSpUrlData, ResolveSpUrlErrors, ResolveSpUrlResponses, SaveModelData, SaveModelErrors, SaveModelResponses, SavePipeJustificationData, SavePipeJustificationErrors, SavePipeJustificationResponses, SaveProjectInfoData, SaveProjectInfoErrors, SaveProjectInfoResponses, SaveReferencesData, SaveReferencesErrors, SaveReferencesResponses, SearchEddrData, SearchEddrErrors, SearchEddrResponses, SearchFilesData, SearchFilesErrors, SearchFilesResponses, SearchQueryData, SearchQueryErrors, SearchQueryResponses, SetBatchFolderData, SetBatchFolderErrors, SetBatchFolderResponses, SetDocRegisterConfigData, SetDocRegisterConfigErrors, SetDocRegisterConfigFromPreferencesData, SetDocRegisterConfigFromPreferencesErrors, SetDocRegisterConfigFromPreferencesResponses, SetDocRegisterConfigResponses, SetLicenseData, SetLicenseErrors, SetLicenseResponses, SetPipeCriteriaData, SetPipeCriteriaErrors, SetPipeCriteriaResponses, SetSkipSpData, SetSkipSpErrors, SetSkipSpResponses, SnapOrthogonalData, SnapOrthogonalErrors, SnapOrthogonalResponses, UnpinFolderData, UnpinFolderErrors, UnpinFolderResponses, UpdateReferenceData, UpdateReferenceErrors, UpdateReferenceResponses } from './types.gen';
+import type { AddReferenceData, AddReferenceErrors, AddReferenceResponses, AddSpOverrideData, AddSpOverrideErrors, AddSpOverrideResponses, ApplyHmbData, ApplyHmbErrors, ApplyHmbResponses, ApplyPmsData, ApplyPmsErrors, ApplyPmsResponses, ApplySettingsData, ApplySettingsErrors, ApplySettingsResponses, BatchReportData, BatchReportErrors, BatchReportResponses, BrowseFilesData, BrowseFilesErrors, BrowseFilesResponses, BulkCopyData, BulkCopyErrors, BulkCopyResponses, CenterLayoutData, CenterLayoutErrors, CenterLayoutResponses, CloseModelData, CloseModelErrors, CloseModelResponses, DeleteReferenceData, DeleteReferenceErrors, DeleteReferenceResponses, DeleteSpOverrideData, DeleteSpOverrideErrors, DeleteSpOverrideResponses, EditSpOverrideData, EditSpOverrideErrors, EditSpOverrideResponses, ExportReportData, ExportReportErrors, ExportReportResponses, GenerateReportData, GenerateReportErrors, GenerateReportResponses, GetAboutData, GetAboutResponses, GetDocRegisterStatusData, GetDocRegisterStatusResponses, GetModelSummaryData, GetModelSummaryResponses, GetPipeCriteriaData, GetPipeCriteriaResponses, GetPipesData, GetPipesResponses, GetPreferencesData, GetPreferencesResponses, GetProjectInfoStatusData, GetProjectInfoStatusResponses, GetReferencesData, GetReferenceShortcutsData, GetReferenceShortcutsErrors, GetReferenceShortcutsResponses, GetReferencesResponses, GetSessionStatusData, GetSessionStatusResponses, GetSettingsData, GetSettingsResponses, GetWhatsNewData, GetWhatsNewResponses, ImportReportData, ImportReportErrors, ImportReportResponses, KorfExcelStatusData, KorfExcelStatusResponses, MarkWhatsNewSeenData, MarkWhatsNewSeenErrors, MarkWhatsNewSeenResponses, OpenFileData, OpenFileErrors, OpenFileResponses, OpenModelInKorfData, OpenModelInKorfResponses, PinFolderData, PinFolderErrors, PinFolderResponses, PredictCategoryData, PredictCategoryErrors, PredictCategoryResponses, PredictPipeCriteriaData, PredictPipeCriteriaErrors, PredictPipeCriteriaResponses, RebuildDocRegisterDbData, RebuildDocRegisterDbErrors, RebuildDocRegisterDbResponses, ReloadModelData, ReloadModelErrors, ReloadModelResponses, ResolveSpUrlData, ResolveSpUrlErrors, ResolveSpUrlResponses, SaveModelData, SaveModelErrors, SaveModelResponses, SavePipeJustificationData, SavePipeJustificationErrors, SavePipeJustificationResponses, SaveProjectInfoData, SaveProjectInfoErrors, SaveProjectInfoResponses, SaveReferencesData, SaveReferencesErrors, SaveReferencesResponses, SearchEddrData, SearchEddrErrors, SearchEddrResponses, SearchFilesData, SearchFilesErrors, SearchFilesResponses, SearchQueryData, SearchQueryErrors, SearchQueryResponses, SetBatchFolderData, SetBatchFolderErrors, SetBatchFolderResponses, SetDocRegisterConfigData, SetDocRegisterConfigErrors, SetDocRegisterConfigFromPreferencesData, SetDocRegisterConfigFromPreferencesErrors, SetDocRegisterConfigFromPreferencesResponses, SetDocRegisterConfigResponses, SetLicenseData, SetLicenseErrors, SetLicenseResponses, SetPipeCriteriaData, SetPipeCriteriaErrors, SetPipeCriteriaResponses, SetSkipSpData, SetSkipSpErrors, SetSkipSpResponses, SnapOrthogonalData, SnapOrthogonalErrors, SnapOrthogonalResponses, UnpinFolderData, UnpinFolderErrors, UnpinFolderResponses, UpdateReferenceData, UpdateReferenceErrors, UpdateReferenceResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -449,7 +449,7 @@ export const getDocRegisterStatus = <ThrowOnError extends boolean = false>(optio
 /**
  * Api Search Eddr
  *
- * Search EDDR entries by title.
+ * Search FE EDDR + DE EDDR entries by title/document number.
  */
 export const searchEddr = <ThrowOnError extends boolean = false>(options?: Options<SearchEddrData, ThrowOnError>) => (options?.client ?? client).get<SearchEddrResponses, SearchEddrErrors, ThrowOnError>({
     responseType: 'json',
@@ -460,7 +460,7 @@ export const searchEddr = <ThrowOnError extends boolean = false>(options?: Optio
 /**
  * Api Search Query
  *
- * Search query entries by document number.
+ * Search SharePoint entries (Process/Client/Mechanical) by document number.
  */
 export const searchQuery = <ThrowOnError extends boolean = false>(options?: Options<SearchQueryData, ThrowOnError>) => (options?.client ?? client).get<SearchQueryResponses, SearchQueryErrors, ThrowOnError>({
     responseType: 'json',
@@ -471,7 +471,7 @@ export const searchQuery = <ThrowOnError extends boolean = false>(options?: Opti
 /**
  * Api Search Files
  *
- * Search query entries by name or path.
+ * Search SharePoint entries by name or path.
  */
 export const searchFiles = <ThrowOnError extends boolean = false>(options?: Options<SearchFilesData, ThrowOnError>) => (options?.client ?? client).get<SearchFilesResponses, SearchFilesErrors, ThrowOnError>({
     responseType: 'json',
@@ -760,4 +760,36 @@ export const getAbout = <ThrowOnError extends boolean = false>(options?: Options
     responseType: 'json',
     url: '/api/about/',
     ...options
+});
+
+/**
+ * Api Get Whats New
+ *
+ * Return the changelog section for the current app version.
+ *
+ * The response always includes the current version and date. The
+ * ``has_unseen`` flag indicates whether the user has not yet acknowledged
+ * this version — the frontend uses it to decide whether to auto-pop the
+ * modal on startup. Empty ``sections`` means there is no changelog entry
+ * for the current version (e.g. dev builds) and the modal should not show.
+ */
+export const getWhatsNew = <ThrowOnError extends boolean = false>(options?: Options<GetWhatsNewData, ThrowOnError>) => (options?.client ?? client).get<GetWhatsNewResponses, unknown, ThrowOnError>({
+    responseType: 'json',
+    url: '/api/whats-new',
+    ...options
+});
+
+/**
+ * Api Mark Whats New Seen
+ *
+ * Record that the user has seen the "What's New" modal for the current version.
+ */
+export const markWhatsNewSeen = <ThrowOnError extends boolean = false>(options: Options<MarkWhatsNewSeenData, ThrowOnError>) => (options.client ?? client).post<MarkWhatsNewSeenResponses, MarkWhatsNewSeenErrors, ThrowOnError>({
+    responseType: 'json',
+    url: '/api/whats-new/seen',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });

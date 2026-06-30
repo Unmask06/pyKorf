@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Info, CheckCircle, Home } from 'lucide-vue-next'
-import { getAbout } from '../api/generated/sdk.gen'
+import { Info, CheckCircle, Home, Sparkles } from 'lucide-vue-next'
+import { getAbout, getWhatsNew } from '../api/generated/sdk.gen'
+import type { WhatsNewResponse } from '../api/generated/types.gen'
 
 const version = ref('')
 const releaseDate = ref('')
@@ -14,6 +15,18 @@ onMounted(async () => {
     releaseDate.value = data.release_date
   } catch { /* ignore */ }
 })
+
+async function showWhatsNew() {
+  try {
+    const { data } = await getWhatsNew()
+    if (!data) return
+    // Dispatch a custom event so App.vue owns the modal lifecycle and
+    // re-uses the same component/instance for the manual trigger.
+    window.dispatchEvent(
+      new CustomEvent<WhatsNewResponse>('show-whats-new', { detail: data }),
+    )
+  } catch { /* ignore */ }
+}
 </script>
 
 <template>
@@ -27,6 +40,14 @@ onMounted(async () => {
           <div class="flex items-center gap-2 mb-3">
             <span class="bg-blue-600 text-white px-2.5 py-1 rounded text-lg">{{ version }}</span>
             <span class="text-gray-500 text-sm">Released {{ releaseDate }}</span>
+            <button
+              type="button"
+              @click="showWhatsNew"
+              class="ml-auto inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100"
+              title="View release notes for this version"
+            >
+              <Sparkles class="w-3.5 h-3.5" /> What's New
+            </button>
           </div>
 
           <p class="text-base mb-2">

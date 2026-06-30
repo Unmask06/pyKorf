@@ -714,6 +714,10 @@ class MultiCaseSummaryBuilder:
 
         compressor_rows: list[dict] = []
         for comp in case_data.compressors:
+            # Defensive: skip CURVES subsection rows that may have leaked through
+            # the parser (CURVES is a subsection of COMPRESSORS, not a top-level section).
+            if comp.name == "CURVES" or not comp.name.strip():
+                continue
             row = self._build_compressor_row(comp)
             row["Governing Case"] = first_case_name
 

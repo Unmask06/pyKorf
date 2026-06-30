@@ -69,6 +69,7 @@ def create_app() -> FastAPI:
         session,
         settings,
         sharepoint,
+        whats_new,
     )
 
     app.include_router(session.router, prefix="/api/session", tags=["session"])
@@ -82,6 +83,7 @@ def create_app() -> FastAPI:
     app.include_router(references.router, prefix="/api/references", tags=["references"])
     app.include_router(sharepoint.router, prefix="/api/sharepoint", tags=["sharepoint"])
     app.include_router(about.router, prefix="/api/about", tags=["about"])
+    app.include_router(whats_new.router, prefix="/api/whats-new", tags=["whats-new"])
 
     # --- Register exception handlers ---
     from pykorf.app.api.errors import (

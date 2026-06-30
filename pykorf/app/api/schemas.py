@@ -568,6 +568,7 @@ class DocRegisterSearchEddrRequest(BaseModel):
 
 class DocRegisterSearchQueryRequest(BaseModel):
     doc_no: str = ""
+    sheet: str | None = None
 
 
 class DocRegisterSearchFilesRequest(BaseModel):
@@ -585,6 +586,8 @@ class DocRegisterStatusResponse(BaseModel):
 class EddrResult(BaseModel):
     document_no: str
     title: str
+    source: str = "FE"
+    contractor_doc_no: str | None = None
 
 
 class QueryEntryResult(BaseModel):
@@ -593,6 +596,7 @@ class QueryEntryResult(BaseModel):
     modified_by: str | None = None
     path: str | None = None
     item_type: str | None = None
+    sheet: str | None = None
 
 
 class DocRegisterSearchEddrResponse(BaseModel):
@@ -618,6 +622,26 @@ class DocRegisterConfigResponse(BaseModel):
 class AboutResponse(BaseModel):
     version: str
     release_date: str
+
+
+# --- What's New ---
+
+
+class WhatsNewSection(BaseModel):
+    title: str
+    items: list[str] = []
+
+
+class WhatsNewResponse(BaseModel):
+    version: str
+    date: str | None = None
+    sections: list[WhatsNewSection] = []
+    has_unseen: bool = False
+
+
+class WhatsNewSeenResponse(BaseModel):
+    status: str
+    version: str
 
 
 class ShutdownResponse(BaseModel):

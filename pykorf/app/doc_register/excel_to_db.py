@@ -5,6 +5,17 @@ Handles:
 - Staleness detection (Excel mtime vs config timestamp)
 - SharePoint site URL auto-detection from query Path patterns
 - Full DB rebuild from Excel (clear + re-insert all rows)
+
+Sheets consumed:
+    - ``FE EDDR``  — Front-End Engineering Document Deliverable Register
+      (columns: ``Document No``, ``Title``). Dynamic header detection.
+    - ``DE EDDR``  — Detailed Engineering Document Deliverable Register
+      (columns: ``COMPANY DOCUMENT NUMBER``, ``DESCRIPTION``,
+      ``CONTRACTOR DOCUMENT NUMBER``). Dynamic header detection.
+    - ``Process`` / ``Client`` / ``Mechanical`` — SharePoint file/folder
+      listings (columns: ``Name``, ``Modified``, ``Modified By``, ``Path``,
+      ``Item Type``). All three are written into a single ``sp_entries``
+      table, stamped with their originating sheet name.
 """
 
 from __future__ import annotations
@@ -14,7 +25,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from pykorf.core.log import get_logger
+from pykorf.app.doc_register._cols import Cols
 from pykorf.app.operation.config.paths import ensure_data_dir
 from pykorf.app.operation.config.preferences import (
     get_doc_register_db_last_imported,
@@ -22,9 +33,12 @@ from pykorf.app.operation.config.preferences import (
     get_doc_register_sp_site_url,
     set_doc_register_db_last_imported,
 )
-from pykorf.app.doc_register._cols import Cols
+from pykorf.core.log import get_logger
 
 logger = get_logger(__name__)
+
+# Source SharePoint-extracted sheet names → ``sp_entries.sheet`` values.
+SP_SHEETS: tuple[str, ...] = ("Process", "Client", "Mechanical")
 
 
 def get_db_path() -> Path:
@@ -83,22 +97,104 @@ def is_excel_stale() -> bool:
         return True
 
 
-def _find_eddr_header_row(df: pd.DataFrame) -> int:
-    """Find the row index containing the document number column header.
+def _find_header_row(df: pd.DataFrame, header_value: str, default: int = 2) -> int:
+    """Find the row index containing a given column header.
 
-    Scans rows until a cell with value matching Cols.EDDR_DOC_NO is found.
+    Scans the first 10 rows (read with ``header=None``) for a cell whose value
+    matches ``header_value``.
 
     Args:
         df: DataFrame read without header (header=None).
+        header_value: The header cell value to locate (e.g. ``"Document No"``).
+        default: Row index to return if the header is not found.
 
     Returns:
-        Row index to use as header, defaults to 2 if not found.
+        Row index to use as the header row.
     """
     for idx in range(min(len(df), 10)):
         row = df.iloc[idx]
-        if Cols.EDDR_DOC_NO in row.values:
+        if header_value in row.values:
             return idx
-    return 2
+    return default
+
+
+def _read_fe_eddr(excel_path: Path) -> pd.DataFrame:
+    """Read the ``FE EDDR`` sheet and return a cleaned DataFrame.
+
+    Uses dynamic header detection (scans for the ``Document No`` cell) and
+    extracts only the ``Document No`` and ``Title`` columns.
+    """
+    raw = pd.read_excel(excel_path, sheet_name="FE EDDR", header=None, nrows=20)
+    header_row = _find_header_row(raw, Cols.FE_EDDR_DOC_NO, default=2)
+
+    df = pd.read_excel(
+        excel_path,
+        sheet_name="FE EDDR",
+        header=header_row,
+        usecols=[Cols.FE_EDDR_DOC_NO, Cols.FE_EDDR_TITLE],
+    )
+    df = df.dropna(subset=[Cols.FE_EDDR_DOC_NO])
+    df[Cols.FE_EDDR_DOC_NO] = df[Cols.FE_EDDR_DOC_NO].astype(str).str.strip()
+    df = df[df[Cols.FE_EDDR_DOC_NO] != "nan"]
+    df[Cols.FE_EDDR_TITLE] = df[Cols.FE_EDDR_TITLE].fillna("").astype(str).str.strip()  # type: ignore[union-attr]
+    return df
+
+
+def _read_de_eddr(excel_path: Path) -> pd.DataFrame:
+    """Read the ``DE EDDR`` sheet and return a cleaned DataFrame.
+
+    Uses dynamic header detection (scans for the ``COMPANY DOCUMENT NUMBER``
+    cell) and extracts the company document number, description and contractor
+    document number columns.
+    """
+    raw = pd.read_excel(excel_path, sheet_name="DE EDDR", header=None, nrows=20)
+    header_row = _find_header_row(raw, Cols.DE_EDDR_COMPANY_DOC_NO, default=2)
+
+    df = pd.read_excel(
+        excel_path,
+        sheet_name="DE EDDR",
+        header=header_row,
+        usecols=[
+            Cols.DE_EDDR_COMPANY_DOC_NO,
+            Cols.DE_EDDR_DESCRIPTION,
+            Cols.DE_EDDR_CONTRACTOR_DOC_NO,
+        ],
+    )
+    df = df.dropna(subset=[Cols.DE_EDDR_COMPANY_DOC_NO])
+    df[Cols.DE_EDDR_COMPANY_DOC_NO] = df[Cols.DE_EDDR_COMPANY_DOC_NO].astype(str).str.strip()
+    df = df[df[Cols.DE_EDDR_COMPANY_DOC_NO] != "nan"]
+    df[Cols.DE_EDDR_DESCRIPTION] = df[Cols.DE_EDDR_DESCRIPTION].fillna("").astype(str).str.strip()  # type: ignore[union-attr]
+    df[Cols.DE_EDDR_CONTRACTOR_DOC_NO] = (
+        df[Cols.DE_EDDR_CONTRACTOR_DOC_NO].fillna("").astype(str).str.strip()
+    )
+    return df
+
+
+def _read_sp_sheet(excel_path: Path, sheet_name: str) -> pd.DataFrame:
+    """Read one SharePoint-extracted sheet (Process/Client/Mechanical).
+
+    Extracts the ``Name``, ``Modified``, ``Modified By``, ``Path`` and
+    ``Item Type`` columns. Does NOT include the sheet name — the caller is
+    responsible for stamping it.
+    """
+    df = pd.read_excel(
+        excel_path,
+        sheet_name=sheet_name,
+        usecols=[
+            Cols.SP_NAME,
+            Cols.SP_MODIFIED,
+            Cols.SP_MODIFIED_BY,
+            Cols.SP_PATH,
+            Cols.SP_ITEM_TYPE,
+        ],
+    )
+    df = df.dropna(subset=[Cols.SP_NAME])
+    df[Cols.SP_NAME] = df[Cols.SP_NAME].astype(str).str.strip()
+    df[Cols.SP_MODIFIED] = df[Cols.SP_MODIFIED].fillna("").astype(str).str.strip()
+    df[Cols.SP_MODIFIED_BY] = df[Cols.SP_MODIFIED_BY].fillna("").astype(str).str.strip()
+    df[Cols.SP_PATH] = df[Cols.SP_PATH].fillna("").astype(str).str.strip()
+    df[Cols.SP_ITEM_TYPE] = df[Cols.SP_ITEM_TYPE].fillna("").astype(str).str.strip()
+    return df
 
 
 def build_db_from_excel(excel_path: Path, sp_site_url: str = "") -> Path:
@@ -106,13 +202,11 @@ def build_db_from_excel(excel_path: Path, sp_site_url: str = "") -> Path:
 
     Performs a full sync: drops existing tables and re-inserts all rows.
 
-    EDDR sheet:
-        - Dynamic header detection (searches for 'Document No' column)
-        - Extracts 'Document No' and 'Title' columns
-
-    query sheet:
-        - Extracts 'Name', 'Modified', 'Modified By', 'Path', 'Item Type'
-        - Includes both Items (files) and Folders
+    Sheets read:
+        - ``FE EDDR``  → ``fe_eddr``  (Document No, Title)
+        - ``DE EDDR``  → ``de_eddr``  (Company / Description / Contractor doc no)
+        - ``Process`` / ``Client`` / ``Mechanical`` → ``sp_entries``
+          (single table, ``sheet`` column stamps the source)
 
     Args:
         excel_path: Path to the Document Register Excel file.
@@ -125,42 +219,24 @@ def build_db_from_excel(excel_path: Path, sp_site_url: str = "") -> Path:
 
     logger.info("doc_register.build_db_start", excel_path=str(excel_path))
 
-    # Read EDDR sheet with dynamic header detection
-    eddr_raw = pd.read_excel(excel_path, sheet_name="EDDR", header=None, nrows=20)
-    header_row = _find_eddr_header_row(eddr_raw)
+    fe_eddr_df = _read_fe_eddr(excel_path)
+    de_eddr_df = _read_de_eddr(excel_path)
 
-    eddr_df = pd.read_excel(
-        excel_path,
-        sheet_name="EDDR",
-        header=header_row,
-        usecols=[Cols.EDDR_DOC_NO, Cols.EDDR_TITLE],
-    )
-    eddr_df = eddr_df.dropna(subset=[Cols.EDDR_DOC_NO])
-    eddr_df[Cols.EDDR_DOC_NO] = eddr_df[Cols.EDDR_DOC_NO].astype(str).str.strip()
-    eddr_df = eddr_df[eddr_df[Cols.EDDR_DOC_NO] != "nan"]
-    eddr_df[Cols.EDDR_TITLE] = eddr_df[Cols.EDDR_TITLE].fillna("").astype(str).str.strip()  # type: ignore[union-attr]
+    sp_frames: list[pd.DataFrame] = []
+    for sheet_name in SP_SHEETS:
+        try:
+            sp_df = _read_sp_sheet(excel_path, sheet_name)
+        except ValueError:
+            # Sheet not present in this workbook — skip silently.
+            logger.info("doc_register.sp_sheet_missing", sheet=sheet_name)
+            continue
+        sp_df["sheet"] = sheet_name
+        sp_frames.append(sp_df)
 
-    # Read query sheet
-    query_df = pd.read_excel(
-        excel_path,
-        sheet_name="query",
-        usecols=[
-            Cols.QUERY_NAME,
-            Cols.QUERY_MODIFIED,
-            Cols.QUERY_MODIFIED_BY,
-            Cols.QUERY_PATH,
-            Cols.QUERY_ITEM_TYPE,
-        ],
-    )
-    query_df = query_df.dropna(subset=[Cols.QUERY_NAME])
-    query_df[Cols.QUERY_NAME] = query_df[Cols.QUERY_NAME].astype(str).str.strip()
-    query_df[Cols.QUERY_MODIFIED] = query_df[Cols.QUERY_MODIFIED].fillna("").astype(str).str.strip()
-    query_df[Cols.QUERY_MODIFIED_BY] = (
-        query_df[Cols.QUERY_MODIFIED_BY].fillna("").astype(str).str.strip()
-    )
-    query_df[Cols.QUERY_PATH] = query_df[Cols.QUERY_PATH].fillna("").astype(str).str.strip()
-    query_df[Cols.QUERY_ITEM_TYPE] = (
-        query_df[Cols.QUERY_ITEM_TYPE].fillna("").astype(str).str.strip()
+    sp_df_all = (
+        pd.concat(sp_frames, ignore_index=True)
+        if sp_frames
+        else pd.DataFrame(columns=["sheet", "name", "modified", "modified_by", "path", "item_type"])
     )
 
     # Build database
@@ -169,23 +245,37 @@ def build_db_from_excel(excel_path: Path, sp_site_url: str = "") -> Path:
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
 
-    eddr_df.rename(columns={Cols.EDDR_DOC_NO: "document_no", Cols.EDDR_TITLE: "title"}).to_sql(  # type: ignore[call-overload]
-        "eddr", con=engine, if_exists="append", index=False
+    fe_eddr_df.rename(
+        columns={Cols.FE_EDDR_DOC_NO: "document_no", Cols.FE_EDDR_TITLE: "title"}
+    ).to_sql(  # type: ignore[call-overload]
+        "fe_eddr", con=engine, if_exists="append", index=False
     )
-    query_df.rename(
+    de_eddr_df.rename(
         columns={
-            Cols.QUERY_NAME: "name",
-            Cols.QUERY_MODIFIED: "modified",
-            Cols.QUERY_MODIFIED_BY: "modified_by",
-            Cols.QUERY_PATH: "path",
-            Cols.QUERY_ITEM_TYPE: "item_type",
+            Cols.DE_EDDR_COMPANY_DOC_NO: "company_document_no",
+            Cols.DE_EDDR_DESCRIPTION: "description",
+            Cols.DE_EDDR_CONTRACTOR_DOC_NO: "contractor_document_no",
         }
-    ).to_sql("query_entries", con=engine, if_exists="append", index=False)
+    ).to_sql(  # type: ignore[call-overload]
+        "de_eddr", con=engine, if_exists="append", index=False
+    )
+    sp_df_all.rename(
+        columns={
+            Cols.SP_NAME: "name",
+            Cols.SP_MODIFIED: "modified",
+            Cols.SP_MODIFIED_BY: "modified_by",
+            Cols.SP_PATH: "path",
+            Cols.SP_ITEM_TYPE: "item_type",
+        }
+    ).to_sql(  # type: ignore[call-overload]
+        "sp_entries", con=engine, if_exists="append", index=False
+    )
 
     logger.info(
         "doc_register.build_db_complete",
-        eddr_count=len(eddr_df),
-        query_count=len(query_df),
+        fe_eddr_count=len(fe_eddr_df),
+        de_eddr_count=len(de_eddr_df),
+        sp_count=len(sp_df_all),
         db_path=str(db_path),
     )
 
