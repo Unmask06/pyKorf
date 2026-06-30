@@ -342,10 +342,7 @@ def _parse_compressors_section(ws: Worksheet, start_row: int) -> tuple[list[Comp
     while row <= ws.max_row:
         cell_a = ws.cell(row=row, column=1).value
         cell_a_str = _safe_str(cell_a)
-        if (
-            cell_a_str in ("CURVES", "VESSELS")
-            or cell_a_str in _SECTION_MARKERS_EQUIPMENT
-        ):
+        if cell_a_str in ("CURVES", "VESSELS") or cell_a_str in _SECTION_MARKERS_EQUIPMENT:
             break
         if not cell_a_str:
             row += 1

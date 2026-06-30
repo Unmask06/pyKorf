@@ -65,9 +65,7 @@ All notable changes to pyKorf will be documented in this file.
 @pytest.fixture
 def temp_changelog():
     """Write SAMPLE_CHANGELOG to a temp file and return its path."""
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".md", delete=False, encoding="utf-8"
-    ) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False, encoding="utf-8") as f:
         f.write(SAMPLE_CHANGELOG)
         path = Path(f.name)
     yield path
@@ -89,9 +87,7 @@ def mock_config(tmp_path):
 @pytest.fixture
 def patched_changelog(temp_changelog):
     """Patch ``_find_changelog_path`` to return the temp file."""
-    with patch(
-        "pykorf.app.whats_new._find_changelog_path", return_value=temp_changelog
-    ):
+    with patch("pykorf.app.whats_new._find_changelog_path", return_value=temp_changelog):
         yield temp_changelog
 
 
@@ -142,13 +138,7 @@ class TestParseVersionSection:
     def test_handles_section_with_no_bullets(self):
         from pykorf.app.whats_new import _parse_version_section
 
-        text = (
-            "## [0.1.0] - 2026-05-01\n"
-            "\n"
-            "### What's New\n"
-            "\n"
-            "Some prose, no bullets.\n"
-        )
+        text = "## [0.1.0] - 2026-05-01\n\n### What's New\n\nSome prose, no bullets.\n"
         result = _parse_version_section(text, "0.1.0")
         assert result is not None
         assert result["sections"][0]["title"] == "What's New"
@@ -157,13 +147,7 @@ class TestParseVersionSection:
     def test_ignores_stray_content_outside_subsection(self):
         from pykorf.app.whats_new import _parse_version_section
 
-        text = (
-            "## [0.1.0] - 2026-05-01\n"
-            "\n"
-            "Some preamble text\n"
-            "### What's New\n"
-            "- item 1\n"
-        )
+        text = "## [0.1.0] - 2026-05-01\n\nSome preamble text\n### What's New\n- item 1\n"
         result = _parse_version_section(text, "0.1.0")
         assert result is not None
         assert len(result["sections"]) == 1
@@ -210,9 +194,7 @@ class TestGetWhatsNew:
 
         assert data["has_unseen"] is True
 
-    def test_empty_when_no_changelog_entry_for_version(
-        self, mock_config, patched_changelog
-    ):
+    def test_empty_when_no_changelog_entry_for_version(self, mock_config, patched_changelog):
         from pykorf.app.whats_new import get_whats_new
         import pykorf
 

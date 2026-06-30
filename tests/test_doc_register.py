@@ -90,10 +90,7 @@ def sample_excel_path(sample_fe_eddr_df, sample_de_eddr_df, sample_sp_df):
                 ["Project Title Row", None, None],
                 ["Sr. No", "Document No", "Title"],
             ]
-            + [
-                [i + 1, row["Document No"], row["Title"]]
-                for i, row in sample_fe_eddr_df.iterrows()
-            ]
+            + [[i + 1, row["Document No"], row["Title"]] for i, row in sample_fe_eddr_df.iterrows()]
         )
         fe_with_header.to_excel(writer, sheet_name="FE EDDR", index=False, header=False)
 

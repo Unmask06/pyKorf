@@ -14,9 +14,7 @@ from pykorf.app.whats_new import get_whats_new, mark_whats_new_seen
 router = APIRouter()
 
 
-@router.get(
-    "", response_model=WhatsNewResponse, operation_id="getWhatsNew"
-)
+@router.get("", response_model=WhatsNewResponse, operation_id="getWhatsNew")
 async def api_get_whats_new() -> WhatsNewResponse:
     """Return the changelog section for the current app version.
 

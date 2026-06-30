@@ -62,9 +62,7 @@ _VERSION_HEADER = re.compile(r"^##\s+\[([^\]]+)\]\s+-\s+(.+?)\s*$")
 _SUBSECTION_HEADER = re.compile(r"^###\s+(.+?)\s*$")
 
 
-def _parse_version_section(
-    changelog_text: str, version: str
-) -> dict[str, Any] | None:
+def _parse_version_section(changelog_text: str, version: str) -> dict[str, Any] | None:
     """Extract the release-notes block for a specific version from CHANGELOG.md.
 
     The block runs from the matching ``## [version]`` line up to the next

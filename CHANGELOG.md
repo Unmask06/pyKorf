@@ -5,6 +5,29 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.48.0] - 2026-06-30
+
+### What's New
+
+- The Document Register now supports separate FE EDDR and DE EDDR sheets, letting you search documents across both Feed and Detailed Engineering registers in a single search.
+- SharePoint file listings are now drawn from three separate sheets — Process, Client, and Mechanical — each tagged with its source so you can filter results by discipline.
+- A "What's New" modal now appears on first launch of each new version, showing the release notes from the changelog. You can also re-open it anytime from the About page.
+- Vessels are now parsed from the KORF Excel Equipment sheet, preventing vessel data from leaking into the Compressor summary table.
+
+### Improved
+
+- The Document Register search results now show FE/DE source badges in Step 1 and color-coded sheet tags (Process, Client, Mechanical) in Step 2, with filter tabs to narrow results by sheet.
+- The "Searching…" and "Refresh DB" loading indicators are now high-contrast animated spinners that are clearly visible against the modal background.
+- Step 1 of the Document Register search now has All/FE/DE filter tabs so you can narrow results to a specific register.
+- The Compressor summary table in the report now skips the CURVES subsection rows that KORF writes within the Compressor block, keeping the output clean.
+- Number formatting rules now cover Mass flow and Density columns in reports.
+
+### Fixed
+
+- Vessel rows from the KORF Excel Equipment sheet no longer appear as bogus entries in the Compressor transposed table.
+- The CURVES subsection within the Compressor block is no longer treated as a compressor entry in the multicase report.
+- The Differential Head row is no longer duplicated in the Compressor single-case export.
+
 ## [0.47.0] - 2026-06-24
 
 ### What's New
