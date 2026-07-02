@@ -5,6 +5,16 @@ All notable changes to pyKorf will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.49.0] - 2026-07-02
+
+### What's New
+
+- The Document Register search is now available directly from the home screen without needing to load a KORF model first, so you can look up engineering documents and SharePoint links before opening any model.
+
+### Improved
+
+- HMB (Heat and Material Balance) data import now handles edge cases more reliably when parsing line numbers and matching them to model elements.
+
 ## [0.48.0] - 2026-06-30
 
 ### What's New
