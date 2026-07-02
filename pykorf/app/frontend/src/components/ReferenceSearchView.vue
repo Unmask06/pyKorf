@@ -23,6 +23,7 @@ import type {
 
 const props = defineProps<{
   initialQuery?: string;
+  standalone?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -195,6 +196,13 @@ async function selectEddrItem(item: EddrResult) {
 }
 
 function selectFileResult(item: QueryEntryResult) {
+  if (props.standalone) {
+    const url = itemUrl(item);
+    if (url && url !== "#") {
+      window.open(url, "_blank");
+    }
+    return;
+  }
   const docNo = selectedEddrItem.value?.document_no ?? queryFilter.value.trim();
   const title = selectedEddrItem.value?.title ?? queryFilter.value.trim();
   emit("select", docNo, itemUrl(item), title);

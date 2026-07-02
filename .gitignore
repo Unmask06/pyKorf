@@ -64,3 +64,4 @@ examples/examples/
 settings.local.jsonnul
 *node_modules/
 *package-lock.json
+temp/
