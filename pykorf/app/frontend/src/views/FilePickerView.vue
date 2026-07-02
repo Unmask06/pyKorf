@@ -12,6 +12,7 @@ import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { getErrorMessage } from "../api/client";
 import PathBrowser from "../components/PathBrowser.vue";
+import ReferenceSearchView from "../components/ReferenceSearchView.vue";
 import { useLoading } from "../composables/useLoading";
 import { useToastStore } from "../composables/useToast";
 import { useSessionStore } from "../stores/session";
@@ -22,6 +23,7 @@ const toast = useToastStore();
 
 const kdfPath = ref("");
 const showBrowser = ref(false);
+const showDocSearch = ref(false);
 const searchQuery = ref("");
 
 const displayFilename = computed(() => {
@@ -209,6 +211,26 @@ onMounted(async () => {
         </ul>
       </div>
 
+      <!-- Document Search -->
+      <div class="pk-card mt-3">
+        <div class="pk-card-header flex items-center gap-1">
+          <Search class="w-4 h-4 text-cyan-600" /> Document Register Search
+        </div>
+        <div class="p-3 flex items-center justify-between">
+          <div class="text-sm text-gray-500">
+            Search the global Document Register (EDDR) and SharePoint files without loading a model.
+          </div>
+          <button
+            @click="showDocSearch = true"
+            class="bg-cyan-600 text-white rounded px-3 py-1.5 text-sm hover:bg-cyan-700 flex items-center gap-1 shrink-0 disabled:opacity-50"
+            :disabled="!session.docRegisterOk && !session.skipSpOverride"
+            :title="(!session.docRegisterOk && !session.skipSpOverride) ? 'Configure Document Register in Preferences' : ''"
+          >
+            <Search class="w-4 h-4" /> Open Search
+          </button>
+        </div>
+      </div>
+
       <!-- How to Use -->
       <div class="pk-card mt-3">
         <div class="pk-card-header flex items-center gap-1">
@@ -240,5 +262,11 @@ onMounted(async () => {
       }
     "
     filter="kdf"
+  />
+
+  <ReferenceSearchView
+    v-if="showDocSearch"
+    standalone
+    @close="showDocSearch = false"
   />
 </template>

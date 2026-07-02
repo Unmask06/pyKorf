@@ -11,7 +11,6 @@ from __future__ import annotations
 
 from typing import Any
 
-import sqlalchemy.dialects.sqlite  # noqa: F401  # pre-load sqlite dialect for lazy resolution
 from sqlalchemy import (
     Column,
     Integer,

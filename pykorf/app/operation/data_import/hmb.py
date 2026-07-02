@@ -43,7 +43,7 @@ class FluidProperties:
     """Fluid properties from HMB.
 
     Attributes:
-        stream_no: Stream identifier (e.g., S-101)
+        stream_no: Stream identifier (e.g., S-101 or 511104)
         temp: Temperature in °C
         pres: Pressure in kPag
         lf: Liquid fraction (0-1)
@@ -56,6 +56,10 @@ class FluidProperties:
         vapvisc: Vapor viscosity in cP
         vapcon: Vapor thermal conductivity in W/m/K
         vapcp: Vapor specific heat in kJ/kg/K
+        vapmw: Vapor molecular weight
+        vapz: Vapor compressibility factor
+        vapk: Isentropic exponent (Cp/Cv)
+        designation: Human-readable stream description (e.g. "Suction side EDC circ. pump")
     """
 
     stream_no: str
@@ -71,24 +75,36 @@ class FluidProperties:
     vapvisc: float | None = None
     vapcon: float | None = None
     vapcp: float | None = None
+    vapmw: float | None = None
+    vapz: float | None = None
+    vapk: float | None = None
+    designation: str = ""
 
 
 class HmbReader:
-    """Reader for HMB data with Excel to JSON conversion."""
+    """Reader for HMB data with Excel to JSON conversion.
 
-    PROPERTY_MAP = {
-        "TEMP": "temp",
-        "PRES": "pres",
-        "LF": "lf",
-        "LIQDEN": "liqden",
-        "LIQVISC": "liqvisc",
-        "LIQSUR": "liqsur",
-        "LIQCON": "liqcon",
-        "LIQCP": "liqcp",
-        "VAPDEN": "vapden",
-        "VAPVISC": "vapvisc",
-        "VAPCON": "vapcon",
-        "VAPCP": "vapcp",
+    Expected Excel layout:
+
+    - Row 0: ``"Stream No."`` in col 0, stream numbers in every *even* column
+      (2, 4, 6…).
+    - Col 0: descriptive parameter names (e.g. ``"Operating temperature"``).
+    - Col 1: units.
+    - Each stream occupies 2 columns (value in even col, mass-% in odd col).
+    """
+
+    # Descriptive Excel parameter names → ``(korf_key, converter | None)``.
+    # *converter* transforms the raw Excel value into KORF internal units.
+    PROPERTY_MAP: dict[str, tuple[str, Any]] = {
+        "operating temperature": ("temp", None),
+        "operating pressure gauge": ("pres", lambda v: v * 100),  # barg → kPag
+        "liquid density": ("liqden", None),
+        "liquid dyn. viscosity": ("liqvisc", None),
+        "gas/vapor mass fraction": ("lf", lambda v: (100 - v) / 100),  # gas% → LF
+        "gas/vapor dyn. viscosity": ("vapvisc", None),
+        "molar weight": ("vapmw", None),
+        "compressibility factor (z1/zn)": ("vapz", None),
+        "isentropic exponent": ("vapk", None),
     }
 
     def __init__(self, input_dir: Path | str | None = None):
@@ -134,39 +150,56 @@ class HmbReader:
 
         df = read_excel_safe(excel_path, header=None)
 
-        stream_numbers: list[str] = []
-        stream_data: dict[str, dict[str, float]] = {}
+        # 1) Scan row 0 for stream numbers: every non-null cell that is not a
+        #    header label ("Stream No.", "Stream Designation", etc.) is treated
+        #    as a stream number.  The column where it appears is recorded
+        #    directly — no even/odd column assumption is needed.
+        HEADER_LABELS = {"stream no.", "stream designation"}
+        stream_cols: list[tuple[str, int]] = []  # (stream_no, col_index)
+        seen: set[str] = set()
+        for col_idx in range(1, df.shape[1]):
+            val = df.iloc[0, col_idx]
+            if pd.isna(val):
+                continue
+            sno = str(int(val)) if isinstance(val, (int, float)) else str(val).strip()
+            if sno.lower() in HEADER_LABELS or not sno or sno in seen:
+                continue
+            stream_cols.append((sno, col_idx))
+            seen.add(sno)
 
-        for idx, row in df.iterrows():
-            if idx == 0:
-                for col_idx in range(2, len(row)):
-                    val = row.iloc[col_idx]
-                    if pd.notna(val):
-                        stream_numbers.append(str(val).strip())
-                        stream_data[str(val).strip()] = {}
+        # 2) Read stream designations from row 1 at the same column indices.
+        stream_data: dict[str, dict] = {}
+        for sno, col_idx in stream_cols:
+            desig_val = df.iloc[1, col_idx] if df.shape[0] > 1 else None
+            designation = str(desig_val).strip() if pd.notna(desig_val) else ""
+            stream_data[sno] = {"designation": designation}
+
+        # 3) Walk every row and match parameter names from col 0.
+        for row_idx in range(1, df.shape[0]):
+            raw_name = df.iloc[row_idx, 0]
+            if pd.isna(raw_name):
+                continue
+            param_name = str(raw_name).strip().lower()
+            if not param_name:
                 continue
 
-            property_name = str(row.iloc[0]).strip().upper() if pd.notna(row.iloc[0]) else ""
-            if not property_name or property_name == "NAN":
+            mapping = self.PROPERTY_MAP.get(param_name)
+            if mapping is None:
                 continue
+            korf_key, converter = mapping
 
-            prop_key = self.PROPERTY_MAP.get(property_name)
-            if prop_key is None:
-                continue
+            for sno, col_idx in stream_cols:
+                val = df.iloc[row_idx, col_idx]
+                if pd.notna(val):
+                    try:
+                        fval = float(val)
+                        if converter is not None:
+                            fval = converter(fval)
+                        stream_data[sno][korf_key] = fval
+                    except (ValueError, TypeError):
+                        pass
 
-            for stream_no in stream_numbers:
-                stream_col_idx = stream_numbers.index(stream_no) + 2
-                if stream_col_idx < len(row):
-                    val = row.iloc[stream_col_idx]
-                    if pd.notna(val):
-                        try:
-                            stream_data[stream_no][prop_key] = float(val)
-                        except (ValueError, TypeError):
-                            pass
-
-        hmb_data: dict[str, dict] = {}
-        for stream_no, props in stream_data.items():
-            hmb_data[stream_no] = props
+        hmb_data = dict(stream_data)
 
         json_path.parent.mkdir(parents=True, exist_ok=True)
         try:
@@ -210,6 +243,10 @@ class HmbReader:
                 vapvisc=props.get("vapvisc"),
                 vapcon=props.get("vapcon"),
                 vapcp=props.get("vapcp"),
+                vapmw=props.get("vapmw"),
+                vapz=props.get("vapz"),
+                vapk=props.get("vapk"),
+                designation=props.get("designation", ""),
             )
 
     def load(self, source: Path | str) -> None:
@@ -405,6 +442,9 @@ def _create_fluid_from_props(props: dict[str, Any]) -> Fluid:
         vapvisc=props.get("vapvisc"),
         vapcon=props.get("vapcon"),
         vapcp=props.get("vapcp"),
+        vapmw=props.get("vapmw"),
+        vapz=props.get("vapz"),
+        vapk=props.get("vapk"),
     )
 
 
